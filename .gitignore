@@ -1,0 +1,17 @@
+/.gstack/
+/target/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+.DS_Store
+
+# Internal planning, review, and handoff docs — kept local, not published.
+# outputs/IMPLEMENTATION_STATUS.md is intentionally public (README links it).
+/work/
+/outputs/*
+!/outputs/IMPLEMENTATION_STATUS.md
+
+
+# Local agent/memory tooling scratch, not project files.
+/AGENTS.md
+/CLAUDE.md

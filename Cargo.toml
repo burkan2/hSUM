@@ -1,0 +1,44 @@
+[package]
+name = "hsum"
+version = "0.1.0-alpha.1"
+edition = "2024"
+rust-version = "1.91"
+description = "Local evidence for agents."
+authors = ["Burkan Alp Kale, ArgonGate Ltd."]
+license = "MIT OR Apache-2.0"
+publish = false
+
+[dependencies]
+aho-corasick = "=1.1.4"
+clap = { version = "=4.6.2", features = ["derive", "env"] }
+clap_complete = "=4.6.7"
+clap_mangen = "=0.3.0"
+directories = "=6.0.0"
+hex = "=0.4.3"
+ignore = "=0.4.30"
+rmcp = { version = "=2.2.0", default-features = false, features = ["macros", "server", "transport-io"] }
+rusqlite = { version = "=0.39.0", default-features = false, features = ["bundled", "limits"] }
+rustix = { version = "=1.1.4", features = ["fs", "process"] }
+schemars = "=1.2.1"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.150"
+serde_json_canonicalizer = "=0.3.2"
+sha2 = "=0.11.0"
+thiserror = "=2.0.19"
+time = { version = "=0.3.53", features = ["formatting", "parsing"] }
+tokio = { version = "=1.53.0", features = ["macros", "rt-multi-thread", "sync", "time"] }
+toml = { version = "=1.1.3", default-features = false, features = ["display", "parse", "serde"] }
+uuid = { version = "=1.24.0", features = ["serde", "v4"] }
+uzers = { version = "=0.12.2", default-features = false }
+
+[dev-dependencies]
+proptest = "=1.11.0"
+tempfile = "=3.27.0"
+
+[[bin]]
+name = "hsum"
+path = "src/main.rs"
+
+[[bin]]
+name = "xtask"
+path = "src/bin/xtask.rs"
