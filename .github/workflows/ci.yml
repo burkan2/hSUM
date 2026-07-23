@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+          - name: macOS arm64
+            runner: macos-15
+            expected_arch: arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Confirm the supported runner architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal --component clippy,rustfmt
+
+      - name: Run the contributor gate
+        shell: bash
+        run: cargo +1.91.0 xtask check
+
+      - name: Build the candidate binary
+        shell: bash
+        run: cargo +1.91.0 build --locked --release
+
+      - name: Exercise the candidate as a first-time user
+        shell: bash
+        run: bash scripts/release-smoke.sh "$PWD/target/release/hsum"

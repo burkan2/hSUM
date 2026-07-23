@@ -1,0 +1,222 @@
+name: Release alpha
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+jobs:
+  guard:
+    name: Verify release tag
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require an annotated alpha tag that matches Cargo.toml
+        env:
+          RELEASE_GPG_FINGERPRINT: ${{ vars.RELEASE_GPG_FINGERPRINT }}
+          RELEASE_GPG_PUBLIC_KEY: ${{ vars.RELEASE_GPG_PUBLIC_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          version=$(awk -F '"' '$1 ~ /^version = / { print $2; exit }' Cargo.toml)
+          test -n "$version"
+          test "$tag" = "v$version"
+          case "$version" in
+            *-alpha.*) ;;
+            *) echo "Only alpha prereleases may use this workflow." >&2; exit 1 ;;
+          esac
+          test "$(git cat-file -t "$tag")" = "tag"
+          grep -qx 'publish = false' Cargo.toml
+          test -n "$RELEASE_GPG_FINGERPRINT" || { echo "Missing repository variable: RELEASE_GPG_FINGERPRINT" >&2; exit 1; }
+          test -n "$RELEASE_GPG_PUBLIC_KEY" || { echo "Missing repository variable: RELEASE_GPG_PUBLIC_KEY" >&2; exit 1; }
+          printf '%s\n' "$RELEASE_GPG_PUBLIC_KEY" | gpg --batch --import
+          imported_fingerprint=$(gpg --batch --with-colons --fingerprint "$RELEASE_GPG_FINGERPRINT" | awk -F: '$1 == "fpr" { print $10; exit }')
+          test "$imported_fingerprint" = "$RELEASE_GPG_FINGERPRINT"
+          git verify-tag "$tag"
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: guard
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            expected_arch: arm64
+            archive: zip
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Confirm the supported runner architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal --component clippy,rustfmt
+
+      - name: Run all release checks
+        shell: bash
+        run: cargo +1.91.0 xtask check
+
+      - name: Build and exercise the candidate binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.91.0 build --locked --release
+          bash scripts/release-smoke.sh "$PWD/target/release/hsum"
+
+      - name: Require Apple notarization credentials
+        if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in \
+            APPLE_CERTIFICATE_BASE64 APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY \
+            APPLE_ID APPLE_APP_PASSWORD APPLE_TEAM_ID; do
+            test -n "${!name}" || { echo "Missing required release secret: $name" >&2; exit 1; }
+          done
+
+      - name: Import the Apple signing certificate
+        if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$KEYCHAIN_PASSWORD" || { echo "Missing required release secret: KEYCHAIN_PASSWORD" >&2; exit 1; }
+          certificate_path="$RUNNER_TEMP/release-certificate.p12"
+          keychain_path="$RUNNER_TEMP/release.keychain-db"
+          printf '%s' "$APPLE_CERTIFICATE_BASE64" | base64 -D > "$certificate_path"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security import "$certificate_path" -k "$keychain_path" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security list-keychain -d user -s "$keychain_path"
+
+      - name: Sign the macOS binary
+        if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" target/release/hsum
+          codesign --verify --deep --strict --verbose=2 target/release/hsum
+
+      - name: Package the release asset
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          asset="hsum-${GITHUB_REF_NAME}-${{ matrix.target }}.${{ matrix.archive }}"
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            ditto -c -k --keepParent target/release/hsum "dist/$asset"
+          else
+            tar -C target/release -czf "dist/$asset" hsum
+          fi
+          shasum -a 256 "dist/$asset" > "dist/$asset.sha256"
+          echo "path=dist/$asset" >> "$GITHUB_OUTPUT"
+
+      - name: Notarize the macOS archive
+        if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun notarytool submit "${{ steps.package.outputs.path }}" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+
+      - name: Generate the SPDX SBOM and license inventory
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/hsum-${{ github.ref_name }}-${{ matrix.target }}.spdx.json
+          artifact-name: hsum-${{ matrix.target }}-sbom
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Attest the archive and its SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.package.outputs.path }}
+          sbom-path: dist/hsum-${{ github.ref_name }}-${{ matrix.target }}.spdx.json
+
+      - name: Upload the release asset
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+
+  publish:
+    name: Publish GitHub prerelease
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+
+      - name: Create the release checksum manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          shasum -a 256 *.tar.gz *.zip > SHA256SUMS
+
+      - name: Publish the prerelease from the verified tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --verify-tag \
+            --prerelease \
+            --generate-notes \
+            --title "hSUM ${GITHUB_REF_NAME}"
