@@ -9,12 +9,12 @@ treatment, and combined with original elements) rather than reproduced.
 
 | Asset | Underlying work or source | Creator or institution | License or permission | Project changes |
 |---|---|---|---|---|
-| `hSUMfinal.png` | Original composite; classical sculpture and engraving references, heavily transformed | Burkan Alp Kale (Photopea) | Made by Burkan Alp Kale, ArgonGate Ltd.; MIT OR Apache-2.0 | Blue two-tone treatment, recomposition, engraved background integration |
-| `hero-transparent.png` | Original composite; classical sculpture references, heavily transformed | Burkan Alp Kale (Photopea) | Made by Burkan Alp Kale, ArgonGate Ltd.; MIT OR Apache-2.0 | High-contrast treatment and four-figure composition |
-| `katabasis/aidoneus.png` | Original composite; classical sculpture reference, heavily transformed | Burkan Alp Kale (Photopea) | Made by Burkan Alp Kale, ArgonGate Ltd.; MIT OR Apache-2.0 | High-contrast treatment and transparent background |
-| `ouranos/asteropoios.png` | Original composite; classical sculpture reference, heavily transformed | Burkan Alp Kale (Photopea) | Made by Burkan Alp Kale, ArgonGate Ltd.; MIT OR Apache-2.0 | High-contrast treatment and transparent background |
-| `mneme/aletheia.png` | Original composite; classical sculpture reference, heavily transformed | Burkan Alp Kale (Photopea) | Made by Burkan Alp Kale, ArgonGate Ltd.; MIT OR Apache-2.0 | High-contrast treatment and transparent background |
-| `horos/achamoth.png` | Original composite; classical sculpture reference, heavily transformed | Burkan Alp Kale (Photopea) | Made by Burkan Alp Kale, ArgonGate Ltd.; MIT OR Apache-2.0 | High-contrast treatment and transparent background |
+| `hSUMfinal.png` | Original composite; classical sculpture and engraving references, heavily transformed | Burkan Alp Kale (Photopea) | Burkan Alp Kale; MIT OR Apache-2.0 | Blue two-tone treatment, recomposition, engraved background integration |
+| `hero-transparent.png` | Original composite; classical sculpture references, heavily transformed | Burkan Alp Kale (Photopea) | Burkan Alp Kale; MIT OR Apache-2.0 | High-contrast treatment and four-figure composition |
+| `katabasis/aidoneus.png` | Original composite; classical sculpture reference, heavily transformed | Burkan Alp Kale (Photopea) | Burkan Alp Kale; MIT OR Apache-2.0 | High-contrast treatment and transparent background |
+| `ouranos/asteropoios.png` | Original composite; classical sculpture reference, heavily transformed | Burkan Alp Kale (Photopea) | Burkan Alp Kale; MIT OR Apache-2.0 | High-contrast treatment and transparent background |
+| `mneme/aletheia.png` | Original composite; classical sculpture reference, heavily transformed | Burkan Alp Kale (Photopea) | Burkan Alp Kale; MIT OR Apache-2.0 | High-contrast treatment and transparent background |
+| `horos/achamoth.png` | Original composite; classical sculpture reference, heavily transformed | Burkan Alp Kale (Photopea) | Burkan Alp Kale; MIT OR Apache-2.0 | High-contrast treatment and transparent background |
 
 `hero.png` is a repository rendering of `hero-transparent.png` on the brand's
 bone background (`#E6DFD1`). It introduces no additional source material.

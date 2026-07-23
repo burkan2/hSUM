@@ -17,12 +17,12 @@
 </p>
 
 <p align="center">
-  <img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue">
-  <img alt="Language: Rust 1.91" src="https://img.shields.io/badge/rust-1.91-orange?logo=rust">
-  <img alt="Interface: CLI and MCP" src="https://img.shields.io/badge/interface-CLI%20%2B%20MCP-8A63D2">
-  <img alt="Status: pre-release source" src="https://img.shields.io/badge/status-pre--release%20source-lightgrey">
-  <img alt="Targets: macOS arm64 and Linux x86_64" src="https://img.shields.io/badge/targets-macOS%20arm64%20%7C%20Linux%20x86__64-informational">
-  <img alt="Network: none after build" src="https://img.shields.io/badge/network-none%20after%20build-2ea44f">
+  <a href="#license"><img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue"></a>
+  <a href="https://www.rust-lang.org/tools/install"><img alt="Language: Rust 1.91" src="https://img.shields.io/badge/rust-1.91-orange?logo=rust"></a>
+  <a href="#connect-your-agent"><img alt="Interface: CLI and MCP" src="https://img.shields.io/badge/interface-CLI%20%2B%20MCP-8A63D2"></a>
+  <a href="outputs/IMPLEMENTATION_STATUS.md"><img alt="Status: alpha, builds from source" src="https://img.shields.io/badge/status-alpha%20·%20builds%20from%20source-9cf"></a>
+  <a href="#build-from-source"><img alt="Targets: macOS arm64 and Linux x86_64" src="https://img.shields.io/badge/targets-macOS%20arm64%20%7C%20Linux%20x86__64-informational"></a>
+  <a href="#storage-and-quota-behavior"><img alt="Network: none after build" src="https://img.shields.io/badge/network-none%20after%20build-2ea44f"></a>
 </p>
 
 <!--
@@ -39,7 +39,7 @@
 </p>
 
 <p align="center">
-  <img alt="Build from source" src="https://img.shields.io/badge/build%20from%20source-cargo%20build%20--release-2ea44f?logo=rust">
+  <a href="#quickstart"><img alt="Build from source" src="https://img.shields.io/badge/build%20from%20source-cargo%20build%20--release-2ea44f?logo=rust"></a>
   &nbsp;
   <img alt="cargo install: at v0.1.0" src="https://img.shields.io/badge/cargo%20install%20hsum-at%20v0.1.0-lightgrey">
   <img alt="prebuilt binaries: at v0.1.0" src="https://img.shields.io/badge/prebuilt%20binaries-at%20v0.1.0-lightgrey">
@@ -47,10 +47,11 @@
 
 <p align="center">
   <sub>
+    Colored badges are clickable and go to the relevant section or page.
     Source build works today (see <a href="#quickstart">Quickstart</a>).
     Published <code>cargo install</code>, <code>cargo binstall</code>, and
-    signed macOS/Linux binaries land at the first tagged release. The greyed
-    badges mark what is coming; they are placeholders, not links.
+    signed macOS/Linux binaries land at the first tagged release; the two
+    greyed badges mark those and stay unlinked until they exist.
   </sub>
 </p>
 
@@ -66,12 +67,6 @@ local source tree into immutable SQLite generations, then returns exact and
 BM25-ranked passages with canonical citations through a CLI or a read-only MCP
 stdio server. No account, model, daemon, telemetry, or network access is
 involved after the build.
-
-> [!IMPORTANT]
-> This checkout contains a runnable source implementation, but there is no
-> published crate, prebuilt binary, installer, tag, or supported release yet.
-> The crate has `publish = false`. Build it from this source tree only after
-> reviewing the code and dependencies.
 
 When something leaves your agent's context window, you lose it. `hsum` keeps
 the source below the session, maps deterministic routes back to it, and returns
@@ -102,6 +97,13 @@ the index in your user directory, and prints a search command it ran itself to
 confirm the command returns evidence. Every result carries an immutable
 `hsum://v1/...` citation that `get` resolves against stored bytes, not against
 whatever the file looks like later.
+
+> [!NOTE]
+> This is an alpha. Build from source today with the steps above; the checkout
+> carries no machine-specific state, so it builds the same on any macOS arm64
+> or Linux x86_64 box. Packaged releases (`cargo install`, signed binaries) and
+> a first tag land next. Until then the crate keeps `publish = false`, so read
+> the code and dependencies before you build.
 
 ## Connect your agent
 
@@ -486,7 +488,7 @@ structured form contains:
   "retryable": false,
   "details": {},
   "next_action": "copy the complete citation from hsum search or evidence_search",
-  "docs_url": "https://hsum.dev/docs/0.1.0-alpha.1/errors/CITATION_MALFORMED",
+  "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.1/errors/CITATION_MALFORMED",
   "request_id": "<uuid>"
 }
 ```
@@ -538,7 +540,7 @@ source-to-test evidence map and [`TODOS.md`](TODOS.md) for the remaining work.
 
 ## License
 
-Made by Burkan Alp Kale, ArgonGate Ltd.
+Made by the creator of ArgonGate, Burkan Alp Kale.
 
 Licensed under either of
 

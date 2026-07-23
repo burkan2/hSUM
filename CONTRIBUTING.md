@@ -1,6 +1,6 @@
 # Contributing to hSUM
 
-hSUM is made by Burkan Alp Kale (ArgonGate Ltd.) and released as open source
+hSUM is made by the creator of ArgonGate, Burkan Alp Kale, and released as open source
 under the dual `MIT OR Apache-2.0` license. Contributions are welcome.
 
 ## Licensing of contributions
