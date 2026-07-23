@@ -68,7 +68,7 @@ const MAX_MCP_TIMESTAMP_BYTES: usize = 128;
 const MAX_MCP_SEARCH_SQL_VALUE_BYTES: i32 = 320 * 1024;
 const MAX_MCP_METADATA_SQL_VALUE_BYTES: i32 = 128 * 1024;
 const RESPONSE_ENVELOPE_RESERVE_BYTES: usize = 16 * 1024;
-const MCP_DOCS_BASE: &str = "https://hsum.dev/docs/0.1.0-alpha.1";
+const MCP_DOCS_BASE: &str = "https://hsum.burkankale.com/docs/0.1.0-alpha.1";
 const MAX_MCP_BLOCKING_REQUESTS: usize = 4;
 const RETRIEVAL_CONFIG_DESCRIPTOR: &str = concat!(
     "hsum.retrieval-config.v1\n",
@@ -1262,7 +1262,7 @@ fn harden_schema(schema: &mut Map<String, Value>, tool_name: &str, direction: &s
     schema.insert(
         "$id".to_owned(),
         Value::String(format!(
-            "https://hsum.dev/schemas/{MCP_API_VERSION}/{tool_name}.{direction}.json"
+            "https://hsum.burkankale.com/schemas/{MCP_API_VERSION}/{tool_name}.{direction}.json"
         )),
     );
     schema.insert(

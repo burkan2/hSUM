@@ -53,7 +53,7 @@ use crate::store::{
     StoragePreflightError, StoreError,
 };
 
-const DOCS_BASE: &str = "https://hsum.dev/docs/0.1.0-alpha.1";
+const DOCS_BASE: &str = "https://hsum.burkankale.com/docs/0.1.0-alpha.1";
 const SOURCE_PROBE_TIMEOUT: Duration = Duration::from_millis(500);
 const CLIENT_DOCTOR_TIMEOUT: Duration = Duration::from_secs(5);
 const CLIENT_DOCTOR_STDERR_LIMIT: usize = 64 * 1024;
