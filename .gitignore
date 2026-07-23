@@ -15,3 +15,5 @@
 # Local agent/memory tooling scratch, not project files.
 /AGENTS.md
 /CLAUDE.md
+.vercel
+.env*
