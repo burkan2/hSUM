@@ -87,8 +87,24 @@ jobs:
           cargo +1.91.0 build --locked --release
           bash scripts/release-smoke.sh "$PWD/target/release/hsum"
 
-      - name: Require Apple notarization credentials
+      - name: Detect whether Apple signing is configured
+        id: apple
         if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "Apple signing identity present: the macOS binary will be signed and notarized."
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::No APPLE_SIGNING_IDENTITY secret set. Publishing an UNSIGNED macOS binary. Users must clear the quarantine attribute (xattr -d com.apple.quarantine) or right-click > Open on first launch."
+          fi
+
+      - name: Require the full Apple credential set when signing is enabled
+        if: matrix.target == 'aarch64-apple-darwin' && steps.apple.outputs.enabled == 'true'
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -96,17 +112,18 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
           for name in \
             APPLE_CERTIFICATE_BASE64 APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY \
-            APPLE_ID APPLE_APP_PASSWORD APPLE_TEAM_ID; do
-            test -n "${!name}" || { echo "Missing required release secret: $name" >&2; exit 1; }
+            APPLE_ID APPLE_APP_PASSWORD APPLE_TEAM_ID KEYCHAIN_PASSWORD; do
+            test -n "${!name}" || { echo "APPLE_SIGNING_IDENTITY is set, so signing is required, but $name is missing." >&2; exit 1; }
           done
 
       - name: Import the Apple signing certificate
-        if: matrix.target == 'aarch64-apple-darwin'
+        if: matrix.target == 'aarch64-apple-darwin' && steps.apple.outputs.enabled == 'true'
         env:
           APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -114,7 +131,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$KEYCHAIN_PASSWORD" || { echo "Missing required release secret: KEYCHAIN_PASSWORD" >&2; exit 1; }
           certificate_path="$RUNNER_TEMP/release-certificate.p12"
           keychain_path="$RUNNER_TEMP/release.keychain-db"
           printf '%s' "$APPLE_CERTIFICATE_BASE64" | base64 -D > "$certificate_path"
@@ -126,7 +142,7 @@ jobs:
           security list-keychain -d user -s "$keychain_path"
 
       - name: Sign the macOS binary
-        if: matrix.target == 'aarch64-apple-darwin'
+        if: matrix.target == 'aarch64-apple-darwin' && steps.apple.outputs.enabled == 'true'
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         shell: bash
@@ -151,7 +167,7 @@ jobs:
           echo "path=dist/$asset" >> "$GITHUB_OUTPUT"
 
       - name: Notarize the macOS archive
-        if: matrix.target == 'aarch64-apple-darwin'
+        if: matrix.target == 'aarch64-apple-darwin' && steps.apple.outputs.enabled == 'true'
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
