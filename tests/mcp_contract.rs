@@ -77,13 +77,13 @@ fn server_advertises_exactly_four_read_only_project_bound_tools() {
             tool.input_schema.get("x-hsum-api-version"),
             Some(&Value::String("hsum.api.v1".to_owned()))
         );
-        assert!(
-            tool.input_schema
-                .get("$id")
-                .and_then(Value::as_str)
-                .unwrap()
-                .contains(tool.name.as_ref())
-        );
+        let input_schema_id = tool
+            .input_schema
+            .get("$id")
+            .and_then(Value::as_str)
+            .unwrap();
+        assert!(input_schema_id.starts_with("urn:hsum:schema:"));
+        assert!(input_schema_id.contains(tool.name.as_ref()));
         let output = tool.output_schema.as_ref().unwrap();
         assert_eq!(
             output.get("additionalProperties"),
@@ -2068,11 +2068,7 @@ fn assert_public_error_value(data: &Value, code: &str, subcode: &str, retryable:
             .as_str()
             .is_some_and(|value| !value.is_empty())
     );
-    assert!(
-        data["docs_url"]
-            .as_str()
-            .is_some_and(|value| value.ends_with(subcode))
-    );
+    assert!(data.get("docs_url").is_none());
     assert!(
         data["request_id"]
             .as_str()

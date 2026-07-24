@@ -15,5 +15,8 @@
 # Local agent/memory tooling scratch, not project files.
 /AGENTS.md
 /CLAUDE.md
+# Generated website output is intentionally local-only.
+/site/
 .vercel
 .env*
+.gstack/

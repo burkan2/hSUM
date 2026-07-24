@@ -285,11 +285,11 @@ impl ErrorSubcode {
     }
 
     #[must_use]
-    pub fn render_offline_help(self, docs_base: &str) -> String {
+    pub fn render_offline_help(self) -> String {
         let spec = self.spec();
         format!(
             "error: {}\ncategory: {}\nretryable: {}\nproblem: {}\ncause: {}\nfix: {}\n\
-             example: {}\ndocs: {}/errors/{}",
+             example: {}",
             self,
             spec.code.as_str(),
             if spec.retryable { "yes" } else { "no" },
@@ -297,8 +297,6 @@ impl ErrorSubcode {
             spec.cause,
             spec.fix,
             spec.fix,
-            docs_base.trim_end_matches('/'),
-            self
         )
     }
 
@@ -757,7 +755,6 @@ pub struct PublicError {
     pub retryable: bool,
     pub details: Value,
     pub next_action: &'static str,
-    pub docs_url: String,
     pub request_id: String,
     #[serde(skip)]
     cause: &'static str,
@@ -766,18 +763,13 @@ pub struct PublicError {
 }
 
 impl PublicError {
-    pub fn from_subcode(
-        subcode: ErrorSubcode,
-        request_id: impl Into<String>,
-        docs_base: &str,
-    ) -> Self {
-        Self::with_details(subcode, request_id, docs_base, Value::Object(Map::new()))
+    pub fn from_subcode(subcode: ErrorSubcode, request_id: impl Into<String>) -> Self {
+        Self::with_details(subcode, request_id, Value::Object(Map::new()))
     }
 
     pub fn with_details(
         subcode: ErrorSubcode,
         request_id: impl Into<String>,
-        docs_base: &str,
         details: Value,
     ) -> Self {
         let spec = subcode.spec();
@@ -788,19 +780,14 @@ impl PublicError {
             retryable: spec.retryable,
             details,
             next_action: spec.fix,
-            docs_url: format!(
-                "{}/errors/{}",
-                docs_base.trim_end_matches('/'),
-                subcode.as_str()
-            ),
             request_id: request_id.into(),
             cause: spec.cause,
             fix: spec.fix,
         }
     }
 
-    pub fn citation_malformed(request_id: impl Into<String>, docs_base: &str) -> Self {
-        Self::from_subcode(ErrorSubcode::CitationMalformed, request_id, docs_base)
+    pub fn citation_malformed(request_id: impl Into<String>) -> Self {
+        Self::from_subcode(ErrorSubcode::CitationMalformed, request_id)
     }
 
     pub const fn process_exit_code(&self) -> u8 {
@@ -809,15 +796,9 @@ impl PublicError {
 
     pub fn render_human(&self) -> String {
         format!(
-            "problem: {}\ncause: {}\nfix: {}\nlearn: hsum help error {} — {} — code: {} — \
+            "problem: {}\ncause: {}\nfix: {}\nlearn: hsum help error {} — code: {} — \
              request: {}",
-            self.message,
-            self.cause,
-            self.fix,
-            self.subcode,
-            self.docs_url,
-            self.subcode,
-            self.request_id
+            self.message, self.cause, self.fix, self.subcode, self.subcode, self.request_id
         )
     }
 }
@@ -826,48 +807,41 @@ impl PublicError {
 mod tests {
     use super::*;
 
-    const DOCS: &str = "https://docs.hsum.invalid/0.1.0-alpha.1";
-
     #[test]
     fn human_error_has_the_locked_four_line_shape() {
-        let error = PublicError::citation_malformed("req-123", DOCS);
+        let error = PublicError::citation_malformed("req-123");
         assert_eq!(
             error.render_human(),
             concat!(
                 "problem: the evidence citation is invalid\n",
                 "cause: the value is not a canonical hsum://v1 citation\n",
                 "fix: copy the complete citation from hsum search or evidence_search\n",
-                "learn: hsum help error CITATION_MALFORMED — ",
-                "https://docs.hsum.invalid/0.1.0-alpha.1/errors/CITATION_MALFORMED",
-                " — code: CITATION_MALFORMED — request: req-123"
+                "learn: hsum help error CITATION_MALFORMED — code: CITATION_MALFORMED ",
+                "— request: req-123"
             )
         );
     }
 
     #[test]
-    fn json_uses_the_same_code_subcode_action_and_docs_url() {
-        let error = PublicError::citation_malformed("req-123", DOCS);
+    fn json_uses_the_same_code_subcode_and_action_metadata() {
+        let error = PublicError::citation_malformed("req-123");
         let value = serde_json::to_value(error).unwrap();
         assert_eq!(value["code"], "INVALID_ARGUMENT");
         assert_eq!(value["subcode"], "CITATION_MALFORMED");
         assert_eq!(value["retryable"], false);
         assert_eq!(value["request_id"], "req-123");
-        assert_eq!(
-            value["docs_url"],
-            "https://docs.hsum.invalid/0.1.0-alpha.1/errors/CITATION_MALFORMED"
-        );
+        assert!(value.get("docs_url").is_none());
     }
 
     #[test]
     fn every_frozen_subcode_has_cli_json_mcp_ready_metadata() {
         for subcode in ErrorSubcode::ALL {
-            let error = PublicError::from_subcode(subcode, "req-catalog", DOCS);
+            let error = PublicError::from_subcode(subcode, "req-catalog");
             let rendered = error.render_human();
             assert_eq!(rendered.lines().count(), 4, "{subcode}");
             assert!(rendered.contains(&format!("code: {subcode}")));
             assert!(rendered.contains(&format!("hsum help error {subcode}")));
             assert!(rendered.contains("request: req-catalog"));
-            assert!(error.docs_url.ends_with(subcode.as_str()));
             assert!(!error.message.is_empty());
             assert!(!error.next_action.is_empty());
 
@@ -882,9 +856,9 @@ mod tests {
     fn every_frozen_subcode_has_self_contained_offline_help() {
         for subcode in ErrorSubcode::ALL {
             assert_eq!(ErrorSubcode::parse(subcode.as_str()), Some(subcode));
-            let rendered = subcode.render_offline_help(DOCS);
+            let rendered = subcode.render_offline_help();
             assert!(rendered.contains(&format!("error: {subcode}")));
-            assert!(rendered.contains(&format!("docs: {DOCS}/errors/{}", subcode.as_str())));
+            assert!(!rendered.contains("docs: "));
             for label in [
                 "category:",
                 "retryable:",
@@ -906,23 +880,23 @@ mod tests {
     #[test]
     fn process_exit_mapping_is_stable_at_public_code_boundary() {
         assert_eq!(
-            PublicError::from_subcode(ErrorSubcode::QuerySyntax, "r", DOCS).process_exit_code(),
+            PublicError::from_subcode(ErrorSubcode::QuerySyntax, "r").process_exit_code(),
             2
         );
         assert_eq!(
-            PublicError::from_subcode(ErrorSubcode::WriterLock, "r", DOCS).process_exit_code(),
+            PublicError::from_subcode(ErrorSubcode::WriterLock, "r").process_exit_code(),
             4
         );
         assert_eq!(
-            PublicError::from_subcode(ErrorSubcode::SchemaChecksum, "r", DOCS).process_exit_code(),
+            PublicError::from_subcode(ErrorSubcode::SchemaChecksum, "r").process_exit_code(),
             5
         );
         assert_eq!(
-            PublicError::from_subcode(ErrorSubcode::DiskSpace, "r", DOCS).process_exit_code(),
+            PublicError::from_subcode(ErrorSubcode::DiskSpace, "r").process_exit_code(),
             7
         );
         assert_eq!(
-            PublicError::from_subcode(ErrorSubcode::ClientCancelled, "r", DOCS).process_exit_code(),
+            PublicError::from_subcode(ErrorSubcode::ClientCancelled, "r").process_exit_code(),
             130
         );
     }

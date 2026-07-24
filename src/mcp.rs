@@ -68,7 +68,6 @@ const MAX_MCP_TIMESTAMP_BYTES: usize = 128;
 const MAX_MCP_SEARCH_SQL_VALUE_BYTES: i32 = 320 * 1024;
 const MAX_MCP_METADATA_SQL_VALUE_BYTES: i32 = 128 * 1024;
 const RESPONSE_ENVELOPE_RESERVE_BYTES: usize = 16 * 1024;
-const MCP_DOCS_BASE: &str = "https://hsum.burkankale.com/docs/0.1.0-alpha.1";
 const MAX_MCP_BLOCKING_REQUESTS: usize = 4;
 const RETRIEVAL_CONFIG_DESCRIPTOR: &str = concat!(
     "hsum.retrieval-config.v1\n",
@@ -1262,7 +1261,7 @@ fn harden_schema(schema: &mut Map<String, Value>, tool_name: &str, direction: &s
     schema.insert(
         "$id".to_owned(),
         Value::String(format!(
-            "https://hsum.burkankale.com/schemas/{MCP_API_VERSION}/{tool_name}.{direction}.json"
+            "urn:hsum:schema:{MCP_API_VERSION}:{tool_name}:{direction}"
         )),
     );
     schema.insert(
@@ -1802,7 +1801,7 @@ fn public_error(subcode: ErrorSubcode, details: Value) -> ErrorData {
 }
 
 fn public_error_with_id(subcode: ErrorSubcode, request_id: String, details: Value) -> ErrorData {
-    let error = PublicError::with_details(subcode, request_id, MCP_DOCS_BASE, details);
+    let error = PublicError::with_details(subcode, request_id, details);
     let message = error.message;
     let data = serde_json::to_value(&error).ok();
     match error.code {
@@ -1834,24 +1833,19 @@ fn public_error_with_id(subcode: ErrorSubcode, request_id: String, details: Valu
 }
 
 fn public_error_value(subcode: ErrorSubcode, request_id: String, details: Value) -> Value {
-    serde_json::to_value(PublicError::with_details(
-        subcode,
-        request_id,
-        MCP_DOCS_BASE,
-        details,
-    ))
-    .unwrap_or_else(|_| {
-        json!({
-            "code": "INTERNAL",
-            "subcode": "UNEXPECTED",
-            "message": "an unexpected internal failure occurred",
-            "retryable": false,
-            "details": {},
-            "next_action": "preserve the request ID and run hsum doctor",
-            "docs_url": format!("{MCP_DOCS_BASE}/errors/UNEXPECTED"),
-            "request_id": uuid::Uuid::new_v4().to_string()
-        })
-    })
+    serde_json::to_value(PublicError::with_details(subcode, request_id, details)).unwrap_or_else(
+        |_| {
+            json!({
+                "code": "INTERNAL",
+                "subcode": "UNEXPECTED",
+                "message": "an unexpected internal failure occurred",
+                "retryable": false,
+                "details": {},
+                "next_action": "preserve the request ID and run hsum doctor",
+                "request_id": uuid::Uuid::new_v4().to_string()
+            })
+        },
+    )
 }
 
 fn search_stop_reason(reason: SearchStopReason) -> &'static str {
@@ -3322,10 +3316,6 @@ mod tests {
         assert_eq!(data["subcode"], "CLIENT_CANCELLED");
         assert_eq!(data["retryable"], false);
         assert_eq!(data["request_id"], request_id);
-        assert!(
-            data["docs_url"]
-                .as_str()
-                .is_some_and(|value| value.ends_with("CLIENT_CANCELLED"))
-        );
+        assert!(data.get("docs_url").is_none());
     }
 }

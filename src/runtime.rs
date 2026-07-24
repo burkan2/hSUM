@@ -53,7 +53,6 @@ use crate::store::{
     StoragePreflightError, StoreError,
 };
 
-const DOCS_BASE: &str = "https://hsum.burkankale.com/docs/0.1.0-alpha.1";
 const SOURCE_PROBE_TIMEOUT: Duration = Duration::from_millis(500);
 const CLIENT_DOCTOR_TIMEOUT: Duration = Duration::from_secs(5);
 const CLIENT_DOCTOR_STDERR_LIMIT: usize = 64 * 1024;
@@ -155,7 +154,7 @@ fn run_error_help(
             "unknown error subcode; use the exact SCREAMING_SNAKE_CASE code from an hSUM error",
         ));
     };
-    let mut output = subcode.render_offline_help(DOCS_BASE);
+    let mut output = subcode.render_offline_help();
     output.push('\n');
     write_stdout(output.as_bytes())?;
     Ok(crate::cli::ProcessExitCategory::Success)
@@ -176,7 +175,6 @@ impl RuntimeFailure {
             public: Box::new(PublicError::with_details(
                 subcode,
                 Uuid::new_v4().to_string(),
-                DOCS_BASE,
                 json!({
                     "operation": operation,
                     "reason": error.to_string(),
@@ -190,7 +188,6 @@ impl RuntimeFailure {
             public: Box::new(PublicError::with_details(
                 ErrorSubcode::QuerySyntax,
                 Uuid::new_v4().to_string(),
-                DOCS_BASE,
                 json!({
                     "operation": "search",
                     "argument": "cursor",
@@ -2994,11 +2991,11 @@ mod tests {
         assert_eq!(sqlite_subcode(&corrupt), ErrorSubcode::SqliteCorrupt);
         assert_eq!(sqlite_subcode(&not_database), ErrorSubcode::SqliteCorrupt);
         assert_eq!(
-            PublicError::from_subcode(ErrorSubcode::DiskSpace, "request", DOCS_BASE).code,
+            PublicError::from_subcode(ErrorSubcode::DiskSpace, "request").code,
             ErrorCode::ResourceExhausted
         );
         assert_eq!(
-            PublicError::from_subcode(ErrorSubcode::SqliteIo, "request", DOCS_BASE).code,
+            PublicError::from_subcode(ErrorSubcode::SqliteIo, "request").code,
             ErrorCode::Internal
         );
     }

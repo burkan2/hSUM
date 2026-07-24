@@ -14,12 +14,10 @@ Before opening the repository publicly, the release operator must:
 3. Enable GitHub Actions and GitHub private vulnerability reporting.
 4. Enable GitHub Issues and, if desired, Discussions. These are the channels
    promised by `SUPPORT.md`.
-5. Configure a Vercel project whose output directory is `site`, attach
-   `hsum.burkankale.com`, and verify TLS before the release tag is created.
 
-The project needs one accountable release operator. Keep the GitHub owner, DNS
-owner, Apple Developer account, and release credentials under that operator's
-control. Do not grant the release workflow broader permissions than it needs.
+The project needs one accountable release operator. Keep the GitHub owner,
+Apple Developer account, and release credentials under that operator's control.
+Do not grant the release workflow broader permissions than it needs.
 
 ## Required GitHub Actions secrets
 
@@ -37,8 +35,8 @@ Application certificate from the Apple Developer account:
 | `APPLE_TEAM_ID` | Apple Developer team identifier |
 | `KEYCHAIN_PASSWORD` | One-use keychain password for the GitHub runner |
 
-Never place those values in the repository, shell history, Vercel settings, or
-issue text. Rotate them immediately after any suspected exposure.
+Never place those values in the repository, shell history, deployment settings,
+or issue text. Rotate them immediately after any suspected exposure.
 
 ## Required repository variables
 

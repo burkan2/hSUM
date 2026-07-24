@@ -92,6 +92,23 @@ cd /absolute/path/to/a/repository
 "$HSUM" client doctor codex      # real end-to-end probe of that config
 ```
 
+### Ask your agent
+
+Copy this prompt into your coding agent to run the quickstart from an existing
+checkout:
+
+```text
+Set up and smoke-test hSUM from the current checkout without changing source or
+configuration files. First check that this is macOS arm64 or Linux x86_64 and
+that `cargo` is available. If Rust/Cargo is missing, offer me two choices and
+wait for my answer: I can install Rust from https://www.rust-lang.org/tools/install,
+or you can install it with rustup after I explicitly approve that system change.
+When Cargo is ready, run `cargo build --locked --release`, verify
+`./target/release/hsum --version`, set HSUM to the binary's absolute path, then
+initialize the repository I name and run one search. Report each command and
+its result, including any failure, before proceeding to the next step.
+```
+
 `init` refuses dangerous roots, writes nothing into the repository, stores
 the index in your user directory, and prints a search command it ran itself to
 confirm the command returns evidence. Every result carries an immutable
@@ -155,6 +172,22 @@ git clone <your-reviewed-copy-of-this-repository>
 cd <repository>
 cargo build --locked --release
 ./target/release/hsum --version
+```
+
+### Ask your agent
+
+Copy this prompt into your coding agent to install hSUM from source:
+
+```text
+Install hSUM from this reviewed source checkout without changing application
+source or configuration files. First confirm that the host is macOS arm64 or
+Linux x86_64 and check `rustc --version` and `cargo --version`. If Rust/Cargo
+is missing, offer me two choices and wait for my answer: I can install Rust
+from https://www.rust-lang.org/tools/install, or you can install it with rustup
+after I explicitly approve that system change. Once Cargo is available, run
+`cargo build --locked --release` and `./target/release/hsum --version`. Then
+give me the exact `export HSUM=...` command using this checkout's absolute path
+and report the commands and results without making any other changes.
 ```
 
 The first build may contact Rust and crate registries to obtain the pinned
@@ -488,18 +521,16 @@ structured form contains:
   "retryable": false,
   "details": {},
   "next_action": "copy the complete citation from hsum search or evidence_search",
-  "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.1/errors/CITATION_MALFORMED",
   "request_id": "<uuid>"
 }
 ```
 
 Errors go to stderr and leave stdout empty. Human errors render four labeled
-lines: problem, cause, fix, and learn. The learn line always names both the
-offline command `hsum help error <SUBCODE>` and the version-pinned
-documentation URL. That offline catalog explains every public subcode with its
-category, retryability, cause, fix, and an example, no browser or network
-needed. The public documentation site is not yet published, so preserve the
-request ID when you report a failure.
+lines: problem, cause, fix, and learn. The learn line names the offline command
+`hsum help error <SUBCODE>` and the stable error code. That offline catalog
+explains every public subcode with its category, retryability, cause, fix, and
+an example, no browser or network needed. Preserve the request ID when you
+report a failure.
 
 Stable alpha.1 process exits:
 

@@ -602,15 +602,10 @@ fn offline_error_help_is_self_contained_and_linked_from_real_failures() {
         "cause: ",
         "fix: ",
         "example: ",
-        "docs: ",
     ] {
         assert!(text.contains(label), "offline help missing {label:?}");
     }
-    let pinned_docs = format!("/docs/{}/errors/QUERY_SYNTAX", env!("CARGO_PKG_VERSION"));
-    assert!(
-        text.contains(&pinned_docs),
-        "docs link must be version-pinned"
-    );
+    assert!(!text.contains("https://"));
 
     let unknown = run(
         home.path(),
@@ -623,14 +618,13 @@ fn offline_error_help_is_self_contained_and_linked_from_real_failures() {
     assert_eq!(unknown_error.lines().count(), 4);
     assert!(unknown_error.contains("learn: hsum help error "));
 
-    // A real failure's learn line names both the offline command above and
-    // the same version-pinned docs URL; it is never URL-only.
+    // A real failure names the offline command above rather than a hosted URL.
     let (repository, home) = initialized();
     let failing = run(home.path(), repository.path(), &["search", "\"broken"]);
     assert_eq!(failing.status.code(), Some(2));
     let failure_text = String::from_utf8_lossy(&failing.stderr);
     assert!(failure_text.contains("learn: hsum help error QUERY_SYNTAX"));
-    assert!(failure_text.contains(&pinned_docs));
+    assert!(!failure_text.contains("https://"));
 }
 
 /// Drives one real `hsum mcp` subprocess: initialize handshake, then the
@@ -883,9 +877,11 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
         }
     }
 
-    for key in ["code", "subcode", "message", "retryable", "docs_url"] {
+    for key in ["code", "subcode", "message", "retryable"] {
         assert_eq!(cli_error[key], mcp_error[key], "error {key} parity");
     }
+    assert!(cli_error.get("docs_url").is_none());
+    assert!(mcp_error.get("docs_url").is_none());
     assert_eq!(cli_error["code"], "INVALID_ARGUMENT");
     assert_eq!(cli_error["subcode"], "QUERY_SYNTAX");
     assert_eq!(cli_error["retryable"], json!(false));
