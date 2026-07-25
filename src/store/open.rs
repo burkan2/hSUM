@@ -14,7 +14,7 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::domain::IndexId;
-use crate::store::doctor::{InspectionDepth, inspect_connection};
+use crate::store::doctor::{FingerprintPolicy, InspectionDepth, inspect_connection};
 use crate::store::schema::{
     APPLICATION_ID, MIGRATION_0001, SCHEMA_VERSION, pipeline_fingerprint, schema_checksum,
 };
@@ -177,10 +177,33 @@ impl IndexDb {
         Self::open_existing_with_observer(path, mode, |_| {})
     }
 
+    pub fn open_existing_with_policy(
+        path: &Path,
+        mode: OpenMode,
+        policy: FingerprintPolicy,
+    ) -> Result<Self, StoreError> {
+        Self::open_existing_with_policy_and_observer(path, mode, policy, |_| {})
+    }
+
     #[doc(hidden)]
     pub fn open_existing_with_observer(
         path: &Path,
         mode: OpenMode,
+        observer: impl FnMut(&'static str),
+    ) -> Result<Self, StoreError> {
+        Self::open_existing_with_policy_and_observer(
+            path,
+            mode,
+            FingerprintPolicy::Reject,
+            observer,
+        )
+    }
+
+    #[doc(hidden)]
+    pub fn open_existing_with_policy_and_observer(
+        path: &Path,
+        mode: OpenMode,
+        policy: FingerprintPolicy,
         mut observer: impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
         let database = match mode {
@@ -191,6 +214,7 @@ impl IndexDb {
             database.connection(),
             mode == OpenMode::ReadOnly,
             InspectionDepth::Open,
+            policy,
         )?;
         database.verify_live_identity()?;
         Ok(database)

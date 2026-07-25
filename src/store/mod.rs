@@ -10,7 +10,7 @@ pub use capacity::{
     StoragePreflight, StoragePreflightError, SyncRootKind, classify_sync_root,
     storage_reserve_bytes,
 };
-pub use doctor::{Doctor, DoctorReport, DoctorScanStats};
+pub use doctor::{Doctor, DoctorReport, DoctorScanStats, FingerprintPolicy};
 pub(crate) use generation::PreparedDocumentSummary;
 pub use generation::{
     DEFAULT_WRITER_LOCK_TIMEOUT, DeleteConfirmations, FilesystemScope, IngestOutcome, IngestPlan,

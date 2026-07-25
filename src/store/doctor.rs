@@ -61,8 +61,15 @@ pub struct Doctor;
 
 impl Doctor {
     pub fn run(path: &std::path::Path) -> Result<DoctorReport, StoreError> {
+        Self::run_with_policy(path, FingerprintPolicy::Reject)
+    }
+
+    pub fn run_with_policy(
+        path: &std::path::Path,
+        policy: FingerprintPolicy,
+    ) -> Result<DoctorReport, StoreError> {
         let database = IndexDb::open_read_only(path)?;
-        inspect_connection(database.connection(), true, InspectionDepth::Full)
+        inspect_connection(database.connection(), true, InspectionDepth::Full, policy)
     }
 }
 
@@ -70,6 +77,19 @@ impl Doctor {
 pub(crate) enum InspectionDepth {
     Open,
     Full,
+}
+
+/// Whether a pipeline-fingerprint mismatch is fatal.
+///
+/// `Reject` is the default for every read path: an index built by a different
+/// indexing pipeline must not be silently searched, because its stored chunks
+/// were produced under different rules. `Tolerate` exists solely so `ingest`
+/// can open an index in order to rebuild it — see the heal path in
+/// `src/store/generation.rs`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FingerprintPolicy {
+    Reject,
+    Tolerate,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -163,9 +183,10 @@ pub(crate) fn inspect_connection(
     connection: &Connection,
     require_read_only: bool,
     depth: InspectionDepth,
+    policy: FingerprintPolicy,
 ) -> Result<DoctorReport, StoreError> {
     let transaction = connection.unchecked_transaction()?;
-    let report = inspect_snapshot(&transaction, require_read_only, depth)?;
+    let report = inspect_snapshot(&transaction, require_read_only, depth, policy)?;
     transaction.rollback()?;
     Ok(report)
 }
@@ -174,6 +195,7 @@ fn inspect_snapshot(
     connection: &Connection,
     require_read_only: bool,
     depth: InspectionDepth,
+    policy: FingerprintPolicy,
 ) -> Result<DoctorReport, StoreError> {
     let application_id: i32 =
         connection.pragma_query_value(None, "application_id", |row| row.get(0))?;
@@ -196,13 +218,13 @@ fn inspect_snapshot(
     }
 
     validate_schema_manifest(connection)?;
-    let index_id = validate_metadata(connection)?;
+    let index_id = validate_metadata(connection, policy)?;
     validate_migration_chain(connection)?;
     let mut scan = DoctorScanStats::default();
     if depth == InspectionDepth::Full {
         let body_scan = BodyScanTracker::default();
         validate_integrity(connection)?;
-        validate_generation_invariants(connection)?;
+        validate_generation_invariants(connection, policy)?;
         validate_immutable_evidence(connection, &mut scan, &body_scan)?;
         validate_active_indexes(connection, &mut scan)?;
         scan.max_body_rows_in_flight = body_scan.finish();
@@ -337,7 +359,10 @@ fn schema_manifest_fingerprint(connection: &Connection) -> Result<Sha256Digest, 
     Ok(Sha256Digest::from_bytes(hasher.finalize().into()))
 }
 
-fn validate_metadata(connection: &Connection) -> Result<IndexId, StoreError> {
+fn validate_metadata(
+    connection: &Connection,
+    policy: FingerprintPolicy,
+) -> Result<IndexId, StoreError> {
     let metadata_count: i64 =
         connection.query_row("SELECT COUNT(*) FROM index_meta", [], |row| row.get(0))?;
     if metadata_count != 8 {
@@ -353,15 +378,17 @@ fn validate_metadata(connection: &Connection) -> Result<IndexId, StoreError> {
             other => other,
         },
     )?;
-    expect_metadata(
-        connection,
-        "pipeline_fingerprint",
-        pipeline_fingerprint().as_bytes(),
-    )
-    .map_err(|error| match error {
-        StoreError::InvalidMetadata(_) => StoreError::PipelineFingerprintMismatch,
-        other => other,
-    })?;
+    if policy == FingerprintPolicy::Reject {
+        expect_metadata(
+            connection,
+            "pipeline_fingerprint",
+            pipeline_fingerprint().as_bytes(),
+        )
+        .map_err(|error| match error {
+            StoreError::InvalidMetadata(_) => StoreError::PipelineFingerprintMismatch,
+            other => other,
+        })?;
+    }
 
     let epoch = metadata_value(connection, "index_epoch")?;
     str::from_utf8(&epoch)
@@ -434,16 +461,21 @@ fn validate_integrity(connection: &Connection) -> Result<(), StoreError> {
     Ok(())
 }
 
-fn validate_generation_invariants(connection: &Connection) -> Result<(), StoreError> {
-    let unexpected_pipeline_count: i64 = connection.query_row(
-        "SELECT COUNT(*) FROM generations WHERE pipeline_fingerprint != ?1",
-        [pipeline_fingerprint().as_bytes().as_slice()],
-        |row| row.get(0),
-    )?;
-    if unexpected_pipeline_count != 0 {
-        return Err(StoreError::GenerationInvariant(
-            "generation pipeline fingerprint",
-        ));
+fn validate_generation_invariants(
+    connection: &Connection,
+    policy: FingerprintPolicy,
+) -> Result<(), StoreError> {
+    if policy == FingerprintPolicy::Reject {
+        let unexpected_pipeline_count: i64 = connection.query_row(
+            "SELECT COUNT(*) FROM generations WHERE pipeline_fingerprint != ?1",
+            [pipeline_fingerprint().as_bytes().as_slice()],
+            |row| row.get(0),
+        )?;
+        if unexpected_pipeline_count != 0 {
+            return Err(StoreError::GenerationInvariant(
+                "generation pipeline fingerprint",
+            ));
+        }
     }
 
     let replay = replay_committed_generations(connection)?;
