@@ -99,6 +99,51 @@ fn content_kinds_prefer_their_approved_structural_boundaries() {
             "package sample\n\nvar prelude = \"opening words for module\"\n\nfunc nextItem() {}\n",
             "func nextItem",
         ),
+        (
+            ChunkKind::Java,
+            "package sample;\n\nclass NextItem {}\n",
+            "class NextItem",
+        ),
+        (
+            ChunkKind::Kotlin,
+            "val prelude = \"opening words for this module\"\n\nfun nextItem() {}\n",
+            "fun nextItem",
+        ),
+        (
+            ChunkKind::C,
+            "static const char *prelude = \"opening\";\n\nstruct next_item {};\n",
+            "struct next_item",
+        ),
+        (
+            ChunkKind::Cpp,
+            "static const char *prelude = \"opening\";\n\nclass NextItem {};\n",
+            "class NextItem",
+        ),
+        (
+            ChunkKind::Ruby,
+            "PRELUDE = 'opening words for this module'\n\ndef next_item\nend\n",
+            "def next_item",
+        ),
+        (
+            ChunkKind::CSharp,
+            "namespace Sample;\n\nclass NextItem {}\n",
+            "class NextItem",
+        ),
+        (
+            ChunkKind::Swift,
+            "let prelude = \"opening words for this module\"\n\nfunc nextItem() {}\n",
+            "func nextItem",
+        ),
+        (
+            ChunkKind::Php,
+            "$prelude = 'opening words for this module';\n\nfunction nextItem() {}\n",
+            "function nextItem",
+        ),
+        (
+            ChunkKind::Scala,
+            "val prelude = \"opening words for this module\"\n\ndef nextItem() = {}\n",
+            "def nextItem",
+        ),
     ];
 
     for (kind, text, boundary) in cases {
@@ -114,6 +159,57 @@ fn content_kinds_prefer_their_approved_structural_boundaries() {
             "{kind:?} did not choose its structural boundary"
         );
     }
+}
+
+#[test]
+fn shell_and_sql_chunk_at_paragraph_boundaries_without_declaration_keywords() {
+    let settings = ChunkSettings::new(28, 96, 0).unwrap();
+    let cases = [
+        (
+            ChunkKind::Shell,
+            "echo \"opening words for this script\"\n\nnext_item() {\n  echo hi\n}\n",
+            "next_item() {",
+        ),
+        (
+            ChunkKind::Sql,
+            "SELECT one FROM opening_words_table;\n\nCREATE TABLE next_item (id INT);\n",
+            "CREATE TABLE next_item",
+        ),
+    ];
+
+    for (kind, text, boundary) in cases {
+        let chunks = chunk_bytes(text.as_bytes(), kind, settings).unwrap();
+        assert!(
+            chunks.len() > 1,
+            "{kind:?} should split at a paragraph boundary"
+        );
+        let expected_end = text.find(boundary).unwrap() as u64;
+        assert_eq!(
+            chunks[0].span().end(),
+            expected_end,
+            "{kind:?} did not choose its paragraph boundary"
+        );
+    }
+}
+
+#[test]
+fn every_chunk_kind_has_a_distinct_layout_fingerprint() {
+    use std::collections::HashSet;
+
+    let mut names = HashSet::new();
+    let mut fingerprints = HashSet::new();
+    for kind in ChunkKind::ALL {
+        assert!(
+            names.insert(kind.as_str()),
+            "{kind:?} reuses the as_str value {:?}",
+            kind.as_str()
+        );
+        assert!(
+            fingerprints.insert(hsum::store::chunker_fingerprint(kind)),
+            "{kind:?} collides with another chunk layout fingerprint"
+        );
+    }
+    assert_eq!(fingerprints.len(), 18);
 }
 
 #[test]
