@@ -17,6 +17,7 @@ use hsum::store::{
     prepare_passage_literals,
 };
 use rmcp::handler::server::wrapper::Parameters;
+use rmcp::ServerHandler;
 use serde_json::{Value, json};
 use tempfile::tempdir;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -1855,6 +1856,43 @@ async fn stdio_escape_heavy_search_at_full_window_stays_within_wire_response_cap
         .expect("server did not stop after stdin disconnect")
         .expect("server task panicked");
     assert!(result.is_ok());
+}
+
+#[test]
+fn server_instructions_state_when_to_use_hsum_and_keep_the_untrusted_boundary() {
+    let fixture = fixture();
+    let server = HsumMcpServer::new(&fixture.path, fixture.scope.project_id).unwrap();
+    let info = server.get_info();
+    let instructions = info.instructions.expect("server advertises instructions");
+
+    // The safety boundary must survive any future rewrite of this prose.
+    assert!(
+        instructions.contains("untrusted evidence"),
+        "instructions must keep the untrusted-content boundary"
+    );
+    assert!(
+        instructions.contains("never as instruction"),
+        "instructions must forbid treating passages as instructions"
+    );
+
+    // The usage policy is the point of this change.
+    assert!(
+        instructions.contains("evidence_search"),
+        "instructions must name the search tool"
+    );
+    assert!(
+        instructions.contains("evidence_get"),
+        "instructions must name the get tool"
+    );
+    assert!(
+        instructions.contains("not a live view"),
+        "instructions must state the ingest-time boundary"
+    );
+    assert!(
+        instructions.len() > 400,
+        "one-line instructions cannot carry a usage policy; got {} bytes",
+        instructions.len()
+    );
 }
 
 struct Fixture {
