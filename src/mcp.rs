@@ -1630,8 +1630,8 @@ fn store_error_subcode(error: &StoreError) -> ErrorSubcode {
         | StoreError::InvalidMetadata(_)
         | StoreError::SchemaChecksumMismatch
         | StoreError::SchemaManifestMismatch
-        | StoreError::PipelineFingerprintMismatch
         | StoreError::MigrationChainInvalid => ErrorSubcode::SchemaChecksum,
+        StoreError::PipelineFingerprintMismatch => ErrorSubcode::PipelineFingerprint,
         StoreError::UnsupportedSchemaVersion { current, found } if found > current => {
             ErrorSubcode::DowngradeUnsupported
         }

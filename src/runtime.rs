@@ -2930,9 +2930,9 @@ fn store_subcode(error: &StoreError) -> ErrorSubcode {
         | StoreError::MissingSchemaObject(_)
         | StoreError::UnexpectedExecutableSchema
         | StoreError::MigrationChainInvalid
-        | StoreError::PipelineFingerprintMismatch
         | StoreError::InvalidSchemaVersion(_)
         | StoreError::InvalidMetadata(_) => ErrorSubcode::SchemaChecksum,
+        StoreError::PipelineFingerprintMismatch => ErrorSubcode::PipelineFingerprint,
         StoreError::IntegrityCheckFailed(_) => ErrorSubcode::SqliteCorrupt,
         StoreError::ForeignKeyCheckFailed
         | StoreError::ActiveIndexParity(_)
