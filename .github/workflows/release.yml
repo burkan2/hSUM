@@ -212,6 +212,14 @@ jobs:
     permissions:
       contents: write
     steps:
+      # `gh release create --verify-tag` resolves the tag through git, so this
+      # job needs the repository even though it builds nothing. Without it the
+      # publish step fails with "not a git repository".
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
       - uses: actions/download-artifact@v5
         with:
           pattern: release-*
