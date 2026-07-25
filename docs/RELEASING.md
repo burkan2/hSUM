@@ -1,14 +1,21 @@
 # Releasing hSUM alpha builds
 
 This runbook describes the first public release train: a GitHub prerelease with
-source, verified archives, checksums, GitHub artifact attestations, and a
-notarized macOS arm64 executable. It deliberately does not publish to crates.io.
+source, verified archives, checksums, and GitHub artifact attestations. It
+deliberately does not publish to crates.io.
+
+**Alpha ships an unsigned macOS binary.** The project has no Apple Developer
+account, so no Developer ID certificate exists and notarization is not possible.
+The release workflow detects the missing credentials, emits a warning, and
+publishes anyway. Provenance in alpha rests on the GPG-signed tag, `SHA256SUMS`,
+and GitHub attestations — not on an Apple signature. Do not describe alpha macOS
+archives as signed or notarized anywhere in public material.
 
 ## One-time GitHub setup
 
 Before opening the repository publicly, the release operator must:
 
-1. Create the public `burkankale/hsum` repository and add this checkout as `origin`.
+1. Create the public `burkan2/hSUM` repository and add this checkout as `origin`.
 2. Protect `main`: require pull requests, require both CI matrix jobs, require
    an up-to-date branch, block force pushes, and limit who can bypass rules.
 3. Enable GitHub Actions and GitHub private vulnerability reporting.
@@ -16,14 +23,17 @@ Before opening the repository publicly, the release operator must:
    promised by `SUPPORT.md`.
 
 The project needs one accountable release operator. Keep the GitHub owner,
-Apple Developer account, and release credentials under that operator's control.
-Do not grant the release workflow broader permissions than it needs.
+release credentials, and (once one exists) the Apple Developer account under
+that operator's control. Do not grant the release workflow broader permissions
+than it needs.
 
 ## Required GitHub Actions secrets
 
-The release workflow intentionally fails rather than publish an unsigned macOS
-artifact. Add these repository secrets after importing a current Developer ID
-Application certificate from the Apple Developer account:
+These secrets are **optional in alpha and currently unset**, so the macOS
+archive ships unsigned. Signing is enabled by setting `APPLE_SIGNING_IDENTITY`;
+once it is present the workflow requires the full set below and fails if any one
+is missing. Add them only after obtaining an Apple Developer account and
+importing a current Developer ID Application certificate:
 
 | Secret | Purpose |
 |---|---|
@@ -95,28 +105,36 @@ opinion.
    ```
 
 4. The tag triggers `.github/workflows/release.yml`. It repeats the release
-   checks, signs and notarizes the macOS archive, creates checksums and GitHub
-   provenance attestations, then creates a GitHub prerelease.
+   checks, creates checksums and GitHub provenance attestations, then creates a
+   GitHub prerelease. While no Apple credentials are configured it logs a
+   warning and publishes an unsigned macOS archive; when signing is enabled it
+   also signs and notarizes that archive.
 5. Download each archive from the GitHub Release onto a machine that did not
    build it. Verify `SHA256SUMS`, verify its GitHub attestation, run
    `hsum --version --verbose`, and repeat the smoke script using the downloaded
-   executable.
-6. Record the workflow URLs, artifact hashes, notarization result, and the
-   clean-machine results in that release's notes. Promote no claim without this
-   evidence.
+   executable. On macOS the archive is quarantined until signing exists; clear
+   it with `xattr -d com.apple.quarantine hsum` only after the checksum and
+   attestation pass.
+6. Record the workflow URLs, artifact hashes, whether the macOS archive was
+   signed, and the clean-machine results in that release's notes. Promote no
+   claim without this evidence.
 
 ## User verification
 
-Users can verify an archive from `burkankale/hsum`:
+Users can verify an archive from `burkan2/hSUM`:
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-gh attestation verify hsum-v0.1.0-alpha.1-ARCHIVE --repo burkankale/hsum
+gh attestation verify hsum-v0.1.0-alpha.1-ARCHIVE --repo burkan2/hSUM
 ```
 
-The macOS archive must also pass `codesign --verify --deep --strict hsum` after
-extraction. The published installer, when introduced, must perform the same
-checksum verification without `sudo`.
+Those two checks are the whole provenance story in alpha. The macOS archive is
+unsigned, so `codesign --verify` will fail and Gatekeeper will block it; users
+clear quarantine with `xattr -d com.apple.quarantine hsum` after the checks
+above pass. Once signing is enabled, the macOS archive must additionally pass
+`codesign --verify --deep --strict hsum` after extraction. The published
+installer, when introduced, must perform the same checksum verification without
+`sudo`.
 
 ## Rollback and compromise
 

@@ -50,8 +50,11 @@
     Colored badges are clickable and go to the relevant section or page.
     Source build works today (see <a href="#quickstart">Quickstart</a>).
     Published <code>cargo install</code>, <code>cargo binstall</code>, and
-    signed macOS/Linux binaries land at the first tagged release; the two
+    prebuilt macOS/Linux binaries land at the first tagged release; the two
     greyed badges mark those and stay unlinked until they exist.
+    Alpha binaries are checksummed and carry GitHub build attestations, but
+    the macOS archive is <b>not</b> Apple-signed or notarized — see
+    <a href="#verifying-a-release">Verifying a release</a>.
   </sub>
 </p>
 
@@ -118,9 +121,9 @@ whatever the file looks like later.
 > [!NOTE]
 > This is an alpha. Build from source today with the steps above; the checkout
 > carries no machine-specific state, so it builds the same on any macOS arm64
-> or Linux x86_64 box. Packaged releases (`cargo install`, signed binaries) and
-> a first tag land next. Until then the crate keeps `publish = false`, so read
-> the code and dependencies before you build.
+> or Linux x86_64 box. Packaged releases (`cargo install`, prebuilt binaries)
+> and a first tag land next. Until then the crate keeps `publish = false`, so
+> read the code and dependencies before you build.
 
 ## Connect your agent
 
@@ -568,6 +571,31 @@ These checks are contributor evidence, not a substitute for the still-missing
 clean-machine platform, signing, installer, benchmark, and release gates. See
 [`outputs/IMPLEMENTATION_STATUS.md`](outputs/IMPLEMENTATION_STATUS.md) for a
 source-to-test evidence map and [`TODOS.md`](TODOS.md) for the remaining work.
+
+## Verifying a release
+
+Alpha release archives are published from a GPG-signed tag and carry a
+`SHA256SUMS` manifest plus a GitHub build attestation linking each archive to
+the workflow run and commit that produced it.
+
+```bash
+shasum -a 256 -c SHA256SUMS
+gh attestation verify hsum-v0.1.0-alpha.1-<target>.<ext> --repo burkan2/hSUM
+```
+
+**The macOS archive is not Apple-signed or notarized in alpha.** hSUM has no
+Apple Developer account, so no Developer ID certificate exists to sign with.
+Gatekeeper will refuse the binary on first launch. After verifying the checksum
+and attestation above, clear the quarantine attribute yourself:
+
+```bash
+xattr -d com.apple.quarantine hsum
+```
+
+Only do that once the checksum and attestation both pass. Those two checks are
+what establish the binary's provenance in alpha; the quarantine flag is macOS
+asking for a signature hSUM cannot yet provide, not an independent verdict on
+the file. Apple signing and notarization are tracked for a later release.
 
 ## License
 
