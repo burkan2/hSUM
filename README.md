@@ -580,8 +580,14 @@ the workflow run and commit that produced it.
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-gh attestation verify hsum-v0.1.0-alpha.1-<target>.<ext> --repo burkan2/hSUM
+gh attestation verify hsum-v0.1.0-alpha.1-<target>.<ext> --repo burkan2/hSUM \
+  --predicate-type https://spdx.dev/Document/v2.3
 ```
+
+The attestation is an SPDX SBOM attestation, so `--predicate-type` is required;
+without it `gh` looks for a provenance predicate and reports `no matching
+predicate found`. A successful verification prints nothing and exits `0`. Add
+`--format json` to inspect the signing workflow, tag, and commit.
 
 **The macOS archive is not Apple-signed or notarized in alpha.** hSUM has no
 Apple Developer account, so no Developer ID certificate exists to sign with.

@@ -125,7 +125,8 @@ Users can verify an archive from `burkan2/hSUM`:
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-gh attestation verify hsum-v0.1.0-alpha.1-ARCHIVE --repo burkan2/hSUM
+gh attestation verify hsum-v0.1.0-alpha.1-ARCHIVE --repo burkan2/hSUM \
+  --predicate-type https://spdx.dev/Document/v2.3
 ```
 
 Those two checks are the whole provenance story in alpha. The macOS archive is
