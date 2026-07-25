@@ -54,8 +54,9 @@ mod tests {
     #[test]
     fn alpha_1_pipeline_fingerprint_is_frozen() {
         // Bumped when Tier 1 language extensions were added. Changing this value
-        // invalidates every existing index: doctor reports a generation
-        // pipeline-fingerprint failure until the index is re-ingested.
+        // invalidates every existing index: doctor fails metadata validation
+        // with "pipeline fingerprint does not match this binary" (error
+        // subcode `SchemaChecksum`) until the index is re-ingested.
         assert_eq!(
             pipeline_fingerprint().to_string(),
             "ff465d499d3e917ab4f468dc6dec0cbf9b343cbbab661190f808c92d79bccf5b"

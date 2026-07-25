@@ -25,9 +25,10 @@ for its release tags. During alpha, only the current tagged release is supported
   `bb24fc64a8602c9ec0479ae687f848b7d5b029294796701966b7bbafc8a23bab` to
   `ff465d499d3e917ab4f468dc6dec0cbf9b343cbbab661190f808c92d79bccf5b`.
   Indexes created by an earlier build must be re-ingested with
-  `hsum ingest`. Until then, `hsum doctor` reports a generation
-  pipeline-fingerprint failure; ordinary search still works against such an
-  index, since the failure surfaces in `doctor`, not at open time.
+  `hsum ingest`. Until then, `hsum doctor` fails metadata validation with
+  "pipeline fingerprint does not match this binary" (error subcode
+  `SchemaChecksum`), at any inspection depth; ordinary search still works
+  against such an index, since the check does not happen at open time.
 
 ## 0.1.0-alpha.1
 
