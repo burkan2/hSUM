@@ -1,7 +1,27 @@
 # Pipeline fingerprint recovery: making a fingerprint change survivable
 
 Date: 2026-07-25
-Status: approved design, not yet implemented
+Status: **SUPERSEDED 2026-07-26** by
+`2026-07-26-init-rebuild-design.md`. Do not execute this design or its plan.
+
+The heal-inside-ingest approach in this document was abandoned after three
+implementation and review rounds. Ingest traverses four independent
+fingerprint gates rather than the two named here, one of which
+(`src/store/generation.rs:331`) is shared with `ingest --dry-run` and so made
+the intended "dry-run stays strict" behavior inexpressible. Relaxing all four
+was verified empirically to still leave the index unrecovered, because nothing
+rewrites the stored fingerprint. And rewriting generation history breaks six
+`validate_generation_invariants` checks, not the one this document accounts
+for. Recovery moved to `hsum init --rebuild`, which reuses the index-lifecycle
+path that already works.
+
+What this document still gets right, and what the successor inherits: the
+problem statement, the empirical gate map, and the observation that the
+documented recovery does not work. Tasks 1 and 2 of its plan already landed
+(`2897794`, `9ca396d`) and are kept — the error subcode is a genuine
+improvement, and `FingerprintPolicy` remains useful.
+
+Original status: approved design, not yet implemented
 Scope: `src/store/open.rs`, `src/store/doctor.rs`, `src/store/generation.rs`,
 `src/runtime.rs`, `src/domain/error.rs`, and their tests
 Blocks: merge of `feat/agent-adoption`

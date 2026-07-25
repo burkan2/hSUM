@@ -1,6 +1,20 @@
 # Pipeline Fingerprint Recovery Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> # ⛔ SUPERSEDED — DO NOT EXECUTE
+>
+> **Tasks 1 and 2 landed and are kept** (`2897794`, `9ca396d`): the
+> `PIPELINE_FINGERPRINT` error subcode and the `FingerprintPolicy` plumbing.
+>
+> **Tasks 3, 3b, and 4 are wrong and must not be implemented.** Ingest
+> traverses four fingerprint gates, not the three this plan names; the fourth
+> (`src/store/generation.rs:331`) is shared with `ingest --dry-run`, making
+> this plan's "dry-run stays strict" requirement inexpressible. Relaxing every
+> gate was verified not to recover the index. And Task 3b's generation
+> deletion breaks six `validate_generation_invariants` checks rather than the
+> one it accounts for.
+>
+> Recovery moved to `hsum init --rebuild`. See
+> `docs/superpowers/specs/2026-07-26-init-rebuild-design.md`.
 
 **Goal:** Make `hsum ingest` able to rebuild an index whose stored pipeline fingerprint no longer matches the binary, so a pipeline change stops being an unrecoverable dead end.
 
