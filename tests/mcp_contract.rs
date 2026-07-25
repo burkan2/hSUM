@@ -1895,6 +1895,66 @@ fn server_instructions_state_when_to_use_hsum_and_keep_the_untrusted_boundary() 
     );
 }
 
+#[test]
+fn tool_descriptions_say_when_to_reach_for_each_tool() {
+    let fixture = fixture();
+    let server = HsumMcpServer::new(&fixture.path, fixture.scope.project_id).unwrap();
+    let tools = server.tool_definitions();
+
+    let description_of = |name: &str| -> String {
+        tools
+            .iter()
+            .find(|tool| tool.name.as_ref() == name)
+            .unwrap_or_else(|| panic!("{name} is advertised"))
+            .description
+            .as_ref()
+            .unwrap_or_else(|| panic!("{name} has a description"))
+            .to_string()
+    };
+
+    // Every tool earns its place in the model's tool list.
+    for tool in &tools {
+        let description = tool
+            .description
+            .as_ref()
+            .unwrap_or_else(|| panic!("{} has a description", tool.name));
+        assert!(
+            description.len() > 80,
+            "{} description is too thin to guide selection: {description:?}",
+            tool.name
+        );
+    }
+
+    let search = description_of("evidence_search");
+    assert!(search.contains("citation"), "search must promise a citation");
+    assert!(
+        search.contains("grep"),
+        "search must state the comparative case against grep"
+    );
+
+    let get = description_of("evidence_get");
+    assert!(
+        get.contains("verify_source_hash"),
+        "get must name the drift parameter"
+    );
+    assert!(
+        get.contains("at ingest"),
+        "get must state that bytes are as-of-ingest"
+    );
+
+    let project = description_of("evidence_project");
+    assert!(
+        project.contains("extensions"),
+        "project must tell the caller what is indexable"
+    );
+
+    let status = description_of("evidence_status");
+    assert!(
+        status.contains("empty index"),
+        "status must explain how to tell an empty index from a genuine absence"
+    );
+}
+
 struct Fixture {
     path: std::path::PathBuf,
     scope: FilesystemScope,

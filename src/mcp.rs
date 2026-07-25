@@ -265,7 +265,12 @@ impl HsumMcpServer {
 impl HsumMcpServer {
     #[tool(
         name = "evidence_search",
-        description = "Search immutable evidence in the project bound at server startup."
+        description = "Search the bound project for ranked passages, each with a citation that \
+                       stays resolvable after the file changes. Fuses case-sensitive identifier \
+                       matches, exact quoted spans, and BM25. Prefer this over a file-content \
+                       grep when you want a reference you can return to, or ranked results \
+                       rather than literal matches. Each result reports whether the live file \
+                       still matches what was indexed."
     )]
     async fn route_evidence_search(
         &self,
@@ -285,7 +290,11 @@ impl HsumMcpServer {
 
     #[tool(
         name = "evidence_get",
-        description = "Read immutable evidence named by an hsum citation in the bound project."
+        description = "Resolve one hsum citation to the exact bytes recorded at ingest, not the \
+                       file's current contents. Set verify_source_hash to compare against the \
+                       live file; it reports unchanged, changed, missing, blocked, or \
+                       unverifiable. Use this to recover a passage seen earlier in the session \
+                       and to find out whether it has since moved or been edited."
     )]
     async fn route_evidence_get(
         &self,
@@ -302,7 +311,9 @@ impl HsumMcpServer {
 
     #[tool(
         name = "evidence_project",
-        description = "Describe the single project bound at server startup."
+        description = "Describe the bound project and its filesystem source: root, indexed \
+                       extensions, and generation. Call this once to learn what is and is not in \
+                       the index before assuming a search miss means the code does not exist."
     )]
     async fn route_evidence_project(
         &self,
@@ -319,7 +330,10 @@ impl HsumMcpServer {
 
     #[tool(
         name = "evidence_status",
-        description = "Report read-only health and corpus status for the bound project."
+        description = "Report corpus health for the bound project: document and passage counts, \
+                       per-source state, and actionable problems. Call this when a search returns \
+                       nothing unexpected, to distinguish an empty index or a failed ingest from \
+                       a genuine absence."
     )]
     async fn route_evidence_status(
         &self,
