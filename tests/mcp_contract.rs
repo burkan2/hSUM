@@ -16,8 +16,8 @@ use hsum::store::{
     DeleteConfirmations, FilesystemScope, IndexDb, OpenMode, PreparedChunk, PreparedDocument,
     prepare_passage_literals,
 };
-use rmcp::handler::server::wrapper::Parameters;
 use rmcp::ServerHandler;
+use rmcp::handler::server::wrapper::Parameters;
 use serde_json::{Value, json};
 use tempfile::tempdir;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -1926,7 +1926,10 @@ fn tool_descriptions_say_when_to_reach_for_each_tool() {
     }
 
     let search = description_of("evidence_search");
-    assert!(search.contains("citation"), "search must promise a citation");
+    assert!(
+        search.contains("citation"),
+        "search must promise a citation"
+    );
     assert!(
         search.contains("grep"),
         "search must state the comparative case against grep"
