@@ -35,6 +35,34 @@ Every command opens the index, so every command hits it. The check is not
 doctor-scoped as its call site suggests; `open.rs` imports the function from
 `doctor.rs` (`src/store/open.rs:17`).
 
+### The gate map (corrected 2026-07-26)
+
+An earlier revision of this spec described a single check, and the first
+implementation plan described two. Both were wrong. A `Doctor::run`/`open`
+audit plus an instrumented run of the real binary establish that `hsum ingest`
+traverses **three** fingerprint gates in this order:
+
+| Order | Gate | Location | Reached by |
+|---|---|---|---|
+| 0 | `materialize_context` | `src/app/context.rs:210` | every CLI command, via `resolve_context` → `direct_context`, before any command-specific logic |
+| 1 | `open_existing(ReadWrite)` | `src/runtime.rs:458` | ingest only |
+| 2 | `Doctor::run` | `src/store/generation.rs:331`, `:496` | ingest only |
+
+Gate 0 is the one that matters most and was missed twice: `run_ingest`'s very
+first statement is `direct_context(...)`, so ingest fails there before reaching
+any of its own code. A fix that relaxes only gates 1 and 2 changes nothing
+observable — verified by building the binary with those two gates relaxed and
+watching `hsum ingest` still fail with `PIPELINE_FINGERPRINT`.
+
+Two further sites must stay on `Reject` deliberately:
+
+- `src/store/generation.rs:284` (`configure_filesystem_scope`) is reached only
+  from `hsum init --no-ingest` (`src/app/init.rs:319`), not from ingest.
+- `src/app/context.rs:181` (`resolve_trust_target`) serves `hsum trust`, not
+  ingest.
+
+Relaxing either would widen the hole past what recovery requires.
+
 ### Why the documented remedy cannot work
 
 `hsum ingest` must open the index to rebuild it, so it fails at the same gate
@@ -100,15 +128,44 @@ error code (`src/domain/error.rs:34`), which already means "the cited evidence
 is no longer resolvable." No new error taxonomy is required. A new subcode
 distinguishes this cause from an explicit forget tombstone.
 
+### Not every pre-change generation can be deleted
+
+A first implementation attempt established a constraint this spec originally
+missed: a document that is **unchanged** across the fingerprint bump keeps a
+`document_heads` row pointing at the generation that last touched it. If that
+generation predates the change, deleting it outright violates
+`document_heads.generation_id → generations(id) ON DELETE RESTRICT`
+(`migrations/0001_alpha1.sql:129`) and aborts the transaction.
+
+So pre-change generations split in two:
+
+- **Superseded** — nothing references them after the rebuild. Delete these.
+- **Retained** — still referenced by a surviving `document_heads` row. Update
+  their `pipeline_fingerprint` in place instead of deleting.
+
+Both outcomes satisfy `validate_generation_invariants`
+(`src/store/doctor.rs`), which counts generations whose fingerprint differs
+from the binary's. Neither leaves a dangling reference.
+
 ### Deletion order matters
 
-`document_versions`, `document_heads`, `chunks`, and `content_blobs` are wired
-with `ON DELETE RESTRICT` (`migrations/0001_alpha1.sql:101-131`). Deletion is
-deliberately hard in this schema. The heal must therefore remove rows in
-dependency order inside one transaction — heads, then generation changes and
-active passages, then versions, then orphaned chunks and blobs — or the
-transaction will abort on a foreign-key violation. A partial delete must never
-commit.
+Deletion is deliberately hard in this schema. Three edges cascade and do the
+work for you:
+
+- `generation_changes.generation_id` → generations, CASCADE (line 144)
+- `source_sync_errors.generation_id` → generations, CASCADE (line 189)
+- `passage_literals.passage_id` → active_passages, CASCADE (line 178)
+
+Every other edge in the document/chunk/blob graph is RESTRICT and dictates the
+order: `document_heads` → documents/document_versions/generations (126-129),
+`active_passages` → documents/document_versions/chunks (160-163),
+`document_versions` → documents/content_blobs (113-114), `chunks` →
+chunk_layouts (98).
+
+The implementer derives the exact order from the schema rather than following a
+list in this document, and records the order used and why. A partial delete
+must never commit — the whole heal lives in the generation's commit
+transaction.
 
 ## Design
 
@@ -120,6 +177,24 @@ caller) or tolerate (used only by ingest's writer open). The policy affects
 **only** the pipeline-fingerprint comparison. Application ID, schema version,
 schema checksum, migration chain, and WAL/permission checks stay mandatory in
 all modes — a tolerated fingerprint must not become a tolerated corrupt index.
+
+### Context path (gate 0)
+
+Because `materialize_context` opens the index for every command, the policy
+must also thread through `ContextRequest` → `resolve_context` →
+`materialize_context`. This is the load-bearing part of the change and the part
+that touches shared code.
+
+The policy is carried as a field on `ContextRequest`, defaulting to `Reject`.
+`ContextRequest::direct(...)` keeps producing `Reject` requests, so all twelve
+non-ingest command handlers are unchanged by construction. Only `run_ingest`
+constructs its request with `Tolerate`, and only for a non-dry-run ingest — a
+`--dry-run` ingest reports on an index it will not repair, so it has no reason
+to open one it cannot trust.
+
+A test must assert that a command other than ingest still fails closed on a
+stale index. Without it, a later refactor could flip the default and silently
+open every read path to mismatched indexes.
 
 ### Ingest path
 
@@ -189,7 +264,13 @@ mixing two chunking regimes. Rejected per Decision 2.
 - Assert the tolerate policy does **not** relax application ID, schema
   checksum, or migration-chain validation: corrupt each in turn and confirm
   ingest still refuses.
-- Assert non-ingest commands never open with the tolerate policy.
+- Assert non-ingest commands never open with the tolerate policy. Concretely:
+  after a stale index exists, `status`, `context`, and `search` must each still
+  fail with the pipeline-fingerprint subcode, and `hsum ingest --dry-run` must
+  fail too — a dry run reports on an index it will not repair.
+- Assert a document unchanged across the fingerprint bump survives the heal and
+  is still searchable afterward. This is the case that makes naive
+  delete-all-pre-change-generations abort on a foreign-key violation.
 
 **This work is not done until a test drives the real binary against a real
 stale index.** Every prior reviewer and the author concluded by code-reading
@@ -207,11 +288,21 @@ regression test must exercise the CLI, not just the store layer.
 ## Sequencing
 
 1. Error taxonomy: new subcode and accurate text. Independently shippable and
-   valuable even alone.
-2. Open-path policy plumbing, defaulting every existing caller to reject.
-3. Ingest heal: version deletion plus fingerprint rewrite in one transaction.
-4. Docs.
+   valuable even alone. **Landed** (`2897794`) — verified end-to-end: all five
+   commands now report `PIPELINE_FINGERPRINT` instead of `SCHEMA_CHECKSUM`.
+2. Open-path policy plumbing (gates 1 and 2), defaulting every existing caller
+   to reject. **Landed** (`9ca396d`).
+3. Context-path policy (gate 0), so ingest can reach its own code at all.
+   Touches shared code; only `run_ingest` passes `Tolerate`.
+4. Ingest heal: split superseded from retained generations, delete the former,
+   rewrite the fingerprint, all in one transaction.
+5. Docs.
 
-Steps 1 and 2 are additive and low-risk. Step 3 carries the real weight: it is
-the only step that deletes user data, and its transactional integrity is what
-the tests above exist to prove.
+Steps 1-3 are additive and behavior-preserving for every non-ingest caller.
+Step 4 carries the real weight: it is the only step that deletes user data, and
+its transactional integrity is what the tests above exist to prove.
+
+Splitting the old step 3 into steps 3 and 4 is deliberate. The first attempt
+bundled them, and the gate-0 discovery arrived only after the heal was already
+written — a reviewer could not have approved or rejected either half on its
+own.
