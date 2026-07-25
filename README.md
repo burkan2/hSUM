@@ -101,15 +101,18 @@ Copy this prompt into your coding agent to run the quickstart from an existing
 checkout:
 
 ```text
-Set up and smoke-test hSUM from the current checkout without changing source or
-configuration files. First check that this is macOS arm64 or Linux x86_64 and
-that `cargo` is available. If Rust/Cargo is missing, offer me two choices and
-wait for my answer: I can install Rust from https://www.rust-lang.org/tools/install,
-or you can install it with rustup after I explicitly approve that system change.
-When Cargo is ready, run `cargo build --locked --release`, verify
-`./target/release/hsum --version`, set HSUM to the binary's absolute path, then
-initialize the repository I name and run one search. Report each command and
-its result, including any failure, before proceeding to the next step.
+Set up and smoke-test hSUM (https://github.com/burkan2/hSUM) from the current
+checkout without changing source or configuration files. First check that this
+is macOS arm64 or Linux x86_64 and that `cargo` is available. If Rust/Cargo is
+missing, offer me two choices and wait for my answer: I can install Rust from
+https://www.rust-lang.org/tools/install, or you can install it with rustup
+after I explicitly approve that system change. When Cargo is ready, run
+`cargo build --locked --release`, verify `./target/release/hsum --version`, set
+HSUM to the binary's absolute path, then initialize the repository I name and
+run one search. Report each command and its result, including any failure,
+before proceeding to the next step. Documentation is at
+https://hsum.burkankale.com/docs/0.1.0-alpha.1/ and
+https://hsum.burkankale.com/llms.txt.
 ```
 
 `init` refuses dangerous roots, writes nothing into the repository, stores
@@ -182,15 +185,18 @@ cargo build --locked --release
 Copy this prompt into your coding agent to install hSUM from source:
 
 ```text
-Install hSUM from this reviewed source checkout without changing application
-source or configuration files. First confirm that the host is macOS arm64 or
-Linux x86_64 and check `rustc --version` and `cargo --version`. If Rust/Cargo
-is missing, offer me two choices and wait for my answer: I can install Rust
-from https://www.rust-lang.org/tools/install, or you can install it with rustup
+Install hSUM (https://github.com/burkan2/hSUM) from this reviewed source
+checkout without changing application source or configuration files. First
+confirm that the host is macOS arm64 or Linux x86_64 and check
+`rustc --version` and `cargo --version`. If Rust/Cargo is missing, offer me two
+choices and wait for my answer: I can install Rust from
+https://www.rust-lang.org/tools/install, or you can install it with rustup
 after I explicitly approve that system change. Once Cargo is available, run
 `cargo build --locked --release` and `./target/release/hsum --version`. Then
 give me the exact `export HSUM=...` command using this checkout's absolute path
 and report the commands and results without making any other changes.
+Documentation is at https://hsum.burkankale.com/docs/0.1.0-alpha.1/ and
+https://hsum.burkankale.com/llms.txt.
 ```
 
 The first build may contact Rust and crate registries to obtain the pinned
