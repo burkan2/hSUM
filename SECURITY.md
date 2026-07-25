@@ -8,10 +8,9 @@ Windows and every unlisted platform are unsupported.
 
 ## Report a vulnerability
 
-Before this repository becomes public, maintainers must enable GitHub private
-vulnerability reporting in the repository's Security settings. Once enabled,
-use the **Report a vulnerability** button in the Security tab. Do not file a
-public issue for a suspected vulnerability.
+Use the **Report a vulnerability** button in this repository's Security tab to
+open a private report. Do not file a public issue for a suspected
+vulnerability.
 
 Reports should include the affected hSUM version, operating system and
 architecture, minimal reproduction steps, expected and actual behaviour, and

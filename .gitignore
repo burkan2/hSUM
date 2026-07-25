@@ -17,6 +17,8 @@
 /CLAUDE.md
 # Generated website output is intentionally local-only.
 /site/
+# Website source lives in its own repository, not as a submodule here.
+/hsum-site/
 .vercel
 .env*
 .gstack/
