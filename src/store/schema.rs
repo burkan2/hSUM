@@ -53,10 +53,12 @@ mod tests {
 
     #[test]
     fn alpha_1_pipeline_fingerprint_is_frozen() {
-        // Bumped when Tier 1 language extensions were added. Changing this value
-        // invalidates every existing index: doctor fails metadata validation
-        // with "pipeline fingerprint does not match this binary" (error
-        // subcode `SchemaChecksum`) until the index is re-ingested.
+        // Bumped when Tier 1 language extensions were added. Changing this
+        // value makes every existing index unopenable: `inspect_connection`
+        // runs on every open (see `IndexDb::open_existing`), so all commands
+        // fail with "pipeline fingerprint does not match this binary". Ingest
+        // cannot repair it either, because ingest must open the index first.
+        // Recovery today means deleting the index and running `init` again.
         assert_eq!(
             pipeline_fingerprint().to_string(),
             "ff465d499d3e917ab4f468dc6dec0cbf9b343cbbab661190f808c92d79bccf5b"

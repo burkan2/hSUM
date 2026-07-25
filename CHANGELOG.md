@@ -24,11 +24,17 @@ for its release tags. During alpha, only the current tagged release is supported
 - **BREAKING:** the pipeline fingerprint changed from
   `bb24fc64a8602c9ec0479ae687f848b7d5b029294796701966b7bbafc8a23bab` to
   `ff465d499d3e917ab4f468dc6dec0cbf9b343cbbab661190f808c92d79bccf5b`.
-  Indexes created by an earlier build must be re-ingested with
-  `hsum ingest`. Until then, `hsum doctor` fails metadata validation with
-  "pipeline fingerprint does not match this binary" (error subcode
-  `SchemaChecksum`), at any inspection depth; ordinary search still works
-  against such an index, since the check does not happen at open time.
+  An index created by an earlier build stops opening entirely: every
+  command, including `search`, `status`, `context`, `ingest`, and `doctor`,
+  fails metadata validation with "pipeline fingerprint does not match this
+  binary" (error subcode `SchemaChecksum`). The check runs on every open,
+  not only under `doctor`.
+
+  There is no in-product recovery in this release. `hsum ingest` cannot
+  repair such an index, because it must open the index to rebuild it and
+  fails at the same check. Delete the managed index directory reported by
+  `hsum context` and run `hsum init` again. Evidence and citations from the
+  deleted index do not survive.
 
 ## 0.1.0-alpha.1
 

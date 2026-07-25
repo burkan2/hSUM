@@ -316,6 +316,19 @@ bodies. Inspect a refresh before committing it:
 "$HSUM" status --problems
 ```
 
+### When the indexing pipeline changes
+
+The set of indexable extensions and the chunking rules are hashed into a
+pipeline fingerprint that is stored in the index. When a new hSUM build changes
+those rules, the stored fingerprint no longer matches and the index stops
+opening: every command, including `search` and `ingest`, fails with
+`pipeline fingerprint does not match this binary`.
+
+Alpha.1 has no repair or migration command, and `ingest` cannot recover such an
+index because it must open the index before it can rebuild it. Delete the
+managed index directory reported by `hsum context` and run `hsum init` again.
+Evidence and citations from the deleted index do not survive.
+
 A refresh runs as two bounded passes. The first pass only enumerates and
 estimates the eligible source without writing anything; a storage preflight
 then checks that estimate against free capacity. The second pass re-verifies
