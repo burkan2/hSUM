@@ -87,10 +87,14 @@ fn read_descriptor(
     use std::os::fd::AsFd;
 
     let before = fstat(&descriptor).map_err(|error| BoundedReadError::Io(error.into()))?;
+    // `st_mode` is `u16` on Apple targets and `u32` on Linux, so this conversion
+    // is required on macOS and redundant on Linux.
+    #[allow(clippy::useless_conversion)]
+    let mode = u32::from(before.st_mode);
     if FileType::from_raw_mode(before.st_mode) != FileType::RegularFile
         || before.st_nlink != 1
         || before.st_uid != getuid().as_raw()
-        || u32::from(before.st_mode) & forbidden_mode_bits != 0
+        || mode & forbidden_mode_bits != 0
     {
         return Err(BoundedReadError::Unsafe);
     }

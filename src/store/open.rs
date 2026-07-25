@@ -648,8 +648,12 @@ fn validate_private_regular_stat(
 
 #[cfg(unix)]
 fn stat_identity(metadata: &rustix::fs::Stat) -> FileIdentity {
+    // `st_dev` is `i32` on Apple targets and `u64` on Linux, so this cast is
+    // required on macOS and redundant on Linux.
+    #[allow(clippy::unnecessary_cast)]
+    let device = metadata.st_dev as u64;
     FileIdentity {
-        device: metadata.st_dev as u64,
+        device,
         inode: metadata.st_ino,
     }
 }
