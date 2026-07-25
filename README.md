@@ -155,7 +155,7 @@ before the snippet.
 | Capability | Status | Current boundary |
 |---|---|---|
 | Local filesystem ingest | Available | One canonical root, one project, and one filesystem source per managed index |
-| Markdown, text, and source code | Available | Lowercase `.md`, `.markdown`, `.txt`, `.rs`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, and `.go` |
+| Markdown, text, and source code | Available | Lowercase `.md`, `.markdown`, `.txt`, `.rs`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.java`, `.kt`, `.kts`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.hh`, `.cxx`, `.rb`, `.cs`, `.swift`, `.php`, `.scala`, `.sh`, `.bash`, and `.sql` |
 | Exact and BM25 search | Available | `auto` and `lexical` are equivalent; there are no embeddings or vectors |
 | Immutable citations and historical `get` | Available | Evidence remains resolvable while its immutable version remains in this alpha index |
 | Atomic generations | Available | Explicit ingest; no watcher or daemon |
@@ -281,6 +281,13 @@ The only `help` subcommand is the offline error catalog,
 Alpha.1 accepts valid UTF-8 text without NUL bytes. Lowercase filename
 extensions are matched exactly. The per-file default is 2 MiB and remains
 2 MiB when `--allow-large-source` is used.
+
+Source files chunk at declaration boundaries where the language has them —
+`fn`, `class`, `def`, `func`, and their equivalents. Shell and SQL have no
+unambiguous declaration keyword, so they chunk at paragraph and line
+boundaries instead. Configuration formats such as `.yaml`, `.json`, and
+`.toml`, markup such as `.html` and `.css`, and extensionless files such as
+`Makefile` are not indexed in alpha.1.
 
 Discovery stays conservative by default:
 
