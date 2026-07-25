@@ -8,7 +8,7 @@ pub(crate) const MIGRATION_0001: &str = include_str!("../../migrations/0001_alph
 
 const PIPELINE_DESCRIPTOR: &str = concat!(
     "hsum.pipeline.v1\n",
-    "filesystem=v1:extensions=md,markdown,txt,rs,py,ts,tsx,js,jsx,go:symlinks=never\n",
+    "filesystem=v1:extensions=md,markdown,txt,rs,py,ts,tsx,js,jsx,go,java,kt,kts,c,h,cpp,hpp,cc,hh,cxx,rb,cs,swift,php,scala,sh,bash,sql:symlinks=never\n",
     "connector_key=platform-raw-relative-bytes:no-unicode-or-case-normalization\n",
     "source_uri=repo-v1:rfc3986-unreserved:slash-preserved:uppercase-percent\n",
     "snapshot_hash=sha256-length-framed-rfc8785-utc\n",
@@ -27,6 +27,10 @@ pub fn schema_checksum() -> Sha256Digest {
 
 pub fn pipeline_fingerprint() -> Sha256Digest {
     Sha256Digest::of_bytes(PIPELINE_DESCRIPTOR.as_bytes())
+}
+
+pub fn pipeline_descriptor() -> &'static str {
+    PIPELINE_DESCRIPTOR
 }
 
 pub fn chunker_fingerprint(kind: ChunkKind) -> Sha256Digest {
@@ -49,9 +53,12 @@ mod tests {
 
     #[test]
     fn alpha_1_pipeline_fingerprint_is_frozen() {
+        // Bumped when Tier 1 language extensions were added. Changing this value
+        // invalidates every existing index: doctor reports a generation
+        // pipeline-fingerprint failure until the index is re-ingested.
         assert_eq!(
             pipeline_fingerprint().to_string(),
-            "bb24fc64a8602c9ec0479ae687f848b7d5b029294796701966b7bbafc8a23bab"
+            "ff465d499d3e917ab4f468dc6dec0cbf9b343cbbab661190f808c92d79bccf5b"
         );
     }
 

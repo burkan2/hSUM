@@ -30,6 +30,8 @@ fn discovery_is_sorted_and_applies_supported_hidden_build_sensitive_and_gitignor
     fs::write(directory.path().join("nested/keep.txt"), b"keep\n").unwrap();
     fs::write(directory.path().join("nested/ignored.txt"), b"ignored\n").unwrap();
     fs::write(directory.path().join("unsupported.json"), b"{}\n").unwrap();
+    fs::write(directory.path().join("Service.java"), b"class Service {}\n").unwrap();
+    fs::write(directory.path().join("query.sql"), b"SELECT 1;\n").unwrap();
     fs::write(directory.path().join(".hidden.md"), b"hidden\n").unwrap();
     fs::write(directory.path().join(".env"), b"TOKEN=secret\n").unwrap();
     fs::write(directory.path().join("private.pem"), b"PRIVATE KEY\n").unwrap();
@@ -51,12 +53,14 @@ fn discovery_is_sorted_and_applies_supported_hidden_build_sensitive_and_gitignor
     assert_eq!(
         keys(&snapshot),
         vec![
+            b"Service.java".to_vec(),
             b"alpha.md".to_vec(),
             b"nested/keep.txt".to_vec(),
+            b"query.sql".to_vec(),
             b"zeta.rs".to_vec(),
         ]
     );
-    assert_eq!(snapshot.files()[2].original_bytes(), b"fn zeta() {}\r\n");
+    assert_eq!(snapshot.files()[4].original_bytes(), b"fn zeta() {}\r\n");
 }
 
 #[test]
