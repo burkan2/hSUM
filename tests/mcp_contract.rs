@@ -16,6 +16,7 @@ use hsum::store::{
     DeleteConfirmations, FilesystemScope, IndexDb, OpenMode, PreparedChunk, PreparedDocument,
     prepare_passage_literals,
 };
+use rmcp::ServerHandler;
 use rmcp::handler::server::wrapper::Parameters;
 use serde_json::{Value, json};
 use tempfile::tempdir;
@@ -208,9 +209,12 @@ fn response_and_body_caps_are_fixed_protocol_constants() {
 
 #[test]
 fn retrieval_config_fingerprint_is_frozen_for_alpha_one() {
+    // Derived from pipeline_fingerprint() (see src/mcp.rs retrieval_config_fingerprint),
+    // so this digest moves whenever the ingest pipeline descriptor changes, not just
+    // when retrieval-specific config changes.
     assert_eq!(
         retrieval_config_fingerprint(),
-        "e10f7cefc58da192422751b4fec7cf845677e0cdfea8177138e2671a297c325a"
+        "422d6fae7319bb4af948f256814b41bc2e84f775b4728d14eeb1d7741da011e8"
     );
 }
 
@@ -1855,6 +1859,106 @@ async fn stdio_escape_heavy_search_at_full_window_stays_within_wire_response_cap
         .expect("server did not stop after stdin disconnect")
         .expect("server task panicked");
     assert!(result.is_ok());
+}
+
+#[test]
+fn server_instructions_state_when_to_use_hsum_and_keep_the_untrusted_boundary() {
+    let fixture = fixture();
+    let server = HsumMcpServer::new(&fixture.path, fixture.scope.project_id).unwrap();
+    let info = server.get_info();
+    let instructions = info.instructions.expect("server advertises instructions");
+
+    // The safety boundary must survive any future rewrite of this prose.
+    assert!(
+        instructions.contains("untrusted evidence"),
+        "instructions must keep the untrusted-content boundary"
+    );
+    assert!(
+        instructions.contains("never as instruction"),
+        "instructions must forbid treating passages as instructions"
+    );
+
+    // The usage policy is the point of this change.
+    assert!(
+        instructions.contains("evidence_search"),
+        "instructions must name the search tool"
+    );
+    assert!(
+        instructions.contains("evidence_get"),
+        "instructions must name the get tool"
+    );
+    assert!(
+        instructions.contains("not a live view"),
+        "instructions must state the ingest-time boundary"
+    );
+    assert!(
+        instructions.len() > 400,
+        "one-line instructions cannot carry a usage policy; got {} bytes",
+        instructions.len()
+    );
+}
+
+#[test]
+fn tool_descriptions_say_when_to_reach_for_each_tool() {
+    let fixture = fixture();
+    let server = HsumMcpServer::new(&fixture.path, fixture.scope.project_id).unwrap();
+    let tools = server.tool_definitions();
+
+    let description_of = |name: &str| -> String {
+        tools
+            .iter()
+            .find(|tool| tool.name.as_ref() == name)
+            .unwrap_or_else(|| panic!("{name} is advertised"))
+            .description
+            .as_ref()
+            .unwrap_or_else(|| panic!("{name} has a description"))
+            .to_string()
+    };
+
+    // Every tool earns its place in the model's tool list.
+    for tool in &tools {
+        let description = tool
+            .description
+            .as_ref()
+            .unwrap_or_else(|| panic!("{} has a description", tool.name));
+        assert!(
+            description.len() > 80,
+            "{} description is too thin to guide selection: {description:?}",
+            tool.name
+        );
+    }
+
+    let search = description_of("evidence_search");
+    assert!(
+        search.contains("citation"),
+        "search must promise a citation"
+    );
+    assert!(
+        search.contains("grep"),
+        "search must state the comparative case against grep"
+    );
+
+    let get = description_of("evidence_get");
+    assert!(
+        get.contains("verify_source_hash"),
+        "get must name the drift parameter"
+    );
+    assert!(
+        get.contains("at ingest"),
+        "get must state that bytes are as-of-ingest"
+    );
+
+    let project = description_of("evidence_project");
+    assert!(
+        project.contains("extensions"),
+        "project must tell the caller what is indexable"
+    );
+
+    let status = description_of("evidence_status");
+    assert!(
+        status.contains("empty index"),
+        "status must explain how to tell an empty index from a genuine absence"
+    );
 }
 
 struct Fixture {

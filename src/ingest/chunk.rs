@@ -17,10 +17,21 @@ pub enum ChunkKind {
     TypeScript,
     JavaScript,
     Go,
+    Java,
+    Kotlin,
+    C,
+    Cpp,
+    Ruby,
+    CSharp,
+    Swift,
+    Php,
+    Scala,
+    Shell,
+    Sql,
 }
 
 impl ChunkKind {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 18] = [
         Self::Markdown,
         Self::PlainText,
         Self::Rust,
@@ -28,6 +39,17 @@ impl ChunkKind {
         Self::TypeScript,
         Self::JavaScript,
         Self::Go,
+        Self::Java,
+        Self::Kotlin,
+        Self::C,
+        Self::Cpp,
+        Self::Ruby,
+        Self::CSharp,
+        Self::Swift,
+        Self::Php,
+        Self::Scala,
+        Self::Shell,
+        Self::Sql,
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -39,6 +61,17 @@ impl ChunkKind {
             Self::TypeScript => "typescript",
             Self::JavaScript => "javascript",
             Self::Go => "go",
+            Self::Java => "java",
+            Self::Kotlin => "kotlin",
+            Self::C => "c",
+            Self::Cpp => "cpp",
+            Self::Ruby => "ruby",
+            Self::CSharp => "csharp",
+            Self::Swift => "swift",
+            Self::Php => "php",
+            Self::Scala => "scala",
+            Self::Shell => "shell",
+            Self::Sql => "sql",
         }
     }
 
@@ -52,6 +85,17 @@ impl ChunkKind {
             "ts" | "tsx" => Some(Self::TypeScript),
             "js" | "jsx" => Some(Self::JavaScript),
             "go" => Some(Self::Go),
+            "java" => Some(Self::Java),
+            "kt" | "kts" => Some(Self::Kotlin),
+            "c" | "h" => Some(Self::C),
+            "cpp" | "hpp" | "cc" | "hh" | "cxx" => Some(Self::Cpp),
+            "rb" => Some(Self::Ruby),
+            "cs" => Some(Self::CSharp),
+            "swift" => Some(Self::Swift),
+            "php" => Some(Self::Php),
+            "scala" => Some(Self::Scala),
+            "sh" | "bash" => Some(Self::Shell),
+            "sql" => Some(Self::Sql),
             _ => None,
         }
     }
@@ -237,11 +281,23 @@ fn preferred_boundary(
         | ChunkKind::Python
         | ChunkKind::TypeScript
         | ChunkKind::JavaScript
-        | ChunkKind::Go => vec![
+        | ChunkKind::Go
+        | ChunkKind::Java
+        | ChunkKind::Kotlin
+        | ChunkKind::C
+        | ChunkKind::Cpp
+        | ChunkKind::Ruby
+        | ChunkKind::CSharp
+        | ChunkKind::Swift
+        | ChunkKind::Php
+        | ChunkKind::Scala => vec![
             declaration_starts(&lines, kind),
             paragraph_starts,
             line_starts,
         ],
+        ChunkKind::Shell | ChunkKind::Sql => {
+            vec![paragraph_starts, line_starts]
+        }
     };
 
     priorities
@@ -381,7 +437,152 @@ fn declaration_starts(lines: &[LineRecord<'_>], kind: ChunkKind) -> Vec<usize> {
                     ],
                 ),
                 ChunkKind::Go => starts_with_any(trimmed, &["func ", "type "]),
-                ChunkKind::Markdown | ChunkKind::PlainText => false,
+                ChunkKind::Java => starts_with_any(
+                    trimmed,
+                    &[
+                        "class ",
+                        "public class ",
+                        "abstract class ",
+                        "final class ",
+                        "interface ",
+                        "public interface ",
+                        "enum ",
+                        "public enum ",
+                        "record ",
+                        "public record ",
+                        "public ",
+                        "private ",
+                        "protected ",
+                        "static ",
+                    ],
+                ),
+                ChunkKind::Kotlin => starts_with_any(
+                    trimmed,
+                    &[
+                        "fun ",
+                        "suspend fun ",
+                        "class ",
+                        "data class ",
+                        "sealed class ",
+                        "object ",
+                        "interface ",
+                        "enum class ",
+                        "val ",
+                        "var ",
+                    ],
+                ),
+                ChunkKind::C => starts_with_any(
+                    trimmed,
+                    &[
+                        "struct ",
+                        "union ",
+                        "enum ",
+                        "typedef ",
+                        "static ",
+                        "extern ",
+                        "void ",
+                        "int ",
+                        "char ",
+                        "unsigned ",
+                        "const ",
+                        "#define ",
+                    ],
+                ),
+                ChunkKind::Cpp => starts_with_any(
+                    trimmed,
+                    &[
+                        "class ",
+                        "struct ",
+                        "namespace ",
+                        "template ",
+                        "enum ",
+                        "union ",
+                        "typedef ",
+                        "using ",
+                        "void ",
+                        "static ",
+                        "inline ",
+                        "explicit ",
+                        "virtual ",
+                        "#define ",
+                    ],
+                ),
+                ChunkKind::Ruby => starts_with_any(
+                    trimmed,
+                    &[
+                        "def ",
+                        "class ",
+                        "module ",
+                        "attr_reader ",
+                        "attr_writer ",
+                        "attr_accessor ",
+                    ],
+                ),
+                ChunkKind::CSharp => starts_with_any(
+                    trimmed,
+                    &[
+                        "class ",
+                        "public class ",
+                        "interface ",
+                        "struct ",
+                        "enum ",
+                        "record ",
+                        "namespace ",
+                        "public ",
+                        "private ",
+                        "protected ",
+                        "internal ",
+                        "static ",
+                    ],
+                ),
+                ChunkKind::Swift => starts_with_any(
+                    trimmed,
+                    &[
+                        "func ",
+                        "class ",
+                        "struct ",
+                        "enum ",
+                        "protocol ",
+                        "extension ",
+                        "actor ",
+                        "public ",
+                        "private ",
+                        "internal ",
+                        "var ",
+                        "let ",
+                    ],
+                ),
+                ChunkKind::Php => starts_with_any(
+                    trimmed,
+                    &[
+                        "function ",
+                        "class ",
+                        "interface ",
+                        "trait ",
+                        "namespace ",
+                        "public function ",
+                        "private function ",
+                        "protected function ",
+                        "abstract ",
+                        "final ",
+                    ],
+                ),
+                ChunkKind::Scala => starts_with_any(
+                    trimmed,
+                    &[
+                        "def ",
+                        "class ",
+                        "case class ",
+                        "object ",
+                        "trait ",
+                        "sealed ",
+                        "val ",
+                        "var ",
+                    ],
+                ),
+                ChunkKind::Markdown | ChunkKind::PlainText | ChunkKind::Shell | ChunkKind::Sql => {
+                    false
+                }
             }
         })
         .map(|line| line.start)

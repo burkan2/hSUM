@@ -20,5 +20,6 @@ pub use generation::{
 pub use lock::WriterLock;
 pub use open::{IndexDb, OpenMode, StoreError};
 pub use schema::{
-    APPLICATION_ID, SCHEMA_VERSION, chunker_fingerprint, pipeline_fingerprint, schema_checksum,
+    APPLICATION_ID, SCHEMA_VERSION, chunker_fingerprint, pipeline_descriptor, pipeline_fingerprint,
+    schema_checksum,
 };
