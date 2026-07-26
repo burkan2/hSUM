@@ -25,6 +25,8 @@ for its release tags. During alpha, only the current tagged release is supported
 
 - The CLI, MCP API, schema, and indexing pipeline are unchanged from alpha.2.
   Existing alpha.2 indexes and citations remain compatible with alpha.3.
+  In-flight MCP pagination cursors remain release-bound and must be restarted
+  after upgrading.
 
 ## 0.1.0-alpha.2 — 2026-07-26
 
