@@ -67,11 +67,12 @@ protected clean-runner and signed-tag gates.
 These are single-machine developer results on this checkout, not release,
 platform, or clean-machine evidence:
 
-- `cargo xtask check` passed: formatting, Clippy with warnings denied, all
-  targets/features tests, and doctests.
-- `cargo build --locked --release` produced the alpha.2 candidate.
+- `cargo +1.91.0 xtask check` passed: formatting, Clippy with warnings denied,
+  all targets/features tests, and doctests.
+- `cargo +1.91.0 build --locked --release` produced the macOS arm64 alpha.2
+  candidate from code commit `43a0d22`.
 - An isolated second release build matched that candidate byte for byte:
-  SHA-256 `dc8e7088813e61adf559fa669d88df354d8ad619e14abec31e384cd81aef669d`.
+  SHA-256 `ec3fe6ea20c1cdc566369145a13f95f6cf6cef5a0307b8506e0bdd35788d7c2c`.
 - The ordinary first-user release smoke and the same smoke with network
   syscalls denied both passed.
 - The checksum-pinned published macOS alpha.1 binary created a real index;
@@ -88,10 +89,10 @@ remaining P0 release steps are tracked in `TODOS.md`.
 - `main` requires pull requests, an up-to-date branch, `Linux x86_64` and
   `macOS arm64`, conversation resolution, and admin enforcement; force pushes
   and branch deletion are blocked.
-- Protected PR `burkan2/hSUM#1` passed both required jobs in CI run
-  `30185136259`. Each clean runner passed the contributor gate, release build,
-  isolated byte-for-byte rebuild, first-user smoke, network-denied smoke, and
-  checksum-pinned alpha.1 recovery smoke.
+- Code commit `43a0d22` on protected PR `burkan2/hSUM#1` passed both required
+  jobs in CI run `30185717521`. Each clean runner passed the contributor gate,
+  release build, isolated byte-for-byte rebuild, first-user smoke,
+  network-denied smoke, and checksum-pinned alpha.1 recovery smoke.
 - Private vulnerability reporting is enabled. The release GPG fingerprint and
   public-key repository variables match the local secret signing key.
 - Documentation PR `burkan2/hsum-site2#1` has a successful Vercel preview and
