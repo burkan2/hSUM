@@ -120,10 +120,9 @@ confirm the command returns evidence. Every result carries an immutable
 whatever the file looks like later.
 
 > [!NOTE]
-> This is an alpha. The tagged alpha.1 release has prebuilt GitHub artifacts;
-> the current checkout is the unreleased alpha.2 candidate and should be built
-> from reviewed source with the steps above. The crate remains
-> `publish = false`, so `cargo install` is unavailable.
+> This is an alpha. The tagged alpha.2 release has prebuilt GitHub artifacts
+> for macOS arm64 and Linux x86_64; reviewed source builds use the steps above.
+> The crate remains `publish = false`, so `cargo install` is unavailable.
 
 ## Connect your agent
 
@@ -147,7 +146,7 @@ cloud-backed client may forward returned passages to its own model provider
 under that client's policy, and the generated config prints that warning
 before the snippet.
 
-## Available on main for the next prerelease
+## Available in 0.1.0-alpha.2
 
 | Capability | Status | Current boundary |
 |---|---|---|
@@ -161,7 +160,7 @@ before the snippet.
 | JSONL and live connectors | Unsupported | Planned after the filesystem slice |
 | Semantic search, models, and reranking | Unsupported | No model install or download path exists |
 | HTTP server or web UI | Unsupported | MCP stdio is the only transport |
-| Prebuilt installation | Not promoted | Alpha.1 artifacts exist; this unreleased candidate must pass the release gates before new artifacts are published |
+| Prebuilt installation | Available | Checksummed GitHub prerelease archives for macOS arm64 and Linux x86_64; no installer or crates.io package |
 
 ## Build from source
 
@@ -613,8 +612,10 @@ Alpha release archives are published from a GPG-signed tag and carry a
 the workflow run and commit that produced it.
 
 ```bash
-shasum -a 256 -c SHA256SUMS
-gh attestation verify hsum-v0.1.0-alpha.2-<target>.<ext> --repo burkan2/hSUM \
+# macOS example; use sha256sum -c on Linux.
+asset=hsum-v0.1.0-alpha.2-aarch64-apple-darwin.zip
+shasum -a 256 -c "$asset.sha256"
+gh attestation verify "$asset" --repo burkan2/hSUM \
   --predicate-type https://spdx.dev/Document/v2.3
 ```
 

@@ -136,11 +136,14 @@ opinion.
 
 ## User verification
 
-Users can verify an archive from `burkan2/hSUM`:
+Users can verify an archive and its matching per-asset checksum file from
+`burkan2/hSUM`:
 
 ```bash
-shasum -a 256 -c SHA256SUMS
-gh attestation verify hsum-v0.1.0-alpha.2-ARCHIVE --repo burkan2/hSUM \
+# macOS example; use sha256sum -c on Linux.
+asset=hsum-v0.1.0-alpha.2-aarch64-apple-darwin.zip
+shasum -a 256 -c "$asset.sha256"
+gh attestation verify "$asset" --repo burkan2/hSUM \
   --predicate-type https://spdx.dev/Document/v2.3
 ```
 

@@ -10,7 +10,7 @@ for its release tags. During alpha, only the current tagged release is supported
 - Chunk kinds for eleven additional languages: Java, Kotlin, C, C++, Ruby,
   C#, Swift, PHP, Scala, shell, and SQL. Combined with the existing
   Markdown, text, Rust, Python, TypeScript, JavaScript, and Go support,
-  the next prerelease indexes twenty-eight lowercase extensions in total.
+  alpha.2 indexes twenty-eight lowercase extensions in total.
 - Nine of the eleven languages (Java, Kotlin, C, C++, Ruby, C#, Swift, PHP,
   and Scala) chunk at declaration boundaries. Shell and SQL chunk at
   paragraph and line boundaries instead: shell functions are declared as
