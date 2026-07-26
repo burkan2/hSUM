@@ -44,6 +44,11 @@ jobs:
         shell: bash
         run: cargo +1.91.0 xtask check
 
+      - name: Validate the locked Cargo license inventory
+        if: matrix.name == 'Linux x86_64'
+        shell: bash
+        run: bash scripts/generate-license-inventory.sh "$RUNNER_TEMP/hsum-cargo-licenses.json"
+
       - name: Build the candidate binary
         shell: bash
         run: cargo +1.91.0 build --locked --release

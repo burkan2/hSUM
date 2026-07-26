@@ -4,12 +4,13 @@ This runbook describes the public alpha release train: a GitHub prerelease with
 source, verified archives, checksums, and GitHub artifact attestations. It
 deliberately does not publish to crates.io.
 
-**Alpha ships an unsigned macOS binary.** The project has no Apple Developer
-account, so no Developer ID certificate exists and notarization is not possible.
-The release workflow detects the missing credentials, emits a warning, and
-publishes anyway. Provenance in alpha rests on the GPG-signed tag, `SHA256SUMS`,
-and GitHub attestations — not on an Apple signature. Do not describe alpha macOS
-archives as signed or notarized anywhere in public material.
+**Alpha is not Developer ID-signed or notarized.** The linker gives the macOS
+binary an ad-hoc signature, but the project has no Apple Developer account or
+Developer ID certificate and cannot notarize it. The release workflow detects
+the missing credentials, emits a warning, and publishes anyway. Provenance in
+alpha rests on the GPG-signed tag, `SHA256SUMS`, and GitHub attestations — not
+on an Apple identity. Do not describe alpha macOS archives as Developer
+ID-signed or notarized anywhere in public material.
 
 ## One-time GitHub setup
 
@@ -19,8 +20,10 @@ Before cutting a release, the release operator must:
    owner and this checkout's `origin`.
 2. Protect `main`: require pull requests, require both CI matrix jobs, require
    an up-to-date branch, block force pushes, and limit who can bypass rules.
-3. Enable GitHub Actions and GitHub private vulnerability reporting.
-4. Enable GitHub Issues and, if desired, Discussions. These are the channels
+3. Enable release immutability. GitHub applies it only to future releases, so
+   the workflow assembles every release as a complete draft before publishing.
+4. Enable GitHub Actions and GitHub private vulnerability reporting.
+5. Enable GitHub Issues and, if desired, Discussions. These are the channels
    promised by `SUPPORT.md`.
 
 The project needs one accountable release operator. Keep the GitHub owner,
@@ -31,10 +34,11 @@ than it needs.
 ## Required GitHub Actions secrets
 
 These secrets are **optional in alpha and currently unset**, so the macOS
-archive ships unsigned. Signing is enabled by setting `APPLE_SIGNING_IDENTITY`;
-once it is present the workflow requires the full set below and fails if any one
-is missing. Add them only after obtaining an Apple Developer account and
-importing a current Developer ID Application certificate:
+archive ships without a Developer ID signature or notarization. Signing is
+enabled by setting `APPLE_SIGNING_IDENTITY`; once it is present the workflow
+requires the full set below and fails if any one is missing. Add them only after
+obtaining an Apple Developer account and importing a current Developer ID
+Application certificate:
 
 | Secret | Purpose |
 |---|---|
@@ -94,13 +98,17 @@ RUSTUP_TOOLCHAIN=1.91.0 \
 bash scripts/release-smoke.sh "$PWD/target/release/hsum"
 bash scripts/no-network-smoke.sh "$PWD/target/release/hsum"
 bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
+bash scripts/generate-license-inventory.sh \
+  "$PWD/target/hsum-cargo-licenses.json"
 ```
 
 Each target also emits an SPDX SBOM using Syft through the Anchore action. The
 SBOM is attached to the prerelease and cryptographically linked to its archive
-by the GitHub SBOM attestation. Review the declared dependency licenses in the
-SBOM before the first tag; an automated inventory is evidence, not a legal
-opinion.
+by the GitHub SBOM attestation. Syft's Cargo catalog can leave SPDX license
+fields as `NOASSERTION`, so the workflow separately generates a deterministic
+inventory from every package declaration returned by locked, offline Cargo
+metadata. Review that inventory before the tag; automated declarations are
+evidence, not a legal opinion.
 
 ## Release procedure
 
@@ -108,8 +116,9 @@ opinion.
    documentation describe the candidate exactly. Do not claim a platform,
    signature, installer, or benchmark that has not been verified.
 2. Confirm the versioned public documentation URL resolves over HTTPS, that
-   `llms.txt` describes the candidate, and that one error URL embedded by the
-   candidate binary returns the matching page.
+   `llms.txt` describes the candidate, and that one subcode URL from the static
+   error catalog returns the matching page. The offline binary intentionally
+   directs users to `hsum help error <SUBCODE>` rather than embedding web URLs.
 3. Create and locally verify an annotated, signed tag matching `Cargo.toml`:
 
    ```bash
@@ -121,16 +130,17 @@ opinion.
    ```
 
 4. The tag triggers `.github/workflows/release.yml`. It repeats the release
-   checks, creates checksums and GitHub provenance attestations, then creates a
-   GitHub prerelease. While no Apple credentials are configured it logs a
-   warning and publishes an unsigned macOS archive; when signing is enabled it
-   also signs and notarizes that archive.
+   checks, creates checksums and GitHub provenance attestations, assembles all
+   assets in a draft, then publishes the GitHub prerelease. While no Apple
+   credentials are configured it logs a warning and publishes a macOS archive
+   with only the linker's ad-hoc signature; when signing is enabled it also
+   Developer ID-signs and notarizes that archive.
 5. Download each archive from the GitHub Release onto a machine that did not
-   build it. Verify `SHA256SUMS`, verify its GitHub attestation, run
-   `hsum --version --verbose`, and repeat the smoke script using the downloaded
-   executable. On macOS the archive is quarantined until signing exists; clear
-   it with `xattr -d com.apple.quarantine hsum` only after the checksum and
-   attestation pass.
+   build it. Verify `SHA256SUMS`, verify its GitHub attestation, review the Cargo
+   license inventory, run `hsum --version --verbose`, and repeat the smoke
+   script using the downloaded executable. On macOS the archive is quarantined
+   until signing exists; clear it with `xattr -d com.apple.quarantine hsum`
+   only after the checksum and attestation pass.
 6. Record the workflow URLs, artifact hashes, whether the macOS archive was
    signed, and the clean-machine results in that release's notes. Promote no
    claim without this evidence.
@@ -160,8 +170,11 @@ installer, when introduced, must perform the same checksum verification without
 
 ## Rollback and compromise
 
-Git tags and release assets are immutable evidence, so do not overwrite or
-retag a published version. If an artifact is wrong or compromised, mark the
-GitHub Release as compromised, remove it from the latest recommendation,
-revoke the affected signing credentials, publish a corrected higher version,
-and explain the exact affected versions and hashes in public release notes.
+Git tags and release assets are permanent evidence, so do not overwrite or
+retag a published version. GitHub enforces that rule for releases published
+after repository release immutability is enabled; `v0.1.0-alpha.2` predates
+that setting and relies on its signed tag, checksums, and attestations. If an
+artifact is wrong or compromised, mark the GitHub Release as compromised,
+remove it from the latest recommendation, revoke the affected signing
+credentials, publish a corrected higher version, and explain the exact
+affected versions and hashes in public release notes.

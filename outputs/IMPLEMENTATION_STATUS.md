@@ -1,12 +1,12 @@
-# hSUM `0.1.0-alpha.2` candidate implementation status
+# hSUM `0.1.0-alpha.2` release implementation status
 
 **Snapshot:** 2026-07-26
-**Scope:** Protected public PR candidate; alpha.2 has not been tagged or published
+**Scope:** Published public prerelease from protected `main` at `ef54758`
 
-This matrix maps the alpha.2 candidate surface to implementation and test
-evidence in the repository. “Implemented” means a code path and focused tests
-exist in this checkout. It does not mean the pending merge, production
-documentation, signed-tag workflow, and artifact-verification gates have passed.
+This matrix maps the published alpha.2 surface to implementation, test, and
+release evidence. “Implemented” means a code path and focused tests exist in
+this checkout; the sections below separately record clean-runner, signed-tag,
+artifact, and production-documentation evidence.
 
 | Surface | Checkout status | Primary implementation | Focused evidence |
 |---|---|---|---|
@@ -29,7 +29,7 @@ documentation, signed-tag workflow, and artifact-verification gates have passed.
 | Shared public error taxonomy | Implemented | `src/domain/error.rs`, transport mappings in `src/runtime.rs` and `src/mcp.rs` | domain, CLI, MCP, and process contract tests |
 | Completion and man generation | Implemented | `src/cli.rs` | `tests/cli_contract.rs` |
 | JSONL, vectors/models, watcher, HTTP, backup/prune/forget/restore | Not implemented | Intentionally absent from the alpha command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
-| GitHub release archives | Alpha.1 published; alpha.2 pending | `.github/workflows/release.yml`, `scripts/release-smoke.sh` | Checksums, SPDX SBOM attestations, signed-tag guard, Linux/macOS release jobs |
+| GitHub release archives | Alpha.2 published | `.github/workflows/release.yml`, `scripts/release-smoke.sh` | Checksums, SPDX SBOM attestations, signed-tag guard, Linux/macOS release jobs |
 | crates.io package or installer | Not available | `Cargo.toml` sets `publish = false`; archive-only alpha policy | Explicitly deferred; no public install claim |
 
 ## Current invariants
@@ -48,12 +48,22 @@ documentation, signed-tag workflow, and artifact-verification gates have passed.
 - Storage preflight reserves the greater of 64 MiB or 10% of managed index
   bytes in addition to the estimated write.
 
-## Alpha.2 evidence not yet claimed
+## Published alpha.2 evidence
 
-- No alpha.2 signed tag, release archive, checksum manifest, SBOM attestation,
-  or GitHub prerelease exists.
-- The alpha.2 documentation tree and `llms.txt` are prepared in
-  `burkan2/hsum-site2#1`, but have not been merged or deployed to production.
+- Annotated GPG-signed tag `v0.1.0-alpha.2` resolves to protected-branch merge
+  `ef54758`; its public GitHub prerelease contains macOS arm64 and Linux x86_64
+  archives, per-asset checksums, `SHA256SUMS`, and per-target SPDX SBOMs.
+- Release workflow run `30187380449` passed the signed-tag guard, both target
+  builds, isolated same-runner rebuilds, first-user and no-network smoke tests,
+  released-alpha.1 recovery smoke, SBOM attestations, and publication.
+- A post-publication audit downloaded both archives and verified their
+  per-asset and manifest checksums. The downloaded macOS executable also passed
+  the release, no-network, and alpha.1 recovery smoke suites.
+- The macOS executable has a linker-generated ad-hoc signature, no Developer ID
+  identity, and no notarization. Its Gatekeeper workaround remains documented.
+- The production alpha.2 documentation tree and `llms.txt` resolve over HTTPS.
+  The repository also records all 175 locked Cargo package license declarations
+  in `outputs/hsum-v0.1.0-alpha.2-cargo-licenses.json`.
 - No crates.io package, installer, Apple-signed/notarized binary, benchmark,
   retrieval evaluation, external dogfood, or cross-client-version result is
   claimed.
@@ -81,8 +91,8 @@ platform, or clean-machine evidence:
 - Real subprocess exits at four rebuild durability boundaries all remained
   recoverable through ordinary `hsum init`.
 
-This local evidence is necessary but not sufficient for publication. The
-remaining P0 release steps are tracked in `TODOS.md`.
+This local evidence was necessary but not sufficient for publication; the
+clean-runner and post-publication evidence above completed that gate.
 
 ## Public release-gate evidence on 2026-07-26
 
@@ -95,5 +105,5 @@ remaining P0 release steps are tracked in `TODOS.md`.
   network-denied smoke, and checksum-pinned alpha.1 recovery smoke.
 - Private vulnerability reporting is enabled. The release GPG fingerprint and
   public-key repository variables match the local secret signing key.
-- Documentation PR `burkan2/hsum-site2#1` has a successful Vercel preview and
-  retains the frozen alpha.1 tree alongside the prepared alpha.2 tree.
+- Documentation PR `burkan2/hsum-site2#1` was deployed to production and
+  retains the frozen alpha.1 tree alongside the published alpha.2 tree.

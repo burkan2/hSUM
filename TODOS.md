@@ -1,41 +1,43 @@
 # hSUM remaining work
 
-This backlog tracks work after the public `0.1.0-alpha.1` filesystem/lexical
+This backlog tracks work after the public `0.1.0-alpha.2` filesystem/lexical
 release. It does not treat already implemented
 init, trust, ingest, exact/BM25 search, immutable `get`, status, read-only
 doctor, client configuration, or project-bound MCP stdio as future work.
 
-No item below is evidence of a published release. Release promotion remains a
-separate gate.
+Completed launch checkboxes summarize the evidence recorded in
+`outputs/IMPLEMENTATION_STATUS.md`; later backlog items are not release claims.
 
-## P0 — Before the next public alpha release
+## P0 — Public alpha.2 launch gates (completed or remediated)
 
-- ~~Choose and add the software license.~~ Done 2026-07-21: dual
+- [x] Choose and add the software license. Done 2026-07-21: dual
   `MIT OR Apache-2.0` (`LICENSE-MIT`, `LICENSE-APACHE`, Cargo.toml `license`).
-- ~~Resolve and record redistribution rights for every brand asset.~~
+- [x] Resolve and record redistribution rights for every brand asset.
   Recorded 2026-07-21 in `assets/brand/PROVENANCE.md` from the owner's
   attestation (original Photopea composites over heavily transformed
   historical references). Residual: underlying works are not individually
   cataloged; replace any asset later identified as restrictively sourced.
-- The public repository, security-reporting policy, versioned documentation
-  host, and rollback/compromise procedure exist. Before the next tag, verify
-  `main` branch protection, required CI checks, private vulnerability
-  reporting, the release GPG variables, and one accountable release operator.
-- Run the complete formatting, strict-Clippy, test, doctest, tampered-input,
+- [x] The public repository, security-reporting policy, versioned documentation
+  host, and rollback/compromise procedure exist. Before the tag, the operator
+  verified `main` branch protection, required CI checks, private vulnerability
+  reporting, and the release GPG variables.
+- [x] Run the complete formatting, strict-Clippy, test, doctest, tampered-input,
   targeted rebuild crash/fault, and no-network suites from a clean checkout.
-- Prove source and release builds on clean macOS arm64 and Linux x86_64
-  machines. Current Unix implementation and local tests are not a target
-  support matrix.
-- Run the exact README CLI and MCP paths against the candidate artifact,
+- [x] Prove source and release builds on clean macOS arm64 and Linux x86_64
+  machines. Those clean jobs establish the alpha support matrix; other targets
+  remain unsupported.
+- [x] Run the exact README CLI and MCP paths against the candidate artifact,
   including first-use timing, stdout/stderr separation, generated client
   configuration, cancellation, partial-ingest exits, and recovery of an index
   created by the checksum-pinned published alpha.1 binary.
-- Require a byte-for-byte isolated rebuild, then produce checksummed archives,
+- [x] Require a byte-for-byte isolated rebuild, then produce checksummed archives,
   an SBOM and license inventory, GitHub artifact attestations, and a
-  GPG-signed tag. Alpha archives may contain an unsigned macOS binary only with
-  the documented Gatekeeper warning; alpha makes no installer or notarization
-  claim and remains unavailable through crates.io.
-- Freeze release notes and compatibility statements from the artifact actually
+  GPG-signed tag. Alpha archives may contain a macOS binary with only a
+  linker-generated ad-hoc signature when the Gatekeeper warning is documented;
+  alpha makes no Developer ID, installer, or notarization claim and remains
+  unavailable through crates.io. The post-release audit generated the missing
+  Cargo license snapshot; future workflows attach it.
+- [x] Freeze release notes and compatibility statements from the artifact actually
   tested. Do not claim benchmark, signing, installer, or support gates before
   their evidence exists.
 
