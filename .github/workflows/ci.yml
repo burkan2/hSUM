@@ -44,6 +44,11 @@ jobs:
         shell: bash
         run: cargo +1.91.0 xtask check
 
+      - name: Prefetch the locked Cargo graph for offline license evidence
+        if: matrix.name == 'Linux x86_64'
+        shell: bash
+        run: cargo +1.91.0 fetch --locked
+
       - name: Validate the locked Cargo license inventory
         if: matrix.name == 'Linux x86_64'
         shell: bash

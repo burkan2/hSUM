@@ -98,6 +98,7 @@ RUSTUP_TOOLCHAIN=1.91.0 \
 bash scripts/release-smoke.sh "$PWD/target/release/hsum"
 bash scripts/no-network-smoke.sh "$PWD/target/release/hsum"
 bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
+cargo +1.91.0 fetch --locked
 bash scripts/generate-license-inventory.sh \
   "$PWD/target/hsum-cargo-licenses.json"
 ```
@@ -108,7 +109,8 @@ by the GitHub SBOM attestation. Syft's Cargo catalog can leave SPDX license
 fields as `NOASSERTION`, so the workflow separately generates a deterministic
 inventory from every package declaration returned by locked, offline Cargo
 metadata. Review that inventory before the tag; automated declarations are
-evidence, not a legal opinion.
+evidence, not a legal opinion. `cargo fetch --locked` acquires the complete
+all-target graph first; the generator then runs Cargo metadata in offline mode.
 
 ## Release procedure
 

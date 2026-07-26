@@ -198,6 +198,11 @@ jobs:
           upload-artifact: false
           upload-release-assets: false
 
+      - name: Prefetch the locked Cargo graph for offline license evidence
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: cargo +1.91.0 fetch --locked
+
       - name: Generate the locked Cargo license inventory
         if: matrix.target == 'x86_64-unknown-linux-gnu'
         shell: bash
