@@ -16,7 +16,7 @@ const CITATION: &str = concat!(
 );
 
 fn parse(arguments: &[&str]) -> Cli {
-    Cli::try_parse_from(arguments).expect("arguments should satisfy the alpha.2 grammar")
+    Cli::try_parse_from(arguments).expect("arguments should satisfy the alpha.3 grammar")
 }
 
 fn assert_usage_error(arguments: &[&str]) {
@@ -25,7 +25,7 @@ fn assert_usage_error(arguments: &[&str]) {
 }
 
 #[test]
-fn alpha2_command_inventory_is_exact_and_ordered() {
+fn alpha3_command_inventory_is_exact_and_ordered() {
     let mut command = Cli::command();
     command.build();
     let names: Vec<_> = command
@@ -54,7 +54,7 @@ fn alpha2_command_inventory_is_exact_and_ordered() {
 }
 
 #[test]
-fn generated_help_has_only_alpha2_capabilities() {
+fn generated_help_has_only_alpha3_capabilities() {
     let mut command = Cli::command();
     let help = command.render_long_help().to_string();
 
@@ -73,7 +73,7 @@ fn generated_help_has_only_alpha2_capabilities() {
     ] {
         assert!(
             help.contains(available),
-            "root help omitted alpha.2 surface {available:?}"
+            "root help omitted alpha.3 surface {available:?}"
         );
     }
     for deferred in [
@@ -272,7 +272,7 @@ fn get_rejects_noncanonical_citations_at_the_argument_boundary() {
 }
 
 #[test]
-fn defaults_match_the_alpha2_contract() {
+fn defaults_match_the_alpha3_contract() {
     let parsed = parse(&["hsum", "search", "needle"]);
     let Command::Search(arguments) = parsed.command else {
         panic!("expected search");
@@ -369,7 +369,7 @@ fn status_context_artifact_and_server_signatures_parse() {
 }
 
 #[test]
-fn completions_are_nonempty_deterministic_and_derived_from_alpha2_command() {
+fn completions_are_nonempty_deterministic_and_derived_from_alpha3_command() {
     for shell in [
         CompletionShell::Bash,
         CompletionShell::Zsh,
@@ -397,14 +397,14 @@ fn completions_are_nonempty_deterministic_and_derived_from_alpha2_command() {
 }
 
 #[test]
-fn man_page_is_deterministic_and_derived_from_alpha2_command() {
+fn man_page_is_deterministic_and_derived_from_alpha3_command() {
     let first = render_man().expect("man generation should write to memory");
     let second = render_man().expect("man generation should write to memory");
     assert_eq!(first, second);
 
     let text = String::from_utf8(first).expect("man output must be UTF-8");
     let title = text.lines().find(|line| line.starts_with(".TH"));
-    assert_eq!(title, Some(".TH hsum 1  \"hsum 0.1.0-alpha.2\" "));
+    assert_eq!(title, Some(".TH hsum 1  \"hsum 0.1.0-alpha.3\" "));
     assert!(text.contains("Local evidence for agents."));
     assert!(text.contains("search"));
     assert!(!text.contains("semantic"));
@@ -460,7 +460,7 @@ fn verbose_version_report_is_golden_and_tag_gated() {
     assert_eq!(
         render_verbose_version(),
         concat!(
-            "hsum 0.1.0-alpha.2\n",
+            "hsum 0.1.0-alpha.3\n",
             "API version: hsum.api.v1\n",
             "Readable schema versions: 1-1\n",
             "Writable schema versions: 1-1\n",
@@ -515,7 +515,7 @@ fn version_verbose_process_output_matches_the_golden_report() {
     assert!(plain.status.success());
     assert_eq!(
         String::from_utf8(plain.stdout).expect("version output must be UTF-8"),
-        "hsum 0.1.0-alpha.2\n"
+        "hsum 0.1.0-alpha.3\n"
     );
     assert!(plain.stderr.is_empty());
 }

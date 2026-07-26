@@ -1438,7 +1438,7 @@ pub enum InitError {
         expected_id: ProjectId,
         expected_name: SafeSlug,
     },
-    #[error("alpha.2 requires exactly one source in the trusted project; found {found}")]
+    #[error("alpha.3 requires exactly one source in the trusted project; found {found}")]
     AlphaSourceCardinality { found: usize },
     #[error("trusted project is not linked to its expected filesystem source {expected}")]
     TrustedSourceIdentityMismatch { expected: SourceId },
