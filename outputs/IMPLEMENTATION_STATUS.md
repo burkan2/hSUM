@@ -1,12 +1,12 @@
 # hSUM `0.1.0-alpha.2` candidate implementation status
 
 **Snapshot:** 2026-07-26
-**Scope:** Local release branch; alpha.2 has not been tagged or published
+**Scope:** Protected public PR candidate; alpha.2 has not been tagged or published
 
 This matrix maps the alpha.2 candidate surface to implementation and test
 evidence in the repository. “Implemented” means a code path and focused tests
-exist in this checkout. It does not mean the pending pull-request, protected-CI,
-documentation, signing, and tag gates have passed.
+exist in this checkout. It does not mean the pending merge, production
+documentation, signed-tag workflow, and artifact-verification gates have passed.
 
 | Surface | Checkout status | Primary implementation | Focused evidence |
 |---|---|---|---|
@@ -52,11 +52,8 @@ documentation, signing, and tag gates have passed.
 
 - No alpha.2 signed tag, release archive, checksum manifest, SBOM attestation,
   or GitHub prerelease exists.
-- The alpha.2 documentation tree and `llms.txt` have not been deployed.
-- The candidate has not passed protected pull-request CI on clean GitHub-hosted
-  macOS arm64 and Linux x86_64 runners.
-- GitHub branch protection, required checks, private vulnerability reporting,
-  and release GPG variables still need an authenticated pre-tag verification.
+- The alpha.2 documentation tree and `llms.txt` are prepared in
+  `burkan2/hsum-site2#1`, but have not been merged or deployed to production.
 - No crates.io package, installer, Apple-signed/notarized binary, benchmark,
   retrieval evaluation, external dogfood, or cross-client-version result is
   claimed.
@@ -85,3 +82,17 @@ platform, or clean-machine evidence:
 
 This local evidence is necessary but not sufficient for publication. The
 remaining P0 release steps are tracked in `TODOS.md`.
+
+## Public release-gate evidence on 2026-07-26
+
+- `main` requires pull requests, an up-to-date branch, `Linux x86_64` and
+  `macOS arm64`, conversation resolution, and admin enforcement; force pushes
+  and branch deletion are blocked.
+- Protected PR `burkan2/hSUM#1` passed both required jobs in CI run
+  `30185136259`. Each clean runner passed the contributor gate, release build,
+  isolated byte-for-byte rebuild, first-user smoke, network-denied smoke, and
+  checksum-pinned alpha.1 recovery smoke.
+- Private vulnerability reporting is enabled. The release GPG fingerprint and
+  public-key repository variables match the local secret signing key.
+- Documentation PR `burkan2/hsum-site2#1` has a successful Vercel preview and
+  retains the frozen alpha.1 tree alongside the prepared alpha.2 tree.
