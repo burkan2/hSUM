@@ -48,6 +48,20 @@ jobs:
         shell: bash
         run: cargo +1.91.0 build --locked --release
 
+      - name: Reproduce the release binary from an isolated target directory
+        shell: bash
+        env:
+          RUSTUP_TOOLCHAIN: 1.91.0
+        run: bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
+
       - name: Exercise the candidate as a first-time user
         shell: bash
         run: bash scripts/release-smoke.sh "$PWD/target/release/hsum"
+
+      - name: Exercise the candidate with networking disabled
+        shell: bash
+        run: bash scripts/no-network-smoke.sh "$PWD/target/release/hsum"
+
+      - name: Recover an index built by the published alpha.1 binary
+        shell: bash
+        run: bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"

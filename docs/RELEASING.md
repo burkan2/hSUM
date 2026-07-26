@@ -1,6 +1,6 @@
 # Releasing hSUM alpha builds
 
-This runbook describes the first public release train: a GitHub prerelease with
+This runbook describes the public alpha release train: a GitHub prerelease with
 source, verified archives, checksums, and GitHub artifact attestations. It
 deliberately does not publish to crates.io.
 
@@ -13,9 +13,10 @@ archives as signed or notarized anywhere in public material.
 
 ## One-time GitHub setup
 
-Before opening the repository publicly, the release operator must:
+Before cutting a release, the release operator must:
 
-1. Create the public `burkan2/hSUM` repository and add this checkout as `origin`.
+1. Confirm the public `burkan2/hSUM` repository remains the intended release
+   owner and this checkout's `origin`.
 2. Protect `main`: require pull requests, require both CI matrix jobs, require
    an up-to-date branch, block force pushes, and limit who can bypass rules.
 3. Enable GitHub Actions and GitHub private vulnerability reporting.
@@ -67,12 +68,20 @@ GitHub and rotate the public key deliberately through a reviewed pull request.
 
 The `CI` workflow runs on clean GitHub-hosted Linux x86_64 and macOS arm64
 runners. On each platform it runs `cargo xtask check`, builds the release
-binary, and runs `scripts/release-smoke.sh`. The smoke script creates a fresh
-Git repository and an isolated `HSUM_HOME`, then validates init, search,
-immutable get, context, doctor, and generated MCP client configuration without
-creating a repository pointer. It also records first-init time in the CI log,
-performs a real MCP initialize/tools-list exchange, and confirms an all-source
-ingest failure uses the documented non-zero process exit.
+binary, and requires four artifact-level checks:
+
+1. `scripts/reproducible-release-build.sh` rebuilds in an isolated target
+   directory and requires byte-for-byte equality with the candidate.
+2. `scripts/release-smoke.sh` creates a fresh Git repository and isolated
+   `HSUM_HOME`, then validates init, search, immutable get, context, doctor,
+   generated MCP client configuration, a real MCP initialize/tools-list
+   exchange, and the documented all-source-failure exit.
+3. `scripts/no-network-smoke.sh` repeats that first-user path with network
+   syscalls denied.
+4. `scripts/released-alpha1-upgrade-smoke.sh` downloads the checksum-pinned
+   published alpha.1 executable, creates an index with it, then proves the
+   candidate rejects stale evidence, rebuilds safely, and invalidates the old
+   citation.
 
 Before tagging, inspect the completed CI runs and run the same commands on the
 candidate checkout locally:
@@ -80,7 +89,10 @@ candidate checkout locally:
 ```bash
 cargo xtask check
 cargo build --locked --release
+bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
 bash scripts/release-smoke.sh "$PWD/target/release/hsum"
+bash scripts/no-network-smoke.sh "$PWD/target/release/hsum"
+bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
 ```
 
 Each target also emits an SPDX SBOM using Syft through the Anchore action. The
@@ -94,14 +106,17 @@ opinion.
 1. Confirm `Cargo.toml`, `CHANGELOG.md`, README claims, and the static error
    documentation describe the candidate exactly. Do not claim a platform,
    signature, installer, or benchmark that has not been verified.
-2. Confirm the public documentation URL resolves over HTTPS and that one error
-   URL embedded by the candidate binary returns the matching page.
+2. Confirm the versioned public documentation URL resolves over HTTPS, that
+   `llms.txt` describes the candidate, and that one error URL embedded by the
+   candidate binary returns the matching page.
 3. Create and locally verify an annotated, signed tag matching `Cargo.toml`:
 
    ```bash
-   git tag -s v0.1.0-alpha.1 -m "hSUM 0.1.0-alpha.1"
-   git verify-tag v0.1.0-alpha.1
-   git push origin v0.1.0-alpha.1
+   version=$(awk -F '"' '$1 ~ /^version = / { print $2; exit }' Cargo.toml)
+   tag="v$version"
+   git tag -s "$tag" -m "hSUM $version"
+   git verify-tag "$tag"
+   git push origin "$tag"
    ```
 
 4. The tag triggers `.github/workflows/release.yml`. It repeats the release
@@ -125,7 +140,7 @@ Users can verify an archive from `burkan2/hSUM`:
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-gh attestation verify hsum-v0.1.0-alpha.1-ARCHIVE --repo burkan2/hSUM \
+gh attestation verify hsum-v0.1.0-alpha.2-ARCHIVE --repo burkan2/hSUM \
   --predicate-type https://spdx.dev/Document/v2.3
 ```
 

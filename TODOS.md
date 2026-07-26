@@ -1,14 +1,14 @@
 # hSUM remaining work
 
-This backlog starts after the local `0.1.0-alpha.1` filesystem/lexical
-implementation present in this checkout. It does not treat already implemented
+This backlog tracks work after the public `0.1.0-alpha.1` filesystem/lexical
+release. It does not treat already implemented
 init, trust, ingest, exact/BM25 search, immutable `get`, status, read-only
 doctor, client configuration, or project-bound MCP stdio as future work.
 
 No item below is evidence of a published release. Release promotion remains a
 separate gate.
 
-## P0 — Before any public alpha release
+## P0 — Before the next public alpha release
 
 - ~~Choose and add the software license.~~ Done 2026-07-21: dual
   `MIT OR Apache-2.0` (`LICENSE-MIT`, `LICENSE-APACHE`, Cargo.toml `license`).
@@ -17,21 +17,24 @@ separate gate.
   attestation (original Photopea composites over heavily transformed
   historical references). Residual: underlying works are not individually
   cataloged; replace any asset later identified as restrictively sourced.
-- Establish the public repository owner (a dedicated lab/org name is under
-  consideration), protected release workflow, release operator,
-  security-reporting channel, versioned documentation host, and
-  rollback/compromise procedure.
+- The public repository, security-reporting policy, versioned documentation
+  host, and rollback/compromise procedure exist. Before the next tag, verify
+  `main` branch protection, required CI checks, private vulnerability
+  reporting, the release GPG variables, and one accountable release operator.
 - Run the complete formatting, strict-Clippy, test, doctest, tampered-input,
-  crash/fault, and no-network suites from a clean checkout.
+  targeted rebuild crash/fault, and no-network suites from a clean checkout.
 - Prove source and release builds on clean macOS arm64 and Linux x86_64
   machines. Current Unix implementation and local tests are not a target
   support matrix.
 - Run the exact README CLI and MCP paths against the candidate artifact,
   including first-use timing, stdout/stderr separation, generated client
-  configuration, cancellation, and partial-ingest exits.
-- Produce reproducible, checksummed, signed artifacts, an SBOM and license
-  inventory, macOS signing/notarization where applicable, and a verified
-  no-`sudo` installer. Do not publish placeholder install commands.
+  configuration, cancellation, partial-ingest exits, and recovery of an index
+  created by the checksum-pinned published alpha.1 binary.
+- Require a byte-for-byte isolated rebuild, then produce checksummed archives,
+  an SBOM and license inventory, GitHub artifact attestations, and a
+  GPG-signed tag. Alpha archives may contain an unsigned macOS binary only with
+  the documented Gatekeeper warning; alpha makes no installer or notarization
+  claim and remains unavailable through crates.io.
 - Freeze release notes and compatibility statements from the artifact actually
   tested. Do not claim benchmark, signing, installer, or support gates before
   their evidence exists.
@@ -46,12 +49,15 @@ separate gate.
   crate as a library; a public ABI needs a dedicated test-support facade
   instead.
 
-- Add released-index compatibility fixtures and an explicit diagnosis path for
-  every future schema change. Unknown/newer indexes must remain read-only and
-  unmodified.
-- Expand subprocess fault injection at every durable boundary, including
-  disk-full, process kill, WAL/checkpoint, pointer/trust rollback, and
-  multi-process reader/writer recovery.
+- Alpha.2 CI now exercises the checksum-pinned published alpha.1 executable.
+  Keep that N-1 fixture and add an explicit diagnosis path for every future
+  schema change. Unknown/newer indexes must remain read-only and unmodified.
+- Rebuild process-death coverage now exercises trust removal, database
+  removal, replacement creation, and replacement registration. Expand fault
+  injection across the remaining durable boundaries, including disk-full,
+  WAL/checkpoint, pointer rollback, and multi-process reader/writer recovery.
+- Before promoting beyond archive-only alpha distribution, provide a verified
+  no-`sudo` installer and macOS signing/notarization.
 - Add parser fuzz targets for citations, MCP frames and cursors, queries,
   configuration, trust files, and raw connector keys.
 - Generate CLI, MCP schema, error-catalog, and configuration reference pages
