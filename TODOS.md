@@ -12,11 +12,12 @@ Completed launch checkboxes summarize the evidence recorded in
 
 - [x] Choose and add the software license. Done 2026-07-21: dual
   `MIT OR Apache-2.0` (`LICENSE-MIT`, `LICENSE-APACHE`, Cargo.toml `license`).
-- [x] Resolve and record redistribution rights for every brand asset.
-  Recorded 2026-07-21 in `assets/brand/PROVENANCE.md` from the owner's
-  attestation (original Photopea composites over heavily transformed
-  historical references). Residual: underlying works are not individually
-  cataloged; replace any asset later identified as restrictively sourced.
+- [x] Record the owner's redistribution attestation and residual-risk policy
+  for every shipped brand asset. Recorded 2026-07-21 in
+  `assets/brand/PROVENANCE.md` for original Photopea composites over heavily
+  transformed historical references. This is not blanket clearance of every
+  underlying work: they are not individually cataloged, and any asset later
+  identified as restrictively sourced must be replaced.
 - [x] The public repository, security-reporting policy, versioned documentation
   host, and rollback/compromise procedure exist. Before the tag, the operator
   verified `main` branch protection, required CI checks, private vulnerability
@@ -30,16 +31,24 @@ Completed launch checkboxes summarize the evidence recorded in
   including first-use timing, stdout/stderr separation, generated client
   configuration, cancellation, partial-ingest exits, and recovery of an index
   created by the checksum-pinned published alpha.1 binary.
-- [x] Require a byte-for-byte isolated rebuild, then produce checksummed archives,
-  an SBOM and license inventory, GitHub artifact attestations, and a
-  GPG-signed tag. Alpha archives may contain a macOS binary with only a
-  linker-generated ad-hoc signature when the Gatekeeper warning is documented;
-  alpha makes no Developer ID, installer, or notarization claim and remains
-  unavailable through crates.io. The post-release audit generated the missing
-  Cargo license snapshot; future workflows attach it.
+- [x] Require a byte-for-byte isolated rebuild, then produce checksummed
+  archives, per-target Syft SBOMs, GitHub SBOM attestations, and a GPG-signed
+  tag. Alpha archives may contain a macOS binary with only a linker-generated
+  ad-hoc signature when the Gatekeeper warning is documented; alpha makes no
+  Developer ID, installer, or notarization claim and remains unavailable
+  through crates.io.
+- [x] Generate and validate a deterministic Cargo-declared license snapshot
+  against the published alpha.2 `Cargo.toml` and `Cargo.lock` hashes during the
+  post-release audit. This snapshot was not attached to the alpha.2 release.
 - [x] Freeze release notes and compatibility statements from the artifact actually
   tested. Do not claim benchmark, signing, installer, or support gates before
   their evidence exists.
+
+## P0 — Before the next public release
+
+- [ ] Exercise the prepared draft-first immutable-release path in a real
+  tag-triggered run: attach the Cargo license inventory, include it and both
+  SBOMs in `SHA256SUMS`, and publish only after every draft asset is present.
 
 ## P1 — Alpha hardening and operations
 
