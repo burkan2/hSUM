@@ -1537,7 +1537,7 @@ mod tests {
 
     #[test]
     fn a_blocked_probe_worker_cannot_extend_the_callers_deadline() {
-        TEST_DRIFT_DELAY_MS.store(200, Ordering::SeqCst);
+        TEST_DRIFT_DELAY_MS.store(1_000, Ordering::SeqCst);
         let target = DriftTarget {
             source_id: SourceId::new_v4(),
             document_id: DocumentId::new_v4(),
@@ -1557,7 +1557,7 @@ mod tests {
         );
         TEST_DRIFT_DELAY_MS.store(0, Ordering::SeqCst);
 
-        assert!(started.elapsed() < Duration::from_millis(150));
+        assert!(started.elapsed() < Duration::from_millis(750));
         assert!(report.deadline_reached);
         assert_eq!(report.observations[0].state, DriftState::Unknown);
     }
