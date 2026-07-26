@@ -209,9 +209,9 @@ fn response_and_body_caps_are_fixed_protocol_constants() {
 
 #[test]
 fn retrieval_config_fingerprint_is_frozen_for_alpha_three() {
-    // Derived from pipeline_fingerprint() (see src/mcp.rs retrieval_config_fingerprint),
-    // so this digest moves whenever the ingest pipeline descriptor changes, not just
-    // when retrieval-specific config changes.
+    // Derived from the binary version and pipeline_fingerprint() (see
+    // src/mcp.rs retrieval_config_fingerprint), so the digest also moves at a
+    // release or ingest-pipeline boundary, not just for retrieval config.
     assert_eq!(
         retrieval_config_fingerprint(),
         "e479e10624bd764f2d5134db2401464e5690d0c87262705d0cf86c086abbff54"
