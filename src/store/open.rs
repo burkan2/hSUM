@@ -14,7 +14,7 @@ use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
 
 use crate::domain::IndexId;
-use crate::store::doctor::{InspectionDepth, inspect_connection};
+use crate::store::doctor::{FingerprintPolicy, InspectionDepth, inspect_connection};
 use crate::store::schema::{
     APPLICATION_ID, MIGRATION_0001, SCHEMA_VERSION, pipeline_fingerprint, schema_checksum,
 };
@@ -177,10 +177,32 @@ impl IndexDb {
         Self::open_existing_with_observer(path, mode, |_| {})
     }
 
+    pub(crate) fn open_existing_with_policy(
+        path: &Path,
+        mode: OpenMode,
+        policy: FingerprintPolicy,
+    ) -> Result<Self, StoreError> {
+        Self::open_existing_with_policy_and_observer(path, mode, policy, |_| {})
+    }
+
     #[doc(hidden)]
     pub fn open_existing_with_observer(
         path: &Path,
         mode: OpenMode,
+        observer: impl FnMut(&'static str),
+    ) -> Result<Self, StoreError> {
+        Self::open_existing_with_policy_and_observer(
+            path,
+            mode,
+            FingerprintPolicy::Reject,
+            observer,
+        )
+    }
+
+    fn open_existing_with_policy_and_observer(
+        path: &Path,
+        mode: OpenMode,
+        policy: FingerprintPolicy,
         mut observer: impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
         let database = match mode {
@@ -191,9 +213,21 @@ impl IndexDb {
             database.connection(),
             mode == OpenMode::ReadOnly,
             InspectionDepth::Open,
+            policy,
         )?;
         database.verify_live_identity()?;
         Ok(database)
+    }
+
+    pub(crate) fn remove(self) -> Result<(), StoreError> {
+        self.validated_path.verify_connection(&self.connection)?;
+        let Self {
+            connection,
+            validated_path,
+            ..
+        } = self;
+        drop(connection);
+        validated_path.remove()
     }
 
     pub(crate) fn open_read_only(path: &Path) -> Result<Self, StoreError> {
@@ -572,6 +606,60 @@ impl ValidatedIndexPath {
         self.validate_sidecars()?;
         Ok(())
     }
+
+    fn remove(self) -> Result<(), StoreError> {
+        use rustix::fs::fsync;
+
+        self.revalidate_namespace()?;
+        let sidecars = self.validate_sidecars()?;
+        for (identity, suffix) in sidecars.into_iter().zip(SQLITE_SIDECAR_SUFFIXES) {
+            let Some(identity) = identity else {
+                continue;
+            };
+            let name = self.parent.sidecar_name(suffix);
+            unlink_validated_regular_at(
+                &self.parent,
+                &name,
+                &sqlite_sidecar_path(&self.parent.requested_path, suffix),
+                identity,
+                true,
+            )?;
+        }
+        self.revalidate_namespace()?;
+        unlink_validated_regular_at(
+            &self.parent,
+            &self.parent.file_name,
+            &self.parent.requested_path,
+            self.identity,
+            false,
+        )?;
+        fsync(&self.parent.descriptor).map_err(io::Error::from)?;
+        Ok(())
+    }
+}
+
+#[cfg(unix)]
+fn unlink_validated_regular_at(
+    parent: &ValidatedParent,
+    name: &std::ffi::OsStr,
+    reported_path: &Path,
+    expected: FileIdentity,
+    optional: bool,
+) -> Result<(), StoreError> {
+    use rustix::fs::{AtFlags, statat, unlinkat};
+
+    let current = match statat(&parent.descriptor, name, AtFlags::SYMLINK_NOFOLLOW) {
+        Ok(current) => current,
+        Err(rustix::io::Errno::NOENT) if optional => return Ok(()),
+        Err(error) => return Err(unsafe_component_error(reported_path, error)),
+    };
+    validate_private_regular_stat(&current, reported_path)?;
+    if stat_identity(&current) != expected {
+        return Err(StoreError::UnsafeIndexPath(reported_path.to_path_buf()));
+    }
+    unlinkat(&parent.descriptor, name, AtFlags::empty())
+        .map_err(|error| unsafe_component_error(reported_path, error))?;
+    Ok(())
 }
 
 #[cfg(unix)]
@@ -943,6 +1031,26 @@ impl ValidatedIndexPath {
         self.revalidate_namespace()?;
         self.validate_sidecars()
     }
+
+    fn remove(self) -> Result<(), StoreError> {
+        self.revalidate_namespace()?;
+        self.validate_sidecars()?;
+        for suffix in SQLITE_SIDECAR_SUFFIXES {
+            let sidecar = sqlite_sidecar_path(&self.path, suffix);
+            match std::fs::remove_file(&sidecar) {
+                Ok(()) => {}
+                Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+                Err(error) => return Err(StoreError::Io(error)),
+            }
+        }
+        std::fs::remove_file(&self.path)?;
+        let parent = self
+            .path
+            .parent()
+            .ok_or_else(|| StoreError::UnsafeIndexPath(self.path.clone()))?;
+        OpenOptions::new().read(true).open(parent)?.sync_all()?;
+        Ok(())
+    }
 }
 
 #[cfg(not(unix))]
@@ -1116,7 +1224,7 @@ pub enum StoreError {
     UnsupportedSchemaVersion { current: u32, found: u32 },
     #[error("required schema object is missing: {0}")]
     MissingSchemaObject(String),
-    #[error("views and triggers are forbidden in the alpha.1 index schema")]
+    #[error("views and triggers are forbidden in the hSUM index schema")]
     UnexpectedExecutableSchema,
     #[error("invalid index metadata: {0}")]
     InvalidMetadata(&'static str),
@@ -1140,7 +1248,7 @@ pub enum StoreError {
     InvalidPreparedDocument(&'static str),
     #[error("snapshot contains a duplicate connector key")]
     DuplicateConnectorKey,
-    #[error("the alpha.1 filesystem source or project conflicts with the index")]
+    #[error("the filesystem source or project conflicts with the index")]
     ScopeConflict,
     #[error("a SHA-256 collision was detected")]
     HashCollision,

@@ -17,10 +17,21 @@ pub enum ChunkKind {
     TypeScript,
     JavaScript,
     Go,
+    Java,
+    Kotlin,
+    C,
+    Cpp,
+    Ruby,
+    CSharp,
+    Swift,
+    Php,
+    Scala,
+    Shell,
+    Sql,
 }
 
 impl ChunkKind {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 18] = [
         Self::Markdown,
         Self::PlainText,
         Self::Rust,
@@ -28,6 +39,48 @@ impl ChunkKind {
         Self::TypeScript,
         Self::JavaScript,
         Self::Go,
+        Self::Java,
+        Self::Kotlin,
+        Self::C,
+        Self::Cpp,
+        Self::Ruby,
+        Self::CSharp,
+        Self::Swift,
+        Self::Php,
+        Self::Scala,
+        Self::Shell,
+        Self::Sql,
+    ];
+
+    pub const EXTENSIONS: [(&'static str, Self); 28] = [
+        ("md", Self::Markdown),
+        ("markdown", Self::Markdown),
+        ("txt", Self::PlainText),
+        ("rs", Self::Rust),
+        ("py", Self::Python),
+        ("ts", Self::TypeScript),
+        ("tsx", Self::TypeScript),
+        ("js", Self::JavaScript),
+        ("jsx", Self::JavaScript),
+        ("go", Self::Go),
+        ("java", Self::Java),
+        ("kt", Self::Kotlin),
+        ("kts", Self::Kotlin),
+        ("c", Self::C),
+        ("h", Self::C),
+        ("cpp", Self::Cpp),
+        ("hpp", Self::Cpp),
+        ("cc", Self::Cpp),
+        ("hh", Self::Cpp),
+        ("cxx", Self::Cpp),
+        ("rb", Self::Ruby),
+        ("cs", Self::CSharp),
+        ("swift", Self::Swift),
+        ("php", Self::Php),
+        ("scala", Self::Scala),
+        ("sh", Self::Shell),
+        ("bash", Self::Shell),
+        ("sql", Self::Sql),
     ];
 
     pub const fn as_str(self) -> &'static str {
@@ -39,21 +92,25 @@ impl ChunkKind {
             Self::TypeScript => "typescript",
             Self::JavaScript => "javascript",
             Self::Go => "go",
+            Self::Java => "java",
+            Self::Kotlin => "kotlin",
+            Self::C => "c",
+            Self::Cpp => "cpp",
+            Self::Ruby => "ruby",
+            Self::CSharp => "csharp",
+            Self::Swift => "swift",
+            Self::Php => "php",
+            Self::Scala => "scala",
+            Self::Shell => "shell",
+            Self::Sql => "sql",
         }
     }
 
     pub fn from_path(path: &Path) -> Option<Self> {
         let extension = path.extension()?.to_str()?;
-        match extension {
-            "md" | "markdown" => Some(Self::Markdown),
-            "txt" => Some(Self::PlainText),
-            "rs" => Some(Self::Rust),
-            "py" => Some(Self::Python),
-            "ts" | "tsx" => Some(Self::TypeScript),
-            "js" | "jsx" => Some(Self::JavaScript),
-            "go" => Some(Self::Go),
-            _ => None,
-        }
+        Self::EXTENSIONS
+            .iter()
+            .find_map(|(candidate, kind)| (*candidate == extension).then_some(*kind))
     }
 }
 
@@ -237,11 +294,23 @@ fn preferred_boundary(
         | ChunkKind::Python
         | ChunkKind::TypeScript
         | ChunkKind::JavaScript
-        | ChunkKind::Go => vec![
+        | ChunkKind::Go
+        | ChunkKind::Java
+        | ChunkKind::Kotlin
+        | ChunkKind::C
+        | ChunkKind::Cpp
+        | ChunkKind::Ruby
+        | ChunkKind::CSharp
+        | ChunkKind::Swift
+        | ChunkKind::Php
+        | ChunkKind::Scala => vec![
             declaration_starts(&lines, kind),
             paragraph_starts,
             line_starts,
         ],
+        ChunkKind::Shell | ChunkKind::Sql => {
+            vec![paragraph_starts, line_starts]
+        }
     };
 
     priorities
@@ -381,7 +450,152 @@ fn declaration_starts(lines: &[LineRecord<'_>], kind: ChunkKind) -> Vec<usize> {
                     ],
                 ),
                 ChunkKind::Go => starts_with_any(trimmed, &["func ", "type "]),
-                ChunkKind::Markdown | ChunkKind::PlainText => false,
+                ChunkKind::Java => starts_with_any(
+                    trimmed,
+                    &[
+                        "class ",
+                        "public class ",
+                        "abstract class ",
+                        "final class ",
+                        "interface ",
+                        "public interface ",
+                        "enum ",
+                        "public enum ",
+                        "record ",
+                        "public record ",
+                        "public ",
+                        "private ",
+                        "protected ",
+                        "static ",
+                    ],
+                ),
+                ChunkKind::Kotlin => starts_with_any(
+                    trimmed,
+                    &[
+                        "fun ",
+                        "suspend fun ",
+                        "class ",
+                        "data class ",
+                        "sealed class ",
+                        "object ",
+                        "interface ",
+                        "enum class ",
+                        "val ",
+                        "var ",
+                    ],
+                ),
+                ChunkKind::C => starts_with_any(
+                    trimmed,
+                    &[
+                        "struct ",
+                        "union ",
+                        "enum ",
+                        "typedef ",
+                        "static ",
+                        "extern ",
+                        "void ",
+                        "int ",
+                        "char ",
+                        "unsigned ",
+                        "const ",
+                        "#define ",
+                    ],
+                ),
+                ChunkKind::Cpp => starts_with_any(
+                    trimmed,
+                    &[
+                        "class ",
+                        "struct ",
+                        "namespace ",
+                        "template ",
+                        "enum ",
+                        "union ",
+                        "typedef ",
+                        "using ",
+                        "void ",
+                        "static ",
+                        "inline ",
+                        "explicit ",
+                        "virtual ",
+                        "#define ",
+                    ],
+                ),
+                ChunkKind::Ruby => starts_with_any(
+                    trimmed,
+                    &[
+                        "def ",
+                        "class ",
+                        "module ",
+                        "attr_reader ",
+                        "attr_writer ",
+                        "attr_accessor ",
+                    ],
+                ),
+                ChunkKind::CSharp => starts_with_any(
+                    trimmed,
+                    &[
+                        "class ",
+                        "public class ",
+                        "interface ",
+                        "struct ",
+                        "enum ",
+                        "record ",
+                        "namespace ",
+                        "public ",
+                        "private ",
+                        "protected ",
+                        "internal ",
+                        "static ",
+                    ],
+                ),
+                ChunkKind::Swift => starts_with_any(
+                    trimmed,
+                    &[
+                        "func ",
+                        "class ",
+                        "struct ",
+                        "enum ",
+                        "protocol ",
+                        "extension ",
+                        "actor ",
+                        "public ",
+                        "private ",
+                        "internal ",
+                        "var ",
+                        "let ",
+                    ],
+                ),
+                ChunkKind::Php => starts_with_any(
+                    trimmed,
+                    &[
+                        "function ",
+                        "class ",
+                        "interface ",
+                        "trait ",
+                        "namespace ",
+                        "public function ",
+                        "private function ",
+                        "protected function ",
+                        "abstract ",
+                        "final ",
+                    ],
+                ),
+                ChunkKind::Scala => starts_with_any(
+                    trimmed,
+                    &[
+                        "def ",
+                        "class ",
+                        "case class ",
+                        "object ",
+                        "trait ",
+                        "sealed ",
+                        "val ",
+                        "var ",
+                    ],
+                ),
+                ChunkKind::Markdown | ChunkKind::PlainText | ChunkKind::Shell | ChunkKind::Sql => {
+                    false
+                }
             }
         })
         .map(|line| line.start)
@@ -447,6 +661,6 @@ pub enum ChunkError {
     NulContent,
     #[error("chunk boundary invariant failed")]
     BoundaryInvariant,
-    #[error("document produces more chunks than the alpha.1 ordinal can represent")]
+    #[error("document produces more chunks than the alpha.2 ordinal can represent")]
     TooManyChunks,
 }

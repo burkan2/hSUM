@@ -115,6 +115,7 @@ pub enum ErrorSubcode {
     ModelRestarting,
     ApplicationId,
     SchemaChecksum,
+    PipelineFingerprint,
     SqliteCorrupt,
     HeadIndexMismatch,
     ForgetLedgerMismatch,
@@ -140,7 +141,7 @@ pub enum ErrorSubcode {
 }
 
 impl ErrorSubcode {
-    pub const ALL: [Self; 64] = [
+    pub const ALL: [Self; 65] = [
         Self::QueryEmpty,
         Self::QuerySyntax,
         Self::LimitOutOfRange,
@@ -183,6 +184,7 @@ impl ErrorSubcode {
         Self::ModelRestarting,
         Self::ApplicationId,
         Self::SchemaChecksum,
+        Self::PipelineFingerprint,
         Self::SqliteCorrupt,
         Self::HeadIndexMismatch,
         Self::ForgetLedgerMismatch,
@@ -251,6 +253,7 @@ impl ErrorSubcode {
             Self::ModelRestarting => "MODEL_RESTARTING",
             Self::ApplicationId => "APPLICATION_ID",
             Self::SchemaChecksum => "SCHEMA_CHECKSUM",
+            Self::PipelineFingerprint => "PIPELINE_FINGERPRINT",
             Self::SqliteCorrupt => "SQLITE_CORRUPT",
             Self::HeadIndexMismatch => "HEAD_INDEX_MISMATCH",
             Self::ForgetLedgerMismatch => "FORGET_LEDGER_MISMATCH",
@@ -544,7 +547,7 @@ impl ErrorSubcode {
                 ErrorCode::InvalidArgument,
                 false,
                 "this operation is unsupported on the current platform",
-                "the alpha.1 filesystem safety implementation is unavailable on this operating system",
+                "the alpha.2 filesystem safety implementation is unavailable on this operating system",
                 "run hSUM on a documented supported platform",
             ),
             Self::WriterLock => ErrorSpec::new(
@@ -574,6 +577,14 @@ impl ErrorSubcode {
                 "the hSUM index schema checksum is invalid",
                 "the live schema differs from the compiled migration",
                 "quarantine the index and run hsum doctor",
+            ),
+            Self::PipelineFingerprint => ErrorSpec::new(
+                ErrorCode::SchemaTooOld,
+                false,
+                "the index was built by a different hSUM indexing pipeline",
+                "the indexing rules changed, so stored evidence no longer matches this binary",
+                "run hsum init --rebuild to replace this index under the current rules; \
+                 evidence recorded before the change does not survive the rebuild",
             ),
             Self::SqliteCorrupt => ErrorSpec::new(
                 ErrorCode::IndexCorrupt,
@@ -658,7 +669,7 @@ impl ErrorSubcode {
                 ErrorCode::SourceInvalid,
                 false,
                 "a source file is not valid UTF-8",
-                "alpha.1 indexes original UTF-8 text only",
+                "alpha.2 indexes original UTF-8 text only",
                 "convert or exclude the file",
             ),
             Self::NulContent => ErrorSpec::new(
@@ -875,6 +886,36 @@ mod tests {
         }
         assert_eq!(ErrorSubcode::parse("citation_malformed"), None);
         assert_eq!(ErrorSubcode::parse("NOT_A_SUBCODE"), None);
+    }
+
+    #[test]
+    fn pipeline_fingerprint_subcode_names_the_pipeline_not_the_schema() {
+        let subcode = ErrorSubcode::PipelineFingerprint;
+        assert_eq!(subcode.as_str(), "PIPELINE_FINGERPRINT");
+        assert_eq!(ErrorSubcode::parse("PIPELINE_FINGERPRINT"), Some(subcode));
+
+        let rendered = subcode.render_offline_help();
+        let problem = rendered
+            .lines()
+            .find(|line| line.starts_with("problem:"))
+            .expect("offline help renders a problem line");
+        let fix = rendered
+            .lines()
+            .find(|line| line.starts_with("fix:"))
+            .expect("offline help renders a fix line");
+
+        assert!(
+            problem.contains("pipeline"),
+            "problem line must name the pipeline: {problem:?}"
+        );
+        assert!(
+            !problem.contains("schema checksum"),
+            "problem line must not claim the schema checksum is invalid: {problem:?}"
+        );
+        assert!(
+            fix.contains("hsum init --rebuild"),
+            "fix line must name the working remedy: {fix:?}"
+        );
     }
 
     #[test]

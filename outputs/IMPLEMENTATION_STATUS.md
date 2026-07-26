@@ -1,17 +1,18 @@
-# hSUM `0.1.0-alpha.1` implementation status
+# hSUM `0.1.0-alpha.2` candidate implementation status
 
-**Snapshot:** 2026-07-20
-**Scope:** Local source checkout; no public release or distribution claim
+**Snapshot:** 2026-07-26
+**Scope:** Protected public PR candidate; alpha.2 has not been tagged or published
 
-This matrix maps the alpha.1 product surface to implementation and test
+This matrix maps the alpha.2 candidate surface to implementation and test
 evidence in the repository. “Implemented” means a code path and focused tests
-exist in this checkout. It does not mean release CI, all-target portability,
-signing, packaging, performance, or clean-machine gates have run.
+exist in this checkout. It does not mean the pending merge, production
+documentation, signed-tag workflow, and artifact-verification gates have passed.
 
 | Surface | Checkout status | Primary implementation | Focused evidence |
 |---|---|---|---|
 | CLI grammar and stable exits | Implemented | `src/cli.rs`, `src/runtime.rs` | `tests/cli_contract.rs`, `tests/runtime_process.rs` |
 | Safe init and idempotent root identity | Implemented | `src/app/init.rs` | `tests/init_smoke.rs` |
+| Pipeline-fingerprint recovery | Implemented | `src/app/init.rs`, `src/store/doctor.rs`, `src/store/open.rs` | `tests/init_smoke.rs`, `tests/runtime_process.rs`, subprocess crash tests, released-alpha.1 upgrade smoke |
 | Trust registry, pointer hint, selection precedence | Implemented | `src/config/`, `src/app/context.rs` | `tests/trust_registry.rs`, `tests/context_resolution.rs`, `tests/config_paths.rs` |
 | Bounded filesystem discovery | Implemented for Unix alpha target | `src/ingest/filesystem.rs` | `tests/filesystem_ingest.rs` |
 | Deterministic chunking and literal extraction | Implemented | `src/ingest/chunk.rs`, `src/ingest/literals.rs`, `src/ingest/quote_bloom.rs` | `tests/chunking.rs`, `tests/literals.rs`, `tests/quote_bloom.rs` |
@@ -27,8 +28,9 @@ signing, packaging, performance, or clean-machine gates have run.
 | Generated client snippets and local client probe | Implemented | `src/runtime.rs` | `tests/runtime_process.rs` |
 | Shared public error taxonomy | Implemented | `src/domain/error.rs`, transport mappings in `src/runtime.rs` and `src/mcp.rs` | domain, CLI, MCP, and process contract tests |
 | Completion and man generation | Implemented | `src/cli.rs` | `tests/cli_contract.rs` |
-| JSONL, vectors/models, watcher, HTTP, backup/prune/forget/restore | Not implemented | Intentionally absent from alpha.1 command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
-| Published crate/binaries/installer | Not available | `Cargo.toml` sets `publish = false`; no release workflow/artifacts | Must be established and independently verified before publication |
+| JSONL, vectors/models, watcher, HTTP, backup/prune/forget/restore | Not implemented | Intentionally absent from the alpha command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
+| GitHub release archives | Alpha.1 published; alpha.2 pending | `.github/workflows/release.yml`, `scripts/release-smoke.sh` | Checksums, SPDX SBOM attestations, signed-tag guard, Linux/macOS release jobs |
+| crates.io package or installer | Not available | `Cargo.toml` sets `publish = false`; archive-only alpha policy | Explicitly deferred; no public install claim |
 
 ## Current invariants
 
@@ -46,54 +48,52 @@ signing, packaging, performance, or clean-machine gates have run.
 - Storage preflight reserves the greater of 64 MiB or 10% of managed index
   bytes in addition to the estimated write.
 
-## Evidence not yet claimed
+## Alpha.2 evidence not yet claimed
 
-- No signed tag, crate publication, prebuilt binary, installer, SBOM, or
-  notarized artifact exists.
-- No public remote, release custody, security-reporting address, or published
-  versioned documentation site is established.
-- No clean-machine macOS arm64/Linux x86_64 release matrix is recorded here.
-- No benchmark, retrieval-evaluation, time-to-first-evidence, external
-  dogfood, or cross-client-version result is claimed.
-- The brand asset provenance and software license remain release blockers.
+- No alpha.2 signed tag, release archive, checksum manifest, SBOM attestation,
+  or GitHub prerelease exists.
+- The alpha.2 documentation tree and `llms.txt` are prepared in
+  `burkan2/hsum-site2#1`, but have not been merged or deployed to production.
+- No crates.io package, installer, Apple-signed/notarized binary, benchmark,
+  retrieval evaluation, external dogfood, or cross-client-version result is
+  claimed.
 
 Run `cargo xtask check` for the checkout-wide contributor gate. Record the
-actual result separately; this status file intentionally does not turn the
-presence of tests into a claim that a final release gate passed.
+actual result separately; the presence of tests does not substitute for the
+protected clean-runner and signed-tag gates.
 
-## Local evidence actually run on 2026-07-20
+## Local evidence actually run on 2026-07-26
 
 These are single-machine developer results on this checkout, not release,
 platform, or clean-machine evidence:
 
-- `cargo xtask check` passed: formatting, Clippy with warnings denied, all
-  targets/features tests, and doctests.
-- `cargo build --release --locked --offline` produced a working binary with no
-  network access from an already populated Cargo cache.
-- The MCP contract suite passed 21/21, including the reworked wire-cap
-  pagination and escape-heavy fixtures that respect the canonical 1,800-byte
-  chunk maximum; the retired oversized-chunk fixtures are intentionally
-  rejected by the store as corrupt.
-- One shared-fixture CLI↔MCP parity process test compares citation order,
-  score and rank values, spans, requested/effective modes, source state, API
-  version, and the public error taxonomy across a real CLI process and a real
-  `hsum mcp` stdio subprocess (`tests/runtime_process.rs`).
-- Offline error help (`hsum help error <SUBCODE>`) is process-tested: it works
-  with no index or network, and real failures' `learn:` lines name both the
-  offline command and the version-pinned docs URL.
-- A fresh-temporary-repository smoke run covered dry-run init, init with a
-  verified suggested query, JSON search, immutable `get` with
-  `--verify-source-hash` returning `unchanged`, context, status, problems,
-  read-only doctor, client config (privacy warning on stderr, copyable config
-  on stdout), the real empty-directory client doctor probe, completion and man
-  generation, and an MCP stdio session exposing exactly the four read-only
-  tools with clean stdout framing.
+- `cargo +1.91.0 xtask check` passed: formatting, Clippy with warnings denied,
+  all targets/features tests, and doctests.
+- `cargo +1.91.0 build --locked --release` produced the macOS arm64 alpha.2
+  candidate from code commit `43a0d22`.
+- An isolated second release build matched that candidate byte for byte:
+  SHA-256 `ec3fe6ea20c1cdc566369145a13f95f6cf6cef5a0307b8506e0bdd35788d7c2c`.
+- The ordinary first-user release smoke and the same smoke with network
+  syscalls denied both passed.
+- The checksum-pinned published macOS alpha.1 binary created a real index;
+  alpha.2 rejected it with `PIPELINE_FINGERPRINT`, rebuilt it, restored search
+  and doctor, and returned `NOT_FOUND` for the invalidated old citation.
+- Real subprocess exits at four rebuild durability boundaries all remained
+  recoverable through ordinary `hsum init`.
 
-On 2026-07-21, `hsum --version --verbose` gained its contracted detail report
-(API version, readable/writable schema range, build-target triple, and the
-tag-gated capability list) via a build-script target export; `cargo xtask
-check` and the locked offline release build were re-run green with that
-change, and both version forms were verified against the release binary.
+This local evidence is necessary but not sufficient for publication. The
+remaining P0 release steps are tracked in `TODOS.md`.
 
-None of this constitutes a public release; the P0 items in `TODOS.md` remain
-open.
+## Public release-gate evidence on 2026-07-26
+
+- `main` requires pull requests, an up-to-date branch, `Linux x86_64` and
+  `macOS arm64`, conversation resolution, and admin enforcement; force pushes
+  and branch deletion are blocked.
+- Code commit `43a0d22` on protected PR `burkan2/hSUM#1` passed both required
+  jobs in CI run `30185717521`. Each clean runner passed the contributor gate,
+  release build, isolated byte-for-byte rebuild, first-user smoke,
+  network-denied smoke, and checksum-pinned alpha.1 recovery smoke.
+- Private vulnerability reporting is enabled. The release GPG fingerprint and
+  public-key repository variables match the local secret signing key.
+- Documentation PR `burkan2/hsum-site2#1` has a successful Vercel preview and
+  retains the frozen alpha.1 tree alongside the prepared alpha.2 tree.

@@ -191,7 +191,7 @@ impl RuntimeFailure {
                 json!({
                     "operation": "search",
                     "argument": "cursor",
-                    "reason": "CLI cursor pagination is unsupported in alpha.1; omit --cursor",
+                    "reason": "CLI cursor pagination is unsupported in alpha.2; omit --cursor",
                 }),
             )),
         }
@@ -214,6 +214,7 @@ fn run_init(
     request.requested_root = arguments.path;
     request.index_name = arguments.index;
     request.project_name = arguments.project;
+    request.rebuild = arguments.rebuild;
     request.no_ingest = arguments.no_ingest;
     request.dry_run = arguments.dry_run;
     request.write_pointer = arguments.write_pointer;
@@ -231,6 +232,35 @@ fn run_init(
     let mut output = String::new();
     if outcome.dry_run {
         output.push_str("DRY RUN — no files were changed.\n");
+        if let Some(rebuild) = &outcome.rebuild {
+            output.push_str(
+                "Would replace the trusted index and invalidate every citation recorded in it.\n",
+            );
+            push_line(
+                &mut output,
+                "Previous binding",
+                &rebuild.previous_binding_id.to_string(),
+            );
+            push_line(
+                &mut output,
+                "Previous index ID",
+                &rebuild.previous_index_id.to_string(),
+            );
+            push_line(
+                &mut output,
+                "Previous active documents",
+                &rebuild.active_documents.to_string(),
+            );
+            push_line(
+                &mut output,
+                "Previous active passages",
+                &rebuild.active_passages.to_string(),
+            );
+        }
+    } else if outcome.rebuild.is_some() {
+        output.push_str(
+            "hSUM index rebuilt. Prior evidence and citations no longer resolve in this index.\n",
+        );
     } else if outcome.reused {
         output.push_str("Existing hSUM index selected.\n");
     } else {
@@ -2622,6 +2652,8 @@ fn map_init_error(error: InitError) -> RuntimeFailure {
             ErrorSubcode::LargeSourceConfirmationRequired
         }
         InitError::TrustConfirmationRequired => ErrorSubcode::TrustConfirmationRequired,
+        InitError::RebuildWithoutIngest => ErrorSubcode::ConfigInvalid,
+        InitError::RebuildBindingRequired { .. } => ErrorSubcode::IndexNotFound,
         InitError::ForcePointerWithoutWrite | InitError::UnsafePointerPath { .. } => {
             ErrorSubcode::PointerInvalid
         }
@@ -2642,7 +2674,8 @@ fn map_init_error(error: InitError) -> RuntimeFailure {
         | InitError::TrustedSourceIdentityMismatch { .. }
         | InitError::TrustedSourceRootMismatch { .. }
         | InitError::AlphaSourceCardinality { .. }
-        | InitError::InvalidTrustedCardinality => ErrorSubcode::PathTrust,
+        | InitError::InvalidTrustedCardinality
+        | InitError::RebuildBindingChanged { .. } => ErrorSubcode::PathTrust,
         InitError::SourceEstimateOverflow => ErrorSubcode::MemoryBudget,
         InitError::IndexNameSpaceExhausted { .. } => ErrorSubcode::IndexPathOccupied,
         InitError::AccountHomeUnavailable(_)
@@ -2930,9 +2963,9 @@ fn store_subcode(error: &StoreError) -> ErrorSubcode {
         | StoreError::MissingSchemaObject(_)
         | StoreError::UnexpectedExecutableSchema
         | StoreError::MigrationChainInvalid
-        | StoreError::PipelineFingerprintMismatch
         | StoreError::InvalidSchemaVersion(_)
         | StoreError::InvalidMetadata(_) => ErrorSubcode::SchemaChecksum,
+        StoreError::PipelineFingerprintMismatch => ErrorSubcode::PipelineFingerprint,
         StoreError::IntegrityCheckFailed(_) => ErrorSubcode::SqliteCorrupt,
         StoreError::ForeignKeyCheckFailed
         | StoreError::ActiveIndexParity(_)

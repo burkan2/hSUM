@@ -61,8 +61,15 @@ pub struct Doctor;
 
 impl Doctor {
     pub fn run(path: &std::path::Path) -> Result<DoctorReport, StoreError> {
+        Self::run_with_policy(path, FingerprintPolicy::Reject)
+    }
+
+    pub(crate) fn run_with_policy(
+        path: &std::path::Path,
+        policy: FingerprintPolicy,
+    ) -> Result<DoctorReport, StoreError> {
         let database = IndexDb::open_read_only(path)?;
-        inspect_connection(database.connection(), true, InspectionDepth::Full)
+        inspect_connection(database.connection(), true, InspectionDepth::Full, policy)
     }
 }
 
@@ -70,6 +77,19 @@ impl Doctor {
 pub(crate) enum InspectionDepth {
     Open,
     Full,
+}
+
+/// Whether a pipeline-fingerprint mismatch is fatal.
+///
+/// `Reject` is the default for every public read path: an index built by a
+/// different indexing pipeline must not be silently searched, because its
+/// stored chunks were produced under different rules. `Tolerate` is
+/// crate-private and exists only so `init --rebuild` can validate that an old
+/// index is otherwise coherent before replacing it.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) enum FingerprintPolicy {
+    Reject,
+    Tolerate,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -163,9 +183,10 @@ pub(crate) fn inspect_connection(
     connection: &Connection,
     require_read_only: bool,
     depth: InspectionDepth,
+    policy: FingerprintPolicy,
 ) -> Result<DoctorReport, StoreError> {
     let transaction = connection.unchecked_transaction()?;
-    let report = inspect_snapshot(&transaction, require_read_only, depth)?;
+    let report = inspect_snapshot(&transaction, require_read_only, depth, policy)?;
     transaction.rollback()?;
     Ok(report)
 }
@@ -174,6 +195,7 @@ fn inspect_snapshot(
     connection: &Connection,
     require_read_only: bool,
     depth: InspectionDepth,
+    policy: FingerprintPolicy,
 ) -> Result<DoctorReport, StoreError> {
     let application_id: i32 =
         connection.pragma_query_value(None, "application_id", |row| row.get(0))?;
@@ -196,13 +218,13 @@ fn inspect_snapshot(
     }
 
     validate_schema_manifest(connection)?;
-    let index_id = validate_metadata(connection)?;
+    let (index_id, stored_pipeline_fingerprint) = validate_metadata(connection, policy)?;
     validate_migration_chain(connection)?;
     let mut scan = DoctorScanStats::default();
     if depth == InspectionDepth::Full {
         let body_scan = BodyScanTracker::default();
         validate_integrity(connection)?;
-        validate_generation_invariants(connection)?;
+        validate_generation_invariants(connection, stored_pipeline_fingerprint)?;
         validate_immutable_evidence(connection, &mut scan, &body_scan)?;
         validate_active_indexes(connection, &mut scan)?;
         scan.max_body_rows_in_flight = body_scan.finish();
@@ -227,7 +249,7 @@ fn inspect_snapshot(
         schema_version: found,
         index_id,
         schema_checksum: schema_checksum(),
-        pipeline_fingerprint: pipeline_fingerprint(),
+        pipeline_fingerprint: stored_pipeline_fingerprint,
         journal_mode: journal_mode.to_ascii_lowercase(),
         read_only,
         scan,
@@ -337,7 +359,10 @@ fn schema_manifest_fingerprint(connection: &Connection) -> Result<Sha256Digest, 
     Ok(Sha256Digest::from_bytes(hasher.finalize().into()))
 }
 
-fn validate_metadata(connection: &Connection) -> Result<IndexId, StoreError> {
+fn validate_metadata(
+    connection: &Connection,
+    policy: FingerprintPolicy,
+) -> Result<(IndexId, Sha256Digest), StoreError> {
     let metadata_count: i64 =
         connection.query_row("SELECT COUNT(*) FROM index_meta", [], |row| row.get(0))?;
     if metadata_count != 8 {
@@ -353,15 +378,13 @@ fn validate_metadata(connection: &Connection) -> Result<IndexId, StoreError> {
             other => other,
         },
     )?;
-    expect_metadata(
-        connection,
-        "pipeline_fingerprint",
-        pipeline_fingerprint().as_bytes(),
-    )
-    .map_err(|error| match error {
-        StoreError::InvalidMetadata(_) => StoreError::PipelineFingerprintMismatch,
-        other => other,
-    })?;
+    let raw_pipeline_fingerprint = metadata_value(connection, "pipeline_fingerprint")?;
+    let stored_pipeline_fingerprint =
+        digest_metadata(&raw_pipeline_fingerprint, "pipeline_fingerprint")?;
+    if policy == FingerprintPolicy::Reject && stored_pipeline_fingerprint != pipeline_fingerprint()
+    {
+        return Err(StoreError::PipelineFingerprintMismatch);
+    }
 
     let epoch = metadata_value(connection, "index_epoch")?;
     str::from_utf8(&epoch)
@@ -382,7 +405,7 @@ fn validate_metadata(connection: &Connection) -> Result<IndexId, StoreError> {
     let raw_index_id = metadata_value(connection, "index_uuid")?;
     let uuid =
         Uuid::from_slice(&raw_index_id).map_err(|_| StoreError::InvalidMetadata("index_uuid"))?;
-    Ok(IndexId::from_uuid(uuid))
+    Ok((IndexId::from_uuid(uuid), stored_pipeline_fingerprint))
 }
 
 fn validate_migration_chain(connection: &Connection) -> Result<(), StoreError> {
@@ -434,10 +457,13 @@ fn validate_integrity(connection: &Connection) -> Result<(), StoreError> {
     Ok(())
 }
 
-fn validate_generation_invariants(connection: &Connection) -> Result<(), StoreError> {
+fn validate_generation_invariants(
+    connection: &Connection,
+    stored_pipeline_fingerprint: Sha256Digest,
+) -> Result<(), StoreError> {
     let unexpected_pipeline_count: i64 = connection.query_row(
         "SELECT COUNT(*) FROM generations WHERE pipeline_fingerprint != ?1",
-        [pipeline_fingerprint().as_bytes().as_slice()],
+        [stored_pipeline_fingerprint.as_bytes().as_slice()],
         |row| row.get(0),
     )?;
     if unexpected_pipeline_count != 0 {
@@ -1273,6 +1299,13 @@ fn metadata_value(connection: &Connection, key: &'static str) -> Result<Vec<u8>,
         .ok_or(StoreError::InvalidMetadata(key))
 }
 
+fn digest_metadata(bytes: &[u8], key: &'static str) -> Result<Sha256Digest, StoreError> {
+    let bytes: [u8; 32] = bytes
+        .try_into()
+        .map_err(|_| StoreError::InvalidMetadata(key))?;
+    Ok(Sha256Digest::from_bytes(bytes))
+}
+
 fn digest_from_blob(bytes: &[u8]) -> Result<Sha256Digest, StoreError> {
     let bytes: [u8; 32] = bytes
         .try_into()
@@ -1302,7 +1335,19 @@ fn integer_from_u64(value: u64) -> Result<i64, StoreError> {
 
 #[cfg(test)]
 mod tests {
-    use super::BodyScanTracker;
+    #[cfg(unix)]
+    use std::os::unix::fs::PermissionsExt;
+    use std::path::{Path, PathBuf};
+
+    use rusqlite::{Connection, params};
+    use tempfile::TempDir;
+
+    use super::{BodyScanTracker, Doctor, FingerprintPolicy};
+    use crate::domain::{IndexId, Sha256Digest};
+    use crate::store::{IndexDb, StoreError};
+
+    const OLD_FINGERPRINT: [u8; 32] = [0xaa; 32];
+    const OTHER_FINGERPRINT: [u8; 32] = [0xbb; 32];
 
     #[test]
     fn body_scan_tracker_measures_nested_retention_instead_of_assuming_one() {
@@ -1322,5 +1367,95 @@ mod tests {
         assert_eq!(tracker.live(), 0);
         assert_eq!(tracker.max(), 2);
         assert_eq!(tracker.finish(), 2);
+    }
+
+    #[test]
+    fn tolerant_doctor_reports_a_coherent_stored_fingerprint() {
+        let (_directory, path) = fresh_index();
+        set_metadata_fingerprint(&path, &OLD_FINGERPRINT);
+
+        let report = Doctor::run_with_policy(&path, FingerprintPolicy::Tolerate).unwrap();
+
+        assert_eq!(
+            report.pipeline_fingerprint,
+            Sha256Digest::from_bytes(OLD_FINGERPRINT)
+        );
+    }
+
+    #[test]
+    fn tolerant_doctor_rejects_a_missing_or_malformed_fingerprint() {
+        let (_missing_directory, missing_path) = fresh_index();
+        let connection = Connection::open(&missing_path).unwrap();
+        connection
+            .execute(
+                "UPDATE index_meta
+                 SET key = 'unexpected_pipeline_key'
+                 WHERE key = 'pipeline_fingerprint'",
+                [],
+            )
+            .unwrap();
+        drop(connection);
+
+        assert!(matches!(
+            Doctor::run_with_policy(&missing_path, FingerprintPolicy::Tolerate),
+            Err(StoreError::InvalidMetadata("pipeline_fingerprint"))
+        ));
+
+        let (_malformed_directory, malformed_path) = fresh_index();
+        set_metadata_fingerprint(&malformed_path, &[0xaa]);
+        assert!(matches!(
+            Doctor::run_with_policy(&malformed_path, FingerprintPolicy::Tolerate),
+            Err(StoreError::InvalidMetadata("pipeline_fingerprint"))
+        ));
+    }
+
+    #[test]
+    fn tolerant_doctor_requires_every_generation_to_match_the_stored_fingerprint() {
+        let (_directory, path) = fresh_index();
+        set_metadata_fingerprint(&path, &OLD_FINGERPRINT);
+        insert_abandoned_generation(&path, 1, &OLD_FINGERPRINT);
+
+        Doctor::run_with_policy(&path, FingerprintPolicy::Tolerate).unwrap();
+
+        insert_abandoned_generation(&path, 2, &OTHER_FINGERPRINT);
+        assert!(matches!(
+            Doctor::run_with_policy(&path, FingerprintPolicy::Tolerate),
+            Err(StoreError::GenerationInvariant(
+                "generation pipeline fingerprint"
+            ))
+        ));
+    }
+
+    fn fresh_index() -> (TempDir, PathBuf) {
+        let directory = tempfile::tempdir().unwrap();
+        #[cfg(unix)]
+        std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700)).unwrap();
+        let path = directory.path().join("index.sqlite");
+        drop(IndexDb::create(&path, IndexId::new_v4()).unwrap());
+        (directory, path)
+    }
+
+    fn set_metadata_fingerprint(path: &Path, fingerprint: &[u8]) {
+        let connection = Connection::open(path).unwrap();
+        connection
+            .execute(
+                "UPDATE index_meta
+                 SET value = ?1
+                 WHERE key = 'pipeline_fingerprint'",
+                params![fingerprint],
+            )
+            .unwrap();
+    }
+
+    fn insert_abandoned_generation(path: &Path, id: i64, fingerprint: &[u8; 32]) {
+        let connection = Connection::open(path).unwrap();
+        connection
+            .execute(
+                "INSERT INTO generations(
+                    id, state, created_at, pipeline_fingerprint
+                 ) VALUES (?1, 'abandoned', '2026-07-26T00:00:00Z', ?2)",
+                params![id, fingerprint.as_slice()],
+            )
+            .unwrap();
     }
 }

@@ -10,9 +10,14 @@ use hsum::domain::{ProjectId, SafeSlug};
 use hsum::ingest::{DEFAULT_MAX_SOURCE_BYTES, HARD_MAX_SOURCE_BYTES, HARD_MAX_SOURCE_FILES};
 use hsum::search::SearchRequest;
 use hsum::status::{SourceSyncState, Status};
-use hsum::store::{IndexDb, MINIMUM_STORAGE_RESERVE_BYTES, OpenMode, StoragePreflightError};
+use hsum::store::{
+    Doctor, IndexDb, MINIMUM_STORAGE_RESERVE_BYTES, OpenMode, StoragePreflightError, WriterLock,
+};
 use rusqlite::Connection;
 use tempfile::{TempDir, tempdir};
+
+const RELEASED_ALPHA1_PIPELINE_FINGERPRINT: &str =
+    "bb24fc64a8602c9ec0479ae687f848b7d5b029294796701966b7bbafc8a23bab";
 
 fn request(root: &Path, home: &TempDir) -> InitRequest {
     let managed = ManagedPaths::resolve(Some(home.path())).unwrap();
@@ -340,6 +345,199 @@ fn no_ingest_configures_the_source_without_claiming_a_successful_scan() {
     assert_eq!(status.sources.len(), 1);
     assert_eq!(status.sources[0].state, SourceSyncState::NeverSucceeded);
     assert!(status.sources[0].last_success_at.is_none());
+}
+
+#[test]
+fn rebuild_requires_an_existing_binding_and_an_initial_ingest() {
+    let root = tempdir().unwrap();
+    let home = tempdir().unwrap();
+    let mut rebuild = request(root.path(), &home);
+    rebuild.rebuild = true;
+
+    assert!(matches!(
+        initialize(&rebuild),
+        Err(InitError::RebuildBindingRequired { .. })
+    ));
+
+    rebuild.no_ingest = true;
+    assert!(matches!(
+        initialize(&rebuild),
+        Err(InitError::RebuildWithoutIngest)
+    ));
+    assert!(!home.path().join("config/trusted-projects.toml").exists());
+}
+
+#[test]
+fn rebuild_replaces_one_coherent_stale_index_and_preserves_other_bindings() {
+    let first_root = tempdir().unwrap();
+    let second_root = tempdir().unwrap();
+    let home = tempdir().unwrap();
+    fs::write(
+        first_root.path().join("notes.md"),
+        b"# Rebuilt evidence\nreplacement_identifier\n",
+    )
+    .unwrap();
+    fs::write(second_root.path().join("notes.md"), b"other binding\n").unwrap();
+
+    let first = initialize(&request(first_root.path(), &home)).unwrap();
+    let mut second_request = request(second_root.path(), &home);
+    second_request.index_name = Some(SafeSlug::new("beta").unwrap());
+    let second = initialize(&second_request).unwrap();
+    let registry_before =
+        TrustRegistry::load(&home.path().join("config/trusted-projects.toml")).unwrap();
+    let first_binding_before = registry_before
+        .bindings()
+        .iter()
+        .find(|binding| binding.index_id() == first.index_id)
+        .unwrap()
+        .clone();
+    let second_binding_before = registry_before
+        .bindings()
+        .iter()
+        .find(|binding| binding.index_id() == second.index_id)
+        .unwrap()
+        .clone();
+    make_fingerprint_stale(&first.database_path);
+
+    let mut rebuild = request(first_root.path(), &home);
+    rebuild.rebuild = true;
+    let rebuilt = initialize(&rebuild).unwrap();
+
+    let summary = rebuilt.rebuild.as_ref().expect("rebuild is reported");
+    assert_eq!(
+        summary.previous_binding_id,
+        first_binding_before.binding_id()
+    );
+    assert_eq!(summary.previous_index_id, first.index_id);
+    assert_eq!(summary.active_documents, 1);
+    assert!(summary.active_passages > 0);
+    assert_ne!(rebuilt.index_id, first.index_id);
+    assert_eq!(rebuilt.index_name, first.index_name);
+    assert!(Doctor::run(&rebuilt.database_path).is_ok());
+
+    let registry_after =
+        TrustRegistry::load(&home.path().join("config/trusted-projects.toml")).unwrap();
+    assert_eq!(registry_after.bindings().len(), 2);
+    let first_binding_after = registry_after
+        .bindings()
+        .iter()
+        .find(|binding| binding.canonical_root() == fs::canonicalize(first_root.path()).unwrap())
+        .unwrap();
+    assert_ne!(
+        first_binding_after.binding_id(),
+        first_binding_before.binding_id()
+    );
+    assert_eq!(
+        registry_after
+            .bindings()
+            .iter()
+            .find(|binding| binding.binding_id() == second_binding_before.binding_id()),
+        Some(&second_binding_before)
+    );
+}
+
+#[test]
+fn rebuild_also_replaces_a_healthy_index_when_explicitly_requested() {
+    let root = tempdir().unwrap();
+    let home = tempdir().unwrap();
+    fs::write(root.path().join("notes.md"), b"healthy replacement\n").unwrap();
+    let first = initialize(&request(root.path(), &home)).unwrap();
+
+    let mut rebuild = request(root.path(), &home);
+    rebuild.rebuild = true;
+    let outcome = initialize(&rebuild).unwrap();
+
+    assert_ne!(outcome.index_id, first.index_id);
+    assert_eq!(
+        outcome
+            .rebuild
+            .as_ref()
+            .map(|summary| summary.previous_index_id),
+        Some(first.index_id)
+    );
+    assert!(Doctor::run(&outcome.database_path).is_ok());
+}
+
+#[test]
+fn rebuild_dry_run_validates_but_writes_nothing() {
+    let root = tempdir().unwrap();
+    let home = tempdir().unwrap();
+    fs::write(root.path().join("notes.md"), b"dry run evidence\n").unwrap();
+    let first = initialize(&request(root.path(), &home)).unwrap();
+    make_fingerprint_stale(&first.database_path);
+    let trust_path = home.path().join("config/trusted-projects.toml");
+    let writer_lock_path = WriterLock::sidecar_path(&first.database_path);
+    fs::remove_file(&writer_lock_path).unwrap();
+    let database_before = fs::read(&first.database_path).unwrap();
+    let trust_before = fs::read(&trust_path).unwrap();
+
+    let mut rebuild = request(root.path(), &home);
+    rebuild.rebuild = true;
+    rebuild.dry_run = true;
+    let outcome = initialize(&rebuild).unwrap();
+
+    assert!(outcome.dry_run);
+    assert!(outcome.rebuild.is_some());
+    assert_eq!(fs::read(&first.database_path).unwrap(), database_before);
+    assert_eq!(fs::read(&trust_path).unwrap(), trust_before);
+    assert!(!writer_lock_path.exists());
+    assert!(matches!(
+        IndexDb::open_existing(&first.database_path, OpenMode::ReadOnly),
+        Err(hsum::store::StoreError::PipelineFingerprintMismatch)
+    ));
+}
+
+#[test]
+fn rebuild_refuses_corruption_without_changing_database_or_trust() {
+    let root = tempdir().unwrap();
+    let home = tempdir().unwrap();
+    fs::write(root.path().join("notes.md"), b"corruption boundary\n").unwrap();
+    let first = initialize(&request(root.path(), &home)).unwrap();
+    make_fingerprint_stale(&first.database_path);
+    let connection = Connection::open(&first.database_path).unwrap();
+    connection
+        .execute(
+            "UPDATE index_meta
+             SET value = zeroblob(32)
+             WHERE key = 'schema_checksum'",
+            [],
+        )
+        .unwrap();
+    drop(connection);
+    let trust_path = home.path().join("config/trusted-projects.toml");
+    let database_before = fs::read(&first.database_path).unwrap();
+    let trust_before = fs::read(&trust_path).unwrap();
+
+    let mut rebuild = request(root.path(), &home);
+    rebuild.rebuild = true;
+    let error = initialize(&rebuild).unwrap_err();
+
+    assert!(matches!(
+        error,
+        InitError::Store(hsum::store::StoreError::SchemaChecksumMismatch)
+    ));
+    assert_eq!(fs::read(&first.database_path).unwrap(), database_before);
+    assert_eq!(fs::read(&trust_path).unwrap(), trust_before);
+}
+
+fn make_fingerprint_stale(path: &Path) {
+    let released_fingerprint = hex::decode(RELEASED_ALPHA1_PIPELINE_FINGERPRINT).unwrap();
+    let connection = Connection::open(path).unwrap();
+    connection
+        .execute(
+            "UPDATE index_meta
+             SET value = ?1
+             WHERE key = 'pipeline_fingerprint'",
+            [&released_fingerprint],
+        )
+        .unwrap();
+    connection
+        .execute(
+            "UPDATE generations
+             SET pipeline_fingerprint = ?1",
+            [&released_fingerprint],
+        )
+        .unwrap();
 }
 
 #[test]

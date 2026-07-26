@@ -9,8 +9,12 @@ use std::os::unix::fs::PermissionsExt;
 
 use hsum::config::TrustRegistry;
 use hsum::store::WriterLock;
+use rusqlite::Connection;
 use serde_json::{Value, json};
 use tempfile::{TempDir, tempdir};
+
+const RELEASED_ALPHA1_PIPELINE_FINGERPRINT: &str =
+    "bb24fc64a8602c9ec0479ae687f848b7d5b029294796701966b7bbafc8a23bab";
 
 fn hsum() -> &'static str {
     env!("CARGO_BIN_EXE_hsum")
@@ -185,6 +189,122 @@ fn init_search_get_status_context_and_doctor_are_process_complete() {
     let doctor_output = String::from_utf8_lossy(&doctor.stdout);
     assert!(doctor_output.contains("Index diagnosis passed"));
     assert!(doctor_output.contains("hard links cannot be distinguished"));
+}
+
+#[test]
+fn stale_index_recovery_is_strict_dry_runnable_and_end_to_end() {
+    let (repository, home) = initialized();
+    let search = run(
+        home.path(),
+        repository.path(),
+        &["search", "alpha-beta", "--json"],
+    );
+    assert!(search.status.success());
+    let search_json: Value = serde_json::from_slice(&search.stdout).unwrap();
+    let old_citation = search_json["results"][0]["citation_uri"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let trust_path = home.path().join("config/trusted-projects.toml");
+    let registry_before = TrustRegistry::load(&trust_path).unwrap();
+    let old_binding = registry_before.bindings()[0].binding_id();
+    let database_path = home
+        .path()
+        .join("data/indexes/runtime-fixture/index.sqlite");
+    let released_fingerprint = hex::decode(RELEASED_ALPHA1_PIPELINE_FINGERPRINT).unwrap();
+    let connection = Connection::open(&database_path).unwrap();
+    connection
+        .execute(
+            "UPDATE index_meta
+             SET value = ?1
+             WHERE key = 'pipeline_fingerprint'",
+            [&released_fingerprint],
+        )
+        .unwrap();
+    connection
+        .execute(
+            "UPDATE generations
+             SET pipeline_fingerprint = ?1",
+            [&released_fingerprint],
+        )
+        .unwrap();
+    drop(connection);
+
+    for arguments in [
+        &["search", "alpha-beta"][..],
+        &["status"][..],
+        &["context"][..],
+        &["doctor"][..],
+        &["ingest", "--dry-run"][..],
+        &["ingest"][..],
+        &["init"][..],
+    ] {
+        let output = run(home.path(), repository.path(), arguments);
+        assert!(
+            !output.status.success(),
+            "{arguments:?} unexpectedly succeeded"
+        );
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("code: PIPELINE_FINGERPRINT"),
+            "{arguments:?} returned the wrong error: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            String::from_utf8_lossy(&output.stderr).contains("hsum init --rebuild"),
+            "{arguments:?} did not name the recovery command"
+        );
+    }
+
+    let database_before = fs::read(&database_path).unwrap();
+    let trust_before = fs::read(&trust_path).unwrap();
+    let dry_run = run(
+        home.path(),
+        repository.path(),
+        &["init", "--rebuild", "--dry-run"],
+    );
+    assert!(
+        dry_run.status.success(),
+        "rebuild dry-run stderr: {}",
+        String::from_utf8_lossy(&dry_run.stderr)
+    );
+    let dry_run_text = String::from_utf8_lossy(&dry_run.stdout);
+    assert!(dry_run_text.contains("Would replace the trusted index"));
+    assert!(dry_run_text.contains("Previous index ID"));
+    assert_eq!(fs::read(&database_path).unwrap(), database_before);
+    assert_eq!(fs::read(&trust_path).unwrap(), trust_before);
+
+    let rebuilt = run(home.path(), repository.path(), &["init", "--rebuild"]);
+    assert!(
+        rebuilt.status.success(),
+        "rebuild stderr: {}",
+        String::from_utf8_lossy(&rebuilt.stderr)
+    );
+    let rebuilt_text = String::from_utf8_lossy(&rebuilt.stdout);
+    assert!(rebuilt_text.contains("hSUM index rebuilt"));
+    assert!(rebuilt_text.contains("Prior evidence and citations no longer resolve"));
+
+    let registry_after = TrustRegistry::load(&trust_path).unwrap();
+    assert_eq!(registry_after.bindings().len(), 1);
+    assert_ne!(registry_after.bindings()[0].binding_id(), old_binding);
+
+    let new_search = run(
+        home.path(),
+        repository.path(),
+        &["search", "alpha-beta", "--json"],
+    );
+    assert!(
+        new_search.status.success(),
+        "post-rebuild search stderr: {}",
+        String::from_utf8_lossy(&new_search.stderr)
+    );
+    let old_get = run(
+        home.path(),
+        repository.path(),
+        &["get", &old_citation, "--json"],
+    );
+    assert!(!old_get.status.success());
+    let old_get_error: Value = serde_json::from_slice(&old_get.stderr).unwrap();
+    assert_eq!(old_get_error["code"], "NOT_FOUND");
 }
 
 #[test]

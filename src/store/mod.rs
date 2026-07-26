@@ -10,6 +10,7 @@ pub use capacity::{
     StoragePreflight, StoragePreflightError, SyncRootKind, classify_sync_root,
     storage_reserve_bytes,
 };
+pub(crate) use doctor::FingerprintPolicy;
 pub use doctor::{Doctor, DoctorReport, DoctorScanStats};
 pub(crate) use generation::PreparedDocumentSummary;
 pub use generation::{
@@ -20,5 +21,6 @@ pub use generation::{
 pub use lock::WriterLock;
 pub use open::{IndexDb, OpenMode, StoreError};
 pub use schema::{
-    APPLICATION_ID, SCHEMA_VERSION, chunker_fingerprint, pipeline_fingerprint, schema_checksum,
+    APPLICATION_ID, SCHEMA_VERSION, chunker_fingerprint, pipeline_descriptor, pipeline_fingerprint,
+    schema_checksum,
 };
