@@ -4,7 +4,7 @@
 
 **Goal:** Give connected agents an explicit reason to call hSUM instead of grepping, and cover the mainstream languages that currently produce an empty index.
 
-**Architecture:** Three independent changes. Tasks 1–2 rewrite MCP prose (server instructions and the four tool descriptions) — string literals plus assertions, no behavior change. Task 3 adds 11 `ChunkKind` variants covering 18 extensions across three sites that must stay in sync, which changes the hashed pipeline fingerprint and invalidates existing indexes.
+**Architecture:** Three independent changes. Tasks 1–2 rewrite MCP prose (server instructions and the four tool descriptions) and make `evidence_project` return the root and indexed-extension coverage it advertises. Task 3 adds 11 `ChunkKind` variants covering 18 extensions across three sites that must stay in sync, which changes the hashed pipeline fingerprint and invalidates existing indexes.
 
 **Tech Stack:** Rust 1.91 (pinned), `rmcp` 2.2.0 for MCP, `rusqlite` 0.39 with bundled SQLite, `proptest` for property tests. Integration tests live in `tests/*.rs` and use `hsum::` public paths.
 
@@ -253,6 +253,11 @@ Replace each `description = "..."` in the four `#[tool(...)]` attributes.
                        the index before assuming a search miss means the code does not exist."
     )]
 ```
+
+Add `root: String` and `indexed_extensions: Vec<String>` to
+`EvidenceProjectOutput`. Populate `root` from the bound filesystem source's
+logical URI and populate `indexed_extensions` from `ChunkKind::EXTENSIONS`,
+including the leading dot. Assert both values in the MCP contract fixture.
 
 `src/mcp.rs:320-323` — `evidence_status`:
 

@@ -120,9 +120,10 @@ confirm the command returns evidence. Every result carries an immutable
 whatever the file looks like later.
 
 > [!NOTE]
-> This is an alpha. The tagged alpha.2 release has prebuilt GitHub artifacts
-> for macOS arm64 and Linux x86_64; reviewed source builds use the steps above.
-> The crate remains `publish = false`, so `cargo install` is unavailable.
+> This is an alpha. Once `v0.1.0-alpha.2` is published, its GitHub prerelease
+> will provide prebuilt artifacts for macOS arm64 and Linux x86_64. Until then,
+> use the reviewed source-build steps above. The crate remains `publish = false`,
+> so `cargo install` is unavailable.
 
 ## Connect your agent
 
@@ -160,7 +161,7 @@ before the snippet.
 | JSONL and live connectors | Unsupported | Planned after the filesystem slice |
 | Semantic search, models, and reranking | Unsupported | No model install or download path exists |
 | HTTP server or web UI | Unsupported | MCP stdio is the only transport |
-| Prebuilt installation | Available | Checksummed GitHub prerelease archives for macOS arm64 and Linux x86_64; no installer or crates.io package |
+| Prebuilt installation | Release-gated | Checksummed GitHub prerelease archives for macOS arm64 and Linux x86_64 become available when `v0.1.0-alpha.2` is published; no installer or crates.io package |
 
 ## Build from source
 
@@ -607,11 +608,12 @@ source-to-test evidence map and [`TODOS.md`](TODOS.md) for the remaining work.
 
 ## Verifying a release
 
-Alpha release archives are published from a GPG-signed tag and carry a
-`SHA256SUMS` manifest plus a GitHub build attestation linking each archive to
-the workflow run and commit that produced it.
+After `v0.1.0-alpha.2` is published, its archives will come from a GPG-signed
+tag and carry a `SHA256SUMS` manifest plus a GitHub build attestation linking
+each archive to the workflow run and commit that produced it.
 
 ```bash
+# Run after the prerelease assets are published.
 # macOS example; use sha256sum -c on Linux.
 asset=hsum-v0.1.0-alpha.2-aarch64-apple-darwin.zip
 shasum -a 256 -c "$asset.sha256"

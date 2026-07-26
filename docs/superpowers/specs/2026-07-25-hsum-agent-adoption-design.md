@@ -141,9 +141,11 @@ concluding the symbol does not exist. Both now name that case.
 
 ### Blast radius
 
-Four string literals. No behavior, schema, or wire-format change. The existing
-contract test asserts tool names, schema properties, and annotations — not
-description text — so it continues to pass unmodified.
+The four descriptions change. `evidence_project` also returns an explicit
+`root` and the 28-entry `indexed_extensions` list so the advertised coverage is
+part of the structured contract rather than prose alone. The contract test
+asserts those values along with the unchanged tool names, input schemas, and
+annotations.
 
 ## Change 3 — Tier 1 language coverage
 

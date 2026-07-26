@@ -37,6 +37,7 @@ use crate::app::MAX_FILESYSTEM_SOURCE_CONFIG_BYTES;
 use crate::domain::{
     Citation, ErrorCode as PublicErrorCode, ErrorSubcode, ProjectId, PublicError, SourceId,
 };
+use crate::ingest::ChunkKind;
 use crate::search::{
     DEFAULT_GET_MAX_BYTES, DEFAULT_SEARCH_DEADLINE_MS, DEFAULT_SEARCH_LIMIT, DuplicateReason,
     GetError, GetRequest, MAX_SEARCH_DEADLINE_MS, MAX_SEARCH_LIMIT, MIN_SEARCH_DEADLINE_MS,
@@ -749,6 +750,15 @@ impl HsumMcpServer {
             project_id: self.project_id.to_string(),
             name,
             scope_revision,
+            root: sources
+                .iter()
+                .find(|source| source.adapter_kind == "filesystem")
+                .map(|source| source.logical_uri.clone())
+                .ok_or_else(scope_unavailable)?,
+            indexed_extensions: ChunkKind::EXTENSIONS
+                .iter()
+                .map(|(extension, _)| format!(".{extension}"))
+                .collect(),
             sources,
             last_successful_generation,
         };
@@ -1176,6 +1186,8 @@ pub struct EvidenceProjectOutput {
     pub project_id: String,
     pub name: String,
     pub scope_revision: u64,
+    pub root: String,
+    pub indexed_extensions: Vec<String>,
     pub sources: Vec<ProjectSourceOutput>,
     pub last_successful_generation: Option<i64>,
 }

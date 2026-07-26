@@ -232,6 +232,14 @@ fn handlers_use_hardened_readers_and_keep_foreign_citations_non_disclosing() {
     assert_eq!(project.schema_version, "hsum.api.v1");
     assert!(Uuid::parse_str(&project.request_id).is_ok());
     assert_eq!(project.project_id, PROJECT_UUID);
+    assert_eq!(project.root, "file:///fixture");
+    assert_eq!(
+        project.indexed_extensions,
+        ChunkKind::EXTENSIONS
+            .iter()
+            .map(|(extension, _)| format!(".{extension}"))
+            .collect::<Vec<_>>()
+    );
     assert_eq!(project.sources.len(), 1);
     assert_eq!(project.sources[0].source_id, SOURCE_UUID);
 

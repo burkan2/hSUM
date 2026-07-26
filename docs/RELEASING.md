@@ -87,9 +87,10 @@ Before tagging, inspect the completed CI runs and run the same commands on the
 candidate checkout locally:
 
 ```bash
-cargo xtask check
-cargo build --locked --release
-bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
+cargo +1.91.0 xtask check
+cargo +1.91.0 build --locked --release
+RUSTUP_TOOLCHAIN=1.91.0 \
+  bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
 bash scripts/release-smoke.sh "$PWD/target/release/hsum"
 bash scripts/no-network-smoke.sh "$PWD/target/release/hsum"
 bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
