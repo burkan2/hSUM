@@ -1,14 +1,13 @@
 use crate::domain::Sha256Digest;
 use crate::ingest::ChunkKind;
+use std::sync::OnceLock;
 
 pub const APPLICATION_ID: i32 = i32::from_be_bytes(*b"HSUM");
 pub const SCHEMA_VERSION: u32 = 1;
 
 pub(crate) const MIGRATION_0001: &str = include_str!("../../migrations/0001_alpha1.sql");
 
-const PIPELINE_DESCRIPTOR: &str = concat!(
-    "hsum.pipeline.v1\n",
-    "filesystem=v1:extensions=md,markdown,txt,rs,py,ts,tsx,js,jsx,go,java,kt,kts,c,h,cpp,hpp,cc,hh,cxx,rb,cs,swift,php,scala,sh,bash,sql:symlinks=never\n",
+const PIPELINE_DESCRIPTOR_SUFFIX: &str = concat!(
     "connector_key=platform-raw-relative-bytes:no-unicode-or-case-normalization\n",
     "source_uri=repo-v1:rfc3986-unreserved:slash-preserved:uppercase-percent\n",
     "snapshot_hash=sha256-length-framed-rfc8785-utc\n",
@@ -20,17 +19,30 @@ const PIPELINE_DESCRIPTOR: &str = concat!(
     "quote_bloom=byte-trigram:bits-4096:hashes-4:sha256-double-hash-be\n",
     "embedding=none\n",
 );
+static PIPELINE_DESCRIPTOR: OnceLock<String> = OnceLock::new();
 
 pub fn schema_checksum() -> Sha256Digest {
     Sha256Digest::of_bytes(MIGRATION_0001.as_bytes())
 }
 
 pub fn pipeline_fingerprint() -> Sha256Digest {
-    Sha256Digest::of_bytes(PIPELINE_DESCRIPTOR.as_bytes())
+    Sha256Digest::of_bytes(pipeline_descriptor().as_bytes())
 }
 
 pub fn pipeline_descriptor() -> &'static str {
     PIPELINE_DESCRIPTOR
+        .get_or_init(|| {
+            let extensions = ChunkKind::EXTENSIONS
+                .iter()
+                .map(|(extension, _)| *extension)
+                .collect::<Vec<_>>()
+                .join(",");
+            format!(
+                "hsum.pipeline.v1\nfilesystem=v1:extensions={extensions}:symlinks=never\n\
+                 {PIPELINE_DESCRIPTOR_SUFFIX}"
+            )
+        })
+        .as_str()
 }
 
 pub fn chunker_fingerprint(kind: ChunkKind) -> Sha256Digest {
@@ -52,13 +64,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn alpha_1_pipeline_fingerprint_is_frozen() {
+    fn alpha_2_pipeline_fingerprint_is_frozen() {
         // Bumped when Tier 1 language extensions were added. Changing this
         // value makes every existing index unopenable: `inspect_connection`
         // runs on every open (see `IndexDb::open_existing`), so all commands
         // fail with "pipeline fingerprint does not match this binary". Ingest
         // cannot repair it either, because ingest must open the index first.
-        // Recovery today means deleting the index and running `init` again.
+        // `init --rebuild` validates and replaces the incompatible index.
         assert_eq!(
             pipeline_fingerprint().to_string(),
             "ff465d499d3e917ab4f468dc6dec0cbf9b343cbbab661190f808c92d79bccf5b"

@@ -18,15 +18,15 @@ use crate::config::{
     RepositoryPointer, TrustBinding, TrustError, TrustRegistration, TrustRegistry,
     canonicalize_repository_root,
 };
-use crate::domain::{IndexId, ProjectId, SafeSlug, SlugError, SourceId};
+use crate::domain::{IndexId, ProjectId, SafeSlug, Sha256Digest, SlugError, SourceId};
 use crate::ingest::{
     DiscoveryError, DiscoveryOptions, FilesystemDiscoveryEstimate, HARD_MAX_SOURCE_BYTES,
     HARD_MAX_SOURCE_FILES, extract_identifier_literals,
 };
 use crate::search::SearchRequest;
 use crate::store::{
-    DeleteConfirmations, Doctor, FilesystemScope, IndexDb, IngestOutcome, OpenMode,
-    StoragePreflight, StoragePreflightError, StoreError, WriterLock,
+    DeleteConfirmations, Doctor, FilesystemScope, FingerprintPolicy, IndexDb, IngestOutcome,
+    OpenMode, StoragePreflight, StoragePreflightError, StoreError, WriterLock,
 };
 
 const TRUST_LOCK_TIMEOUT: Duration = Duration::from_secs(5);
@@ -41,6 +41,7 @@ pub struct InitRequest {
     pub managed_paths: ManagedPaths,
     pub index_name: Option<SafeSlug>,
     pub project_name: Option<SafeSlug>,
+    pub rebuild: bool,
     pub no_ingest: bool,
     pub dry_run: bool,
     pub write_pointer: bool,
@@ -59,6 +60,7 @@ impl InitRequest {
             managed_paths,
             index_name: None,
             project_name: None,
+            rebuild: false,
             no_ingest: false,
             dry_run: false,
             write_pointer: false,
@@ -95,6 +97,7 @@ pub struct InitOutcome {
     pub project_id: ProjectId,
     pub source_id: SourceId,
     pub binding_id: Option<BindingId>,
+    pub rebuild: Option<RebuildSummary>,
     pub reused: bool,
     pub dry_run: bool,
     pub pointer: PointerOutcome,
@@ -103,6 +106,15 @@ pub struct InitOutcome {
     pub ingest: Option<IngestOutcome>,
     pub storage_preflight: Option<StoragePreflight>,
     pub next_step: InitNextStep,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RebuildSummary {
+    pub previous_binding_id: BindingId,
+    pub previous_index_id: IndexId,
+    pub previous_pipeline_fingerprint: Sha256Digest,
+    pub active_documents: u64,
+    pub active_passages: u64,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -135,8 +147,26 @@ pub struct TrustOutcome {
 }
 
 pub fn initialize(request: &InitRequest) -> Result<InitOutcome, InitError> {
+    initialize_with_rebuild_observer(request, |_| {})
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum RebuildCheckpoint {
+    TrustBindingRemoved,
+    DatabaseRemoved,
+    ReplacementDatabaseCreated,
+    ReplacementBindingRegistered,
+}
+
+fn initialize_with_rebuild_observer(
+    request: &InitRequest,
+    mut observe_rebuild: impl FnMut(RebuildCheckpoint),
+) -> Result<InitOutcome, InitError> {
     if request.force_pointer && !request.write_pointer {
         return Err(InitError::ForcePointerWithoutWrite);
+    }
+    if request.rebuild && request.no_ingest {
+        return Err(InitError::RebuildWithoutIngest);
     }
 
     let canonical_current = canonicalize_repository_root(&request.current_dir)?;
@@ -172,46 +202,81 @@ pub fn initialize(request: &InitRequest) -> Result<InitOutcome, InitError> {
         &project_name,
     )?;
 
-    if let Some(binding) = existing_binding {
+    let mut rebuild_lock = None;
+    let rebuild = if let Some(binding) = existing_binding.as_ref() {
         if !database_path.is_file() {
             return Err(InitError::TrustedIndexMissing {
                 path: database_path,
             });
         }
-        validate_trusted_database(
-            &database_path,
-            binding.index_id(),
-            binding.project_id(),
-            binding.project_name(),
-            &canonical_root,
-        )?;
-
-        let pointer = if request.dry_run {
-            pointer_plan.dry_run_outcome()
+        if request.rebuild {
+            let writer_lock = if request.dry_run {
+                None
+            } else {
+                Some(WriterLock::acquire(
+                    &database_path,
+                    crate::store::DEFAULT_WRITER_LOCK_TIMEOUT,
+                )?)
+            };
+            let inspection = validate_trusted_database_with_policy(
+                &database_path,
+                binding.index_id(),
+                binding.project_id(),
+                binding.project_name(),
+                &canonical_root,
+                FingerprintPolicy::Tolerate,
+            )?;
+            rebuild_lock = writer_lock;
+            Some(RebuildSummary {
+                previous_binding_id: binding.binding_id(),
+                previous_index_id: binding.index_id(),
+                previous_pipeline_fingerprint: inspection.pipeline_fingerprint,
+                active_documents: inspection.active_documents,
+                active_passages: inspection.active_passages,
+            })
         } else {
-            pointer_plan.apply()?
-        };
-        return Ok(InitOutcome {
-            canonical_root,
-            index_name,
-            project_name,
-            database_path,
-            index_id: binding.index_id(),
-            project_id: binding.project_id(),
-            source_id: derive_source_id(binding.index_id(), binding.project_id()),
-            binding_id: Some(binding.binding_id()),
-            reused: true,
-            dry_run: request.dry_run,
-            pointer,
-            trust_durability: None,
-            source_estimate: SourceEstimate::default(),
-            ingest: None,
-            storage_preflight: None,
-            next_step: InitNextStep::Status,
-        });
-    }
+            validate_trusted_database(
+                &database_path,
+                binding.index_id(),
+                binding.project_id(),
+                binding.project_name(),
+                &canonical_root,
+            )?;
 
-    if request.index_name.is_some() && database_path.try_exists()? {
+            let pointer = if request.dry_run {
+                pointer_plan.dry_run_outcome()
+            } else {
+                pointer_plan.apply()?
+            };
+            return Ok(InitOutcome {
+                canonical_root,
+                index_name,
+                project_name,
+                database_path,
+                index_id: binding.index_id(),
+                project_id: binding.project_id(),
+                source_id: derive_source_id(binding.index_id(), binding.project_id()),
+                binding_id: Some(binding.binding_id()),
+                rebuild: None,
+                reused: true,
+                dry_run: request.dry_run,
+                pointer,
+                trust_durability: None,
+                source_estimate: SourceEstimate::default(),
+                ingest: None,
+                storage_preflight: None,
+                next_step: InitNextStep::Status,
+            });
+        }
+    } else if request.rebuild {
+        return Err(InitError::RebuildBindingRequired {
+            root: canonical_root,
+        });
+    } else {
+        None
+    };
+
+    if !request.rebuild && request.index_name.is_some() && database_path.try_exists()? {
         return Err(InitError::IndexPathOccupied {
             path: database_path,
         });
@@ -253,6 +318,7 @@ pub fn initialize(request: &InitRequest) -> Result<InitOutcome, InitError> {
             project_id,
             source_id,
             binding_id: None,
+            rebuild,
             reused: false,
             dry_run: true,
             pointer: pointer_plan.dry_run_outcome(),
@@ -298,7 +364,25 @@ pub fn initialize(request: &InitRequest) -> Result<InitOutcome, InitError> {
         estimated_write_bytes,
         request.index_quota_bytes,
     )?;
+    if request.rebuild {
+        let binding = existing_binding
+            .as_ref()
+            .expect("rebuild requires the existing binding validated above");
+        unregister_and_save(&trust_path, binding)?;
+        observe_rebuild(RebuildCheckpoint::TrustBindingRemoved);
+        let database = IndexDb::open_existing_with_policy(
+            &database_path,
+            OpenMode::ReadWrite,
+            FingerprintPolicy::Tolerate,
+        )?;
+        database.remove()?;
+        observe_rebuild(RebuildCheckpoint::DatabaseRemoved);
+        drop(rebuild_lock.take());
+    }
     let mut database = IndexDb::create(&database_path, index_id)?;
+    if request.rebuild {
+        observe_rebuild(RebuildCheckpoint::ReplacementDatabaseCreated);
+    }
     let mut rollback = NewIndexRollback::new(database_path.clone());
     if let Err(error) = set_private_file(&database_path) {
         drop(database);
@@ -370,6 +454,9 @@ pub fn initialize(request: &InitRequest) -> Result<InitOutcome, InitError> {
         }
     };
     let binding = outcome_binding(registration.outcome);
+    if request.rebuild {
+        observe_rebuild(RebuildCheckpoint::ReplacementBindingRegistered);
+    }
 
     pointer_rollback.commit();
     rollback.commit();
@@ -382,6 +469,7 @@ pub fn initialize(request: &InitRequest) -> Result<InitOutcome, InitError> {
         project_id,
         source_id,
         binding_id: Some(binding.binding_id()),
+        rebuild,
         reused: false,
         dry_run: false,
         pointer: pointer_outcome,
@@ -527,8 +615,26 @@ fn validate_trusted_database(
     expected_project_id: ProjectId,
     expected_project_name: &SafeSlug,
     expected_root: &Path,
-) -> Result<(), InitError> {
-    let report = Doctor::run(database_path)?;
+) -> Result<TrustedIndexInspection, InitError> {
+    validate_trusted_database_with_policy(
+        database_path,
+        expected_index_id,
+        expected_project_id,
+        expected_project_name,
+        expected_root,
+        FingerprintPolicy::Reject,
+    )
+}
+
+fn validate_trusted_database_with_policy(
+    database_path: &Path,
+    expected_index_id: IndexId,
+    expected_project_id: ProjectId,
+    expected_project_name: &SafeSlug,
+    expected_root: &Path,
+    fingerprint_policy: FingerprintPolicy,
+) -> Result<TrustedIndexInspection, InitError> {
+    let report = Doctor::run_with_policy(database_path, fingerprint_policy)?;
     if report.index_id != expected_index_id {
         return Err(InitError::TrustedIndexIdentityMismatch {
             expected: expected_index_id,
@@ -536,7 +642,8 @@ fn validate_trusted_database(
         });
     }
 
-    let database = IndexDb::open_existing(database_path, OpenMode::ReadOnly)?;
+    let database =
+        IndexDb::open_existing_with_policy(database_path, OpenMode::ReadOnly, fingerprint_policy)?;
     let connection = database.connection();
     let project_matches: bool = connection
         .query_row(
@@ -621,7 +728,28 @@ fn validate_trusted_database(
             expected: expected_root.to_path_buf(),
         });
     }
-    Ok(())
+    let active_documents: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM document_heads WHERE state = 'active'",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(StoreError::from)?;
+    let active_passages: i64 = connection
+        .query_row("SELECT COUNT(*) FROM active_passages", [], |row| row.get(0))
+        .map_err(StoreError::from)?;
+    Ok(TrustedIndexInspection {
+        pipeline_fingerprint: report.pipeline_fingerprint,
+        active_documents: u64::try_from(active_documents)
+            .map_err(|_| StoreError::IntegerOverflow)?,
+        active_passages: u64::try_from(active_passages).map_err(|_| StoreError::IntegerOverflow)?,
+    })
+}
+
+struct TrustedIndexInspection {
+    pipeline_fingerprint: Sha256Digest,
+    active_documents: u64,
+    active_passages: u64,
 }
 
 fn select_root(request: &InitRequest, canonical_current: &Path) -> Result<PathBuf, InitError> {
@@ -883,6 +1011,41 @@ fn load_registry(path: &Path) -> Result<TrustRegistry, InitError> {
         }
         Err(error) => Err(error.into()),
     }
+}
+
+fn unregister_and_save(
+    path: &Path,
+    expected_binding: &TrustBinding,
+) -> Result<AtomicSaveOutcome, InitError> {
+    let parent = path
+        .parent()
+        .ok_or_else(|| InitError::TrustPathHasNoParent {
+            path: path.to_path_buf(),
+        })?;
+    create_private_directory(parent)?;
+    let _lock = WriterLock::acquire(path, TRUST_LOCK_TIMEOUT)?;
+    let registry = load_registry(path)?;
+    let Some(current_binding) = registry
+        .bindings()
+        .iter()
+        .find(|binding| binding.binding_id() == expected_binding.binding_id())
+    else {
+        return Err(InitError::RebuildBindingChanged {
+            binding_id: expected_binding.binding_id(),
+        });
+    };
+    if current_binding != expected_binding {
+        return Err(InitError::RebuildBindingChanged {
+            binding_id: expected_binding.binding_id(),
+        });
+    }
+    let retained = registry
+        .bindings()
+        .iter()
+        .filter(|binding| binding.binding_id() != expected_binding.binding_id())
+        .cloned()
+        .collect();
+    Ok(TrustRegistry::from_bindings(retained)?.save_atomic(path)?)
 }
 
 fn register_and_save(
@@ -1252,6 +1415,12 @@ pub enum InitError {
     AccountHomeUnavailable(#[source] io::Error),
     #[error("--force-pointer requires --write-pointer")]
     ForcePointerWithoutWrite,
+    #[error("--rebuild cannot be combined with --no-ingest")]
+    RebuildWithoutIngest,
+    #[error("repository root has no existing trust binding to rebuild: {root}")]
+    RebuildBindingRequired { root: PathBuf },
+    #[error("trust binding changed while rebuild was preparing: {binding_id}")]
+    RebuildBindingChanged { binding_id: BindingId },
     #[error("repository pointer already exists: {path}; use --force-pointer to replace it")]
     PointerExists { path: PathBuf },
     #[error("repository pointer path is not a regular non-symlink file: {path}")]
@@ -1269,7 +1438,7 @@ pub enum InitError {
         expected_id: ProjectId,
         expected_name: SafeSlug,
     },
-    #[error("alpha.1 requires exactly one source in the trusted project; found {found}")]
+    #[error("alpha.2 requires exactly one source in the trusted project; found {found}")]
     AlphaSourceCardinality { found: usize },
     #[error("trusted project is not linked to its expected filesystem source {expected}")]
     TrustedSourceIdentityMismatch { expected: SourceId },
@@ -1321,4 +1490,129 @@ pub enum InitError {
     SourceConfig(#[from] super::SourceConfigError),
     #[error(transparent)]
     Io(#[from] io::Error),
+}
+
+#[cfg(all(test, unix))]
+mod tests {
+    use std::env;
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    use tempfile::tempdir;
+
+    use super::{InitRequest, RebuildCheckpoint, initialize, initialize_with_rebuild_observer};
+    use crate::config::{ManagedPaths, TrustRegistry};
+    use crate::status::Status;
+    use crate::store::Doctor;
+
+    const FAULT_ENV: &str = "HSUM_TEST_REBUILD_CHECKPOINT";
+    const ROOT_ENV: &str = "HSUM_TEST_REBUILD_ROOT";
+    const MANAGED_HOME_ENV: &str = "HSUM_TEST_REBUILD_MANAGED_HOME";
+    const CRASH_EXIT: i32 = 86;
+
+    #[test]
+    fn interrupted_rebuilds_leave_plain_init_recoverable() {
+        for checkpoint in [
+            RebuildCheckpoint::TrustBindingRemoved,
+            RebuildCheckpoint::DatabaseRemoved,
+            RebuildCheckpoint::ReplacementDatabaseCreated,
+            RebuildCheckpoint::ReplacementBindingRegistered,
+        ] {
+            let root = tempdir().unwrap();
+            let managed_home = tempdir().unwrap();
+            fs::write(
+                root.path().join("README.md"),
+                b"# Rebuild crash fixture\nCrashRecoveryIdentifier\n",
+            )
+            .unwrap();
+            let initial = initialize(&request_for_paths(root.path(), managed_home.path())).unwrap();
+            assert!(Doctor::run(&initial.database_path).is_ok());
+
+            let status = Command::new(env::current_exe().unwrap())
+                .arg("--exact")
+                .arg("app::init::tests::rebuild_fault_helper")
+                .arg("--nocapture")
+                .env(FAULT_ENV, checkpoint.as_str())
+                .env(ROOT_ENV, root.path())
+                .env(MANAGED_HOME_ENV, managed_home.path())
+                .status()
+                .unwrap();
+            assert_eq!(
+                status.code(),
+                Some(CRASH_EXIT),
+                "checkpoint {checkpoint:?} did not terminate at the fault boundary"
+            );
+
+            let recovered =
+                initialize(&request_for_paths(root.path(), managed_home.path())).unwrap();
+            assert!(Doctor::run(&recovered.database_path).is_ok());
+            assert_eq!(
+                Status::read(&recovered.database_path)
+                    .unwrap()
+                    .active_documents,
+                1
+            );
+            let registry =
+                TrustRegistry::load(&managed_home.path().join("config/trusted-projects.toml"))
+                    .unwrap();
+            let canonical_root = fs::canonicalize(root.path()).unwrap();
+            assert_eq!(
+                registry
+                    .bindings()
+                    .iter()
+                    .filter(|binding| binding.canonical_root() == canonical_root)
+                    .count(),
+                1
+            );
+        }
+    }
+
+    #[test]
+    fn rebuild_fault_helper() {
+        let Ok(checkpoint) = env::var(FAULT_ENV) else {
+            return;
+        };
+        let checkpoint = RebuildCheckpoint::parse(&checkpoint).expect("known rebuild checkpoint");
+        let root = PathBuf::from(env::var_os(ROOT_ENV).expect("rebuild root"));
+        let managed_home = PathBuf::from(env::var_os(MANAGED_HOME_ENV).expect("managed test home"));
+        let mut request = request_for_paths(&root, &managed_home);
+        request.rebuild = true;
+
+        let result = initialize_with_rebuild_observer(&request, |observed| {
+            if observed == checkpoint {
+                std::process::exit(CRASH_EXIT);
+            }
+        });
+        panic!("rebuild returned before checkpoint {checkpoint:?}: {result:?}");
+    }
+
+    fn request_for_paths(root: &Path, managed_home: &Path) -> InitRequest {
+        let managed_paths = ManagedPaths::resolve(Some(managed_home)).unwrap();
+        let mut request = InitRequest::new(root.to_path_buf(), managed_paths);
+        request.requested_root = Some(root.to_path_buf());
+        request.home_dir = Some(managed_home.join("not-the-source-home"));
+        request
+    }
+
+    impl RebuildCheckpoint {
+        const fn as_str(self) -> &'static str {
+            match self {
+                Self::TrustBindingRemoved => "trust-binding-removed",
+                Self::DatabaseRemoved => "database-removed",
+                Self::ReplacementDatabaseCreated => "replacement-database-created",
+                Self::ReplacementBindingRegistered => "replacement-binding-registered",
+            }
+        }
+
+        fn parse(value: &str) -> Option<Self> {
+            match value {
+                "trust-binding-removed" => Some(Self::TrustBindingRemoved),
+                "database-removed" => Some(Self::DatabaseRemoved),
+                "replacement-database-created" => Some(Self::ReplacementDatabaseCreated),
+                "replacement-binding-registered" => Some(Self::ReplacementBindingRegistered),
+                _ => None,
+            }
+        }
+    }
 }

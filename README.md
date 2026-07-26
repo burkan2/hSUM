@@ -20,18 +20,16 @@
   <a href="#license"><img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue"></a>
   <a href="https://www.rust-lang.org/tools/install"><img alt="Language: Rust 1.91" src="https://img.shields.io/badge/rust-1.91-orange?logo=rust"></a>
   <a href="#connect-your-agent"><img alt="Interface: CLI and MCP" src="https://img.shields.io/badge/interface-CLI%20%2B%20MCP-8A63D2"></a>
-  <a href="outputs/IMPLEMENTATION_STATUS.md"><img alt="Status: alpha, builds from source" src="https://img.shields.io/badge/status-alpha%20·%20builds%20from%20source-9cf"></a>
+  <a href="outputs/IMPLEMENTATION_STATUS.md"><img alt="Status: alpha prerelease" src="https://img.shields.io/badge/status-alpha%20prerelease-9cf"></a>
   <a href="#build-from-source"><img alt="Targets: macOS arm64 and Linux x86_64" src="https://img.shields.io/badge/targets-macOS%20arm64%20%7C%20Linux%20x86__64-informational"></a>
   <a href="#storage-and-quota-behavior"><img alt="Network: none after build" src="https://img.shields.io/badge/network-none%20after%20build-2ea44f"></a>
 </p>
 
 <!--
-  Metrics badges (stars, downloads, crates.io version, CI) are intentionally
-  omitted until they point at something real. Add them at public launch, e.g.:
+  Registry metrics are intentionally omitted while publish=false. Add them
+  only if a future release is actually published to crates.io, e.g.:
   ![crates.io](https://img.shields.io/crates/v/hsum)
-  ![CI](https://img.shields.io/github/actions/workflow/status/<org>/hsum/ci.yml)
   ![downloads](https://img.shields.io/crates/d/hsum)
-  ![stars](https://img.shields.io/github/stars/<org>/hsum)
 -->
 
 <p align="center">
@@ -42,16 +40,16 @@
   <a href="#quickstart"><img alt="Build from source" src="https://img.shields.io/badge/build%20from%20source-cargo%20build%20--release-2ea44f?logo=rust"></a>
   &nbsp;
   <img alt="cargo install: at v0.1.0" src="https://img.shields.io/badge/cargo%20install%20hsum-at%20v0.1.0-lightgrey">
-  <img alt="prebuilt binaries: at v0.1.0" src="https://img.shields.io/badge/prebuilt%20binaries-at%20v0.1.0-lightgrey">
+  <a href="https://github.com/burkan2/hSUM/releases"><img alt="GitHub alpha archives available" src="https://img.shields.io/badge/GitHub%20alpha%20archives-available-2ea44f?logo=github"></a>
 </p>
 
 <p align="center">
   <sub>
     Colored badges are clickable and go to the relevant section or page.
     Source build works today (see <a href="#quickstart">Quickstart</a>).
-    Published <code>cargo install</code>, <code>cargo binstall</code>, and
-    prebuilt macOS/Linux binaries land at the first tagged release; the two
-    greyed badges mark those and stay unlinked until they exist.
+    GitHub prereleases provide prebuilt macOS arm64 and Linux x86_64 archives.
+    Published <code>cargo install</code> and <code>cargo binstall</code> remain
+    deferred while the crate has <code>publish = false</code>.
     Alpha binaries are checksummed and carry GitHub build attestations, but
     the macOS archive is <b>not</b> Apple-signed or notarized — see
     <a href="#verifying-a-release">Verifying a release</a>.
@@ -111,7 +109,7 @@ after I explicitly approve that system change. When Cargo is ready, run
 HSUM to the binary's absolute path, then initialize the repository I name and
 run one search. Report each command and its result, including any failure,
 before proceeding to the next step. Documentation is at
-https://hsum.burkankale.com/docs/0.1.0-alpha.1/ and
+https://hsum.burkankale.com/docs/0.1.0-alpha.2/ and
 https://hsum.burkankale.com/llms.txt.
 ```
 
@@ -122,11 +120,10 @@ confirm the command returns evidence. Every result carries an immutable
 whatever the file looks like later.
 
 > [!NOTE]
-> This is an alpha. Build from source today with the steps above; the checkout
-> carries no machine-specific state, so it builds the same on any macOS arm64
-> or Linux x86_64 box. Packaged releases (`cargo install`, prebuilt binaries)
-> and a first tag land next. Until then the crate keeps `publish = false`, so
-> read the code and dependencies before you build.
+> This is an alpha. The tagged alpha.1 release has prebuilt GitHub artifacts;
+> the current checkout is the unreleased alpha.2 candidate and should be built
+> from reviewed source with the steps above. The crate remains
+> `publish = false`, so `cargo install` is unavailable.
 
 ## Connect your agent
 
@@ -150,7 +147,7 @@ cloud-backed client may forward returned passages to its own model provider
 under that client's policy, and the generated config prints that warning
 before the snippet.
 
-## Available in alpha.1
+## Available on main for the next prerelease
 
 | Capability | Status | Current boundary |
 |---|---|---|
@@ -164,14 +161,14 @@ before the snippet.
 | JSONL and live connectors | Unsupported | Planned after the filesystem slice |
 | Semantic search, models, and reranking | Unsupported | No model install or download path exists |
 | HTTP server or web UI | Unsupported | MCP stdio is the only transport |
-| Prebuilt installation | Unavailable | Source build only; no release artifacts have been produced |
+| Prebuilt installation | Not promoted | Alpha.1 artifacts exist; this unreleased candidate must pass the release gates before new artifacts are published |
 
 ## Build from source
 
-The repository pins Rust `1.91.0` with `rustfmt` and Clippy. The implementation
-uses Unix filesystem and locking primitives and is intended for macOS and
-Linux on local storage. No clean-machine release matrix has run, so this is not
-yet a support claim for either platform. Windows is unsupported in alpha.1.
+The repository pins Rust `1.91.0` with `rustfmt` and Clippy. Release CI runs on
+clean GitHub-hosted macOS arm64 and Linux x86_64 machines. The implementation
+uses Unix filesystem and locking primitives on local storage; Windows is
+unsupported.
 
 ```bash
 git clone <your-reviewed-copy-of-this-repository>
@@ -195,12 +192,12 @@ after I explicitly approve that system change. Once Cargo is available, run
 `cargo build --locked --release` and `./target/release/hsum --version`. Then
 give me the exact `export HSUM=...` command using this checkout's absolute path
 and report the commands and results without making any other changes.
-Documentation is at https://hsum.burkankale.com/docs/0.1.0-alpha.1/ and
+Documentation is at https://hsum.burkankale.com/docs/0.1.0-alpha.2/ and
 https://hsum.burkankale.com/llms.txt.
 ```
 
 The first build may contact Rust and crate registries to obtain the pinned
-toolchain and dependencies. After a binary exists, alpha.1 has no network
+toolchain and dependencies. After a binary exists, hSUM has no network
 client, account, telemetry, model download, HTTP server, or other network
 runtime path. An already populated Cargo cache can build with Cargo's normal
 `--offline` option.
@@ -252,11 +249,11 @@ Useful initialization controls:
 
 ## Command inventory
 
-Alpha.1 exposes only the following command graph:
+The current candidate exposes only the following command graph:
 
 | Command | Output and effect |
 |---|---|
-| `hsum init [PATH]` | Dry-run or create one managed filesystem index, project, source, and user trust binding |
+| `hsum init [PATH]` | Dry-run or create one managed filesystem index, project, source, and user trust binding; `--rebuild` safely replaces the binding and index |
 | `hsum trust PATH --confirm` | Add or confirm a root-bound user trust binding for an existing matching index |
 | `hsum ingest` | Dry-run or commit one authoritative filesystem generation |
 | `hsum search QUERY` | Human evidence or one JSON document; exact plus BM25 |
@@ -273,21 +270,22 @@ Alpha.1 exposes only the following command graph:
 
 The only `help` subcommand is the offline error catalog,
 `hsum help error <SUBCODE>`; for command help use `hsum --help` or
-`hsum <command> --help`. Alpha.1 has no `model`, `backup`, `prune`, `forget`,
+`hsum <command> --help`. The current candidate has no `model`, `backup`,
+`prune`, `forget`,
 `restore`, `repair`, `watch`, or daemon command.
 
 ## Source discovery and ingest
 
-Alpha.1 accepts valid UTF-8 text without NUL bytes. Lowercase filename
-extensions are matched exactly. The per-file default is 2 MiB and remains
-2 MiB when `--allow-large-source` is used.
+The current candidate accepts valid UTF-8 text without NUL bytes. Lowercase
+filename extensions are matched exactly. The per-file default is 2 MiB and
+remains 2 MiB when `--allow-large-source` is used.
 
 Source files chunk at declaration boundaries where the language has them —
 `fn`, `class`, `def`, `func`, and their equivalents. Shell and SQL have no
 unambiguous declaration keyword, so they chunk at paragraph and line
 boundaries instead. Configuration formats such as `.yaml`, `.json`, and
 `.toml`, markup such as `.html` and `.css`, and extensionless files such as
-`Makefile` are not indexed in alpha.1.
+`Makefile` are not indexed.
 
 Discovery stays conservative by default:
 
@@ -296,7 +294,7 @@ Discovery stays conservative by default:
   `__pycache__`, and `venv` are excluded by default;
 - `.git`, `.ssh`, `.aws`, `.gnupg`, `.config`, `.cache`, `.idea`, `.vscode`,
   environment files, common credential names, and private-key extensions are
-  treated as sensitive and are not admitted by the alpha.1 CLI;
+  treated as sensitive and are not admitted by the CLI;
 - source roots, directories, and files are opened without following symlinks;
 - hard links are ordinary regular files and cannot be distinguished from their
   original paths, so secret-path rules are defense in depth rather than a
@@ -324,10 +322,19 @@ those rules, the stored fingerprint no longer matches and the index stops
 opening: every command, including `search` and `ingest`, fails with
 `pipeline fingerprint does not match this binary`.
 
-Alpha.1 has no repair or migration command, and `ingest` cannot recover such an
-index because it must open the index before it can rebuild it. Delete the
-managed index directory reported by `hsum context` and run `hsum init` again.
-Evidence and citations from the deleted index do not survive.
+`ingest` cannot recover such an index because it must open the index before it
+can rebuild it. Inspect the destructive replacement first, then run it:
+
+```bash
+"$HSUM" init --rebuild --dry-run
+"$HSUM" init --rebuild
+```
+
+Rebuild validates that the old index is structurally coherent apart from its
+pipeline fingerprint, preserves other trusted roots, and creates a new index
+and binding from the current source. It refuses corruption rather than
+silently treating damage as compatibility. Evidence and citations from the
+replaced index do not survive.
 
 A refresh runs as two bounded passes. The first pass only enumerates and
 estimates the eligible source without writing anything; a storage preflight
@@ -357,7 +364,7 @@ default is 5,000 ms.
 
 ## Search and citations
 
-Alpha.1 combines three local lexical signals:
+The current candidate combines three local lexical signals:
 
 1. case-sensitive identifier-like literals;
 2. conservative exact quoted spans;
@@ -365,7 +372,7 @@ Alpha.1 combines three local lexical signals:
 
 The candidate lists are fused deterministically. `--explain` includes the
 signal ranks and fixed-point fusion score. `--mode auto` and
-`--mode lexical` produce the same alpha.1 behavior.
+`--mode lexical` produce the same behavior.
 
 ```bash
 "$HSUM" search 'generation recovery'
@@ -376,7 +383,7 @@ signal ranks and fixed-point fusion score. `--mode auto` and
 Search limits are 1–50 results, the deadline is 100–10,000 ms, and the defaults
 are 10 results and 3,000 ms. A query is at most 4,096 UTF-8 bytes. Double quotes
 delimit exact spans and have no escape syntax. The CLI exposes `--cursor` in
-the pre-stable grammar but rejects it in alpha.1; cursor pagination is MCP-only.
+the pre-stable grammar but rejects it; cursor pagination is MCP-only.
 
 Every result includes a canonical citation:
 
@@ -561,7 +568,7 @@ explains every public subcode with its category, retryability, cause, fix, and
 an example, no browser or network needed. Preserve the request ID when you
 report a failure.
 
-Stable alpha.1 process exits:
+Stable prerelease process exits:
 
 | Exit | Meaning |
 |---:|---|
@@ -593,8 +600,9 @@ cargo test --all-targets --all-features
 cargo test --doc --all-features
 ```
 
-These checks are contributor evidence, not a substitute for the still-missing
-clean-machine platform, signing, installer, benchmark, and release gates. See
+These checks are contributor evidence, not a substitute for the clean-machine
+release workflow, artifact verification, documentation, and signed-tag gates.
+An installer, notarization, and benchmark claim remain explicitly deferred. See
 [`outputs/IMPLEMENTATION_STATUS.md`](outputs/IMPLEMENTATION_STATUS.md) for a
 source-to-test evidence map and [`TODOS.md`](TODOS.md) for the remaining work.
 
@@ -606,7 +614,7 @@ the workflow run and commit that produced it.
 
 ```bash
 shasum -a 256 -c SHA256SUMS
-gh attestation verify hsum-v0.1.0-alpha.1-<target>.<ext> --repo burkan2/hSUM \
+gh attestation verify hsum-v0.1.0-alpha.2-<target>.<ext> --repo burkan2/hSUM \
   --predicate-type https://spdx.dev/Document/v2.3
 ```
 

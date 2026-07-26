@@ -52,6 +52,37 @@ impl ChunkKind {
         Self::Sql,
     ];
 
+    pub const EXTENSIONS: [(&'static str, Self); 28] = [
+        ("md", Self::Markdown),
+        ("markdown", Self::Markdown),
+        ("txt", Self::PlainText),
+        ("rs", Self::Rust),
+        ("py", Self::Python),
+        ("ts", Self::TypeScript),
+        ("tsx", Self::TypeScript),
+        ("js", Self::JavaScript),
+        ("jsx", Self::JavaScript),
+        ("go", Self::Go),
+        ("java", Self::Java),
+        ("kt", Self::Kotlin),
+        ("kts", Self::Kotlin),
+        ("c", Self::C),
+        ("h", Self::C),
+        ("cpp", Self::Cpp),
+        ("hpp", Self::Cpp),
+        ("cc", Self::Cpp),
+        ("hh", Self::Cpp),
+        ("cxx", Self::Cpp),
+        ("rb", Self::Ruby),
+        ("cs", Self::CSharp),
+        ("swift", Self::Swift),
+        ("php", Self::Php),
+        ("scala", Self::Scala),
+        ("sh", Self::Shell),
+        ("bash", Self::Shell),
+        ("sql", Self::Sql),
+    ];
+
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Markdown => "markdown",
@@ -77,27 +108,9 @@ impl ChunkKind {
 
     pub fn from_path(path: &Path) -> Option<Self> {
         let extension = path.extension()?.to_str()?;
-        match extension {
-            "md" | "markdown" => Some(Self::Markdown),
-            "txt" => Some(Self::PlainText),
-            "rs" => Some(Self::Rust),
-            "py" => Some(Self::Python),
-            "ts" | "tsx" => Some(Self::TypeScript),
-            "js" | "jsx" => Some(Self::JavaScript),
-            "go" => Some(Self::Go),
-            "java" => Some(Self::Java),
-            "kt" | "kts" => Some(Self::Kotlin),
-            "c" | "h" => Some(Self::C),
-            "cpp" | "hpp" | "cc" | "hh" | "cxx" => Some(Self::Cpp),
-            "rb" => Some(Self::Ruby),
-            "cs" => Some(Self::CSharp),
-            "swift" => Some(Self::Swift),
-            "php" => Some(Self::Php),
-            "scala" => Some(Self::Scala),
-            "sh" | "bash" => Some(Self::Shell),
-            "sql" => Some(Self::Sql),
-            _ => None,
-        }
+        Self::EXTENSIONS
+            .iter()
+            .find_map(|(candidate, kind)| (*candidate == extension).then_some(*kind))
     }
 }
 
@@ -648,6 +661,6 @@ pub enum ChunkError {
     NulContent,
     #[error("chunk boundary invariant failed")]
     BoundaryInvariant,
-    #[error("document produces more chunks than the alpha.1 ordinal can represent")]
+    #[error("document produces more chunks than the alpha.2 ordinal can represent")]
     TooManyChunks,
 }

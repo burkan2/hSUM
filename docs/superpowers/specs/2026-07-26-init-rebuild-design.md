@@ -1,16 +1,18 @@
 # `hsum init --rebuild`: recovering an index the current binary cannot open
 
 Date: 2026-07-26
-Status: approved design, not yet implemented
+Status: implemented on `fix/fingerprint-recovery`
 Supersedes: `2026-07-25-pipeline-fingerprint-recovery-design.md` (heal-inside-ingest — abandoned, see Why the previous approach was abandoned)
-Scope: `src/app/init.rs`, `src/cli.rs`, `src/runtime.rs`, `src/config/trust.rs`, docs
+Scope: `src/app/init.rs`, `src/cli.rs`, `src/runtime.rs`, `src/config/trust.rs`,
+`src/store/doctor.rs`, `src/store/open.rs`, tests, docs
 
 ## The problem
 
 hSUM hashes its indexing rules — the indexable extension set, the chunker
 configuration, the tokenizer settings — into a pipeline fingerprint stored in
-each index. When a release changes those rules, every existing index carries a
-fingerprint the new binary does not recognize, and **every command fails**:
+each index. Before this change, when a release changed those rules, every
+existing index carried a fingerprint the new binary did not recognize, and
+**every ordinary command failed**:
 
 | Command | Result on such an index |
 |---|---|
@@ -22,7 +24,7 @@ fingerprint the new binary does not recognize, and **every command fails**:
 All report subcode `PIPELINE_FINGERPRINT`: *"the index was built by a different
 hSUM indexing pipeline."*
 
-There is no in-product recovery. Worse, the recovery documented on `main` is
+There was no in-product recovery. Worse, the recovery documented on `main` was
 **incomplete and does not work**: it says to delete the managed index
 directory, but the trust registry still holds a binding for that root, so the
 next `init` fails with `INDEX_NOT_FOUND`. Verified by running it. Actual
@@ -90,14 +92,24 @@ source, the project, and the trust binding. Recovery belongs there.
 — which is where a stale index dies. With `--rebuild`, the branch instead tears
 down and falls through to the existing fresh-init path.
 
-**Teardown, in order:**
+**Validation and teardown, in order:**
 
-1. Remove the trust binding for this canonical root and save the registry
+1. For an actual rebuild, acquire the existing index's writer lock. A dry run
+   remains read-only and the actual command repeats validation under the lock.
+2. Run a full inspection that tolerates only a coherent, valid 32-byte
+   pipeline fingerprint different from the current binary. The stored
+   fingerprint must exist, every generation must carry the same value, and all
+   other Doctor invariants remain strict.
+3. Validate the bound index, project, source, and canonical root identities.
+4. Complete discovery, source sizing, storage preflight, and staging while the
+   old binding and database still exist.
+5. Remove the trust binding for this canonical root and save the registry
    atomically. `TrustRegistry` already exposes `bindings()`,
    `from_bindings(...)`, and `save_atomic(...)` (`src/config/trust.rs:180`,
    `:174`, `:327`) — filtering and re-saving needs no new API.
-2. Remove the managed database and its WAL/SHM sidecars.
-3. Fall through to the ordinary creation path, which builds a new index,
+6. Remove the validated managed database and its WAL/SHM sidecars without
+   following symlinks.
+7. Fall through to the ordinary creation path, which builds a new index,
    project, source, and binding, and ingests.
 
 Registry first is deliberate: a crash between steps leaves a registry with no
@@ -113,14 +125,17 @@ database — the `INDEX_NOT_FOUND` dead end users hit today.
   user worse off than before, with an empty index and no evidence.
 - **Outside a trusted root**, or where plain `init` would refuse (broad root,
   oversized source). `--rebuild` does not bypass any existing safety gate.
+- **Corrupt or internally inconsistent indexes.** A missing or malformed
+  fingerprint, mixed generation fingerprints, schema damage, identity drift,
+  or any other Doctor failure remains fatal and is not deleted.
 
 ### `--dry-run`
 
 `init --rebuild --dry-run` reports what would be destroyed — the index path,
-its document and passage counts if readable, and the binding — and writes
-nothing. Counts come from a best-effort read; if the database cannot be opened
-far enough to count, say so rather than failing, since being unopenable is the
-whole reason the user is here.
+its document and passage counts and the binding — and writes nothing. Counts
+come from the same full tolerant inspection required by the real operation. A
+fingerprint mismatch is tolerated; corruption and identity drift still fail
+the dry run. It does not create a missing writer-lock sidecar.
 
 ### What the user is told
 
@@ -141,11 +156,12 @@ that actually recovers them.
 
 ## What this does not change
 
-The four gates stay strict. `FingerprintPolicy` — added in `9ca396d` and
-already reviewed — keeps its `Tolerate` variant, now used only by tests and by
-the `--rebuild` teardown's best-effort dry-run read. Nothing in `src/runtime.rs`
-or `src/store/generation.rs` needs the policy threaded through it, and the
-`ingest` path is untouched.
+The four public gates stay strict. `FingerprintPolicy` is crate-private;
+`Tolerate` is used only by tests and the full pre-teardown validation inside
+`init --rebuild`. It still requires a well-formed stored digest and coherent
+generation fingerprints. Nothing in `src/runtime.rs` or
+`src/store/generation.rs` receives a tolerant policy, and the ingest path is
+untouched.
 
 ## Testing
 
@@ -159,6 +175,9 @@ or `src/store/generation.rs` needs the policy threaded through it, and the
   registry are unchanged, and the stale index still fails afterward.
 - `--rebuild` without an existing binding is refused with a clear error.
 - `--rebuild --no-ingest` is refused.
+- Subprocess tests exit without unwinding after trust removal, database
+  removal, replacement creation, and replacement registration; ordinary
+  `init` restores one valid binding and active evidence from every state.
 - After a rebuild, a citation captured before it returns `EVIDENCE_FORGOTTEN`
   or `NOT_FOUND` — never a wrong passage, and never a stale hit.
 - The trust registry has exactly one binding for the root afterward, with a
@@ -171,19 +190,21 @@ or `src/store/generation.rs` needs the policy threaded through it, and the
 conclusions about this subsystem were wrong and were caught only by execution.
 Store-layer tests are not sufficient evidence for this change.
 
+The clean-platform CI and release workflows also download the checksum-pinned
+published alpha.1 archive for their runner, create the old index with that
+executable, and recover it with the alpha.2 candidate. Rewriting only a current
+fixture's fingerprint remains useful for focused tests but is not treated as
+released-index compatibility evidence.
+
 ## Documentation
 
 `CHANGELOG.md`, `README.md`, and the comment above
-`alpha_1_pipeline_fingerprint_is_frozen` (`src/store/schema.rs`) all currently
-describe recovery incorrectly — they omit the trust registry, so the procedure
-they document fails. All three must state `hsum init --rebuild`.
+`alpha_2_pipeline_fingerprint_is_frozen` (`src/store/schema.rs`) now state
+`hsum init --rebuild`; none instructs users to edit the shared trust registry
+or discover a path through the already-failing `context` command.
 
 ## Sequencing
 
-1. Refuse-and-report: the flag, its validation rules, and `--dry-run`. Ships
-   without destroying anything.
-2. Teardown and rebuild.
-3. Error remediation text and docs.
-
-Step 1 first means the destructive path lands only after its guards exist and
-are tested.
+The implementation followed the intended order in one reviewed change:
+refusal and dry-run tests first, validated teardown and rebuild second, and
+error remediation plus documentation last.

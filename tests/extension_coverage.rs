@@ -2,14 +2,9 @@ use hsum::ingest::{ChunkKind, DiscoveryOptions, discover_files};
 use std::fs;
 use tempfile::tempdir;
 
-/// Every extension the discovery gate admits must resolve to a chunk kind,
-/// the hashed pipeline descriptor must name exactly that same set, and the
-/// real discovery gate (`discover_files`, backed by the private
-/// `is_supported_path`) must actually admit every extension in the set and
-/// reject what is out of scope. Without this test a future language addition
-/// can update some sites and not others: `expected` here, `ChunkKind::from_path`,
-/// `PIPELINE_DESCRIPTOR`, and the private `is_supported_path` gate itself are
-/// four independent copies of the same list that must all agree.
+/// One extension-to-kind table drives path classification, the discovery gate,
+/// and the hashed pipeline descriptor. This test freezes that public set and
+/// exercises the real discovery path so those sites cannot drift apart.
 #[test]
 fn discovery_chunking_and_pipeline_descriptor_agree_on_the_extension_set() {
     let expected = [
@@ -17,8 +12,12 @@ fn discovery_chunking_and_pipeline_descriptor_agree_on_the_extension_set() {
         "c", "h", "cpp", "hpp", "cc", "hh", "cxx", "rb", "cs", "swift", "php", "scala", "sh",
         "bash", "sql",
     ];
+    assert_eq!(
+        ChunkKind::EXTENSIONS.map(|(extension, _)| extension),
+        expected
+    );
 
-    // expected -> ChunkKind: everything in `expected` has a chunker.
+    // Every supported extension has a chunker.
     for extension in expected {
         let path = std::path::PathBuf::from(format!("sample.{extension}"));
         assert!(
@@ -33,7 +32,7 @@ fn discovery_chunking_and_pipeline_descriptor_agree_on_the_extension_set() {
         "json is out of scope until extensions are configurable"
     );
 
-    // expected -> PIPELINE_DESCRIPTOR: the hashed descriptor names the same set in the same order.
+    // The hashed descriptor is generated from the same table in the same order.
     let descriptor = hsum::store::pipeline_descriptor();
     let line = descriptor
         .lines()
@@ -44,12 +43,8 @@ fn discovery_chunking_and_pipeline_descriptor_agree_on_the_extension_set() {
         .trim_end_matches(":symlinks=never");
     assert_eq!(listed, expected.join(","));
 
-    // expected -> the real discovery gate: `discover_files` must admit exactly
-    // one file per extension in `expected`, and must reject the negative
-    // controls. This exercises `is_supported_path` itself (it is private to
-    // `src/ingest/filesystem.rs`, so this is the only way an integration test
-    // can observe its behavior), closing the gap where `is_supported_path`
-    // could drift from `expected` while every other site stayed in sync.
+    // The real discovery gate must admit one file per supported extension and
+    // reject the negative controls.
     let directory = tempdir().unwrap();
     for extension in expected {
         // `md` and `markdown` (and any other pair sharing a stem) would

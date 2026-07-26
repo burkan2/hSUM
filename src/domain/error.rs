@@ -547,7 +547,7 @@ impl ErrorSubcode {
                 ErrorCode::InvalidArgument,
                 false,
                 "this operation is unsupported on the current platform",
-                "the alpha.1 filesystem safety implementation is unavailable on this operating system",
+                "the alpha.2 filesystem safety implementation is unavailable on this operating system",
                 "run hSUM on a documented supported platform",
             ),
             Self::WriterLock => ErrorSpec::new(
@@ -583,7 +583,7 @@ impl ErrorSubcode {
                 false,
                 "the index was built by a different hSUM indexing pipeline",
                 "the indexing rules changed, so stored evidence no longer matches this binary",
-                "run hsum ingest to rebuild this index under the current rules; \
+                "run hsum init --rebuild to replace this index under the current rules; \
                  evidence recorded before the change does not survive the rebuild",
             ),
             Self::SqliteCorrupt => ErrorSpec::new(
@@ -669,7 +669,7 @@ impl ErrorSubcode {
                 ErrorCode::SourceInvalid,
                 false,
                 "a source file is not valid UTF-8",
-                "alpha.1 indexes original UTF-8 text only",
+                "alpha.2 indexes original UTF-8 text only",
                 "convert or exclude the file",
             ),
             Self::NulContent => ErrorSpec::new(
@@ -913,7 +913,7 @@ mod tests {
             "problem line must not claim the schema checksum is invalid: {problem:?}"
         );
         assert!(
-            fix.contains("hsum ingest"),
+            fix.contains("hsum init --rebuild"),
             "fix line must name the working remedy: {fix:?}"
         );
     }

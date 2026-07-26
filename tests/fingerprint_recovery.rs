@@ -6,8 +6,8 @@ use hsum::ingest::{
     revision_sha256,
 };
 use hsum::store::{
-    DeleteConfirmations, FilesystemScope, FingerprintPolicy, IndexDb, OpenMode, PreparedChunk,
-    PreparedDocument, StoreError, prepare_passage_literals,
+    DeleteConfirmations, FilesystemScope, IndexDb, OpenMode, PreparedChunk, PreparedDocument,
+    StoreError, prepare_passage_literals,
 };
 use rusqlite::{Connection, params};
 use serde_json::json;
@@ -28,10 +28,9 @@ struct Fixture {
 }
 
 /// A stale index — one whose stored pipeline fingerprint predates the running
-/// binary — must stay unopenable by default, and must open only when a caller
-/// explicitly tolerates the mismatch.
+/// binary — must stay unopenable through the public store API.
 #[test]
-fn a_stale_fingerprint_is_rejected_by_default_and_tolerated_only_on_request() {
+fn a_stale_fingerprint_is_rejected_by_the_public_store_api() {
     let fixture = stale_fingerprint_index();
 
     let rejected = IndexDb::open_existing(&fixture.database_path, OpenMode::ReadOnly);
@@ -39,34 +38,19 @@ fn a_stale_fingerprint_is_rejected_by_default_and_tolerated_only_on_request() {
         matches!(rejected, Err(StoreError::PipelineFingerprintMismatch)),
         "default open must still refuse a stale index"
     );
-
-    let tolerated = IndexDb::open_existing_with_policy(
-        &fixture.database_path,
-        OpenMode::ReadOnly,
-        FingerprintPolicy::Tolerate,
-    );
-    assert!(
-        tolerated.is_ok(),
-        "an explicit tolerate policy must open the stale index: {:?}",
-        tolerated.err()
-    );
 }
 
-/// Tolerating a fingerprint mismatch must not tolerate anything else. A
-/// corrupt schema checksum stays fatal in both policies.
+/// Schema corruption must win over a simultaneous pipeline mismatch so the
+/// failure is never misdiagnosed as a recoverable compatibility boundary.
 #[test]
-fn tolerating_the_fingerprint_does_not_relax_other_integrity_checks() {
+fn schema_corruption_precedes_a_pipeline_fingerprint_mismatch() {
     let fixture = stale_fingerprint_index_with_corrupt_schema_checksum();
 
-    let tolerated = IndexDb::open_existing_with_policy(
-        &fixture.database_path,
-        OpenMode::ReadOnly,
-        FingerprintPolicy::Tolerate,
-    );
+    let rejected = IndexDb::open_existing(&fixture.database_path, OpenMode::ReadOnly);
     assert!(
-        matches!(tolerated, Err(StoreError::SchemaChecksumMismatch)),
-        "schema checksum must remain fatal under Tolerate, got {:?}",
-        tolerated.err()
+        matches!(rejected, Err(StoreError::SchemaChecksumMismatch)),
+        "schema checksum corruption must be reported first, got {:?}",
+        rejected.err()
     );
 }
 

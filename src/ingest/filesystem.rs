@@ -5,6 +5,8 @@ use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
+use crate::ingest::ChunkKind;
+
 pub const DEFAULT_MAX_FILE_BYTES: u64 = 2 * 1024 * 1024;
 pub const HARD_MAX_FILE_BYTES: u64 = 16 * 1024 * 1024;
 pub const DEFAULT_MAX_SOURCE_FILES: usize = 10_000;
@@ -1260,39 +1262,7 @@ mod unix {
     }
 
     fn is_supported_path(path: &Path) -> bool {
-        matches!(
-            path.extension().map(|extension| extension.as_bytes()),
-            Some(
-                b"md"
-                    | b"markdown"
-                    | b"txt"
-                    | b"rs"
-                    | b"py"
-                    | b"ts"
-                    | b"tsx"
-                    | b"js"
-                    | b"jsx"
-                    | b"go"
-                    | b"java"
-                    | b"kt"
-                    | b"kts"
-                    | b"c"
-                    | b"h"
-                    | b"cpp"
-                    | b"hpp"
-                    | b"cc"
-                    | b"hh"
-                    | b"cxx"
-                    | b"rb"
-                    | b"cs"
-                    | b"swift"
-                    | b"php"
-                    | b"scala"
-                    | b"sh"
-                    | b"bash"
-                    | b"sql"
-            )
-        )
+        ChunkKind::from_path(path).is_some()
     }
 
     fn record_eligible(stat: &Stat, state: &mut WalkState<'_>) -> Result<(), DiscoveryError> {
