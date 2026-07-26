@@ -10,6 +10,7 @@
 /work/
 /outputs/*
 !/outputs/IMPLEMENTATION_STATUS.md
+!/outputs/hsum-v*-cargo-licenses.json
 
 
 # Local agent/memory tooling scratch, not project files.

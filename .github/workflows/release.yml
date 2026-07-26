@@ -104,7 +104,7 @@ jobs:
             echo "Apple signing identity present: the macOS binary will be signed and notarized."
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::No APPLE_SIGNING_IDENTITY secret set. Publishing an UNSIGNED macOS binary. Users must clear the quarantine attribute (xattr -d com.apple.quarantine) or right-click > Open on first launch."
+            echo "::warning::No APPLE_SIGNING_IDENTITY secret set. Publishing a macOS binary with only its linker-generated ad-hoc signature, not a Developer ID signature or notarization. Users must clear the quarantine attribute (xattr -d com.apple.quarantine) or right-click > Open on first launch."
           fi
 
       - name: Require the full Apple credential set when signing is enabled
@@ -188,7 +188,7 @@ jobs:
             --team-id "$APPLE_TEAM_ID" \
             --wait
 
-      - name: Generate the SPDX SBOM and license inventory
+      - name: Generate the SPDX SBOM
         uses: anchore/sbom-action@v0
         with:
           path: .
@@ -197,6 +197,18 @@ jobs:
           artifact-name: hsum-${{ matrix.target }}-sbom
           upload-artifact: false
           upload-release-assets: false
+
+      - name: Prefetch the locked Cargo graph for offline license evidence
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: cargo +1.91.0 fetch --locked
+
+      - name: Generate the locked Cargo license inventory
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          bash scripts/generate-license-inventory.sh \
+            "dist/hsum-${GITHUB_REF_NAME}-cargo-licenses.json"
 
       - name: Attest the archive and its SBOM
         uses: actions/attest@v4
@@ -238,9 +250,14 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          shasum -a 256 *.tar.gz *.zip > SHA256SUMS
+          shasum -a 256 \
+            *.tar.gz \
+            *.zip \
+            *.spdx.json \
+            *-cargo-licenses.json \
+            > SHA256SUMS
 
-      - name: Publish the prerelease from the verified tag
+      - name: Assemble and publish the prerelease from the verified tag
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -248,6 +265,10 @@ jobs:
           set -euo pipefail
           gh release create "$GITHUB_REF_NAME" dist/* \
             --verify-tag \
+            --draft \
             --prerelease \
             --generate-notes \
             --title "hSUM ${GITHUB_REF_NAME}"
+          gh release edit "$GITHUB_REF_NAME" \
+            --draft=false \
+            --prerelease

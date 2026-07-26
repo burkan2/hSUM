@@ -120,10 +120,10 @@ confirm the command returns evidence. Every result carries an immutable
 whatever the file looks like later.
 
 > [!NOTE]
-> This is an alpha. Once `v0.1.0-alpha.2` is published, its GitHub prerelease
-> will provide prebuilt artifacts for macOS arm64 and Linux x86_64. Until then,
-> use the reviewed source-build steps above. The crate remains `publish = false`,
-> so `cargo install` is unavailable.
+> This is an alpha. The
+> [`v0.1.0-alpha.2` GitHub prerelease](https://github.com/burkan2/hSUM/releases/tag/v0.1.0-alpha.2)
+> provides checksummed artifacts for macOS arm64 and Linux x86_64. The crate
+> remains `publish = false`, so `cargo install` is unavailable.
 
 ## Connect your agent
 
@@ -161,7 +161,7 @@ before the snippet.
 | JSONL and live connectors | Unsupported | Planned after the filesystem slice |
 | Semantic search, models, and reranking | Unsupported | No model install or download path exists |
 | HTTP server or web UI | Unsupported | MCP stdio is the only transport |
-| Prebuilt installation | Release-gated | Checksummed GitHub prerelease archives for macOS arm64 and Linux x86_64 become available when `v0.1.0-alpha.2` is published; no installer or crates.io package |
+| Prebuilt installation | Available | Checksummed GitHub prerelease archives for macOS arm64 and Linux x86_64; no installer or crates.io package |
 
 ## Build from source
 
@@ -608,12 +608,11 @@ source-to-test evidence map and [`TODOS.md`](TODOS.md) for the remaining work.
 
 ## Verifying a release
 
-After `v0.1.0-alpha.2` is published, its archives will come from a GPG-signed
-tag and carry a `SHA256SUMS` manifest plus a GitHub build attestation linking
-each archive to the workflow run and commit that produced it.
+The published `v0.1.0-alpha.2` archives come from a GPG-signed tag and carry a
+`SHA256SUMS` manifest plus a GitHub SBOM attestation linking each archive to the
+workflow run and commit that produced it.
 
 ```bash
-# Run after the prerelease assets are published.
 # macOS example; use sha256sum -c on Linux.
 asset=hsum-v0.1.0-alpha.2-aarch64-apple-darwin.zip
 shasum -a 256 -c "$asset.sha256"
@@ -626,6 +625,13 @@ without it `gh` looks for a provenance predicate and reports `no matching
 predicate found`. A successful verification prints nothing and exits `0`. Add
 `--format json` to inspect the signing workflow, tag, and commit.
 
+The published Syft SBOMs are component inventories, but their Rust package
+license fields are `NOASSERTION`. The repository therefore records a separate,
+deterministic
+[`Cargo`-declared license inventory](outputs/hsum-v0.1.0-alpha.2-cargo-licenses.json);
+future release workflows attach that inventory and include it in `SHA256SUMS`.
+It is review evidence, not a legal conclusion.
+
 **The macOS archive is not Apple-signed or notarized in alpha.** hSUM has no
 Apple Developer account, so no Developer ID certificate exists to sign with.
 Gatekeeper will refuse the binary on first launch. After verifying the checksum
@@ -637,8 +643,9 @@ xattr -d com.apple.quarantine hsum
 
 Only do that once the checksum and attestation both pass. Those two checks are
 what establish the binary's provenance in alpha; the quarantine flag is macOS
-asking for a signature hSUM cannot yet provide, not an independent verdict on
-the file. Apple signing and notarization are tracked for a later release.
+asking for a trusted Developer ID signature and notarization hSUM cannot yet
+provide, not an independent verdict on the file. Apple signing and notarization
+are tracked for a later release.
 
 ## License
 
