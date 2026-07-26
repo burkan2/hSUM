@@ -109,7 +109,7 @@ after I explicitly approve that system change. When Cargo is ready, run
 HSUM to the binary's absolute path, then initialize the repository I name and
 run one search. Report each command and its result, including any failure,
 before proceeding to the next step. Documentation is at
-https://hsum.burkankale.com/docs/0.1.0-alpha.2/ and
+https://hsum.burkankale.com/docs/0.1.0-alpha.3/ and
 https://hsum.burkankale.com/llms.txt.
 ```
 
@@ -121,7 +121,7 @@ whatever the file looks like later.
 
 > [!NOTE]
 > This is an alpha. The
-> [`v0.1.0-alpha.2` GitHub prerelease](https://github.com/burkan2/hSUM/releases/tag/v0.1.0-alpha.2)
+> [`v0.1.0-alpha.3` GitHub prerelease](https://github.com/burkan2/hSUM/releases/tag/v0.1.0-alpha.3)
 > provides checksummed artifacts for macOS arm64 and Linux x86_64. The crate
 > remains `publish = false`, so `cargo install` is unavailable.
 
@@ -147,7 +147,7 @@ cloud-backed client may forward returned passages to its own model provider
 under that client's policy, and the generated config prints that warning
 before the snippet.
 
-## Available in 0.1.0-alpha.2
+## Available in 0.1.0-alpha.3
 
 | Capability | Status | Current boundary |
 |---|---|---|
@@ -192,7 +192,7 @@ after I explicitly approve that system change. Once Cargo is available, run
 `cargo build --locked --release` and `./target/release/hsum --version`. Then
 give me the exact `export HSUM=...` command using this checkout's absolute path
 and report the commands and results without making any other changes.
-Documentation is at https://hsum.burkankale.com/docs/0.1.0-alpha.2/ and
+Documentation is at https://hsum.burkankale.com/docs/0.1.0-alpha.3/ and
 https://hsum.burkankale.com/llms.txt.
 ```
 
@@ -608,13 +608,13 @@ source-to-test evidence map and [`TODOS.md`](TODOS.md) for the remaining work.
 
 ## Verifying a release
 
-The published `v0.1.0-alpha.2` archives come from a GPG-signed tag and carry a
+The `v0.1.0-alpha.3` archives come from a GPG-signed tag and carry a
 `SHA256SUMS` manifest plus a GitHub SBOM attestation linking each archive to the
 workflow run and commit that produced it.
 
 ```bash
 # macOS example; use sha256sum -c on Linux.
-asset=hsum-v0.1.0-alpha.2-aarch64-apple-darwin.zip
+asset=hsum-v0.1.0-alpha.3-aarch64-apple-darwin.zip
 shasum -a 256 -c "$asset.sha256"
 gh attestation verify "$asset" --repo burkan2/hSUM \
   --predicate-type https://spdx.dev/Document/v2.3
@@ -625,11 +625,11 @@ without it `gh` looks for a provenance predicate and reports `no matching
 predicate found`. A successful verification prints nothing and exits `0`. Add
 `--format json` to inspect the signing workflow, tag, and commit.
 
-The published Syft SBOMs are component inventories, but their Rust package
+The Syft SBOMs are component inventories, but their Rust package
 license fields are `NOASSERTION`. The repository therefore records a separate,
 deterministic
-[`Cargo`-declared license inventory](outputs/hsum-v0.1.0-alpha.2-cargo-licenses.json);
-future release workflows attach that inventory and include it in `SHA256SUMS`.
+[`Cargo`-declared license inventory](outputs/hsum-v0.1.0-alpha.3-cargo-licenses.json);
+the release workflow attaches that inventory and includes it in `SHA256SUMS`.
 It is review evidence, not a legal conclusion.
 
 **The macOS archive is not Apple-signed or notarized in alpha.** hSUM has no
