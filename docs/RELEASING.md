@@ -148,10 +148,12 @@ gh attestation verify "$asset" --repo burkan2/hSUM \
   --predicate-type https://spdx.dev/Document/v2.3
 ```
 
-Those two checks are the whole provenance story in alpha. The macOS archive is
-unsigned, so `codesign --verify` will fail and Gatekeeper will block it; users
-clear quarantine with `xattr -d com.apple.quarantine hsum` after the checks
-above pass. Once signing is enabled, the macOS archive must additionally pass
+Those two checks are the whole provenance story in alpha. The macOS executable
+has only a linker-generated ad-hoc signature, so `codesign --verify hsum`
+succeeds, but it has no Developer ID identity and is not notarized; Gatekeeper
+will still block it. Users clear quarantine with
+`xattr -d com.apple.quarantine hsum` after the checks above pass. Once signing
+is enabled, the macOS executable must additionally pass
 `codesign --verify --deep --strict hsum` after extraction. The published
 installer, when introduced, must perform the same checksum verification without
 `sudo`.
