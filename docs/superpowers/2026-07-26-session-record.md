@@ -4,6 +4,8 @@ Complete record of one working session: what was asked, what was built, what
 was found, what was wrong, and what remains. Written at the end of the session
 from verified state, not from memory — every commit SHA, line reference, and
 test result below was re-checked against the repository before writing.
+Branch-ahead counts in §5 and §8 describe the state immediately before this
+record's own commit, which became the branch's fifth commit afterward.
 
 ---
 
@@ -39,7 +41,7 @@ hSUM," essentially never otherwise.
 
 Two supporting findings:
 
-- **Nine indexed extensions.** A Java, C, C++, Ruby, C#, Swift, or Kotlin
+- **Ten indexed extensions.** A Java, C, C++, Ruby, C#, Swift, or Kotlin
   repository produced a near-empty index on first `init`, which reads as a
   broken product rather than a documented scope boundary.
 - **The one capability Grep cannot have** — resolving a citation against bytes
@@ -222,9 +224,11 @@ continuity that no longer holds is why the fix kept growing.
 Verified by running it: the trust registry still holds a binding for that root,
 so the next `init` fails with `INDEX_NOT_FOUND`.
 
-Actual recovery today requires deleting **two** things: the index directory and
-`<config>/trusted-projects.toml`. The second is undocumented and not something
-a user would guess.
+Worse, `hsum context` fails at the same fingerprint gate, so it cannot report
+the managed path when the user needs it. Manual recovery requires removing the
+database and the exact matching binding from
+`<config>/trusted-projects.toml`; deleting that whole file is safe only when it
+contains no unrelated bindings.
 
 **This is wrong on `main` right now.**
 
@@ -346,7 +350,8 @@ No. Three things were true before this session and remain true:
 2. The documented recovery did not work (F6).
 3. `TODOS.md` P0 is largely unmet, by the project's own account.
 
-This session did not break the product. It made a latent flaw urgent and
-visible, and shipped real improvements alongside: 28 extensions instead of 10,
-an agent-facing reason to call hSUM at all, and an error message that names the
-real problem instead of a false one.
+This session did not create the latent recovery flaw, but the intentional
+fingerprint change activated it and therefore broke upgrade compatibility with
+the published alpha. It also shipped real improvements alongside: 28
+extensions instead of 10, an agent-facing reason to call hSUM at all, and an
+error message that names the real problem instead of a false one.
