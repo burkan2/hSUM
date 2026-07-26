@@ -168,7 +168,10 @@ jobs:
           else
             tar -C target/release -czf "dist/$asset" hsum
           fi
-          shasum -a 256 "dist/$asset" > "dist/$asset.sha256"
+          (
+            cd dist
+            shasum -a 256 "$asset" > "$asset.sha256"
+          )
           echo "path=dist/$asset" >> "$GITHUB_OUTPUT"
 
       - name: Notarize the macOS archive
