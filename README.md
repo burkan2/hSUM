@@ -80,17 +80,16 @@ the passage with its citation intact.
 cargo build --locked --release
 export HSUM=/absolute/path/to/checkout/target/release/hsum
 
-# 2. Index a repository
+# 2. Install the Codex integration and activate this repository
 cd /absolute/path/to/a/repository
-"$HSUM" init            # prints the exact data path and a verified first query
+"$HSUM" integration install codex --activate . --confirm
 
 # 3. Search, then resolve immutable evidence
 "$HSUM" search 'your identifier or "exact phrase"'
 "$HSUM" get '<citation printed by search>'
 
-# 4. Connect an agent (privacy note prints first)
-"$HSUM" client config codex      # or claude-code | claude-desktop | generic
-"$HSUM" client doctor codex      # real end-to-end probe of that config
+# 4. Verify the effective Codex registration at any time
+"$HSUM" integration status codex --json
 ```
 
 ### Ask your agent
@@ -100,15 +99,20 @@ checkout:
 
 ```text
 Set up and smoke-test hSUM (https://github.com/burkan2/hSUM) from the current
-checkout without changing source or configuration files. First check that this
-is macOS arm64 or Linux x86_64 and that `cargo` is available. If Rust/Cargo is
+checkout without changing repository files. User-level hSUM state and the
+single Codex MCP registration are in scope. First check that this is macOS
+arm64 or Linux x86_64 and that `cargo` is available. If Rust/Cargo is
 missing, offer me two choices and wait for my answer: I can install Rust from
 https://www.rust-lang.org/tools/install, or you can install it with rustup
 after I explicitly approve that system change. When Cargo is ready, run
 `cargo build --locked --release`, verify `./target/release/hsum --version`, set
-HSUM to the binary's absolute path, then initialize the repository I name and
-run one search. Report each command and its result, including any failure,
-before proceeding to the next step. Documentation is at
+HSUM to the binary's absolute path, then run
+`$HSUM integration install codex --activate . --confirm` from the repository
+root. Verify that the command reports four read-only tools and a successful
+citation round trip, and that `integration status codex --json` reports both
+the registration and agent policy as `current`. Do not ask me to copy TOML,
+edit Codex configuration, or restart Codex. Report each command and its result,
+including any failure, before proceeding to the next step. Documentation is at
 https://hsum.burkankale.com/docs/0.1.0-alpha.3/ and
 https://hsum.burkankale.com/llms.txt.
 ```
@@ -127,13 +131,57 @@ whatever the file looks like later.
 
 ## Connect your agent
 
-hSUM speaks MCP over stdio only. `client config` prints a copyable snippet
-that pins the binary's absolute path and one project-scoped trust binding. It
-guesses no PATH, edits no config files for you, and cannot be steered into
-another project:
+hSUM speaks MCP over stdio only. Codex uses one user-wide registration whose
+server derives an exact trusted repository from each task's working directory:
 
 ```bash
-"$HSUM" client config codex --format toml     # Codex
+"$HSUM" integration install codex --activate . --confirm
+"$HSUM" integration status codex
+```
+
+The install command uses Codex's supported `mcp add/get` interface, reads the
+effective `hsum` entry back, launches that exact MCP command from the activated
+repository, checks all four tools, runs `evidence_status`, and completes an
+`evidence_search` → `evidence_get` citation round trip when the index is
+nonempty. It also installs a bounded hSUM-managed block in Codex's user-global
+`AGENTS.md` (or the effective `AGENTS.override.md`) so future agents know when
+to reach for hSUM. Existing instructions are preserved, modified/duplicate
+managed markers are refused, and `--agent-policy skip` is available as an
+explicit escape hatch. The whole flow is idempotent.
+
+Every later Codex task in the same repository gets hSUM automatically. In a
+different repository the tools are still present; the first attempted use
+returns `REPOSITORY_NOT_ACTIVATED` with the canonical root, privacy consequence,
+and exact activation argv. After one repository-specific consent, the agent
+runs that command and retries the same tool without restarting MCP. Repositories
+retain separate indexes, trust bindings, generations, and citation namespaces.
+
+For users who keep many repositories under one projects directory, authorize
+that parent once:
+
+```bash
+"$HSUM" integration authorize-workspace codex --path ~/Projects --confirm
+```
+
+hSUM does not scan `~/Projects` recursively or combine it into one corpus.
+When a Codex task first calls hSUM from a Git repository below the authorized
+directory, only that exact repository is initialized as a separate index. Home,
+filesystem-root, overly broad, and Git-repository workspace scopes are refused.
+Use `integration revoke-workspace` to stop future lazy enrollments; existing
+bindings and indexes remain intact.
+
+Repositories activated through the integration attempt one refresh before the
+first `evidence_search` or `evidence_get` in each MCP task. A successful refresh
+searches the newest committed generation. Busy, unsafe, partial, or
+mass-deletion-refused refreshes keep the last good generation and expose the
+freshness state in tool output. Manual/low-level hSUM repositories retain
+explicit ingest behavior.
+
+`client config` remains the low-level/manual escape hatch. Its Codex form is
+workspace-dynamic; other clients remain binding-pinned:
+
+```bash
+"$HSUM" client config codex --format toml
 "$HSUM" client config claude-code             # Claude Code
 "$HSUM" client config claude-desktop          # Claude Desktop
 "$HSUM" client config generic                 # anything MCP-capable
@@ -157,7 +205,7 @@ before the snippet.
 | Immutable citations and historical `get` | Available | Evidence remains resolvable while its immutable version remains in this alpha index |
 | Atomic generations | Available | Explicit ingest; no watcher or daemon |
 | Status and read-only doctor | Available | Diagnosis only; no repair, prune, backup, or migration command |
-| MCP stdio | Available | Four read-only tools bound to one trusted project |
+| MCP stdio | Available | One global Codex registration; every server process pins one exact trusted repository |
 | JSONL and live connectors | Unsupported | Planned after the filesystem slice |
 | Semantic search, models, and reranking | Unsupported | No model install or download path exists |
 | HTTP server or web UI | Unsupported | MCP stdio is the only transport |

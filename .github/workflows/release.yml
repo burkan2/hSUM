@@ -88,6 +88,7 @@ jobs:
           RUSTUP_TOOLCHAIN=1.91.0 \
             bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
           bash scripts/release-smoke.sh "$PWD/target/release/hsum"
+          bash scripts/installer-smoke.sh "$PWD/target/release/hsum"
           bash scripts/no-network-smoke.sh "$PWD/target/release/hsum"
           bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
 
@@ -163,7 +164,10 @@ jobs:
           mkdir -p dist
           asset="hsum-${GITHUB_REF_NAME}-${{ matrix.target }}.${{ matrix.archive }}"
           if [ "${{ matrix.archive }}" = "zip" ]; then
-            ditto -c -k --keepParent target/release/hsum "dist/$asset"
+            (
+              cd target/release
+              zip -X -q "$GITHUB_WORKSPACE/dist/$asset" hsum
+            )
           else
             tar -C target/release -czf "dist/$asset" hsum
           fi
@@ -249,12 +253,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          sed "s/@HSUM_VERSION@/$version/g" scripts/install.sh > dist/install-hsum.sh
+          chmod 755 dist/install-hsum.sh
+          bash -n dist/install-hsum.sh
           cd dist
           shasum -a 256 \
             *.tar.gz \
             *.zip \
             *.spdx.json \
             *-cargo-licenses.json \
+            install-hsum.sh \
             > SHA256SUMS
 
       - name: Assemble and publish the prerelease from the verified tag

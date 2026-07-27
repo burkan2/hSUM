@@ -18,14 +18,16 @@ use uuid::Uuid;
 
 use crate::app::{
     ContextError, ContextRequest, EffectiveContext, FilesystemIngestError, FilesystemIngestPolicy,
-    InitError, InitNextStep, InitRequest, PointerOutcome, SourceConfigError, TrustRequest,
-    ingest_filesystem_with_policy, initialize, plan_filesystem_ingest_with_timeout,
+    InitError, InitNextStep, InitOutcome, InitRequest, PointerOutcome, SourceConfigError,
+    TrustRequest, ingest_filesystem_with_policy, initialize, plan_filesystem_ingest_with_timeout,
     resolve_context, resolve_trust_target, trust_repository,
 };
 use crate::cli::{
-    Cli, ClientCommand, ClientConfigArgs, ClientConfigFormat, ClientDoctorArgs, ClientKind,
-    Command, ErrorHelpArgs, GetArgs, GlobalOptions, HelpCommand, IngestArgs, InitArgs, McpArgs,
-    SearchArgs, SearchMode as CliSearchMode, StatusArgs, TrustArgs, escape_terminal_bytes,
+    AgentPolicyMode, Cli, ClientCommand, ClientConfigArgs, ClientConfigFormat, ClientDoctorArgs,
+    ClientKind, Command, ErrorHelpArgs, GetArgs, GlobalOptions, HelpCommand, IngestArgs, InitArgs,
+    IntegrationActivateArgs, IntegrationCommand, IntegrationInstallArgs, IntegrationRepairArgs,
+    IntegrationStatusArgs, IntegrationUninstallArgs, IntegrationWorkspaceArgs, McpArgs, SearchArgs,
+    SearchMode as CliSearchMode, StatusArgs, TrustArgs, escape_terminal_bytes,
     escape_terminal_text, exit_code_for, render_completions, render_man, render_verbose_version,
     verbose_version_requested,
 };
@@ -35,8 +37,13 @@ use crate::config::{
 };
 use crate::domain::{DocumentId, ErrorSubcode, PublicError, Sha256Digest, SourceId};
 use crate::ingest::{ChunkError, DiscoveryError};
+use crate::integration::{
+    AgentPolicyError, AgentPolicyState, CodexAgentPolicy, CodexIntegration, CodexRegistrationState,
+    IntegrationError, WorkspacePolicy, WorkspacePolicyError,
+};
 use crate::mcp::{
-    MAX_MCP_FRAME_BYTES, MCP_API_VERSION, McpServerError, serve_stdio, validate_frame,
+    MAX_MCP_FRAME_BYTES, MCP_API_VERSION, McpServerError, serve_stdio, serve_workspace_stdio,
+    validate_frame,
 };
 use crate::search::query::QueryError;
 use crate::search::{
@@ -50,12 +57,13 @@ use crate::status::{
 use crate::store::{
     DeleteConfirmations, Doctor, DoctorReport, FilesystemLocality, FilesystemScope, IndexDb,
     IngestOutcome, IngestPlan, OpenMode, SourceIngestState, StoragePreflight,
-    StoragePreflightError, StoreError,
+    StoragePreflightError, StoreError, WriterLock,
 };
 
 const SOURCE_PROBE_TIMEOUT: Duration = Duration::from_millis(500);
 const CLIENT_DOCTOR_TIMEOUT: Duration = Duration::from_secs(5);
 const CLIENT_DOCTOR_STDERR_LIMIT: usize = 64 * 1024;
+const INTEGRATION_LOCK_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Parse the process arguments, execute one command, and return its stable exit status.
 pub async fn run_from_env() -> ExitCode {
@@ -125,6 +133,29 @@ pub async fn execute(cli: Cli) -> Result<crate::cli::ProcessExitCategory, Runtim
             }
             ClientCommand::Doctor(arguments) => {
                 run_client_doctor(&cli.global, managed_paths, current_dir, arguments)
+            }
+        },
+        Command::Integration(arguments) => match arguments.command {
+            IntegrationCommand::Install(arguments) => {
+                run_integration_install(&cli.global, managed_paths, current_dir, arguments)
+            }
+            IntegrationCommand::Activate(arguments) => {
+                run_integration_activate(&cli.global, managed_paths, current_dir, arguments)
+            }
+            IntegrationCommand::AuthorizeWorkspace(arguments) => {
+                run_integration_authorize_workspace(&cli.global, managed_paths, arguments)
+            }
+            IntegrationCommand::RevokeWorkspace(arguments) => {
+                run_integration_revoke_workspace(&cli.global, managed_paths, arguments)
+            }
+            IntegrationCommand::Status(arguments) => {
+                run_integration_status(&cli.global, managed_paths, arguments)
+            }
+            IntegrationCommand::Repair(arguments) => {
+                run_integration_repair(&cli.global, managed_paths, arguments)
+            }
+            IntegrationCommand::Uninstall(arguments) => {
+                run_integration_uninstall(&cli.global, managed_paths, arguments)
             }
         },
         Command::Completions(arguments) => {
@@ -351,9 +382,9 @@ fn run_init(
         }
         output.push('\n');
         if outcome.binding_id.is_some() {
-            output.push_str("Connect an agent:\n  ");
+            output.push_str("Connect Codex:\n  ");
             output.push_str(&shell_quote_path(&executable));
-            output.push_str(" client config codex\n");
+            output.push_str(" integration install codex --confirm\n");
         }
     }
     write_stdout(output.as_bytes())?;
@@ -924,7 +955,19 @@ fn run_client_doctor(
         &executable,
         &binding_id.to_string(),
     )?;
-    let probe = run_client_stdio_probe(&launch, context.project_id.to_string())?;
+    let probe = match arguments.client {
+        ClientKind::Codex => run_client_stdio_probe_at(
+            &launch,
+            context.project_id.to_string(),
+            context
+                .canonical_root
+                .clone()
+                .unwrap_or_else(|| context.source_root.clone()),
+        )?,
+        ClientKind::ClaudeCode | ClientKind::ClaudeDesktop | ClientKind::Generic => {
+            run_client_stdio_probe(&launch, context.project_id.to_string())?
+        }
+    };
 
     let mut output = String::new();
     push_line(&mut output, "Client", client_kind(arguments.client));
@@ -955,6 +998,567 @@ fn run_client_doctor(
     Ok(crate::cli::ProcessExitCategory::Success)
 }
 
+fn run_integration_install(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: IntegrationInstallArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    ensure_integration_paths_are_stable(global)?;
+    let _integration_lock = acquire_integration_lock(&managed_paths)?;
+    let _ = (arguments.client, arguments.confirm);
+    let agent_policy_manager = match arguments.agent_policy {
+        AgentPolicyMode::Install => {
+            let policy = CodexAgentPolicy::discover().map_err(map_agent_policy_error)?;
+            policy.status().map_err(map_agent_policy_error)?;
+            Some(policy)
+        }
+        AgentPolicyMode::Skip => None,
+    };
+    let activation = arguments
+        .activate
+        .map(|path| initialize_integration_repository(current_dir, managed_paths, path))
+        .transpose()?;
+    let hsum_executable = absolute_executable()?;
+    let codex = CodexIntegration::discover().map_err(map_integration_error)?;
+    let change = codex
+        .install_or_repair(&hsum_executable, arguments.replace_conflict)
+        .map_err(map_integration_error)?;
+    let agent_policy = agent_policy_manager
+        .map(|policy| policy.install().map_err(map_agent_policy_error))
+        .transpose()?;
+    let probe = activation
+        .as_ref()
+        .map(|outcome| {
+            let query = match &outcome.next_step {
+                InitNextStep::Search { query } => Some(query.as_str()),
+                InitNextStep::Status => None,
+            };
+            run_client_stdio_probe_with_query(
+                &ClientLaunchConfig {
+                    executable: hsum_executable.clone(),
+                    arguments: vec!["mcp".to_owned()],
+                },
+                outcome.project_id.to_string(),
+                outcome.canonical_root.clone(),
+                query,
+            )
+        })
+        .transpose()?;
+
+    let mut output = String::new();
+    output.push_str("hSUM is registered with Codex.\n");
+    push_line(&mut output, "Registration", "current");
+    push_line(
+        &mut output,
+        "Registration changed",
+        bool_text(change.changed),
+    );
+    push_line(
+        &mut output,
+        "Previous registration",
+        change.previous.label(),
+    );
+    push_line(
+        &mut output,
+        "Codex executable",
+        &human_path(codex.executable()),
+    );
+    push_line(
+        &mut output,
+        "hSUM executable",
+        &human_path(&change.current.command),
+    );
+    if let Some(policy) = agent_policy {
+        push_line(&mut output, "Agent policy", policy.current.label());
+        push_line(
+            &mut output,
+            "Agent policy changed",
+            bool_text(policy.changed),
+        );
+        push_line(&mut output, "Agent policy file", &human_path(&policy.path));
+    } else {
+        push_line(&mut output, "Agent policy", "skipped");
+    }
+    if let Some(outcome) = activation.as_ref() {
+        render_integration_activation(&mut output, outcome);
+    }
+    if let Some(probe) = probe {
+        push_line(
+            &mut output,
+            "Verified read-only tools",
+            &probe.read_only_tools.to_string(),
+        );
+        push_line(&mut output, "Verified project ID", &probe.project_id);
+        push_line(
+            &mut output,
+            "Citation round trip",
+            if probe.citation_verified {
+                "verified"
+            } else {
+                "not available; the index has no searchable passage"
+            },
+        );
+    }
+    output.push_str(
+        "Codex will launch hSUM automatically for each task and hSUM will select only that \
+         task's trusted repository.\n",
+    );
+    output.push_str(
+        "hSUM uploads no corpus data or telemetry. Returned passages remain subject to the \
+         agent client's model-provider policy.\n",
+    );
+    output.push_str(
+        "READY FOR FUTURE TASKS: this task may predate MCP registration; hSUM CLI is ready now.\n",
+    );
+    write_stdout(output.as_bytes())?;
+
+    Ok(activation
+        .as_ref()
+        .map_or(crate::cli::ProcessExitCategory::Success, |outcome| {
+            outcome.ingest.as_ref().map_or(
+                crate::cli::ProcessExitCategory::Success,
+                ingest_exit_category,
+            )
+        }))
+}
+
+fn run_integration_activate(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: IntegrationActivateArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    ensure_integration_paths_are_stable(global)?;
+    let _integration_lock = acquire_integration_lock(&managed_paths)?;
+    let _ = (arguments.client, arguments.confirm);
+    let outcome = initialize_integration_repository(current_dir, managed_paths, arguments.path)?;
+    let hsum_executable = absolute_executable()?;
+    let codex = CodexIntegration::discover().map_err(map_integration_error)?;
+    let change = codex
+        .install_or_repair(&hsum_executable, false)
+        .map_err(map_integration_error)?;
+    let query = match &outcome.next_step {
+        InitNextStep::Search { query } => Some(query.as_str()),
+        InitNextStep::Status => None,
+    };
+    let probe = run_client_stdio_probe_with_query(
+        &ClientLaunchConfig {
+            executable: hsum_executable,
+            arguments: vec!["mcp".to_owned()],
+        },
+        outcome.project_id.to_string(),
+        outcome.canonical_root.clone(),
+        query,
+    )?;
+
+    let mut output = String::new();
+    output.push_str("hSUM is active for this repository.\n");
+    render_integration_activation(&mut output, &outcome);
+    push_line(&mut output, "Registration", "current");
+    push_line(
+        &mut output,
+        "Registration changed",
+        bool_text(change.changed),
+    );
+    push_line(
+        &mut output,
+        "Verified read-only tools",
+        &probe.read_only_tools.to_string(),
+    );
+    push_line(&mut output, "Verified project ID", &probe.project_id);
+    push_line(
+        &mut output,
+        "Citation round trip",
+        if probe.citation_verified {
+            "verified"
+        } else {
+            "not available; the index has no searchable passage"
+        },
+    );
+    output.push_str(
+        "READY NOW: an already-running hSUM workspace server can retry its original tool call; \
+         hSUM CLI is also ready.\n",
+    );
+    write_stdout(output.as_bytes())?;
+
+    Ok(outcome.ingest.as_ref().map_or(
+        crate::cli::ProcessExitCategory::Success,
+        ingest_exit_category,
+    ))
+}
+
+fn run_integration_status(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    arguments: IntegrationStatusArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    ensure_integration_paths_are_stable(global)?;
+    let _integration_lock = acquire_integration_lock(&managed_paths)?;
+    let _ = arguments.client;
+    let hsum_executable = absolute_executable()?;
+    let codex = CodexIntegration::discover().map_err(map_integration_error)?;
+    let state = codex
+        .status(&hsum_executable)
+        .map_err(map_integration_error)?;
+    let agent_policy = CodexAgentPolicy::discover()
+        .and_then(|policy| policy.status())
+        .map_err(map_agent_policy_error)?;
+    let workspace_policy = WorkspacePolicy::load_or_empty(&managed_paths.integration_policy_file())
+        .map_err(map_workspace_policy_error)?;
+
+    if arguments.json {
+        return write_json_stdout(&IntegrationStatusJson::new(
+            &state,
+            codex.executable(),
+            &hsum_executable,
+            agent_policy.0,
+            &agent_policy.1,
+            workspace_policy.roots().len(),
+        ))
+        .map(|()| crate::cli::ProcessExitCategory::Success);
+    }
+
+    let mut output = String::new();
+    push_line(&mut output, "Client", "codex");
+    push_line(&mut output, "Registration", state.label());
+    push_line(
+        &mut output,
+        "Codex executable",
+        &human_path(codex.executable()),
+    );
+    push_line(
+        &mut output,
+        "Expected hSUM executable",
+        &human_path(&hsum_executable),
+    );
+    push_line(&mut output, "Agent policy", agent_policy.0.label());
+    push_line(
+        &mut output,
+        "Agent policy file",
+        &human_path(&agent_policy.1),
+    );
+    push_line(
+        &mut output,
+        "Authorized workspaces",
+        &workspace_policy.roots().len().to_string(),
+    );
+    if let Some(registration) = state.registration() {
+        push_line(
+            &mut output,
+            "Registered transport",
+            if registration.is_stdio {
+                "stdio"
+            } else {
+                "non-stdio"
+            },
+        );
+        if registration.is_stdio {
+            push_line(
+                &mut output,
+                "Registered executable",
+                &human_path(&registration.command),
+            );
+            push_line(
+                &mut output,
+                "Registered arguments",
+                &registration.arguments.join(" "),
+            );
+        }
+    }
+    match state {
+        CodexRegistrationState::Current(_) => {
+            output.push_str("READY FOR FUTURE TASKS: Codex will load hSUM automatically.\n");
+        }
+        CodexRegistrationState::Absent => {
+            output.push_str("REPAIR REQUIRED: run `hsum integration repair codex --confirm`.\n");
+        }
+        CodexRegistrationState::LegacyBinding(_) | CodexRegistrationState::Stale(_) => {
+            output.push_str("REPAIR REQUIRED: run `hsum integration repair codex --confirm`.\n");
+        }
+        CodexRegistrationState::Conflict(_) => {
+            output.push_str(
+                "REPAIR REQUIRED: inspect the foreign `hsum` entry, then explicitly use \
+                 `--replace-conflict` only if replacement is intended.\n",
+            );
+        }
+    }
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_integration_authorize_workspace(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    arguments: IntegrationWorkspaceArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    ensure_integration_paths_are_stable(global)?;
+    let _integration_lock = acquire_integration_lock(&managed_paths)?;
+    let _ = (arguments.client, arguments.confirm);
+    let path = managed_paths.integration_policy_file();
+    let mut policy = WorkspacePolicy::load_or_empty(&path).map_err(map_workspace_policy_error)?;
+    let (root, changed) = policy
+        .authorize(&arguments.path)
+        .map_err(map_workspace_policy_error)?;
+    if changed {
+        policy
+            .save_atomic(&path)
+            .map_err(map_workspace_policy_error)?;
+    }
+
+    let mut output = String::new();
+    push_line(&mut output, "Client", "codex");
+    push_line(&mut output, "Workspace", &human_path(&root));
+    push_line(&mut output, "Authorization changed", bool_text(changed));
+    output.push_str(
+        "New Git repositories below this directory will be indexed separately and lazily on \
+         their first hSUM tool call. Repository files are not modified.\n",
+    );
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_integration_revoke_workspace(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    arguments: IntegrationWorkspaceArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    ensure_integration_paths_are_stable(global)?;
+    let _integration_lock = acquire_integration_lock(&managed_paths)?;
+    let _ = (arguments.client, arguments.confirm);
+    let path = managed_paths.integration_policy_file();
+    let mut policy = WorkspacePolicy::load_or_empty(&path).map_err(map_workspace_policy_error)?;
+    let (root, changed) = policy
+        .revoke(&arguments.path)
+        .map_err(map_workspace_policy_error)?;
+    if changed {
+        policy
+            .save_atomic(&path)
+            .map_err(map_workspace_policy_error)?;
+    }
+
+    let mut output = String::new();
+    push_line(&mut output, "Client", "codex");
+    push_line(&mut output, "Workspace", &human_path(&root));
+    push_line(&mut output, "Authorization removed", bool_text(changed));
+    output.push_str(
+        "Existing repository bindings and indexes were kept; only future lazy activation was \
+         disabled.\n",
+    );
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_integration_repair(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    arguments: IntegrationRepairArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    ensure_integration_paths_are_stable(global)?;
+    let _integration_lock = acquire_integration_lock(&managed_paths)?;
+    let _ = (arguments.client, arguments.confirm);
+    let hsum_executable = absolute_executable()?;
+    let codex = CodexIntegration::discover().map_err(map_integration_error)?;
+    let change = codex
+        .install_or_repair(&hsum_executable, arguments.replace_conflict)
+        .map_err(map_integration_error)?;
+
+    let mut output = String::new();
+    output.push_str("hSUM's Codex registration is healthy.\n");
+    push_line(
+        &mut output,
+        "Previous registration",
+        change.previous.label(),
+    );
+    push_line(&mut output, "Registration", "current");
+    push_line(
+        &mut output,
+        "Registration changed",
+        bool_text(change.changed),
+    );
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_integration_uninstall(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    arguments: IntegrationUninstallArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    ensure_integration_paths_are_stable(global)?;
+    let _integration_lock = acquire_integration_lock(&managed_paths)?;
+    let _ = (arguments.client, arguments.confirm);
+    let hsum_executable = absolute_executable()?;
+    let codex = CodexIntegration::discover().map_err(map_integration_error)?;
+    let agent_policy = CodexAgentPolicy::discover().map_err(map_agent_policy_error)?;
+    agent_policy.status().map_err(map_agent_policy_error)?;
+    let previous = codex
+        .uninstall(&hsum_executable)
+        .map_err(map_integration_error)?;
+    let policy = agent_policy.uninstall().map_err(map_agent_policy_error)?;
+    let removed = !matches!(previous, CodexRegistrationState::Absent);
+
+    let mut output = String::new();
+    push_line(&mut output, "Client", "codex");
+    push_line(&mut output, "Registration removed", bool_text(removed));
+    push_line(
+        &mut output,
+        "Agent policy removed",
+        bool_text(policy.changed),
+    );
+    output.push_str("Managed indexes and repository trust bindings were kept.\n");
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn initialize_integration_repository(
+    current_dir: PathBuf,
+    managed_paths: ManagedPaths,
+    path: PathBuf,
+) -> Result<InitOutcome, RuntimeFailure> {
+    let policy_path = managed_paths.integration_policy_file();
+    let mut request = InitRequest::new(current_dir, managed_paths);
+    request.requested_root = Some(path);
+    let outcome = initialize(&request).map_err(map_init_error)?;
+    let mut policy =
+        WorkspacePolicy::load_or_empty(&policy_path).map_err(map_workspace_policy_error)?;
+    if policy
+        .mark_repository(&outcome.canonical_root)
+        .map_err(map_workspace_policy_error)?
+    {
+        policy
+            .save_atomic(&policy_path)
+            .map_err(map_workspace_policy_error)?;
+    }
+    Ok(outcome)
+}
+
+fn render_integration_activation(output: &mut String, outcome: &InitOutcome) {
+    push_line(output, "Root", &human_path(&outcome.canonical_root));
+    push_line(output, "Index", outcome.index_name.as_str());
+    push_line(output, "Project", outcome.project_name.as_str());
+    push_line(output, "Project ID", &outcome.project_id.to_string());
+    if let Some(ingest) = outcome.ingest.as_ref() {
+        push_line(
+            output,
+            "Active documents",
+            &ingest.active_documents.to_string(),
+        );
+        push_line(
+            output,
+            "Active passages",
+            &ingest.active_passages.to_string(),
+        );
+    }
+}
+
+fn ensure_integration_paths_are_stable(global: &GlobalOptions) -> Result<(), RuntimeFailure> {
+    if global.data_dir.is_some() || global.cache_dir.is_some() {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::ConfigInvalid,
+            "integration_paths",
+            "managed Codex registration does not support per-command data or cache overrides",
+        ));
+    }
+    Ok(())
+}
+
+fn acquire_integration_lock(managed_paths: &ManagedPaths) -> Result<WriterLock, RuntimeFailure> {
+    fs::create_dir_all(managed_paths.config_dir()).map_err(|error| {
+        RuntimeFailure::from_error(
+            ErrorSubcode::IndexWrite,
+            "integration_lock_directory",
+            error,
+        )
+    })?;
+    WriterLock::acquire(
+        &managed_paths.config_dir().join("integration"),
+        INTEGRATION_LOCK_TIMEOUT,
+    )
+    .map_err(|error| RuntimeFailure::from_error(store_subcode(&error), "integration_lock", error))
+}
+
+#[derive(Serialize)]
+struct IntegrationStatusJson {
+    schema_version: &'static str,
+    request_id: String,
+    client: &'static str,
+    registration: &'static str,
+    codex_executable: String,
+    expected_hsum_executable: String,
+    registered_executable: Option<String>,
+    registered_arguments: Option<Vec<String>>,
+    stdio: Option<bool>,
+    enabled: Option<bool>,
+    fixed_cwd: Option<String>,
+    has_environment: Option<bool>,
+    has_tool_filters: Option<bool>,
+    agent_policy: &'static str,
+    agent_policy_file: String,
+    authorized_workspaces: usize,
+    next_actions: Vec<String>,
+}
+
+impl IntegrationStatusJson {
+    fn new(
+        state: &CodexRegistrationState,
+        codex: &Path,
+        expected_hsum: &Path,
+        agent_policy: AgentPolicyState,
+        agent_policy_file: &Path,
+        authorized_workspaces: usize,
+    ) -> Self {
+        let registration = state.registration();
+        Self {
+            schema_version: MCP_API_VERSION,
+            request_id: Uuid::new_v4().to_string(),
+            client: "codex",
+            registration: state.label(),
+            codex_executable: json_path(codex),
+            expected_hsum_executable: json_path(expected_hsum),
+            registered_executable: registration
+                .filter(|value| value.is_stdio)
+                .map(|value| json_path(&value.command)),
+            registered_arguments: registration
+                .filter(|value| value.is_stdio)
+                .map(|value| value.arguments.clone()),
+            stdio: registration.map(|value| value.is_stdio),
+            enabled: registration.map(|value| value.enabled),
+            fixed_cwd: registration.and_then(|value| value.cwd.as_deref().map(json_path)),
+            has_environment: registration.map(|value| value.has_environment),
+            has_tool_filters: registration.map(|value| value.has_tool_filters),
+            agent_policy: agent_policy.label(),
+            agent_policy_file: json_path(agent_policy_file),
+            authorized_workspaces,
+            next_actions: match state {
+                CodexRegistrationState::Current(_) if agent_policy == AgentPolicyState::Current => {
+                    Vec::new()
+                }
+                CodexRegistrationState::Current(_) => {
+                    vec!["hsum integration install codex --agent-policy install".to_owned()]
+                }
+                CodexRegistrationState::Absent
+                | CodexRegistrationState::LegacyBinding(_)
+                | CodexRegistrationState::Stale(_) => {
+                    vec!["hsum integration repair codex --confirm".to_owned()]
+                }
+                CodexRegistrationState::Conflict(_) => vec![
+                    "inspect the existing Codex MCP entry named hsum".to_owned(),
+                    "hsum integration repair codex --confirm --replace-conflict".to_owned(),
+                ],
+            },
+        }
+    }
+}
+
+fn map_agent_policy_error(error: AgentPolicyError) -> RuntimeFailure {
+    RuntimeFailure::from_error(ErrorSubcode::ConfigInvalid, "codex_agent_policy", error)
+}
+
+fn map_workspace_policy_error(error: WorkspacePolicyError) -> RuntimeFailure {
+    RuntimeFailure::from_error(ErrorSubcode::ConfigInvalid, "codex_workspace_policy", error)
+}
+
 #[derive(Debug)]
 struct ClientLaunchConfig {
     executable: PathBuf,
@@ -966,6 +1570,7 @@ struct ClientProbe {
     project_id: String,
     read_only_tools: usize,
     working_directory: PathBuf,
+    citation_verified: bool,
 }
 
 fn validate_client_launch_config(
@@ -1021,11 +1626,21 @@ fn validate_client_launch_config(
                 "generated client configuration has invalid arguments",
             )
         })?;
-    if arguments != ["mcp", "--binding", expected_binding] {
+    let expected_arguments = match client {
+        ClientKind::Codex => vec!["mcp".to_owned()],
+        ClientKind::ClaudeCode | ClientKind::ClaudeDesktop | ClientKind::Generic => {
+            vec![
+                "mcp".to_owned(),
+                "--binding".to_owned(),
+                expected_binding.to_owned(),
+            ]
+        }
+    };
+    if arguments != expected_arguments {
         return Err(RuntimeFailure::from_error(
             ErrorSubcode::ConfigInvalid,
             "client_doctor_config",
-            "generated client configuration did not preserve the selected trust binding",
+            "generated client configuration did not preserve the expected MCP scope",
         ));
     }
     Ok(ClientLaunchConfig {
@@ -1039,6 +1654,45 @@ fn run_client_stdio_probe(
     expected_project_id: String,
 ) -> Result<ClientProbe, RuntimeFailure> {
     let working_directory = IsolatedProbeDirectory::create()?;
+    let probe = run_client_stdio_probe_at(
+        launch,
+        expected_project_id,
+        working_directory.path().to_path_buf(),
+    )?;
+    if fs::read_dir(working_directory.path())
+        .map_err(|error| {
+            RuntimeFailure::from_error(
+                ErrorSubcode::StorageIo,
+                "client_doctor_working_directory",
+                error,
+            )
+        })?
+        .next()
+        .is_some()
+    {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::Invariant,
+            "client_doctor_working_directory",
+            "the read-only MCP probe wrote into its empty working directory",
+        ));
+    }
+    Ok(probe)
+}
+
+fn run_client_stdio_probe_at(
+    launch: &ClientLaunchConfig,
+    expected_project_id: String,
+    working_directory: PathBuf,
+) -> Result<ClientProbe, RuntimeFailure> {
+    run_client_stdio_probe_with_query(launch, expected_project_id, working_directory, None)
+}
+
+fn run_client_stdio_probe_with_query(
+    launch: &ClientLaunchConfig,
+    expected_project_id: String,
+    working_directory: PathBuf,
+    query: Option<&str>,
+) -> Result<ClientProbe, RuntimeFailure> {
     let deadline = Instant::now()
         .checked_add(CLIENT_DOCTOR_TIMEOUT)
         .ok_or_else(|| {
@@ -1050,7 +1704,7 @@ fn run_client_stdio_probe(
         })?;
     let mut child = ProcessCommand::new(&launch.executable)
         .args(&launch.arguments)
-        .current_dir(working_directory.path())
+        .current_dir(&working_directory)
         .env_remove("HSUM_INDEX")
         .env_remove("HSUM_PROJECT")
         .stdin(Stdio::piped())
@@ -1089,14 +1743,23 @@ fn run_client_stdio_probe(
     let stderr_reader =
         thread::spawn(move || read_capped_stream(stderr, CLIENT_DOCTOR_STDERR_LIMIT));
 
-    let requests = client_probe_requests()?;
+    let requests = client_probe_requests(query)?;
     write_probe_request(&mut stdin, &requests[0])?;
     let mut initialized = false;
     let mut listed_tools = None;
     let mut status_project = None;
+    let mut search_citation = None;
+    let requires_citation = query.is_some();
+    let mut citation_verified = false;
     let mut sent_tools = false;
     let mut sent_status = false;
-    while !initialized || listed_tools.is_none() || status_project.is_none() {
+    let mut sent_search = false;
+    let mut sent_get = false;
+    while !initialized
+        || listed_tools.is_none()
+        || status_project.is_none()
+        || (requires_citation && !citation_verified)
+    {
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
             return Err(client_doctor_timeout());
@@ -1132,6 +1795,8 @@ fn run_client_stdio_probe(
                     &mut initialized,
                     &mut listed_tools,
                     &mut status_project,
+                    &mut search_citation,
+                    &mut citation_verified,
                 )?;
                 if initialized && !sent_tools {
                     write_probe_request(&mut stdin, &requests[1])?;
@@ -1141,6 +1806,28 @@ fn run_client_stdio_probe(
                 if listed_tools.is_some() && !sent_status {
                     write_probe_request(&mut stdin, &requests[3])?;
                     sent_status = true;
+                }
+                if status_project.is_some() && query.is_some() && !sent_search {
+                    write_probe_request(&mut stdin, &requests[4])?;
+                    sent_search = true;
+                }
+                if let Some(citation) = search_citation.as_deref()
+                    && !sent_get
+                {
+                    let get = serialize_probe_request(&json!({
+                        "jsonrpc": "2.0",
+                        "id": 5,
+                        "method": "tools/call",
+                        "params": {
+                            "name": "evidence_get",
+                            "arguments": {
+                                "citation_uri": citation,
+                                "verify_source_hash": true
+                            }
+                        }
+                    }))?;
+                    write_probe_request(&mut stdin, &get)?;
+                    sent_get = true;
                 }
             }
             ProbeStreamEvent::End => {
@@ -1205,33 +1892,16 @@ fn run_client_stdio_probe(
             "the MCP subprocess exited unsuccessfully",
         ));
     }
-    if fs::read_dir(working_directory.path())
-        .map_err(|error| {
-            RuntimeFailure::from_error(
-                ErrorSubcode::StorageIo,
-                "client_doctor_working_directory",
-                error,
-            )
-        })?
-        .next()
-        .is_some()
-    {
-        return Err(RuntimeFailure::from_error(
-            ErrorSubcode::Invariant,
-            "client_doctor_working_directory",
-            "the read-only MCP probe wrote into its empty working directory",
-        ));
-    }
-
     Ok(ClientProbe {
         project_id: status_project.expect("probe loop requires status response"),
         read_only_tools: listed_tools.expect("probe loop requires tools response"),
-        working_directory: working_directory.path().to_path_buf(),
+        working_directory,
+        citation_verified,
     })
 }
 
-fn client_probe_requests() -> Result<[Vec<u8>; 4], RuntimeFailure> {
-    let requests = [
+fn client_probe_requests(query: Option<&str>) -> Result<Vec<Vec<u8>>, RuntimeFailure> {
+    let mut requests = vec![
         json!({
             "jsonrpc": "2.0",
             "id": 1,
@@ -1251,21 +1921,33 @@ fn client_probe_requests() -> Result<[Vec<u8>; 4], RuntimeFailure> {
             "params": {"name": "evidence_status", "arguments": {}}
         }),
     ];
-    let serialize = |request: &Value| -> Result<Vec<u8>, RuntimeFailure> {
-        let frame = serde_json::to_vec(&request).map_err(|error| {
-            RuntimeFailure::from_error(ErrorSubcode::Unexpected, "client_doctor_frame", error)
-        })?;
-        validate_frame(&frame).map_err(|error| {
-            RuntimeFailure::from_error(ErrorSubcode::FrameLimit, "client_doctor_frame", error)
-        })?;
-        Ok(frame)
-    };
-    Ok([
-        serialize(&requests[0])?,
-        serialize(&requests[1])?,
-        serialize(&requests[2])?,
-        serialize(&requests[3])?,
-    ])
+    if let Some(query) = query {
+        requests.push(json!({
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "tools/call",
+            "params": {
+                "name": "evidence_search",
+                "arguments": {
+                    "query": query,
+                    "limit": 1,
+                    "timeout_ms": 3000,
+                    "explain": false
+                }
+            }
+        }));
+    }
+    requests.iter().map(serialize_probe_request).collect()
+}
+
+fn serialize_probe_request(request: &Value) -> Result<Vec<u8>, RuntimeFailure> {
+    let frame = serde_json::to_vec(request).map_err(|error| {
+        RuntimeFailure::from_error(ErrorSubcode::Unexpected, "client_doctor_frame", error)
+    })?;
+    validate_frame(&frame).map_err(|error| {
+        RuntimeFailure::from_error(ErrorSubcode::FrameLimit, "client_doctor_frame", error)
+    })?;
+    Ok(frame)
 }
 
 fn write_probe_request(
@@ -1301,6 +1983,8 @@ fn validate_probe_response(
     initialized: &mut bool,
     listed_tools: &mut Option<usize>,
     status_project: &mut Option<String>,
+    search_citation: &mut Option<String>,
+    citation_verified: &mut bool,
 ) -> Result<(), RuntimeFailure> {
     if response.get("jsonrpc").and_then(Value::as_str) != Some("2.0") {
         return Err(probe_protocol_error(
@@ -1380,6 +2064,53 @@ fn validate_probe_response(
                 ));
             }
             *status_project = Some(project_id.to_owned());
+        }
+        4 if search_citation.is_none() => {
+            let search = response
+                .pointer("/result/structuredContent")
+                .ok_or_else(|| {
+                    probe_protocol_error(
+                        "the MCP evidence_search response omitted structured content",
+                    )
+                })?;
+            if search.get("schema_version").and_then(Value::as_str) != Some(MCP_API_VERSION)
+                || search.get("project_id").and_then(Value::as_str) != Some(expected_project_id)
+            {
+                return Err(probe_protocol_error(
+                    "the MCP evidence_search response escaped the configured project binding",
+                ));
+            }
+            let citation = search
+                .pointer("/results/0/citation_uri")
+                .and_then(Value::as_str)
+                .ok_or_else(|| {
+                    probe_protocol_error(
+                        "the MCP evidence_search response did not return a probe citation",
+                    )
+                })?;
+            *search_citation = Some(citation.to_owned());
+        }
+        5 if !*citation_verified => {
+            let evidence = response
+                .pointer("/result/structuredContent")
+                .ok_or_else(|| {
+                    probe_protocol_error("the MCP evidence_get response omitted structured content")
+                })?;
+            if evidence.get("schema_version").and_then(Value::as_str) != Some(MCP_API_VERSION)
+                || evidence
+                    .get("requested_citation_uri")
+                    .and_then(Value::as_str)
+                    != search_citation.as_deref()
+                || evidence
+                    .get("content")
+                    .and_then(Value::as_str)
+                    .is_none_or(str::is_empty)
+            {
+                return Err(probe_protocol_error(
+                    "the MCP evidence_get response did not resolve the probe citation",
+                ));
+            }
+            *citation_verified = true;
         }
         _ => {
             return Err(probe_protocol_error(
@@ -1611,6 +2342,14 @@ async fn run_mcp(
     current_dir: PathBuf,
     arguments: McpArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    if arguments.binding.is_none() && arguments.project.is_none() {
+        let _ = global;
+        serve_workspace_stdio(current_dir, managed_paths)
+            .await
+            .map_err(map_mcp_server_error)?;
+        return Ok(crate::cli::ProcessExitCategory::Success);
+    }
+
     let mut request = ContextRequest::direct(current_dir, managed_paths);
     request.mode = SelectionMode::Mcp;
     request.binding = arguments.binding;
@@ -2376,9 +3115,15 @@ impl ContextJson {
 }
 
 fn client_config_value(client: ClientKind, executable: &Path, binding: &str) -> Value {
+    let arguments = match client {
+        ClientKind::Codex => json!(["mcp"]),
+        ClientKind::ClaudeCode | ClientKind::ClaudeDesktop | ClientKind::Generic => {
+            json!(["mcp", "--binding", binding])
+        }
+    };
     let server = json!({
         "command": json_path(executable),
-        "args": ["mcp", "--binding", binding],
+        "args": arguments,
     });
     match client {
         ClientKind::Codex => json!({"mcp_servers": {"hsum": server}}),
@@ -2396,6 +3141,9 @@ fn command_requests_json(command: &Command) -> bool {
             | Command::Get(GetArgs { json: true, .. })
             | Command::Status(StatusArgs { json: true, .. })
             | Command::Context(crate::cli::ContextArgs { json: true })
+            | Command::Integration(crate::cli::IntegrationArgs {
+                command: IntegrationCommand::Status(IntegrationStatusArgs { json: true, .. }),
+            })
     )
 }
 
@@ -3000,6 +3748,24 @@ fn map_mcp_server_error(error: McpServerError) -> RuntimeFailure {
         McpServerError::Join(_) => ErrorSubcode::Unexpected,
     };
     RuntimeFailure::from_error(subcode, "mcp", error)
+}
+
+fn map_integration_error(error: IntegrationError) -> RuntimeFailure {
+    let subcode = match &error {
+        IntegrationError::CodexNotFound => ErrorSubcode::PathInvalid,
+        IntegrationError::Io(source) if source.kind() == io::ErrorKind::NotFound => {
+            ErrorSubcode::PathInvalid
+        }
+        IntegrationError::Io(_) => ErrorSubcode::Unexpected,
+        IntegrationError::RegistrationConflict
+        | IntegrationError::InspectFailed { .. }
+        | IntegrationError::InvalidRegistration(_)
+        | IntegrationError::UnsupportedRegistration(_)
+        | IntegrationError::CommandFailed { .. }
+        | IntegrationError::VerificationFailed => ErrorSubcode::ConfigInvalid,
+        IntegrationError::OutputTooLarge => ErrorSubcode::MemoryBudget,
+    };
+    RuntimeFailure::from_error(subcode, "codex_integration", error)
 }
 
 #[cfg(test)]

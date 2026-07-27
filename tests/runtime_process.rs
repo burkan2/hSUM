@@ -436,10 +436,17 @@ fn artifacts_trust_and_client_config_keep_output_channels_clean() {
         .is_absolute()
     );
     assert_eq!(
-        toml_config["mcp_servers"]["hsum"]["args"][1]
+        toml_config["mcp_servers"]["hsum"]["args"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert_eq!(
+        toml_config["mcp_servers"]["hsum"]["args"][0]
             .as_str()
             .unwrap(),
-        "--binding"
+        "mcp"
     );
 
     let client_doctor = run(
@@ -455,6 +462,22 @@ fn artifacts_trust_and_client_config_keep_output_channels_clean() {
     assert!(client_doctor.stderr.is_empty());
     assert!(
         String::from_utf8_lossy(&client_doctor.stdout)
+            .contains("framing, and read-only probe are healthy")
+    );
+
+    let codex_doctor = run(
+        home.path(),
+        repository.path(),
+        &["client", "doctor", "codex"],
+    );
+    assert!(
+        codex_doctor.status.success(),
+        "Codex client doctor stderr: {}",
+        String::from_utf8_lossy(&codex_doctor.stderr)
+    );
+    assert!(codex_doctor.stderr.is_empty());
+    assert!(
+        String::from_utf8_lossy(&codex_doctor.stdout)
             .contains("framing, and read-only probe are healthy")
     );
 
@@ -564,6 +587,22 @@ fn errors_use_stderr_stable_exits_and_mcp_stdout_contains_only_frames() {
     for frame in String::from_utf8(project_output.stdout).unwrap().lines() {
         serde_json::from_str::<Value>(frame).unwrap();
     }
+
+    let workspace_output = run_mcp_handshake(home.path(), repository.path(), &["mcp"]);
+    assert!(
+        workspace_output.status.success(),
+        "workspace MCP stderr: {}",
+        String::from_utf8_lossy(&workspace_output.stderr)
+    );
+    assert!(workspace_output.stderr.is_empty());
+    let workspace_frames = String::from_utf8(workspace_output.stdout).unwrap();
+    let workspace_initialized: Value =
+        serde_json::from_str(workspace_frames.lines().next().unwrap()).unwrap();
+    assert_eq!(workspace_initialized["id"], 1);
+    assert_eq!(
+        workspace_initialized["result"]["serverInfo"]["name"],
+        "hsum"
+    );
 }
 
 #[test]

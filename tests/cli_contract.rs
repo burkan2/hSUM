@@ -1,8 +1,9 @@
 use clap::{CommandFactory, Parser};
 use hsum::cli::{
-    Cli, ClientCommand, ClientKind, Command, CompletionShell, HelpCommand, ProcessExitCategory,
-    SearchMode, escape_terminal_bytes, escape_terminal_text, exit_code_for, render_completions,
-    render_man, render_verbose_version, verbose_version_requested,
+    AgentPolicyMode, Cli, ClientCommand, ClientKind, Command, CompletionShell, HelpCommand,
+    IntegrationClient, IntegrationCommand, ProcessExitCategory, SearchMode, escape_terminal_bytes,
+    escape_terminal_text, exit_code_for, render_completions, render_man, render_verbose_version,
+    verbose_version_requested,
 };
 use proptest::prelude::*;
 
@@ -46,6 +47,7 @@ fn alpha3_command_inventory_is_exact_and_ordered() {
             "context",
             "help",
             "client",
+            "integration",
             "completions",
             "man",
             "mcp",
@@ -339,6 +341,95 @@ fn client_and_mcp_shapes_are_tag_gated_and_project_safe() {
         "--project",
         "default",
     ]);
+}
+
+#[test]
+fn integration_shapes_require_confirmation_for_repository_and_client_mutations() {
+    let parsed = parse(&[
+        "hsum",
+        "integration",
+        "install",
+        "codex",
+        "--activate",
+        ".",
+        "--confirm",
+    ]);
+    let Command::Integration(arguments) = parsed.command else {
+        panic!("expected integration");
+    };
+    let IntegrationCommand::Install(arguments) = arguments.command else {
+        panic!("expected integration install");
+    };
+    assert_eq!(arguments.client, IntegrationClient::Codex);
+    assert_eq!(arguments.activate.unwrap(), std::path::PathBuf::from("."));
+    assert_eq!(arguments.agent_policy, AgentPolicyMode::Install);
+    let skipped = parse(&[
+        "hsum",
+        "integration",
+        "install",
+        "codex",
+        "--agent-policy",
+        "skip",
+    ]);
+    let Command::Integration(skipped) = skipped.command else {
+        panic!("expected integration");
+    };
+    let IntegrationCommand::Install(skipped) = skipped.command else {
+        panic!("expected integration install");
+    };
+    assert_eq!(skipped.agent_policy, AgentPolicyMode::Skip);
+
+    parse(&[
+        "hsum",
+        "integration",
+        "activate",
+        "codex",
+        "--path",
+        ".",
+        "--confirm",
+    ]);
+    parse(&[
+        "hsum",
+        "integration",
+        "authorize-workspace",
+        "codex",
+        "--path",
+        "/work/projects",
+        "--confirm",
+    ]);
+    parse(&[
+        "hsum",
+        "integration",
+        "revoke-workspace",
+        "codex",
+        "--path",
+        "/work/projects",
+        "--confirm",
+    ]);
+    parse(&["hsum", "integration", "status", "codex", "--json"]);
+    parse(&["hsum", "integration", "repair", "codex", "--confirm"]);
+    parse(&["hsum", "integration", "uninstall", "codex", "--confirm"]);
+
+    assert_usage_error(&["hsum", "integration", "install", "codex", "--activate", "."]);
+    assert_usage_error(&["hsum", "integration", "activate", "codex"]);
+    assert_usage_error(&[
+        "hsum",
+        "integration",
+        "authorize-workspace",
+        "codex",
+        "--path",
+        "/work/projects",
+    ]);
+    assert_usage_error(&[
+        "hsum",
+        "integration",
+        "revoke-workspace",
+        "codex",
+        "--path",
+        "/work/projects",
+    ]);
+    assert_usage_error(&["hsum", "integration", "repair", "codex"]);
+    assert_usage_error(&["hsum", "integration", "uninstall", "codex"]);
 }
 
 #[test]

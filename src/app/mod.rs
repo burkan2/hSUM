@@ -31,7 +31,8 @@ mod tests;
 const FAILURE_RECORD_ESTIMATED_WRITE_BYTES: u64 = 64 * 1024;
 
 pub use context::{
-    ContextError, ContextRequest, EffectiveContext, resolve_context, resolve_trust_target,
+    ContextError, ContextRequest, EffectiveContext, repository_root_for_current_dir,
+    resolve_context, resolve_trust_target,
 };
 pub use init::{
     BroadRootReason, InitError, InitNextStep, InitOutcome, InitRequest, PointerOutcome,

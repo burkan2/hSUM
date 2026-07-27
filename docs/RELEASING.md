@@ -72,7 +72,7 @@ GitHub and rotate the public key deliberately through a reviewed pull request.
 
 The `CI` workflow runs on clean GitHub-hosted Linux x86_64 and macOS arm64
 runners. On each platform it runs `cargo xtask check`, builds the release
-binary, and requires four artifact-level checks:
+binary, and requires five artifact-level checks:
 
 1. `scripts/reproducible-release-build.sh` rebuilds in an isolated target
    directory and requires byte-for-byte equality with the candidate.
@@ -80,9 +80,15 @@ binary, and requires four artifact-level checks:
    `HSUM_HOME`, then validates init, search, immutable get, context, doctor,
    generated MCP client configuration, a real MCP initialize/tools-list
    exchange, and the documented all-source-failure exit.
-3. `scripts/no-network-smoke.sh` repeats that first-user path with network
-   syscalls denied.
-4. `scripts/released-alpha1-upgrade-smoke.sh` downloads the checksum-pinned
+3. `scripts/installer-smoke.sh` renders the pinned installer, serves the
+   candidate archive and checksum through a fake `curl`, installs into an
+   isolated user bin directory, registers through a fake Codex CLI, proves a
+   citation round trip in two idempotent runs, and rejects a bad checksum
+   before installing.
+4. `scripts/no-network-smoke.sh` repeats both first-user and installer paths
+   with network syscalls denied; the installer receives its local fixture
+   through the fake `curl`.
+5. `scripts/released-alpha1-upgrade-smoke.sh` downloads the checksum-pinned
    published alpha.1 executable, creates an index with it, then proves the
    candidate rejects stale evidence, rebuilds safely, and invalidates the old
    citation.
@@ -96,6 +102,7 @@ cargo +1.91.0 build --locked --release
 RUSTUP_TOOLCHAIN=1.91.0 \
   bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
 bash scripts/release-smoke.sh "$PWD/target/release/hsum"
+bash scripts/installer-smoke.sh "$PWD/target/release/hsum"
 bash scripts/no-network-smoke.sh "$PWD/target/release/hsum"
 bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
 cargo +1.91.0 fetch --locked
@@ -132,8 +139,9 @@ all-target graph first; the generator then runs Cargo metadata in offline mode.
    ```
 
 4. The tag triggers `.github/workflows/release.yml`. It repeats the release
-   checks, creates checksums and GitHub provenance attestations, assembles all
-   assets in a draft, then publishes the GitHub prerelease. While no Apple
+   checks, renders a version-pinned `install-hsum.sh`, creates checksums and
+   GitHub provenance attestations, assembles all assets in a draft, then
+   publishes the GitHub prerelease. While no Apple
    credentials are configured it logs a warning and publishes a macOS archive
    with only the linker's ad-hoc signature; when signing is enabled it also
    Developer ID-signs and notarizes that archive.

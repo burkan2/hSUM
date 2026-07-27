@@ -103,6 +103,9 @@ pub enum Command {
     /// Generate or diagnose agent-client configuration.
     Client(ClientArgs),
 
+    /// Install, activate, inspect, repair, or remove an agent integration.
+    Integration(IntegrationArgs),
+
     /// Generate shell completion content on stdout.
     Completions(CompletionsArgs),
 
@@ -389,6 +392,143 @@ pub struct ClientDoctorArgs {
     /// Agent client whose installed configuration should be diagnosed.
     #[arg(value_enum)]
     pub client: ClientKind,
+}
+
+/// Arguments for `hsum integration`.
+#[derive(Clone, Debug, Args)]
+#[command(disable_help_subcommand = true)]
+pub struct IntegrationArgs {
+    /// Integration lifecycle operation.
+    #[command(subcommand)]
+    pub command: IntegrationCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum IntegrationCommand {
+    /// Register hSUM globally and optionally activate one repository.
+    Install(IntegrationInstallArgs),
+
+    /// Initialize or validate one repository for an existing integration.
+    Activate(IntegrationActivateArgs),
+
+    /// Allow repositories below one directory to activate lazily.
+    AuthorizeWorkspace(IntegrationWorkspaceArgs),
+
+    /// Stop future lazy activation below one directory.
+    RevokeWorkspace(IntegrationWorkspaceArgs),
+
+    /// Inspect the effective client registration.
+    Status(IntegrationStatusArgs),
+
+    /// Replace a missing, legacy, or stale hSUM registration.
+    Repair(IntegrationRepairArgs),
+
+    /// Remove hSUM's client registration without deleting indexes.
+    Uninstall(IntegrationUninstallArgs),
+}
+
+/// Agent clients with a managed integration adapter.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+#[value(rename_all = "kebab-case")]
+pub enum IntegrationClient {
+    Codex,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+#[value(rename_all = "kebab-case")]
+pub enum AgentPolicyMode {
+    Install,
+    Skip,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct IntegrationInstallArgs {
+    /// Agent client to register.
+    #[arg(value_enum)]
+    pub client: IntegrationClient,
+
+    /// Repository to initialize and authorize during installation.
+    #[arg(long, value_name = "PATH", requires = "confirm")]
+    pub activate: Option<PathBuf>,
+
+    /// Confirm repository indexing and trust creation.
+    #[arg(long)]
+    pub confirm: bool,
+
+    /// Replace a foreign Codex MCP entry named `hsum`.
+    #[arg(long)]
+    pub replace_conflict: bool,
+
+    /// Install managed global guidance that teaches Codex when to use hSUM.
+    #[arg(long, value_enum, default_value = "install")]
+    pub agent_policy: AgentPolicyMode,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct IntegrationActivateArgs {
+    /// Agent client whose repository integration should be activated.
+    #[arg(value_enum)]
+    pub client: IntegrationClient,
+
+    /// Repository to initialize and authorize.
+    #[arg(long, value_name = "PATH", default_value = ".")]
+    pub path: PathBuf,
+
+    /// Confirm repository indexing and trust creation.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct IntegrationWorkspaceArgs {
+    /// Agent client whose workspace policy should change.
+    #[arg(value_enum)]
+    pub client: IntegrationClient,
+
+    /// Canonical parent directory containing separate Git repositories.
+    #[arg(long, value_name = "PATH")]
+    pub path: PathBuf,
+
+    /// Confirm the exact workspace authorization change.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct IntegrationStatusArgs {
+    /// Agent client whose effective registration should be inspected.
+    #[arg(value_enum)]
+    pub client: IntegrationClient,
+
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct IntegrationRepairArgs {
+    /// Agent client whose registration should be repaired.
+    #[arg(value_enum)]
+    pub client: IntegrationClient,
+
+    /// Confirm mutation of the client registration.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+
+    /// Replace a foreign Codex MCP entry named `hsum`.
+    #[arg(long)]
+    pub replace_conflict: bool,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct IntegrationUninstallArgs {
+    /// Agent client whose hSUM registration should be removed.
+    #[arg(value_enum)]
+    pub client: IntegrationClient,
+
+    /// Confirm removal of the client registration.
+    #[arg(long, required = true)]
+    pub confirm: bool,
 }
 
 /// Arguments for `hsum completions`.

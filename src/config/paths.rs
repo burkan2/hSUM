@@ -50,6 +50,10 @@ impl ManagedPaths {
         self.config_dir.join("trusted-projects.toml")
     }
 
+    pub fn integration_policy_file(&self) -> PathBuf {
+        self.config_dir.join("integration-policy.toml")
+    }
+
     pub fn index_database(&self, index_name: &SafeSlug) -> PathBuf {
         self.data_dir
             .join("indexes")

@@ -102,6 +102,7 @@ pub enum ErrorSubcode {
     ChecksumMismatch,
     SourceRead,
     IndexWrite,
+    RepositoryNotActivated,
     PathTrust,
     DiskSpace,
     IndexQuota,
@@ -141,7 +142,7 @@ pub enum ErrorSubcode {
 }
 
 impl ErrorSubcode {
-    pub const ALL: [Self; 65] = [
+    pub const ALL: [Self; 66] = [
         Self::QueryEmpty,
         Self::QuerySyntax,
         Self::LimitOutOfRange,
@@ -171,6 +172,7 @@ impl ErrorSubcode {
         Self::ChecksumMismatch,
         Self::SourceRead,
         Self::IndexWrite,
+        Self::RepositoryNotActivated,
         Self::PathTrust,
         Self::DiskSpace,
         Self::IndexQuota,
@@ -240,6 +242,7 @@ impl ErrorSubcode {
             Self::ChecksumMismatch => "CHECKSUM_MISMATCH",
             Self::SourceRead => "SOURCE_READ",
             Self::IndexWrite => "INDEX_WRITE",
+            Self::RepositoryNotActivated => "REPOSITORY_NOT_ACTIVATED",
             Self::PathTrust => "PATH_TRUST",
             Self::DiskSpace => "DISK_SPACE",
             Self::IndexQuota => "INDEX_QUOTA",
@@ -493,6 +496,13 @@ impl ErrorSubcode {
                 "hSUM cannot write the managed index",
                 "filesystem permissions deny a required index mutation",
                 "grant the current user access to the managed data directory",
+            ),
+            Self::RepositoryNotActivated => ErrorSpec::new(
+                ErrorCode::PermissionDenied,
+                false,
+                "hSUM is not activated for this repository",
+                "no user-side trust binding matches the current repository root",
+                "run the activation command from the error details, then retry the same tool call",
             ),
             Self::PathTrust => ErrorSpec::new(
                 ErrorCode::PermissionDenied,
