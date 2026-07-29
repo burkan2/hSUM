@@ -1,16 +1,20 @@
+use std::path::PathBuf;
 use std::time::Duration;
 
+use hsum::app::{InitRequest, initialize};
+use hsum::config::ManagedPaths;
 use hsum::domain::{Citation, IndexId, ProjectId, SafeSlug, SourceId};
 use hsum::ingest::{
     ChunkKind, ChunkSettings, QuoteBloom, SnapshotRevision, body_sha256, chunk_bytes,
     revision_sha256,
 };
+use hsum::integration::WorkspacePolicy;
 use hsum::mcp::{
     EvidenceGetInput, EvidenceProjectInput, EvidenceSearchInput, EvidenceSearchMode,
     EvidenceStatusInput, FrameValidationError, HsumMcpServer, MAX_MCP_FRAME_BYTES,
     MAX_MCP_GET_BODY_BYTES, MAX_MCP_NESTING_DEPTH, MAX_MCP_RESPONSE_BYTES,
-    MAX_MCP_SEARCH_BODY_BYTES, McpServerError, retrieval_config_fingerprint, serve_io,
-    validate_frame, validate_response_size,
+    MAX_MCP_SEARCH_BODY_BYTES, McpServerError, WorkspaceMcpServer, retrieval_config_fingerprint,
+    serve_io, serve_workspace_io, validate_frame, validate_response_size,
 };
 use hsum::store::{
     DeleteConfirmations, FilesystemScope, IndexDb, OpenMode, PreparedChunk, PreparedDocument,
@@ -128,6 +132,21 @@ fn server_advertises_exactly_four_read_only_project_bound_tools() {
 }
 
 #[test]
+fn workspace_server_teaches_agents_when_and_how_to_activate_hsum() {
+    let repository = tempdir().unwrap();
+    std::fs::create_dir(repository.path().join(".git")).unwrap();
+    let portable_home = tempdir().unwrap();
+    let managed_paths = ManagedPaths::resolve(Some(portable_home.path())).unwrap();
+    let server = WorkspaceMcpServer::new(repository.path().to_path_buf(), managed_paths);
+    let instructions = server.get_info().instructions.unwrap();
+    assert!(instructions.contains("The user does not need to mention hSUM first"));
+    assert!(instructions.contains("REPOSITORY_NOT_ACTIVATED"));
+    assert!(instructions.contains("Ask once for repository activation consent"));
+    assert!(instructions.contains("retry the same tool call"));
+    assert!(instructions.contains("no MCP restart is required"));
+}
+
+#[test]
 fn serde_inputs_reject_project_index_and_other_unknown_overrides() {
     assert!(
         serde_json::from_value::<EvidenceSearchInput>(json!({
@@ -208,13 +227,13 @@ fn response_and_body_caps_are_fixed_protocol_constants() {
 }
 
 #[test]
-fn retrieval_config_fingerprint_is_frozen_for_alpha_three() {
+fn retrieval_config_fingerprint_is_frozen_for_alpha_four() {
     // Derived from the binary version and pipeline_fingerprint() (see
     // src/mcp.rs retrieval_config_fingerprint), so the digest also moves at a
     // release or ingest-pipeline boundary, not just for retrieval config.
     assert_eq!(
         retrieval_config_fingerprint(),
-        "e479e10624bd764f2d5134db2401464e5690d0c87262705d0cf86c086abbff54"
+        "ae2ba062b90b8f86574eb0d335fb2a416c05e3ebe49845823a52e9cc0a546c30"
     );
 }
 
@@ -1430,6 +1449,444 @@ async fn stdio_protocol_recovers_after_duplicate_key_and_exits_cleanly_on_discon
         .expect("server did not stop after stdin disconnect")
         .expect("server task panicked");
     assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn workspace_server_can_activate_and_retry_without_restart() {
+    let repository = tempdir().unwrap();
+    std::fs::create_dir(repository.path().join(".git")).unwrap();
+    let portable_home = tempdir().unwrap();
+    let managed_paths = ManagedPaths::resolve(Some(portable_home.path())).unwrap();
+
+    let (server_stream, client_stream) = tokio::io::duplex(256 * 1024);
+    let (server_read, server_write) = tokio::io::split(server_stream);
+    let (client_read, mut client_write) = tokio::io::split(client_stream);
+    let server_root = repository.path().to_path_buf();
+    let server_paths = managed_paths.clone();
+    let server = tokio::spawn(async move {
+        serve_workspace_io(server_root, server_paths, server_read, server_write).await
+    });
+    let mut client_read = BufReader::new(client_read);
+
+    write_frame(
+        &mut client_write,
+        &json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "clientInfo": {"name": "hsum-workspace-test", "version": "1"}
+            }
+        }),
+    )
+    .await;
+    assert_eq!(read_frame(&mut client_read).await["id"], 1);
+    write_frame(
+        &mut client_write,
+        &json!({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+    )
+    .await;
+
+    let project_call = |id: u64| {
+        json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "method": "tools/call",
+            "params": {"name": "evidence_project", "arguments": {}}
+        })
+    };
+    write_frame(&mut client_write, &project_call(2)).await;
+    let not_activated = read_frame(&mut client_read).await;
+    assert_public_error_value(
+        &not_activated["error"]["data"],
+        "PERMISSION_DENIED",
+        "REPOSITORY_NOT_ACTIVATED",
+        false,
+    );
+    assert_eq!(
+        not_activated["error"]["data"]["details"]["activation_argv"][1],
+        "integration"
+    );
+    assert_eq!(
+        not_activated["error"]["data"]["details"]["repository_root"],
+        repository
+            .path()
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .as_ref()
+    );
+    assert_eq!(
+        not_activated["error"]["data"]["details"]["repository_files_written"],
+        false
+    );
+
+    let mut request = InitRequest::new(repository.path().to_path_buf(), managed_paths.clone());
+    request.index_name = Some(SafeSlug::new("workspace-fixture").unwrap());
+    request.project_name = Some(SafeSlug::new("default").unwrap());
+    request.no_ingest = true;
+    let initialized = initialize(&request).unwrap();
+
+    write_frame(&mut client_write, &project_call(3)).await;
+    let activated = read_frame(&mut client_read).await;
+    assert!(activated.get("error").is_none(), "{activated}");
+    assert_eq!(
+        activated["result"]["structuredContent"]["project_id"],
+        initialized.project_id.to_string()
+    );
+
+    // A running task stays pinned after its first successful resolution even
+    // if the registry is changed later.
+    std::fs::remove_file(managed_paths.trust_registry_file()).unwrap();
+    write_frame(&mut client_write, &project_call(4)).await;
+    let still_bound = read_frame(&mut client_read).await;
+    assert!(still_bound.get("error").is_none(), "{still_bound}");
+    assert_eq!(
+        still_bound["result"]["structuredContent"]["project_id"],
+        initialized.project_id.to_string()
+    );
+
+    client_write.shutdown().await.unwrap();
+    drop(client_write);
+    let result = tokio::time::timeout(Duration::from_secs(3), server)
+        .await
+        .expect("server did not stop after stdin disconnect")
+        .expect("server task panicked");
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn workspace_servers_isolate_repositories_under_one_user_home() {
+    let first_repository = tempdir().unwrap();
+    std::fs::create_dir(first_repository.path().join(".git")).unwrap();
+    let second_repository = tempdir().unwrap();
+    std::fs::create_dir(second_repository.path().join(".git")).unwrap();
+    let portable_home = tempdir().unwrap();
+    let managed_paths = ManagedPaths::resolve(Some(portable_home.path())).unwrap();
+
+    let mut first_request =
+        InitRequest::new(first_repository.path().to_path_buf(), managed_paths.clone());
+    first_request.index_name = Some(SafeSlug::new("first-workspace").unwrap());
+    first_request.project_name = Some(SafeSlug::new("default").unwrap());
+    first_request.no_ingest = true;
+    let first = initialize(&first_request).unwrap();
+
+    let mut second_request = InitRequest::new(
+        second_repository.path().to_path_buf(),
+        managed_paths.clone(),
+    );
+    second_request.index_name = Some(SafeSlug::new("second-workspace").unwrap());
+    second_request.project_name = Some(SafeSlug::new("default").unwrap());
+    second_request.no_ingest = true;
+    let second = initialize(&second_request).unwrap();
+
+    let (first_observed, second_observed) = tokio::join!(
+        workspace_project_id(first_repository.path().to_path_buf(), managed_paths.clone()),
+        workspace_project_id(
+            second_repository.path().to_path_buf(),
+            managed_paths.clone()
+        )
+    );
+    assert_eq!(first_observed, first.project_id.to_string());
+    assert_eq!(second_observed, second.project_id.to_string());
+    assert_ne!(first_observed, second_observed);
+}
+
+#[tokio::test]
+async fn approved_workspace_lazily_enrolls_only_the_exact_repository() {
+    let workspace_parent = tempdir().unwrap();
+    let workspace = workspace_parent.path().join("projects");
+    let repository = workspace.join("new-repository");
+    std::fs::create_dir_all(repository.join(".git")).unwrap();
+    std::fs::write(
+        repository.join("README.md"),
+        "workspace-auto-enrollment-evidence\n",
+    )
+    .unwrap();
+    let portable_home = tempdir().unwrap();
+    let managed_paths = ManagedPaths::resolve(Some(portable_home.path())).unwrap();
+    let mut policy = WorkspacePolicy::default();
+    policy.authorize(&workspace).unwrap();
+    policy
+        .save_atomic(&managed_paths.integration_policy_file())
+        .unwrap();
+
+    let project_id = workspace_project_id(repository.clone(), managed_paths.clone()).await;
+    assert!(!project_id.is_empty());
+
+    let registry = hsum::config::TrustRegistry::load(&managed_paths.trust_registry_file()).unwrap();
+    assert_eq!(registry.bindings().len(), 1);
+    assert_eq!(
+        registry.bindings()[0].canonical_root(),
+        repository.canonicalize().unwrap()
+    );
+    assert!(!repository.join(".hsum.toml").exists());
+}
+
+#[tokio::test]
+async fn integration_repository_refreshes_once_before_its_first_search() {
+    let repository = tempdir().unwrap();
+    std::fs::create_dir(repository.path().join(".git")).unwrap();
+    let source = repository.path().join("README.md");
+    std::fs::write(&source, "InitialVersionIdentifier\n").unwrap();
+    let portable_home = tempdir().unwrap();
+    let managed_paths = ManagedPaths::resolve(Some(portable_home.path())).unwrap();
+    let initialized = initialize(&InitRequest::new(
+        repository.path().to_path_buf(),
+        managed_paths.clone(),
+    ))
+    .unwrap();
+    let mut policy = WorkspacePolicy::default();
+    policy.mark_repository(&initialized.canonical_root).unwrap();
+    policy
+        .save_atomic(&managed_paths.integration_policy_file())
+        .unwrap();
+    std::fs::write(&source, "SecondVersionIdentifier\n").unwrap();
+
+    let (server_stream, client_stream) = tokio::io::duplex(256 * 1024);
+    let (server_read, server_write) = tokio::io::split(server_stream);
+    let (client_read, mut client_write) = tokio::io::split(client_stream);
+    let server_root = repository.path().to_path_buf();
+    let server_paths = managed_paths.clone();
+    let server = tokio::spawn(async move {
+        serve_workspace_io(server_root, server_paths, server_read, server_write).await
+    });
+    let mut client_read = BufReader::new(client_read);
+    write_frame(
+        &mut client_write,
+        &json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "clientInfo": {"name": "hsum-refresh-test", "version": "1"}
+            }
+        }),
+    )
+    .await;
+    assert_eq!(read_frame(&mut client_read).await["id"], 1);
+    write_frame(
+        &mut client_write,
+        &json!({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+    )
+    .await;
+
+    let search_call = |id: u64, query: &str| {
+        json!({
+            "jsonrpc": "2.0",
+            "id": id,
+            "method": "tools/call",
+            "params": {
+                "name": "evidence_search",
+                "arguments": {"query": query, "timeout_ms": 10_000}
+            }
+        })
+    };
+    write_frame(
+        &mut client_write,
+        &search_call(2, "SecondVersionIdentifier"),
+    )
+    .await;
+    let refreshed = read_frame(&mut client_read).await;
+    assert!(refreshed.get("error").is_none(), "{refreshed}");
+    assert_eq!(
+        refreshed["result"]["structuredContent"]["freshness"]["state"],
+        "refreshed"
+    );
+    assert_eq!(
+        refreshed["result"]["structuredContent"]["results"][0]["content"],
+        "SecondVersionIdentifier\n"
+    );
+
+    std::fs::write(&source, "ThirdVersionIdentifier\n").unwrap();
+    write_frame(&mut client_write, &search_call(3, "ThirdVersionIdentifier")).await;
+    let not_refreshed_twice = read_frame(&mut client_read).await;
+    assert!(
+        not_refreshed_twice.get("error").is_none(),
+        "{not_refreshed_twice}"
+    );
+    assert_eq!(
+        not_refreshed_twice["result"]["structuredContent"]["freshness"]["state"],
+        "refreshed"
+    );
+    assert_eq!(
+        not_refreshed_twice["result"]["structuredContent"]["results"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
+
+    client_write.shutdown().await.unwrap();
+    drop(client_write);
+    let result = tokio::time::timeout(Duration::from_secs(3), server)
+        .await
+        .expect("server did not stop after stdin disconnect")
+        .expect("server task panicked");
+    assert!(result.is_ok());
+}
+
+#[tokio::test]
+async fn refused_automatic_refresh_serves_the_last_good_generation() {
+    let repository = tempdir().unwrap();
+    std::fs::create_dir(repository.path().join(".git")).unwrap();
+    for (name, content) in [
+        ("one.md", "DeletedButCitableIdentifier\n"),
+        ("two.md", "SecondDeletionIdentifier\n"),
+        ("three.md", "RetainedIdentifierThree\n"),
+        ("four.md", "RetainedIdentifierFour\n"),
+    ] {
+        std::fs::write(repository.path().join(name), content).unwrap();
+    }
+    let portable_home = tempdir().unwrap();
+    let managed_paths = ManagedPaths::resolve(Some(portable_home.path())).unwrap();
+    let initialized = initialize(&InitRequest::new(
+        repository.path().to_path_buf(),
+        managed_paths.clone(),
+    ))
+    .unwrap();
+    let mut policy = WorkspacePolicy::default();
+    policy.mark_repository(&initialized.canonical_root).unwrap();
+    policy
+        .save_atomic(&managed_paths.integration_policy_file())
+        .unwrap();
+    std::fs::remove_file(repository.path().join("one.md")).unwrap();
+    std::fs::remove_file(repository.path().join("two.md")).unwrap();
+
+    let (server_stream, client_stream) = tokio::io::duplex(256 * 1024);
+    let (server_read, server_write) = tokio::io::split(server_stream);
+    let (client_read, mut client_write) = tokio::io::split(client_stream);
+    let server_root = repository.path().to_path_buf();
+    let server_paths = managed_paths.clone();
+    let server = tokio::spawn(async move {
+        serve_workspace_io(server_root, server_paths, server_read, server_write).await
+    });
+    let mut client_read = BufReader::new(client_read);
+    write_frame(
+        &mut client_write,
+        &json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "clientInfo": {"name": "hsum-stale-refresh-test", "version": "1"}
+            }
+        }),
+    )
+    .await;
+    assert_eq!(read_frame(&mut client_read).await["id"], 1);
+    write_frame(
+        &mut client_write,
+        &json!({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+    )
+    .await;
+    write_frame(
+        &mut client_write,
+        &json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "evidence_search",
+                "arguments": {
+                    "query": "DeletedButCitableIdentifier",
+                    "timeout_ms": 10_000
+                }
+            }
+        }),
+    )
+    .await;
+    let stale = read_frame(&mut client_read).await;
+    assert!(stale.get("error").is_none(), "{stale}");
+    assert_eq!(
+        stale["result"]["structuredContent"]["freshness"]["state"],
+        "stale"
+    );
+    assert!(
+        stale["result"]["structuredContent"]["freshness"]["problem"]
+            .as_str()
+            .unwrap()
+            .contains("--allow-mass-delete"),
+        "{stale}"
+    );
+    assert_eq!(
+        stale["result"]["structuredContent"]["results"][0]["content"],
+        "DeletedButCitableIdentifier\n"
+    );
+    assert_eq!(
+        stale["result"]["structuredContent"]["results"][0]["source_state"],
+        "missing_since_ingest"
+    );
+
+    client_write.shutdown().await.unwrap();
+    drop(client_write);
+    let result = tokio::time::timeout(Duration::from_secs(3), server)
+        .await
+        .expect("server did not stop after stdin disconnect")
+        .expect("server task panicked");
+    assert!(result.is_ok());
+}
+
+async fn workspace_project_id(current_dir: PathBuf, managed_paths: ManagedPaths) -> String {
+    let (server_stream, client_stream) = tokio::io::duplex(256 * 1024);
+    let (server_read, server_write) = tokio::io::split(server_stream);
+    let (client_read, mut client_write) = tokio::io::split(client_stream);
+    let server = tokio::spawn(async move {
+        serve_workspace_io(current_dir, managed_paths, server_read, server_write).await
+    });
+    let mut client_read = BufReader::new(client_read);
+
+    write_frame(
+        &mut client_write,
+        &json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2025-11-25",
+                "capabilities": {},
+                "clientInfo": {"name": "hsum-isolation-test", "version": "1"}
+            }
+        }),
+    )
+    .await;
+    assert_eq!(read_frame(&mut client_read).await["id"], 1);
+    write_frame(
+        &mut client_write,
+        &json!({"jsonrpc": "2.0", "method": "notifications/initialized"}),
+    )
+    .await;
+    write_frame(
+        &mut client_write,
+        &json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {"name": "evidence_project", "arguments": {}}
+        }),
+    )
+    .await;
+    let project = read_frame(&mut client_read).await;
+    assert!(project.get("error").is_none(), "{project}");
+    let project_id = project["result"]["structuredContent"]["project_id"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+
+    client_write.shutdown().await.unwrap();
+    drop(client_write);
+    let result = tokio::time::timeout(Duration::from_secs(3), server)
+        .await
+        .expect("server did not stop after stdin disconnect")
+        .expect("server task panicked");
+    assert!(result.is_ok());
+    project_id
 }
 
 #[tokio::test]

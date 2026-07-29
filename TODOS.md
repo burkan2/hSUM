@@ -1,9 +1,10 @@
 # hSUM remaining work
 
-This backlog tracks work after the public `0.1.0-alpha.2` filesystem/lexical
+This backlog tracks work after the public `0.1.0-alpha.3` filesystem/lexical
 release. It does not treat already implemented
 init, trust, ingest, exact/BM25 search, immutable `get`, status, read-only
-doctor, client configuration, or project-bound MCP stdio as future work.
+doctor, client configuration, Codex integration management, workspace-dynamic
+MCP, or the no-`sudo` release installer as future work.
 
 Completed launch checkboxes summarize the evidence recorded in
 `outputs/IMPLEMENTATION_STATUS.md`; later backlog items are not release claims.
@@ -67,8 +68,9 @@ Completed launch checkboxes summarize the evidence recorded in
   removal, replacement creation, and replacement registration. Expand fault
   injection across the remaining durable boundaries, including disk-full,
   WAL/checkpoint, pointer rollback, and multi-process reader/writer recovery.
-- Before promoting beyond archive-only alpha distribution, provide a verified
-  no-`sudo` installer and macOS signing/notarization.
+- The verified no-`sudo` installer is part of the alpha.4 release train.
+  Before removing the explicit unsigned-alpha acknowledgement on macOS,
+  provide Developer ID signing and notarization.
 - Add parser fuzz targets for citations, MCP frames and cursors, queries,
   configuration, trust files, and raw connector keys.
 - Generate CLI, MCP schema, error-catalog, and configuration reference pages

@@ -16,22 +16,25 @@ fi
 
 repository_root=$(cd "$(dirname "$0")/.." && pwd)
 smoke="$repository_root/scripts/release-smoke.sh"
+installer_smoke="$repository_root/scripts/installer-smoke.sh"
+offline_smoke='bash "$1" "$3"; bash "$2" "$3"'
 
 case "$(uname -s)" in
   Darwin)
     exec sandbox-exec \
       -p '(version 1) (allow default) (deny network*)' \
-      bash "$smoke" "$binary"
+      bash -c "$offline_smoke" _ "$smoke" "$installer_smoke" "$binary"
     ;;
   Linux)
     if [ "$(id -u)" -eq 0 ]; then
-      exec unshare --net bash "$smoke" "$binary"
+      exec unshare --net \
+        bash -c "$offline_smoke" _ "$smoke" "$installer_smoke" "$binary"
     fi
     if sudo -n true 2>/dev/null; then
       exec sudo -n unshare --net \
         --setgid="$(id -g)" \
         --setuid="$(id -u)" \
-        bash "$smoke" "$binary"
+        bash -c "$offline_smoke" _ "$smoke" "$installer_smoke" "$binary"
     fi
     echo "Linux no-network smoke requires root or passwordless sudo for unshare --net" >&2
     exit 2

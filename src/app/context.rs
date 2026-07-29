@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use rusqlite::{OptionalExtension, params};
@@ -101,7 +102,7 @@ pub fn resolve_context(request: &ContextRequest) -> Result<EffectiveContext, Con
         return materialize_context(request, &selected, request.project.as_ref());
     }
 
-    let root = select_repository_root(&request.current_dir)?;
+    let root = repository_root_for_current_dir(&request.current_dir)?;
     let registry = load_registry(&request.managed_paths.trust_registry_file())?;
     match registry.select(SelectionRequest {
         mode: request.mode,
@@ -412,11 +413,20 @@ fn read_filesystem_source_snapshot(
     })
 }
 
-fn select_repository_root(current_dir: &Path) -> Result<PathBuf, ContextError> {
+pub fn repository_root_for_current_dir(current_dir: &Path) -> Result<PathBuf, ContextError> {
     let canonical = canonicalize_repository_root(current_dir)?;
     for candidate in canonical.ancestors() {
-        if candidate.join(".git").try_exists()? {
-            return Ok(candidate.to_path_buf());
+        let marker = candidate.join(".git");
+        match fs::symlink_metadata(marker) {
+            Ok(metadata)
+                if !metadata.file_type().is_symlink()
+                    && (metadata.file_type().is_dir() || metadata.file_type().is_file()) =>
+            {
+                return Ok(candidate.to_path_buf());
+            }
+            Ok(_) => {}
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(error.into()),
         }
     }
     Ok(canonical)
@@ -549,9 +559,9 @@ pub enum ContextError {
     TrustedProjectIdentityMismatch,
     #[error("selected project does not exist")]
     ProjectNotFound,
-    #[error("alpha.3 requires exactly one project source, found {found}")]
+    #[error("alpha.4 requires exactly one project source, found {found}")]
     AlphaSourceCardinality { found: usize },
-    #[error("alpha.3 requires the sole project source to be filesystem-backed")]
+    #[error("alpha.4 requires the sole project source to be filesystem-backed")]
     AlphaSourceMustBeFilesystem,
     #[error("filesystem source configuration is invalid")]
     InvalidFilesystemSourceConfig(#[source] SourceConfigError),

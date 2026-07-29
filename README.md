@@ -37,6 +37,8 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/burkan2/hSUM/releases"><img alt="Verified user installer available" src="https://img.shields.io/badge/user%20installer-available-2ea44f?logo=github"></a>
+  &nbsp;
   <a href="#quickstart"><img alt="Build from source" src="https://img.shields.io/badge/build%20from%20source-cargo%20build%20--release-2ea44f?logo=rust"></a>
   &nbsp;
   <img alt="cargo install: at v0.1.0" src="https://img.shields.io/badge/cargo%20install%20hsum-at%20v0.1.0-lightgrey">
@@ -46,8 +48,8 @@
 <p align="center">
   <sub>
     Colored badges are clickable and go to the relevant section or page.
-    Source build works today (see <a href="#quickstart">Quickstart</a>).
-    GitHub prereleases provide prebuilt macOS arm64 and Linux x86_64 archives.
+    GitHub prereleases provide a checksum-verifying, no-<code>sudo</code>
+    installer plus prebuilt macOS arm64 and Linux x86_64 archives.
     Published <code>cargo install</code> and <code>cargo binstall</code> remain
     deferred while the crate has <code>publish = false</code>.
     Alpha binaries are checksummed and carry GitHub build attestations, but
@@ -76,21 +78,24 @@ the passage with its citation intact.
 ## Quickstart
 
 ```bash
-# 1. Build (pinned Rust 1.91; macOS arm64 or Linux x86_64)
-cargo build --locked --release
-export HSUM=/absolute/path/to/checkout/target/release/hsum
+# 1. Download and verify the version-pinned installer
+version=0.1.0-alpha.4
+base_url="https://github.com/burkan2/hSUM/releases/download/v$version"
+curl -fsSLO "$base_url/install-hsum.sh"
+curl -fsSLO "$base_url/SHA256SUMS"
+grep ' install-hsum.sh$' SHA256SUMS | shasum -a 256 -c -
 
-# 2. Index a repository
+# 2. Install hSUM, register Codex, and activate this repository
 cd /absolute/path/to/a/repository
-"$HSUM" init            # prints the exact data path and a verified first query
+bash /path/to/install-hsum.sh --activate . --confirm
+# macOS alpha only: add --allow-unnotarized-alpha after reading the warning.
 
 # 3. Search, then resolve immutable evidence
-"$HSUM" search 'your identifier or "exact phrase"'
-"$HSUM" get '<citation printed by search>'
+hsum search 'your identifier or "exact phrase"'
+hsum get '<citation printed by search>'
 
-# 4. Connect an agent (privacy note prints first)
-"$HSUM" client config codex      # or claude-code | claude-desktop | generic
-"$HSUM" client doctor codex      # real end-to-end probe of that config
+# 4. Verify the effective Codex registration at any time
+hsum integration status codex --json
 ```
 
 ### Ask your agent
@@ -99,17 +104,21 @@ Copy this prompt into your coding agent to run the quickstart from an existing
 checkout:
 
 ```text
-Set up and smoke-test hSUM (https://github.com/burkan2/hSUM) from the current
-checkout without changing source or configuration files. First check that this
-is macOS arm64 or Linux x86_64 and that `cargo` is available. If Rust/Cargo is
-missing, offer me two choices and wait for my answer: I can install Rust from
-https://www.rust-lang.org/tools/install, or you can install it with rustup
-after I explicitly approve that system change. When Cargo is ready, run
-`cargo build --locked --release`, verify `./target/release/hsum --version`, set
-HSUM to the binary's absolute path, then initialize the repository I name and
-run one search. Report each command and its result, including any failure,
-before proceeding to the next step. Documentation is at
-https://hsum.burkankale.com/docs/0.1.0-alpha.3/ and
+Install and smoke-test hSUM 0.1.0-alpha.4
+(https://github.com/burkan2/hSUM) for the current Git repository. User-level
+installation, user-level hSUM state, and the single Codex MCP registration are
+in scope; do not modify repository files. Confirm this is macOS arm64 or Linux
+x86_64. Download `install-hsum.sh` and `SHA256SUMS` from the exact
+`v0.1.0-alpha.4` GitHub release, verify the installer's SHA-256 entry before
+running it, and review the script. Run it with `--activate . --confirm`; on
+macOS, explain that this alpha is not Apple-notarized and add
+`--allow-unnotarized-alpha` only after I explicitly approve that required
+acknowledgement. Verify that installation reports four read-only tools and a
+successful citation round trip, and that `hsum integration status codex
+--json` reports both the registration and agent policy as `current`. Do not
+ask me to copy TOML, edit Codex configuration, or restart Codex. Report each
+command and result, including any failure. Documentation is at
+https://hsum.burkankale.com/docs/0.1.0-alpha.4/ and
 https://hsum.burkankale.com/llms.txt.
 ```
 
@@ -121,19 +130,63 @@ whatever the file looks like later.
 
 > [!NOTE]
 > This is an alpha. The
-> [`v0.1.0-alpha.3` GitHub prerelease](https://github.com/burkan2/hSUM/releases/tag/v0.1.0-alpha.3)
+> [`v0.1.0-alpha.4` GitHub prerelease](https://github.com/burkan2/hSUM/releases/tag/v0.1.0-alpha.4)
 > provides checksummed artifacts for macOS arm64 and Linux x86_64. The crate
 > remains `publish = false`, so `cargo install` is unavailable.
 
 ## Connect your agent
 
-hSUM speaks MCP over stdio only. `client config` prints a copyable snippet
-that pins the binary's absolute path and one project-scoped trust binding. It
-guesses no PATH, edits no config files for you, and cannot be steered into
-another project:
+hSUM speaks MCP over stdio only. Codex uses one user-wide registration whose
+server derives an exact trusted repository from each task's working directory:
 
 ```bash
-"$HSUM" client config codex --format toml     # Codex
+"$HSUM" integration install codex --activate . --confirm
+"$HSUM" integration status codex
+```
+
+The install command uses Codex's supported `mcp add/get` interface, reads the
+effective `hsum` entry back, launches that exact MCP command from the activated
+repository, checks all four tools, runs `evidence_status`, and completes an
+`evidence_search` → `evidence_get` citation round trip when the index is
+nonempty. It also installs a bounded hSUM-managed block in Codex's user-global
+`AGENTS.md` (or the effective `AGENTS.override.md`) so future agents know when
+to reach for hSUM. Existing instructions are preserved, modified/duplicate
+managed markers are refused, and `--agent-policy skip` is available as an
+explicit escape hatch. The whole flow is idempotent.
+
+Every later Codex task in the same repository gets hSUM automatically. In a
+different repository the tools are still present; the first attempted use
+returns `REPOSITORY_NOT_ACTIVATED` with the canonical root, privacy consequence,
+and exact activation argv. After one repository-specific consent, the agent
+runs that command and retries the same tool without restarting MCP. Repositories
+retain separate indexes, trust bindings, generations, and citation namespaces.
+
+For users who keep many repositories under one projects directory, authorize
+that parent once:
+
+```bash
+"$HSUM" integration authorize-workspace codex --path ~/Projects --confirm
+```
+
+hSUM does not scan `~/Projects` recursively or combine it into one corpus.
+When a Codex task first calls hSUM from a Git repository below the authorized
+directory, only that exact repository is initialized as a separate index. Home,
+filesystem-root, overly broad, and Git-repository workspace scopes are refused.
+Use `integration revoke-workspace` to stop future lazy enrollments; existing
+bindings and indexes remain intact.
+
+Repositories activated through the integration attempt one refresh before the
+first `evidence_search` or `evidence_get` in each MCP task. A successful refresh
+searches the newest committed generation. Busy, unsafe, partial, or
+mass-deletion-refused refreshes keep the last good generation and expose the
+freshness state in tool output. Manual/low-level hSUM repositories retain
+explicit ingest behavior.
+
+`client config` remains the low-level/manual escape hatch. Its Codex form is
+workspace-dynamic; other clients remain binding-pinned:
+
+```bash
+"$HSUM" client config codex --format toml
 "$HSUM" client config claude-code             # Claude Code
 "$HSUM" client config claude-desktop          # Claude Desktop
 "$HSUM" client config generic                 # anything MCP-capable
@@ -147,7 +200,7 @@ cloud-backed client may forward returned passages to its own model provider
 under that client's policy, and the generated config prints that warning
 before the snippet.
 
-## Available in 0.1.0-alpha.3
+## Available in 0.1.0-alpha.4
 
 | Capability | Status | Current boundary |
 |---|---|---|
@@ -157,11 +210,11 @@ before the snippet.
 | Immutable citations and historical `get` | Available | Evidence remains resolvable while its immutable version remains in this alpha index |
 | Atomic generations | Available | Explicit ingest; no watcher or daemon |
 | Status and read-only doctor | Available | Diagnosis only; no repair, prune, backup, or migration command |
-| MCP stdio | Available | Four read-only tools bound to one trusted project |
+| MCP stdio | Available | One global Codex registration; every server process pins one exact trusted repository |
 | JSONL and live connectors | Unsupported | Planned after the filesystem slice |
 | Semantic search, models, and reranking | Unsupported | No model install or download path exists |
 | HTTP server or web UI | Unsupported | MCP stdio is the only transport |
-| Prebuilt installation | Available | Checksummed GitHub prerelease archives for macOS arm64 and Linux x86_64; no installer or crates.io package |
+| Prebuilt installation | Available | Checksum-verifying no-`sudo` installer and archives for macOS arm64 and Linux x86_64; no crates.io package |
 
 ## Build from source
 
@@ -192,7 +245,7 @@ after I explicitly approve that system change. Once Cargo is available, run
 `cargo build --locked --release` and `./target/release/hsum --version`. Then
 give me the exact `export HSUM=...` command using this checkout's absolute path
 and report the commands and results without making any other changes.
-Documentation is at https://hsum.burkankale.com/docs/0.1.0-alpha.3/ and
+Documentation is at https://hsum.burkankale.com/docs/0.1.0-alpha.4/ and
 https://hsum.burkankale.com/llms.txt.
 ```
 
@@ -602,19 +655,19 @@ cargo test --doc --all-features
 
 These checks are contributor evidence, not a substitute for the clean-machine
 release workflow, artifact verification, documentation, and signed-tag gates.
-An installer, notarization, and benchmark claim remain explicitly deferred. See
+Apple notarization and benchmark claims remain explicitly deferred. See
 [`outputs/IMPLEMENTATION_STATUS.md`](outputs/IMPLEMENTATION_STATUS.md) for a
 source-to-test evidence map and [`TODOS.md`](TODOS.md) for the remaining work.
 
 ## Verifying a release
 
-The `v0.1.0-alpha.3` archives come from a GPG-signed tag and carry a
+The `v0.1.0-alpha.4` archives come from a GPG-signed tag and carry a
 `SHA256SUMS` manifest plus a GitHub SBOM attestation linking each archive to the
 workflow run and commit that produced it.
 
 ```bash
 # macOS example; use sha256sum -c on Linux.
-asset=hsum-v0.1.0-alpha.3-aarch64-apple-darwin.zip
+asset=hsum-v0.1.0-alpha.4-aarch64-apple-darwin.zip
 shasum -a 256 -c "$asset.sha256"
 gh attestation verify "$asset" --repo burkan2/hSUM \
   --predicate-type https://spdx.dev/Document/v2.3
@@ -628,7 +681,7 @@ predicate found`. A successful verification prints nothing and exits `0`. Add
 The Syft SBOMs are component inventories, but their Rust package
 license fields are `NOASSERTION`. The repository therefore records a separate,
 deterministic
-[`Cargo`-declared license inventory](outputs/hsum-v0.1.0-alpha.3-cargo-licenses.json);
+[`Cargo`-declared license inventory](outputs/hsum-v0.1.0-alpha.4-cargo-licenses.json);
 the release workflow attaches that inventory and includes it in `SHA256SUMS`.
 It is review evidence, not a legal conclusion.
 

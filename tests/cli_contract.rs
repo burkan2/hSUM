@@ -1,8 +1,9 @@
 use clap::{CommandFactory, Parser};
 use hsum::cli::{
-    Cli, ClientCommand, ClientKind, Command, CompletionShell, HelpCommand, ProcessExitCategory,
-    SearchMode, escape_terminal_bytes, escape_terminal_text, exit_code_for, render_completions,
-    render_man, render_verbose_version, verbose_version_requested,
+    AgentPolicyMode, Cli, ClientCommand, ClientKind, Command, CompletionShell, HelpCommand,
+    IntegrationClient, IntegrationCommand, ProcessExitCategory, SearchMode, escape_terminal_bytes,
+    escape_terminal_text, exit_code_for, render_completions, render_man, render_verbose_version,
+    verbose_version_requested,
 };
 use proptest::prelude::*;
 
@@ -16,7 +17,7 @@ const CITATION: &str = concat!(
 );
 
 fn parse(arguments: &[&str]) -> Cli {
-    Cli::try_parse_from(arguments).expect("arguments should satisfy the alpha.3 grammar")
+    Cli::try_parse_from(arguments).expect("arguments should satisfy the alpha.4 grammar")
 }
 
 fn assert_usage_error(arguments: &[&str]) {
@@ -25,7 +26,7 @@ fn assert_usage_error(arguments: &[&str]) {
 }
 
 #[test]
-fn alpha3_command_inventory_is_exact_and_ordered() {
+fn alpha4_command_inventory_is_exact_and_ordered() {
     let mut command = Cli::command();
     command.build();
     let names: Vec<_> = command
@@ -46,6 +47,7 @@ fn alpha3_command_inventory_is_exact_and_ordered() {
             "context",
             "help",
             "client",
+            "integration",
             "completions",
             "man",
             "mcp",
@@ -54,7 +56,7 @@ fn alpha3_command_inventory_is_exact_and_ordered() {
 }
 
 #[test]
-fn generated_help_has_only_alpha3_capabilities() {
+fn generated_help_has_only_alpha4_capabilities() {
     let mut command = Cli::command();
     let help = command.render_long_help().to_string();
 
@@ -73,7 +75,7 @@ fn generated_help_has_only_alpha3_capabilities() {
     ] {
         assert!(
             help.contains(available),
-            "root help omitted alpha.3 surface {available:?}"
+            "root help omitted alpha.4 surface {available:?}"
         );
     }
     for deferred in [
@@ -272,7 +274,7 @@ fn get_rejects_noncanonical_citations_at_the_argument_boundary() {
 }
 
 #[test]
-fn defaults_match_the_alpha3_contract() {
+fn defaults_match_the_alpha4_contract() {
     let parsed = parse(&["hsum", "search", "needle"]);
     let Command::Search(arguments) = parsed.command else {
         panic!("expected search");
@@ -342,6 +344,95 @@ fn client_and_mcp_shapes_are_tag_gated_and_project_safe() {
 }
 
 #[test]
+fn integration_shapes_require_confirmation_for_repository_and_client_mutations() {
+    let parsed = parse(&[
+        "hsum",
+        "integration",
+        "install",
+        "codex",
+        "--activate",
+        ".",
+        "--confirm",
+    ]);
+    let Command::Integration(arguments) = parsed.command else {
+        panic!("expected integration");
+    };
+    let IntegrationCommand::Install(arguments) = arguments.command else {
+        panic!("expected integration install");
+    };
+    assert_eq!(arguments.client, IntegrationClient::Codex);
+    assert_eq!(arguments.activate.unwrap(), std::path::PathBuf::from("."));
+    assert_eq!(arguments.agent_policy, AgentPolicyMode::Install);
+    let skipped = parse(&[
+        "hsum",
+        "integration",
+        "install",
+        "codex",
+        "--agent-policy",
+        "skip",
+    ]);
+    let Command::Integration(skipped) = skipped.command else {
+        panic!("expected integration");
+    };
+    let IntegrationCommand::Install(skipped) = skipped.command else {
+        panic!("expected integration install");
+    };
+    assert_eq!(skipped.agent_policy, AgentPolicyMode::Skip);
+
+    parse(&[
+        "hsum",
+        "integration",
+        "activate",
+        "codex",
+        "--path",
+        ".",
+        "--confirm",
+    ]);
+    parse(&[
+        "hsum",
+        "integration",
+        "authorize-workspace",
+        "codex",
+        "--path",
+        "/work/projects",
+        "--confirm",
+    ]);
+    parse(&[
+        "hsum",
+        "integration",
+        "revoke-workspace",
+        "codex",
+        "--path",
+        "/work/projects",
+        "--confirm",
+    ]);
+    parse(&["hsum", "integration", "status", "codex", "--json"]);
+    parse(&["hsum", "integration", "repair", "codex", "--confirm"]);
+    parse(&["hsum", "integration", "uninstall", "codex", "--confirm"]);
+
+    assert_usage_error(&["hsum", "integration", "install", "codex", "--activate", "."]);
+    assert_usage_error(&["hsum", "integration", "activate", "codex"]);
+    assert_usage_error(&[
+        "hsum",
+        "integration",
+        "authorize-workspace",
+        "codex",
+        "--path",
+        "/work/projects",
+    ]);
+    assert_usage_error(&[
+        "hsum",
+        "integration",
+        "revoke-workspace",
+        "codex",
+        "--path",
+        "/work/projects",
+    ]);
+    assert_usage_error(&["hsum", "integration", "repair", "codex"]);
+    assert_usage_error(&["hsum", "integration", "uninstall", "codex"]);
+}
+
+#[test]
 fn status_context_artifact_and_server_signatures_parse() {
     let parsed = parse(&["hsum", "status", "--problems", "--json"]);
     let Command::Status(arguments) = parsed.command else {
@@ -369,7 +460,7 @@ fn status_context_artifact_and_server_signatures_parse() {
 }
 
 #[test]
-fn completions_are_nonempty_deterministic_and_derived_from_alpha3_command() {
+fn completions_are_nonempty_deterministic_and_derived_from_alpha4_command() {
     for shell in [
         CompletionShell::Bash,
         CompletionShell::Zsh,
@@ -397,14 +488,14 @@ fn completions_are_nonempty_deterministic_and_derived_from_alpha3_command() {
 }
 
 #[test]
-fn man_page_is_deterministic_and_derived_from_alpha3_command() {
+fn man_page_is_deterministic_and_derived_from_alpha4_command() {
     let first = render_man().expect("man generation should write to memory");
     let second = render_man().expect("man generation should write to memory");
     assert_eq!(first, second);
 
     let text = String::from_utf8(first).expect("man output must be UTF-8");
     let title = text.lines().find(|line| line.starts_with(".TH"));
-    assert_eq!(title, Some(".TH hsum 1  \"hsum 0.1.0-alpha.3\" "));
+    assert_eq!(title, Some(".TH hsum 1  \"hsum 0.1.0-alpha.4\" "));
     assert!(text.contains("Local evidence for agents."));
     assert!(text.contains("search"));
     assert!(!text.contains("semantic"));
@@ -460,7 +551,7 @@ fn verbose_version_report_is_golden_and_tag_gated() {
     assert_eq!(
         render_verbose_version(),
         concat!(
-            "hsum 0.1.0-alpha.3\n",
+            "hsum 0.1.0-alpha.4\n",
             "API version: hsum.api.v1\n",
             "Readable schema versions: 1-1\n",
             "Writable schema versions: 1-1\n",
@@ -515,7 +606,7 @@ fn version_verbose_process_output_matches_the_golden_report() {
     assert!(plain.status.success());
     assert_eq!(
         String::from_utf8(plain.stdout).expect("version output must be UTF-8"),
-        "hsum 0.1.0-alpha.3\n"
+        "hsum 0.1.0-alpha.4\n"
     );
     assert!(plain.stderr.is_empty());
 }

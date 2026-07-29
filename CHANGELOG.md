@@ -3,6 +3,55 @@
 All notable public changes are documented here. hSUM follows semantic versioning
 for its release tags. During alpha, only the current tagged release is supported.
 
+## 0.1.0-alpha.4 — 2026-07-29
+
+### Added
+
+- `hsum integration install codex --activate . --confirm` now completes the
+  user-level Codex setup in one idempotent flow: it registers one global hSUM
+  MCP server through Codex's supported CLI, installs bounded agent guidance,
+  activates the current repository, verifies all four read-only tools, and
+  completes a search-to-citation round trip without asking the user to copy
+  TOML or restart Codex.
+- `integration status`, `repair`, and `uninstall` make the managed Codex
+  registration and agent policy inspectable and reversible.
+- Users with many repositories can authorize a projects directory once with
+  `integration authorize-workspace codex`. The first hSUM tool call inside a
+  Git repository below that directory initializes only that exact repository;
+  `revoke-workspace` stops future lazy enrollments without deleting existing
+  indexes or trust bindings.
+- GitHub prereleases now include a version-pinned, checksum-verifying
+  `install-hsum.sh`. It installs without `sudo`, registers Codex, activates the
+  selected repository, and is exercised by isolated and network-denied smoke
+  tests before publication.
+
+### Changed
+
+- Codex uses one workspace-dynamic MCP registration instead of one
+  binding-pinned registration per repository. Existing low-level
+  `client config` flows for other MCP clients remain binding-pinned.
+- Managed Codex repositories attempt one bounded refresh before the first
+  search or citation read in each MCP task. If refresh is busy, unsafe, or
+  refused by deletion guards, hSUM keeps serving the last good generation and
+  reports the freshness state.
+- An unactivated repository now returns a structured,
+  privacy-explicit activation error with the exact command an agent can run
+  after repository-specific consent.
+
+### Compatibility and boundaries
+
+- Alpha.2 and alpha.3 indexes and citations remain compatible with alpha.4;
+  the ingest pipeline and schema are unchanged. In-flight MCP pagination
+  cursors and retrieval fingerprints remain release-bound and must be
+  restarted after upgrading.
+- Retrieval remains local exact/quoted/BM25 lexical search. Alpha.4 adds no
+  embedding model, vector search, corpus upload, account, telemetry, daemon,
+  or HTTP transport.
+- The macOS archive and installer remain neither Developer ID-signed nor
+  notarized. The installer requires an explicit
+  `--allow-unnotarized-alpha` acknowledgement on macOS after checksum
+  verification.
+
 ## 0.1.0-alpha.3 — 2026-07-26
 
 ### Added
