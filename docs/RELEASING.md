@@ -162,7 +162,7 @@ Users can verify an archive and its matching per-asset checksum file from
 
 ```bash
 # macOS example; use sha256sum -c on Linux.
-asset=hsum-v0.1.0-alpha.3-aarch64-apple-darwin.zip
+asset=hsum-v0.1.0-alpha.4-aarch64-apple-darwin.zip
 shasum -a 256 -c "$asset.sha256"
 gh attestation verify "$asset" --repo burkan2/hSUM \
   --predicate-type https://spdx.dev/Document/v2.3
@@ -175,8 +175,8 @@ will still block it. Users clear quarantine with
 `xattr -d com.apple.quarantine hsum` after the checks above pass. Once signing
 is enabled, the macOS executable must additionally pass
 `codesign --verify --deep --strict hsum` after extraction. The published
-installer, when introduced, must perform the same checksum verification without
-`sudo`.
+installer performs the same checksum verification without `sudo` and requires
+an explicit unsigned-alpha acknowledgement on macOS.
 
 ## Rollback and compromise
 

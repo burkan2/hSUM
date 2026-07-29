@@ -16,9 +16,9 @@ if [ ! -x "$current_binary" ]; then
 fi
 
 case "$("$current_binary" --version)" in
-  "hsum 0.1.0-alpha.3") ;;
+  "hsum 0.1.0-alpha.4") ;;
   *)
-    echo "upgrade smoke requires an hsum 0.1.0-alpha.3 candidate" >&2
+    echo "upgrade smoke requires an hsum 0.1.0-alpha.4 candidate" >&2
     exit 2
     ;;
 esac

@@ -661,6 +661,6 @@ pub enum ChunkError {
     NulContent,
     #[error("chunk boundary invariant failed")]
     BoundaryInvariant,
-    #[error("document produces more chunks than the alpha.3 ordinal can represent")]
+    #[error("document produces more chunks than the alpha.4 ordinal can represent")]
     TooManyChunks,
 }

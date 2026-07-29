@@ -227,13 +227,13 @@ fn response_and_body_caps_are_fixed_protocol_constants() {
 }
 
 #[test]
-fn retrieval_config_fingerprint_is_frozen_for_alpha_three() {
+fn retrieval_config_fingerprint_is_frozen_for_alpha_four() {
     // Derived from the binary version and pipeline_fingerprint() (see
     // src/mcp.rs retrieval_config_fingerprint), so the digest also moves at a
     // release or ingest-pipeline boundary, not just for retrieval config.
     assert_eq!(
         retrieval_config_fingerprint(),
-        "e479e10624bd764f2d5134db2401464e5690d0c87262705d0cf86c086abbff54"
+        "ae2ba062b90b8f86574eb0d335fb2a416c05e3ebe49845823a52e9cc0a546c30"
     );
 }
 

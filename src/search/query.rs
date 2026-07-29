@@ -102,7 +102,7 @@ pub enum QueryError {
 
 /// Parses and validates a query without compiling or executing retrieval.
 ///
-/// Double quotes delimit exact spans. The alpha.3 grammar intentionally has no
+/// Double quotes delimit exact spans. The alpha.4 grammar intentionally has no
 /// escape syntax: every `"` byte opens or closes a span. Exact atoms preserve
 /// their original UTF-8 bytes and are deduplicated in first-occurrence order.
 pub fn parse_query(input: &str) -> Result<ParsedQuery, QueryError> {

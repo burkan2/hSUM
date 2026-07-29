@@ -16,7 +16,7 @@ const LOCK_TIMEOUT_MAX_MS: u64 = 60_000;
 const SEARCH_TIMEOUT_MIN_MS: u64 = 100;
 const SEARCH_TIMEOUT_MAX_MS: u64 = 10_000;
 
-/// The complete command-line contract available in alpha.3.
+/// The complete command-line contract available in alpha.4.
 #[derive(Clone, Debug, Parser)]
 #[command(
     name = "hsum",
@@ -33,7 +33,7 @@ pub struct Cli {
     #[command(flatten)]
     pub global: GlobalOptions,
 
-    /// The requested alpha.3 operation.
+    /// The requested alpha.4 operation.
     #[command(subcommand)]
     pub command: Command,
 }
@@ -70,7 +70,7 @@ pub struct GlobalOptions {
     pub cache_dir: Option<PathBuf>,
 }
 
-/// Alpha.1 commands. Later release-train commands do not appear as stubs.
+/// Current alpha commands. Later release-train commands do not appear as stubs.
 #[derive(Clone, Debug, Subcommand)]
 pub enum Command {
     /// Create one local filesystem-backed index and project.
@@ -213,7 +213,7 @@ pub struct IngestArgs {
     pub allow_mass_delete: bool,
 }
 
-/// Retrieval modes available in alpha.3.
+/// Retrieval modes available in alpha.4.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 #[value(rename_all = "kebab-case")]
 pub enum SearchMode {
@@ -230,7 +230,7 @@ pub struct SearchArgs {
     #[arg(value_name = "QUERY")]
     pub query: String,
 
-    /// Retrieval mode; alpha.3 auto and lexical are equivalent.
+    /// Retrieval mode; alpha.4 auto and lexical are equivalent.
     #[arg(long, value_enum, default_value = "auto")]
     pub mode: SearchMode,
 
@@ -322,7 +322,7 @@ pub struct HelpArgs {
     pub command: HelpCommand,
 }
 
-/// Offline help topics available in alpha.3.
+/// Offline help topics available in alpha.4.
 #[derive(Clone, Debug, Subcommand)]
 pub enum HelpCommand {
     /// Explain one stable public error subcode without opening a browser.
@@ -555,7 +555,7 @@ pub struct McpArgs {
     pub project: Option<SafeSlug>,
 }
 
-/// Capabilities compiled into this alpha.3 binary, in stable report order.
+/// Capabilities compiled into this alpha.4 binary, in stable report order.
 ///
 /// The list is tag-gated: deferred surface such as JSONL sources, vector
 /// modes, or watch mode must never appear here before its release tag.
@@ -590,7 +590,7 @@ where
 
 /// Render the `hsum --version --verbose` report.
 ///
-/// Every line comes from the same compiled constants that gate the alpha.3
+/// Every line comes from the same compiled constants that gate the alpha.4
 /// surface: crate version, versioned API identifier, the schema range this
 /// binary can read and write, the build-target triple, and the tag-gated
 /// capability list.

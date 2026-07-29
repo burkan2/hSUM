@@ -559,9 +559,9 @@ pub enum ContextError {
     TrustedProjectIdentityMismatch,
     #[error("selected project does not exist")]
     ProjectNotFound,
-    #[error("alpha.3 requires exactly one project source, found {found}")]
+    #[error("alpha.4 requires exactly one project source, found {found}")]
     AlphaSourceCardinality { found: usize },
-    #[error("alpha.3 requires the sole project source to be filesystem-backed")]
+    #[error("alpha.4 requires the sole project source to be filesystem-backed")]
     AlphaSourceMustBeFilesystem,
     #[error("filesystem source configuration is invalid")]
     InvalidFilesystemSourceConfig(#[source] SourceConfigError),

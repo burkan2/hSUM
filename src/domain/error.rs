@@ -557,7 +557,7 @@ impl ErrorSubcode {
                 ErrorCode::InvalidArgument,
                 false,
                 "this operation is unsupported on the current platform",
-                "the alpha.3 filesystem safety implementation is unavailable on this operating system",
+                "the alpha.4 filesystem safety implementation is unavailable on this operating system",
                 "run hSUM on a documented supported platform",
             ),
             Self::WriterLock => ErrorSpec::new(
@@ -679,7 +679,7 @@ impl ErrorSubcode {
                 ErrorCode::SourceInvalid,
                 false,
                 "a source file is not valid UTF-8",
-                "alpha.3 indexes original UTF-8 text only",
+                "alpha.4 indexes original UTF-8 text only",
                 "convert or exclude the file",
             ),
             Self::NulContent => ErrorSpec::new(

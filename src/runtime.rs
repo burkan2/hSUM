@@ -222,7 +222,7 @@ impl RuntimeFailure {
                 json!({
                     "operation": "search",
                     "argument": "cursor",
-                    "reason": "CLI cursor pagination is unsupported in alpha.3; omit --cursor",
+                    "reason": "CLI cursor pagination is unsupported in alpha.4; omit --cursor",
                 }),
             )),
         }
