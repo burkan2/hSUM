@@ -200,6 +200,41 @@ cloud-backed client may forward returned passages to its own model provider
 under that client's policy, and the generated config prints that warning
 before the snippet.
 
+## Use hSUM with agent memory and company-brain tools
+
+hSUM can run beside claude-mem and other agent-memory or company-brain
+systems. Each MCP server keeps its own registration and storage. hSUM claims
+the `hsum` server name and adds one checksummed block to Codex's user
+instructions. The installer preserves other MCP entries and instruction text.
+If another command owns the `hsum` name, hSUM stops installation and reports
+the conflict.
+
+Use each system for the material it stores:
+
+| Need | Tool |
+|---|---|
+| Current repository structure, implementation, or cited evidence | hSUM `evidence_search` and `evidence_get` |
+| Current contents of a file you are editing | An ordinary file read |
+| Past sessions, decisions, and unfinished work | Your agent-memory system |
+| Knowledge shared across repositories or teams | Your company-brain system |
+
+hSUM and each memory tool keep separate indexes and databases. hSUM does not
+read another tool's SQLite database, vector store, worker, hooks, or cloud API.
+In alpha.4, hSUM indexes supported files inside an authorized repository. If a
+memory tool writes supported Markdown or text files into that repository, hSUM
+includes them in the corpus. hSUM may return that content to the MCP client,
+which may forward it to a model provider under the client's policy.
+
+A memory system may record hSUM tool calls and summarize returned passages.
+Keep the `hsum://v1` citation when you need exact evidence. If a memory summary
+conflicts with the current repository, read the file and call
+`evidence_get` with source-hash verification.
+
+Installing or uninstalling hSUM leaves other MCP registrations and unmanaged
+agent instructions in place. hSUM sends no corpus data to a model or service;
+check the memory system's policy for its storage, embeddings, and compression
+calls.
+
 ## Available in 0.1.0-alpha.4
 
 | Capability | Status | Current boundary |
