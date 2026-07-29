@@ -77,25 +77,56 @@ the passage with its citation intact.
 
 ## Quickstart
 
+Run this from the Git repository you want hSUM to index:
+
+> [!WARNING]
+> The macOS alpha is not Apple-notarized. The one-command install below includes
+> `--allow-unnotarized-alpha` as the explicit acknowledgement required to run
+> that binary. The flag has no effect on Linux. Remove it if you want the
+> installer to stop at the macOS warning instead.
+
 ```bash
-# 1. Download and verify the version-pinned installer
-version=0.1.0-alpha.4
-base_url="https://github.com/burkan2/hSUM/releases/download/v$version"
-curl -fsSLO "$base_url/install-hsum.sh"
-curl -fsSLO "$base_url/SHA256SUMS"
-grep ' install-hsum.sh$' SHA256SUMS | shasum -a 256 -c -
+curl --proto '=https' --tlsv1.2 -fsSL https://github.com/burkan2/hSUM/releases/download/v0.1.0-alpha.4/install-hsum.sh | bash -s -- --activate . --confirm --allow-unnotarized-alpha
+```
 
-# 2. Install hSUM, register Codex, and activate this repository
-cd /absolute/path/to/a/repository
-bash /path/to/install-hsum.sh --activate . --confirm
-# macOS alpha only: add --allow-unnotarized-alpha after reading the warning.
+This pinned command installs into `XDG_BIN_HOME` or `~/.local/bin`, verifies the
+downloaded hSUM binary checksum, registers the Codex MCP server, activates the
+current repository, and runs the integration smoke test. It trusts GitHub's
+HTTPS delivery for the installer itself; use the verified path below if you
+want to check the installer bytes before execution.
 
-# 3. Search, then resolve immutable evidence
+```bash
+# Search, then resolve immutable evidence
 hsum search 'your identifier or "exact phrase"'
 hsum get '<citation printed by search>'
 
-# 4. Verify the effective Codex registration at any time
+# Verify the effective Codex registration at any time
 hsum integration status codex --json
+```
+
+### Verify the installer before running
+
+This longer path downloads the version-pinned installer and release checksums
+into a temporary directory, verifies the installer, then runs the same install:
+
+```bash
+(
+set -eu
+version=0.1.0-alpha.4
+release="https://github.com/burkan2/hSUM/releases/download/v$version"
+install_tmp="$(mktemp -d)"
+trap 'rm -rf "$install_tmp"' EXIT
+curl --proto '=https' --tlsv1.2 -fsSL "$release/install-hsum.sh" \
+  -o "$install_tmp/install-hsum.sh"
+curl --proto '=https' --tlsv1.2 -fsSL "$release/SHA256SUMS" \
+  -o "$install_tmp/SHA256SUMS"
+(
+  cd "$install_tmp"
+  grep ' install-hsum.sh$' SHA256SUMS | shasum -a 256 -c -
+)
+bash "$install_tmp/install-hsum.sh" \
+  --activate . --confirm --allow-unnotarized-alpha
+)
 ```
 
 ### Ask your agent
