@@ -112,6 +112,7 @@ into a temporary directory, verifies the installer, then runs the same install:
 ```bash
 (
 set -eu
+set -o pipefail
 version=0.1.0-alpha.4
 release="https://github.com/burkan2/hSUM/releases/download/v$version"
 install_tmp="$(mktemp -d)"
