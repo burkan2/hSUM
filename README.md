@@ -79,6 +79,32 @@ the passage with its citation intact.
 
 Run this from the Git repository you want hSUM to index:
 
+### Ask your agent
+
+Copy this prompt into your coding agent to run the quickstart from an existing
+checkout:
+
+```text
+Install and smoke-test hSUM 0.1.0-alpha.4
+(https://github.com/burkan2/hSUM) for the current Git repository. User-level
+installation, user-level hSUM state, and the single Codex MCP registration are
+in scope; do not modify repository files. Confirm this is macOS arm64 or Linux
+x86_64. Download `install-hsum.sh` and `SHA256SUMS` from the exact
+`v0.1.0-alpha.4` GitHub release, verify the installer's SHA-256 entry before
+running it, and review the script. Run it with `--activate . --confirm`; on
+macOS, explain that this alpha is not Apple-notarized and add
+`--allow-unnotarized-alpha` only after I explicitly approve that required
+acknowledgement. Verify that installation reports four read-only tools and a
+successful citation round trip, and that `hsum integration status codex
+--json` reports both the registration and agent policy as `current`. Do not
+ask me to copy TOML, edit Codex configuration, or restart Codex. Report each
+command and result, including any failure. Documentation is at
+https://hsum.burkankale.com/docs/0.1.0-alpha.4/ and
+https://hsum.burkankale.com/llms.txt.
+```
+
+### Install from terminal
+
 > [!WARNING]
 > The macOS alpha is not Apple-notarized. The one-command install below includes
 > `--allow-unnotarized-alpha` as the explicit acknowledgement required to run
@@ -128,30 +154,6 @@ curl --proto '=https' --tlsv1.2 -fsSL "$release/SHA256SUMS" \
 bash "$install_tmp/install-hsum.sh" \
   --activate . --confirm --allow-unnotarized-alpha
 )
-```
-
-### Ask your agent
-
-Copy this prompt into your coding agent to run the quickstart from an existing
-checkout:
-
-```text
-Install and smoke-test hSUM 0.1.0-alpha.4
-(https://github.com/burkan2/hSUM) for the current Git repository. User-level
-installation, user-level hSUM state, and the single Codex MCP registration are
-in scope; do not modify repository files. Confirm this is macOS arm64 or Linux
-x86_64. Download `install-hsum.sh` and `SHA256SUMS` from the exact
-`v0.1.0-alpha.4` GitHub release, verify the installer's SHA-256 entry before
-running it, and review the script. Run it with `--activate . --confirm`; on
-macOS, explain that this alpha is not Apple-notarized and add
-`--allow-unnotarized-alpha` only after I explicitly approve that required
-acknowledgement. Verify that installation reports four read-only tools and a
-successful citation round trip, and that `hsum integration status codex
---json` reports both the registration and agent policy as `current`. Do not
-ask me to copy TOML, edit Codex configuration, or restart Codex. Report each
-command and result, including any failure. Documentation is at
-https://hsum.burkankale.com/docs/0.1.0-alpha.4/ and
-https://hsum.burkankale.com/llms.txt.
 ```
 
 `init` refuses dangerous roots, writes nothing into the repository, stores
