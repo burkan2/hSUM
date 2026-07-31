@@ -1,4 +1,5 @@
 use std::fmt;
+#[cfg(unix)]
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
@@ -20,7 +21,9 @@ use uuid::Uuid;
 use crate::domain::{DocumentId, Sha256Digest, SourceId};
 #[cfg(unix)]
 use crate::ingest::DiscoveryError;
-use crate::ingest::{HARD_MAX_FILE_BYTES, HARD_MAX_SOURCE_FILES};
+#[cfg(unix)]
+use crate::ingest::HARD_MAX_FILE_BYTES;
+use crate::ingest::HARD_MAX_SOURCE_FILES;
 use crate::store::{
     FilesystemAssessment, FilesystemLocality, IndexDb, OpenMode, StorageInspection,
     StoragePreflightError, StoreError,
@@ -350,8 +353,14 @@ pub(crate) struct DriftTarget {
     source_id: SourceId,
     document_id: DocumentId,
     connector_key: Vec<u8>,
+    // Read only by the live-source probe, which currently has a Unix
+    // implementation. The non-Unix probe reports `DriftState::Unknown` without
+    // touching the filesystem, so these stay unread there.
+    #[cfg_attr(not(unix), allow(dead_code))]
     source_updated_at: Option<String>,
+    #[cfg_attr(not(unix), allow(dead_code))]
     body_size: u64,
+    #[cfg_attr(not(unix), allow(dead_code))]
     body_sha256: Sha256Digest,
 }
 
@@ -1152,6 +1161,7 @@ fn map_errno(error: rustix::io::Errno) -> DriftState {
     }
 }
 
+#[cfg_attr(not(unix), allow(dead_code))]
 fn parse_timestamp(value: &str) -> Option<(i64, u32)> {
     let timestamp = OffsetDateTime::parse(value, &Rfc3339).ok()?;
     Some((timestamp.unix_timestamp(), timestamp.nanosecond()))

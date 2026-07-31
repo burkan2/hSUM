@@ -1,10 +1,13 @@
+#[cfg(unix)]
 use ignore::Match;
+#[cfg(unix)]
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use thiserror::Error;
 
+#[cfg(unix)]
 use crate::ingest::ChunkKind;
 
 pub const DEFAULT_MAX_FILE_BYTES: u64 = 2 * 1024 * 1024;

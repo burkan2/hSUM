@@ -18,12 +18,14 @@ fn private_tempdir() -> TempDir {
     directory
 }
 
+#[cfg_attr(not(unix), allow(dead_code))]
 fn private_directory(path: &Path) {
     fs::create_dir_all(path).unwrap();
     #[cfg(unix)]
     fs::set_permissions(path, fs::Permissions::from_mode(0o700)).unwrap();
 }
 
+#[cfg_attr(not(unix), allow(dead_code))]
 fn sidecar_path(path: &Path, suffix: &str) -> PathBuf {
     let mut sidecar = path.as_os_str().to_os_string();
     sidecar.push(suffix);

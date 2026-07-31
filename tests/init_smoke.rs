@@ -1,9 +1,11 @@
 use std::fs::{self, File};
 use std::path::Path;
 
+#[cfg(unix)]
+use hsum::app::BroadRootReason;
 use hsum::app::{
-    BroadRootReason, FilesystemSourceConfig, InitError, InitNextStep, InitRequest, PointerOutcome,
-    TrustRequest, TrustTarget, initialize, prepare_filesystem_snapshot, trust_repository,
+    FilesystemSourceConfig, InitError, InitNextStep, InitRequest, PointerOutcome, TrustRequest,
+    TrustTarget, initialize, prepare_filesystem_snapshot, trust_repository,
 };
 use hsum::config::{ManagedPaths, RepositoryPointer, TrustRegistry};
 use hsum::domain::{ProjectId, SafeSlug};

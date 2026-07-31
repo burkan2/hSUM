@@ -1,3 +1,4 @@
+#[cfg(unix)]
 use std::fs;
 
 use hsum::config::{
@@ -102,15 +103,17 @@ fn registration_is_in_memory_until_explicit_atomic_save() {
     registry.register(registration(root.path())).unwrap();
 
     assert!(!path.exists());
-    registry.save_atomic(&path).unwrap();
-    assert!(path.is_file());
-
-    let loaded = TrustRegistry::load(&path).unwrap();
-    assert_eq!(loaded, registry);
 
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
+
+        registry.save_atomic(&path).unwrap();
+        assert!(path.is_file());
+
+        let loaded = TrustRegistry::load(&path).unwrap();
+        assert_eq!(loaded, registry);
+
         assert_eq!(
             fs::metadata(&path).unwrap().permissions().mode() & 0o777,
             0o600
@@ -123,6 +126,18 @@ fn registration_is_in_memory_until_explicit_atomic_save() {
                 & 0o777,
             0o700
         );
+    }
+
+    // A target with no user-only permission primitive must refuse rather than
+    // write a registry it cannot protect. The refusal happens before any bytes
+    // are written, so the registry file must not exist afterwards.
+    #[cfg(not(unix))]
+    {
+        assert!(matches!(
+            registry.save_atomic(&path),
+            Err(TrustError::PrivatePermissionsUnsupported { .. })
+        ));
+        assert!(!path.exists());
     }
 }
 
@@ -202,6 +217,9 @@ project_name = "compiler"
     ));
 }
 
+// Persists a registry, which requires a user-only permission primitive this
+// target may not have. Selection behaviour itself is platform-independent.
+#[cfg(unix)]
 #[test]
 fn a_deleted_registered_root_does_not_invalidate_other_bindings() {
     let stale_root = tempdir().unwrap();

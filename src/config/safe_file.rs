@@ -1,5 +1,8 @@
+#[cfg(unix)]
 use std::fs::File;
-use std::io::{self, Read};
+use std::io;
+#[cfg(unix)]
+use std::io::Read;
 use std::path::Path;
 
 #[derive(Debug)]

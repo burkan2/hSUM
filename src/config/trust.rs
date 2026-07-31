@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::fs::{self, File, OpenOptions};
+#[cfg(unix)]
+use std::fs::File;
+use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::Component;
 use std::path::{Path, PathBuf};
@@ -494,9 +496,19 @@ fn set_user_only_directory_permissions(path: &Path) -> Result<(), TrustError> {
     fs::set_permissions(path, fs::Permissions::from_mode(0o700)).map_err(TrustError::Write)
 }
 
+// No user-only permission primitive is implemented for this target. The trust
+// registry is strict private user configuration: `README.md` states its
+// directory is user-only and its file is user-only, and the loader enforces
+// that on read. Returning `Ok(())` here would claim the directory had been
+// made private while leaving whatever permissions it inherited, so a registry
+// written on such a target would be readable by other accounts while hSUM
+// reported success. Refuse instead; a target gains support by implementing the
+// primitive, never by skipping it.
 #[cfg(not(unix))]
-fn set_user_only_directory_permissions(_path: &Path) -> Result<(), TrustError> {
-    Ok(())
+fn set_user_only_directory_permissions(path: &Path) -> Result<(), TrustError> {
+    Err(TrustError::PrivatePermissionsUnsupported {
+        path: path.to_path_buf(),
+    })
 }
 
 #[cfg(unix)]
@@ -505,9 +517,16 @@ fn set_user_only_file_permissions(path: &Path) -> Result<(), TrustError> {
     fs::set_permissions(path, fs::Permissions::from_mode(0o600)).map_err(TrustError::Write)
 }
 
+// Same contract as the directory case above. Note that `write_user_only_file`
+// can only apply its `0o600` creation mode under `#[cfg(unix)]`, so on other
+// targets the file is created with inherited permissions and this call is the
+// only remaining opportunity to make it private. Refusing here is what keeps
+// the written bytes and the reported outcome consistent.
 #[cfg(not(unix))]
-fn set_user_only_file_permissions(_path: &Path) -> Result<(), TrustError> {
-    Ok(())
+fn set_user_only_file_permissions(path: &Path) -> Result<(), TrustError> {
+    Err(TrustError::PrivatePermissionsUnsupported {
+        path: path.to_path_buf(),
+    })
 }
 
 #[cfg(unix)]
@@ -517,9 +536,19 @@ fn sync_parent_directory(path: &Path) -> Result<(), TrustError> {
         .map_err(TrustError::Write)
 }
 
+// Unlike the two permission cases, this one is not a refusal to write: the
+// bytes are already durable at this point because `write_user_only_file` called
+// `sync_all` on the file itself. What cannot be established on a target without
+// a directory-sync primitive is that the *rename* survives power loss. The sole
+// caller maps any error here to `AtomicSaveOutcome::DurabilityUnknown`, which
+// is precisely the truthful outcome, so reporting the missing primitive is
+// enough. `Ok(())` would instead claim `Committed` durability nobody verified.
 #[cfg(not(unix))]
 fn sync_parent_directory(_path: &Path) -> Result<(), TrustError> {
-    Ok(())
+    Err(TrustError::Write(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "directory sync is unsupported on this platform",
+    )))
 }
 
 #[derive(Deserialize)]
@@ -607,6 +636,11 @@ pub enum TrustError {
     MissingParent { path: PathBuf },
     #[error("trust registry could not be written atomically: {0}")]
     Write(#[source] std::io::Error),
+    #[error(
+        "this platform has no user-only permission primitive, so {path} cannot be made private; \
+         hSUM refuses to store a trust binding it cannot protect"
+    )]
+    PrivatePermissionsUnsupported { path: PathBuf },
     #[error("identity field is invalid: {0}")]
     InvalidIdentity(#[from] IdParseError),
 }
