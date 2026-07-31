@@ -1,17 +1,21 @@
 use std::fs;
 
+#[cfg(unix)]
+use super::ingest_filesystem_with_timeout;
 use super::{
     FilesystemIngestError, FilesystemIngestPolicy, FilesystemSourceConfig, ingest_filesystem,
-    ingest_filesystem_with_policy, ingest_filesystem_with_timeout,
-    plan_filesystem_ingest_with_timeout, prepare_filesystem_snapshot,
+    ingest_filesystem_with_policy, plan_filesystem_ingest_with_timeout,
+    prepare_filesystem_snapshot,
 };
 use crate::domain::{IndexId, ProjectId, SafeSlug, SourceId};
 use crate::ingest::{DiscoveryOptions, QuoteBloom};
 use crate::status::{SourceSyncState, Status};
 use crate::store::{
     DeleteConfirmations, Doctor, FilesystemScope, IndexDb, MINIMUM_STORAGE_RESERVE_BYTES,
-    StoragePreflightError, StoreError, WriterLock,
+    StoragePreflightError,
 };
+#[cfg(unix)]
+use crate::store::{StoreError, WriterLock};
 use rusqlite::Connection;
 use tempfile::{TempDir, tempdir};
 

@@ -27,9 +27,8 @@ use crate::cli::{
     ClientKind, Command, ErrorHelpArgs, GetArgs, GlobalOptions, HelpCommand, IngestArgs, InitArgs,
     IntegrationActivateArgs, IntegrationCommand, IntegrationInstallArgs, IntegrationRepairArgs,
     IntegrationStatusArgs, IntegrationUninstallArgs, IntegrationWorkspaceArgs, McpArgs, SearchArgs,
-    SearchMode as CliSearchMode, StatusArgs, TrustArgs, escape_terminal_bytes,
-    escape_terminal_text, exit_code_for, render_completions, render_man, render_verbose_version,
-    verbose_version_requested,
+    SearchMode as CliSearchMode, StatusArgs, TrustArgs, escape_terminal_text, exit_code_for,
+    render_completions, render_man, render_verbose_version, verbose_version_requested,
 };
 use crate::config::{
     ManagedPaths, ManagedPathsError, PointerError, SelectionError, SelectionMode, SelectionSource,
@@ -3214,6 +3213,7 @@ fn absolute_executable() -> Result<PathBuf, RuntimeFailure> {
 
 #[cfg(unix)]
 fn human_path(path: &Path) -> String {
+    use crate::cli::escape_terminal_bytes;
     use std::os::unix::ffi::OsStrExt;
     escape_terminal_bytes(path.as_os_str().as_bytes())
 }
@@ -3431,6 +3431,7 @@ fn map_init_error(error: InitError) -> RuntimeFailure {
         | InitError::DatabasePathHasNoParent { .. }
         | InitError::TrustPathHasNoParent { .. }
         | InitError::PointerPathHasNoParent { .. } => ErrorSubcode::PathInvalid,
+        InitError::PrivatePermissionsUnsupported { .. } => ErrorSubcode::UnsupportedPlatform,
         InitError::PointerRollbackConflict { .. } => ErrorSubcode::PointerInvalid,
         InitError::Slug(_) => ErrorSubcode::ConfigInvalid,
         InitError::Io(error) if error.kind() == io::ErrorKind::PermissionDenied => {
@@ -3525,6 +3526,7 @@ fn trust_subcode(error: &TrustError) -> ErrorSubcode {
         TrustError::CanonicalizeRoot { .. }
         | TrustError::RootNotDirectory { .. }
         | TrustError::MissingParent { .. } => ErrorSubcode::PathInvalid,
+        TrustError::PrivatePermissionsUnsupported { .. } => ErrorSubcode::UnsupportedPlatform,
         TrustError::Read(error) if error.kind() == io::ErrorKind::PermissionDenied => {
             ErrorSubcode::SourceRead
         }

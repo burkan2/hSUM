@@ -1092,23 +1092,43 @@ fn outcome_binding(outcome: RegistrationOutcome) -> TrustBinding {
     }
 }
 
+// The managed index directory holds the indexed source bodies themselves, so
+// `README.md` requires its parent to be user-only (`0700`) and the database and
+// its WAL/SHM sidecars to be user-only (`0600`). On a target with no user-only
+// permission primitive these two functions used to fall through to `Ok(())`,
+// creating the directory and reporting success while leaving whatever
+// permissions it inherited. Refuse instead, for the same reason the trust
+// registry refuses: a guarantee that silently does nothing is worse than one
+// that is absent, because callers and documentation both still believe it.
 fn create_private_directory(path: &Path) -> Result<(), InitError> {
-    fs::create_dir_all(path)?;
+    #[cfg(not(unix))]
+    {
+        Err(InitError::PrivatePermissionsUnsupported {
+            path: path.to_path_buf(),
+        })
+    }
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
+        fs::create_dir_all(path)?;
         fs::set_permissions(path, fs::Permissions::from_mode(0o700))?;
+        Ok(())
     }
-    Ok(())
 }
 
 fn set_private_file(path: &Path) -> Result<(), InitError> {
+    #[cfg(not(unix))]
+    {
+        Err(InitError::PrivatePermissionsUnsupported {
+            path: path.to_path_buf(),
+        })
+    }
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
         fs::set_permissions(path, fs::Permissions::from_mode(0o600))?;
+        Ok(())
     }
-    Ok(())
 }
 
 struct PointerPlan {
@@ -1413,6 +1433,11 @@ pub enum InitError {
     },
     #[error("the operating-system account home could not be resolved safely")]
     AccountHomeUnavailable(#[source] io::Error),
+    #[error(
+        "this platform has no user-only permission primitive, so {path} cannot be made private; \
+         hSUM refuses to create managed storage it cannot protect"
+    )]
+    PrivatePermissionsUnsupported { path: PathBuf },
     #[error("--force-pointer requires --write-pointer")]
     ForcePointerWithoutWrite,
     #[error("--rebuild cannot be combined with --no-ingest")]

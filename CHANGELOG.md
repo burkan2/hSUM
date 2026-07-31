@@ -3,6 +3,35 @@
 All notable public changes are documented here. hSUM follows semantic versioning
 for its release tags. During alpha, only the current tagged release is supported.
 
+## Unreleased
+
+### Fixed
+
+- Targets without a user-only permission primitive no longer report success
+  while enforcing nothing. `set_user_only_directory_permissions`,
+  `set_user_only_file_permissions`, and `sync_parent_directory` in the trust
+  registry, and `create_private_directory` and `set_private_file` in `init`,
+  each returned `Ok(())` on non-Unix targets. The documented guarantee that the
+  managed index directory is user-only (`0700`) and that the database, its
+  sidecars, and the trust registry are user-only (`0600`) was therefore
+  silently false rather than merely unavailable there: hSUM would create the
+  directory, write the registry, and report a committed save while leaving
+  whatever permissions were inherited. They now fail with the public
+  `UNSUPPORTED_PLATFORM` subcode before anything is written. `sync_parent_directory`
+  reports the missing primitive instead, which the caller already maps to
+  `AtomicSaveOutcome::DurabilityUnknown` — the truthful outcome when the rename
+  cannot be proven durable. Unix behaviour is unchanged.
+
+### Changed
+
+- `rustix` and `uzers` moved to `[target.'cfg(unix)'.dependencies]`. Every use
+  site was already behind `#[cfg(unix)]`; only the manifest declarations were
+  unconditional, which stopped the crate from compiling anywhere else. The
+  resolved dependency set on Unix is unchanged. This does not add platform
+  support: it lets the refusals above actually be reached and tested, in line
+  with `TODOS.md` — "Builds with Cargo" is not equivalent to a supported
+  platform.
+
 ## 0.1.0-alpha.4 — 2026-07-29
 
 ### Added
