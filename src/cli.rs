@@ -2,12 +2,14 @@ use std::fmt::Write as _;
 use std::io;
 use std::path::PathBuf;
 
-use clap::{ArgAction, Args, CommandFactory, Parser, Subcommand, ValueEnum, value_parser};
+use clap::{
+    ArgAction, ArgGroup, Args, CommandFactory, Parser, Subcommand, ValueEnum, value_parser,
+};
 use clap_complete::aot::generate;
 
 use crate::config::BindingId;
-use crate::domain::{Citation, SafeSlug};
-use crate::mcp::MCP_API_VERSION;
+use crate::domain::{Citation, SafeSlug, Sha256Digest};
+use crate::protocol::API_VERSION as MCP_API_VERSION;
 use crate::store::SCHEMA_VERSION;
 
 pub use clap_complete::aot::Shell as CompletionShell;
@@ -16,7 +18,7 @@ const LOCK_TIMEOUT_MAX_MS: u64 = 60_000;
 const SEARCH_TIMEOUT_MIN_MS: u64 = 100;
 const SEARCH_TIMEOUT_MAX_MS: u64 = 10_000;
 
-/// The complete command-line contract available in alpha.4.
+/// The complete command-line contract available in this checkout.
 #[derive(Clone, Debug, Parser)]
 #[command(
     name = "hsum",
@@ -33,7 +35,7 @@ pub struct Cli {
     #[command(flatten)]
     pub global: GlobalOptions,
 
-    /// The requested alpha.4 operation.
+    /// The requested hSUM operation.
     #[command(subcommand)]
     pub command: Command,
 }
@@ -70,7 +72,7 @@ pub struct GlobalOptions {
     pub cache_dir: Option<PathBuf>,
 }
 
-/// Current alpha commands. Later release-train commands do not appear as stubs.
+/// Current commands. Later release-train commands do not appear as stubs.
 #[derive(Clone, Debug, Subcommand)]
 pub enum Command {
     /// Create one local filesystem-backed index and project.
@@ -79,8 +81,17 @@ pub enum Command {
     /// Authorize a canonical repository root for direct and MCP use.
     Trust(TrustArgs),
 
-    /// Refresh the filesystem source into one atomic generation.
+    /// Refresh configured sources into one atomic generation.
     Ingest(IngestArgs),
+
+    /// Configure and manage sources in the selected managed index and project.
+    Source(SourceArgs),
+
+    /// Create, inspect, select, or retarget projects in one managed index.
+    Project(ProjectArgs),
+
+    /// Manage complete indexes by explicit logical name.
+    Index(IndexArgs),
 
     /// Search exact identifiers, conservative quotes, and active lexical text.
     Search(SearchArgs),
@@ -91,8 +102,26 @@ pub enum Command {
     /// Show index state and actionable problems.
     Status(StatusArgs),
 
-    /// Diagnose the selected index without mutating it.
+    /// Diagnose, narrowly repair, or export a body-free report for the selected index.
     Doctor(DoctorArgs),
+
+    /// Create or inventory verified, self-contained SQLite backups.
+    Backup(BackupArgs),
+
+    /// Plan or apply citation-aware history pruning.
+    Prune(PruneArgs),
+
+    /// Plan or apply durable citation-namespace forgetting.
+    Forget(ForgetArgs),
+
+    /// Apply the exact guarded restore plan emitted by forget.
+    Restore(RestoreArgs),
+
+    /// Plan or apply a released N-1 schema migration.
+    Migrate(MigrateArgs),
+
+    /// Inspect or migrate user configuration and trust-registry schemas.
+    Config(ConfigArgs),
 
     /// Show effective index, project, root, binding, and configuration origins.
     Context(ContextArgs),
@@ -105,6 +134,9 @@ pub enum Command {
 
     /// Install, activate, inspect, repair, or remove an agent integration.
     Integration(IntegrationArgs),
+
+    /// Install, import, inspect, verify, or remove pinned local model artifacts.
+    Model(ModelArgs),
 
     /// Generate shell completion content on stdout.
     Completions(CompletionsArgs),
@@ -211,6 +243,239 @@ pub struct IngestArgs {
     /// Confirm an authoritative deletion above the mass-delete budget.
     #[arg(long)]
     pub allow_mass_delete: bool,
+
+    /// Limit ingest to one source UUID or name; repeat to target several sources.
+    #[arg(long, value_name = "ID_OR_NAME", action = ArgAction::Append)]
+    pub source: Vec<String>,
+
+    /// Abort the complete index-wide ingest if any targeted source fails.
+    #[arg(long)]
+    pub strict: bool,
+}
+
+/// Arguments for `hsum source`.
+#[derive(Clone, Debug, Args)]
+pub struct SourceArgs {
+    #[command(subcommand)]
+    pub command: SourceCommand,
+}
+
+/// Source-management operations available in the current checkout.
+#[derive(Clone, Debug, Subcommand)]
+pub enum SourceCommand {
+    /// Configure a source in the selected managed index.
+    Add(SourceAddArgs),
+
+    /// List the selected project's configured sources.
+    List(SourceListArgs),
+
+    /// Attach an existing JSONL source to the selected project.
+    Attach(SourceAttachArgs),
+
+    /// Detach a JSONL source from only the selected project.
+    Detach(SourceDetachArgs),
+
+    /// Tombstone and detach a JSONL source.
+    Remove(SourceRemoveArgs),
+}
+
+/// Arguments for `hsum source add`.
+#[derive(Clone, Debug, Args)]
+pub struct SourceAddArgs {
+    #[command(subcommand)]
+    pub connector: SourceConnectorCommand,
+}
+
+/// Concrete source connectors. A shared plugin abstraction remains deferred.
+#[derive(Clone, Debug, Subcommand)]
+pub enum SourceConnectorCommand {
+    /// Register a canonical filesystem source without attaching or ingesting it.
+    Fs(FilesystemSourceAddArgs),
+
+    /// Add a strict UTF-8 JSONL complete-snapshot source.
+    Jsonl(JsonlSourceAddArgs),
+}
+
+/// Arguments for `hsum source add fs`.
+#[derive(Clone, Debug, Args)]
+pub struct FilesystemSourceAddArgs {
+    /// Filesystem root to canonicalize and configure.
+    #[arg(value_name = "PATH")]
+    pub path: PathBuf,
+
+    /// Stable source name, unique within the index.
+    #[arg(long, value_name = "NAME")]
+    pub name: SafeSlug,
+
+    /// Confirm selection of a normally refused broad filesystem root.
+    #[arg(long)]
+    pub allow_broad_root: bool,
+}
+
+/// Arguments for `hsum source add jsonl`.
+#[derive(Clone, Debug, Args)]
+pub struct JsonlSourceAddArgs {
+    /// JSONL snapshot file to canonicalize and configure.
+    #[arg(value_name = "PATH")]
+    pub path: PathBuf,
+
+    /// Stable source name, unique within the index.
+    #[arg(long, value_name = "NAME")]
+    pub name: SafeSlug,
+}
+
+/// Arguments for `hsum source list`.
+#[derive(Clone, Debug, Default, Args)]
+pub struct SourceListArgs {
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+
+    /// Include active sources that are not attached to the selected project.
+    #[arg(long)]
+    pub all: bool,
+}
+
+/// Arguments for `hsum source attach`.
+#[derive(Clone, Debug, Args)]
+pub struct SourceAttachArgs {
+    /// Existing source UUID or exact source name.
+    #[arg(value_name = "ID_OR_NAME")]
+    pub source: String,
+
+    /// Confirm changing the selected project's evidence scope.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+}
+
+/// Arguments for `hsum source detach`.
+#[derive(Clone, Debug, Args)]
+pub struct SourceDetachArgs {
+    /// Attached source UUID or exact source name.
+    #[arg(value_name = "ID_OR_NAME")]
+    pub source: String,
+
+    /// Confirm changing the selected project's evidence scope.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+}
+
+/// Arguments for `hsum source remove`.
+#[derive(Clone, Debug, Args)]
+pub struct SourceRemoveArgs {
+    /// Source UUID or exact source name.
+    #[arg(value_name = "ID_OR_NAME")]
+    pub source: String,
+
+    /// Confirm tombstoning active heads and detaching the source.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+}
+
+/// Arguments for `hsum project`.
+#[derive(Clone, Debug, Args)]
+pub struct ProjectArgs {
+    #[command(subcommand)]
+    pub command: ProjectCommand,
+}
+
+/// Project-management operations available in the current checkout.
+#[derive(Clone, Debug, Subcommand)]
+pub enum ProjectCommand {
+    /// Create a project sharing the selected filesystem authority.
+    Create(ProjectCreateArgs),
+
+    /// List projects in the selected managed index.
+    List(ProjectListArgs),
+
+    /// Persistently select a project for the current trust binding.
+    Use(ProjectUseArgs),
+
+    /// Replace the selected project's filesystem authority.
+    SetRoot(ProjectSetRootArgs),
+}
+
+/// Arguments for `hsum project create`.
+#[derive(Clone, Debug, Args)]
+pub struct ProjectCreateArgs {
+    /// Project name, unique within the managed index.
+    #[arg(value_name = "NAME")]
+    pub name: SafeSlug,
+}
+
+/// Arguments for `hsum project list`.
+#[derive(Clone, Debug, Default, Args)]
+pub struct ProjectListArgs {
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+}
+
+/// Arguments for `hsum project use`.
+#[derive(Clone, Debug, Args)]
+pub struct ProjectUseArgs {
+    /// Project UUID or exact project name.
+    #[arg(value_name = "ID_OR_NAME")]
+    pub project: String,
+
+    /// Confirm changing the persistent trust binding.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+}
+
+/// Arguments for `hsum project set-root`.
+#[derive(Clone, Debug, Args)]
+pub struct ProjectSetRootArgs {
+    /// New filesystem root to canonicalize and configure.
+    #[arg(value_name = "PATH")]
+    pub path: PathBuf,
+
+    /// Optional globally unique name for a newly created filesystem source.
+    #[arg(long, value_name = "NAME")]
+    pub source_name: Option<SafeSlug>,
+
+    /// Confirm replacing the selected project's filesystem authority.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+
+    /// Confirm selection of a normally refused broad filesystem root.
+    #[arg(long)]
+    pub allow_broad_root: bool,
+}
+
+/// Arguments for `hsum index`.
+#[derive(Clone, Debug, Args)]
+pub struct IndexArgs {
+    #[command(subcommand)]
+    pub command: IndexCommand,
+}
+
+/// Whole-index operations available in the current checkout.
+#[derive(Clone, Debug, Subcommand)]
+pub enum IndexCommand {
+    /// Remove one named managed index and all of its managed evidence.
+    Delete(IndexDeleteArgs),
+}
+
+/// Arguments for `hsum index delete`.
+#[derive(Clone, Debug, Args)]
+pub struct IndexDeleteArgs {
+    /// Exact logical name of the managed index to remove.
+    #[arg(value_name = "NAME")]
+    pub name: SafeSlug,
+
+    /// Confirm permanent removal of the complete managed index.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+
+    /// Maximum wait for active index readers and writers.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
 }
 
 /// Retrieval modes available in alpha.4.
@@ -301,9 +566,421 @@ pub struct StatusArgs {
     pub json: bool,
 }
 
-/// Alpha.1 doctor is deliberately read-only and has no repair switches.
+/// Arguments for `hsum doctor`.
 #[derive(Clone, Debug, Default, Args)]
-pub struct DoctorArgs {}
+#[command(args_conflicts_with_subcommands = true)]
+pub struct DoctorArgs {
+    /// Explicitly request the full SQLite, history, evidence, and derived-index scan.
+    #[arg(long)]
+    pub integrity: bool,
+
+    /// Remove only abandoned generation rows after full pre/post validation.
+    #[arg(long, requires = "confirm")]
+    pub repair: bool,
+
+    /// Confirm the narrowly bounded abandoned-generation repair.
+    #[arg(long, requires = "repair")]
+    pub confirm: bool,
+
+    /// Maximum time to wait for the writer lock during repair.
+    #[arg(
+        long,
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+
+    #[command(subcommand)]
+    pub command: Option<DoctorCommand>,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum DoctorCommand {
+    /// Write a local body-free, query-free support report without overwriting a path.
+    Report(DoctorReportArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct DoctorReportArgs {
+    /// New private JSON report path.
+    #[arg(long, value_name = "PATH")]
+    pub output: PathBuf,
+}
+
+/// Arguments for `hsum backup`.
+#[derive(Clone, Debug, Args)]
+pub struct BackupArgs {
+    #[command(subcommand)]
+    pub command: BackupCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum BackupCommand {
+    /// Create and verify a new backup without overwriting any path.
+    Create(BackupCreateArgs),
+
+    /// Inventory hSUM-managed backups and their current verification state.
+    List(BackupListArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct BackupCreateArgs {
+    /// New SQLite backup path.
+    #[arg(value_name = "OUTPUT")]
+    pub output: PathBuf,
+
+    /// Confirm the capacity-consuming backup operation.
+    #[arg(long, required = true)]
+    pub confirm: bool,
+
+    /// Maximum wait for the single-writer advisory lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct BackupListArgs {
+    /// List backups for every known index, including deleted indexes.
+    #[arg(long)]
+    pub all: bool,
+
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+
+    /// Maximum wait for the managed-backup registry lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+/// Arguments for `hsum prune`.
+#[derive(Clone, Debug, Args)]
+pub struct PruneArgs {
+    #[command(subcommand)]
+    pub command: PruneCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum PruneCommand {
+    /// Write an immutable citation-impact manifest without deleting data.
+    Plan(PrunePlanArgs),
+
+    /// Revalidate and apply an exact prune plan after creating a backup.
+    Apply(PruneApplyArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct PrunePlanArgs {
+    /// New JSON plan path.
+    #[arg(value_name = "PLAN")]
+    pub output: PathBuf,
+
+    /// Prune revisions indexed before this RFC3339 timestamp.
+    #[arg(long, value_name = "RFC3339", required = true)]
+    pub before: String,
+
+    /// Keep at least the newest N revisions of every logical document.
+    #[arg(
+        long,
+        value_name = "COUNT",
+        default_value = "1",
+        value_parser = value_parser!(u64).range(1..)
+    )]
+    pub keep_latest: u64,
+
+    /// Maximum wait for the single-writer advisory lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct PruneApplyArgs {
+    /// Reviewed JSON plan path.
+    #[arg(value_name = "PLAN")]
+    pub plan: PathBuf,
+
+    /// New pre-prune SQLite backup path.
+    #[arg(long, value_name = "OUTPUT", required = true)]
+    pub backup: PathBuf,
+
+    /// Exact SHA-256 printed by `prune plan`.
+    #[arg(long, value_name = "PLAN_HASH", required = true)]
+    pub confirm: Sha256Digest,
+
+    /// Maximum wait for the single-writer advisory lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+/// Arguments for `hsum forget`.
+#[derive(Clone, Debug, Args)]
+pub struct ForgetArgs {
+    #[command(subcommand)]
+    pub command: ForgetCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum ForgetCommand {
+    /// Write an immutable plan for active revision namespaces.
+    Plan(ForgetPlanArgs),
+
+    /// Create recovery artifacts and atomically publish a compacted tombstone index.
+    Apply(ForgetApplyArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ForgetPlanArgs {
+    /// New JSON plan path.
+    #[arg(value_name = "PLAN")]
+    pub output: PathBuf,
+
+    /// Citation selecting a whole immutable revision namespace; repeat as needed.
+    #[arg(long, value_name = "CITATION", required = true, action = ArgAction::Append)]
+    pub citation: Vec<Citation>,
+
+    /// Maximum wait for the single-writer advisory lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+#[derive(Clone, Debug, Args)]
+#[command(group(
+    ArgGroup::new("managed_backup_disposition")
+        .required(true)
+        .args(["purge_managed_backups", "keep_managed_backups"])
+))]
+pub struct ForgetApplyArgs {
+    /// Reviewed JSON forget plan path.
+    #[arg(value_name = "PLAN")]
+    pub plan: PathBuf,
+
+    /// New evidence-bearing pre-forget recovery backup path.
+    #[arg(long, value_name = "OUTPUT", required = true)]
+    pub recovery_backup: PathBuf,
+
+    /// New restore plan path bound to the finalized forgotten index.
+    #[arg(long, value_name = "OUTPUT", required = true)]
+    pub restore_plan: PathBuf,
+
+    /// Delete every unchanged hSUM-managed backup for this index after forgetting.
+    #[arg(long)]
+    pub purge_managed_backups: bool,
+
+    /// Retain and report every hSUM-managed backup that may still contain evidence.
+    #[arg(long)]
+    pub keep_managed_backups: bool,
+
+    /// Exact SHA-256 printed by `forget plan`.
+    #[arg(long, value_name = "PLAN_HASH", required = true)]
+    pub confirm: Sha256Digest,
+
+    /// Maximum wait for the single-writer advisory lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+/// Arguments for `hsum restore`.
+#[derive(Clone, Debug, Args)]
+pub struct RestoreArgs {
+    #[command(subcommand)]
+    pub command: RestoreCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum RestoreCommand {
+    /// Restore only the exact, unchanged post-forget state named by a restore plan.
+    Apply(RestoreApplyArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct RestoreApplyArgs {
+    /// Restore plan emitted by `forget apply`.
+    #[arg(value_name = "PLAN")]
+    pub plan: PathBuf,
+
+    /// Evidence-bearing recovery backup named by the restore plan hash.
+    #[arg(long, value_name = "BACKUP", required = true)]
+    pub recovery_backup: PathBuf,
+
+    /// New backup of the forgotten state, created before restoration.
+    #[arg(long, value_name = "OUTPUT", required = true)]
+    pub safety_backup: PathBuf,
+
+    /// Exact SHA-256 printed by `forget apply` for the restore plan.
+    #[arg(long, value_name = "PLAN_HASH", required = true)]
+    pub confirm: Sha256Digest,
+
+    /// Maximum wait for the single-writer advisory lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+/// Arguments for `hsum migrate`.
+#[derive(Clone, Debug, Args)]
+pub struct MigrateArgs {
+    #[command(subcommand)]
+    pub command: MigrateCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum MigrateCommand {
+    /// Diagnose a managed index and write an immutable migration plan.
+    Plan(MigratePlanArgs),
+
+    /// Revalidate and apply an exact migration plan after creating a backup.
+    Apply(MigrateApplyArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct MigratePlanArgs {
+    /// Managed index name; required because older schemas cannot resolve context.
+    #[arg(long, value_name = "NAME", required = true)]
+    pub index: SafeSlug,
+
+    /// New JSON plan path.
+    #[arg(value_name = "PLAN")]
+    pub output: PathBuf,
+
+    /// Maximum wait for the single-writer advisory lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct MigrateApplyArgs {
+    /// Managed index name named in the reviewed plan.
+    #[arg(long, value_name = "NAME", required = true)]
+    pub index: SafeSlug,
+
+    /// Reviewed JSON plan path.
+    #[arg(value_name = "PLAN")]
+    pub plan: PathBuf,
+
+    /// New pre-migration SQLite backup path.
+    #[arg(long, value_name = "OUTPUT", required = true)]
+    pub backup: PathBuf,
+
+    /// Exact SHA-256 printed by `migrate plan`.
+    #[arg(long, value_name = "PLAN_HASH", required = true)]
+    pub confirm: Sha256Digest,
+
+    /// Maximum wait for the single-writer advisory lock.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+/// Arguments for `hsum config`.
+#[derive(Clone, Debug, Args)]
+pub struct ConfigArgs {
+    #[command(subcommand)]
+    pub command: ConfigCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum ConfigCommand {
+    /// Plan a current-plus-N-1 configuration migration without changing files.
+    Migrate(ConfigMigrateArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ConfigMigrateArgs {
+    #[command(subcommand)]
+    pub command: ConfigMigrateCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum ConfigMigrateCommand {
+    /// Diagnose configuration files and write an immutable migration plan.
+    Plan(ConfigMigratePlanArgs),
+
+    /// Revalidate and apply an exact plan after creating private backups.
+    Apply(ConfigMigrateApplyArgs),
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ConfigMigratePlanArgs {
+    /// New JSON plan path.
+    #[arg(value_name = "PLAN")]
+    pub output: PathBuf,
+
+    /// New or resumable private directory for exact pre-migration files.
+    #[arg(long, value_name = "DIRECTORY", required = true)]
+    pub backup_dir: PathBuf,
+
+    /// Maximum wait for the configuration writer locks.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ConfigMigrateApplyArgs {
+    /// Reviewed JSON plan path.
+    #[arg(value_name = "PLAN")]
+    pub plan: PathBuf,
+
+    /// Exact SHA-256 printed by `config migrate plan`.
+    #[arg(long, value_name = "PLAN_HASH", required = true)]
+    pub confirm: Sha256Digest,
+
+    /// Maximum wait for the configuration writer locks.
+    #[arg(
+        long,
+        value_name = "MILLISECONDS",
+        default_value = "5000",
+        value_parser = value_parser!(u64).range(0..=LOCK_TIMEOUT_MAX_MS)
+    )]
+    pub lock_timeout_ms: u64,
+}
 
 /// Arguments for `hsum context`.
 #[derive(Clone, Debug, Args)]
@@ -411,10 +1088,12 @@ pub enum IntegrationCommand {
     /// Initialize or validate one repository for an existing integration.
     Activate(IntegrationActivateArgs),
 
-    /// Allow repositories below one directory to activate lazily.
+    /// Manage a legacy alpha.4 workspace authorization record.
+    #[command(hide = true)]
     AuthorizeWorkspace(IntegrationWorkspaceArgs),
 
-    /// Stop future lazy activation below one directory.
+    /// Remove a legacy alpha.4 workspace authorization record.
+    #[command(hide = true)]
     RevokeWorkspace(IntegrationWorkspaceArgs),
 
     /// Inspect the effective client registration.
@@ -481,7 +1160,7 @@ pub struct IntegrationActivateArgs {
 
 #[derive(Clone, Debug, Args)]
 pub struct IntegrationWorkspaceArgs {
-    /// Agent client whose workspace policy should change.
+    /// Agent client whose legacy workspace policy should change.
     #[arg(value_enum)]
     pub client: IntegrationClient,
 
@@ -489,7 +1168,7 @@ pub struct IntegrationWorkspaceArgs {
     #[arg(long, value_name = "PATH")]
     pub path: PathBuf,
 
-    /// Confirm the exact workspace authorization change.
+    /// Confirm the exact legacy workspace-record change.
     #[arg(long, required = true)]
     pub confirm: bool,
 }
@@ -531,6 +1210,100 @@ pub struct IntegrationUninstallArgs {
     pub confirm: bool,
 }
 
+/// Arguments for `hsum model`.
+#[derive(Clone, Debug, Args)]
+pub struct ModelArgs {
+    #[command(subcommand)]
+    pub command: ModelCommand,
+}
+
+#[derive(Clone, Debug, Subcommand)]
+pub enum ModelCommand {
+    /// Explicitly download one embedded-manifest model over HTTPS.
+    Install(ModelInstallArgs),
+
+    /// Import a verified air-gapped model directory or its receipt file.
+    Import(ModelImportArgs),
+
+    /// List embedded model profiles and local installation state.
+    List(ModelListArgs),
+
+    /// Recompute every checksum for one installed model.
+    Verify(ModelVerifyArgs),
+
+    /// Remove one installed model, refusing discoverable index pins by default.
+    Remove(ModelRemoveArgs),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
+#[value(rename_all = "kebab-case")]
+pub enum ModelInstallKind {
+    Embedding,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ModelInstallArgs {
+    /// Artifact class; Beta.1 supports local text embeddings only.
+    #[arg(value_enum)]
+    pub kind: ModelInstallKind,
+
+    /// Exact model ID from `hsum model list`.
+    #[arg(value_name = "ID")]
+    pub id: String,
+
+    /// Additional PEM certificate authority for a private HTTPS root.
+    #[arg(long, value_name = "PATH")]
+    pub ca_bundle: Option<PathBuf>,
+
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ModelImportArgs {
+    /// Directory containing `hsum-model.json`, or that receipt file itself.
+    #[arg(value_name = "ARTIFACT_OR_DIRECTORY")]
+    pub artifact: PathBuf,
+
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ModelListArgs {
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ModelVerifyArgs {
+    /// Exact model ID from `hsum model list`.
+    #[arg(value_name = "ID")]
+    pub id: String,
+
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+}
+
+#[derive(Clone, Debug, Args)]
+pub struct ModelRemoveArgs {
+    /// Exact model ID from `hsum model list`.
+    #[arg(value_name = "ID")]
+    pub id: String,
+
+    /// Remove even when discoverable indexes pin this model.
+    #[arg(long)]
+    pub force: bool,
+
+    /// Emit exactly one JSON document.
+    #[arg(long)]
+    pub json: bool,
+}
+
 /// Arguments for `hsum completions`.
 #[derive(Clone, Debug, Args)]
 pub struct CompletionsArgs {
@@ -555,16 +1328,29 @@ pub struct McpArgs {
     pub project: Option<SafeSlug>,
 }
 
-/// Capabilities compiled into this alpha.4 binary, in stable report order.
+/// Capabilities compiled into this binary, in stable report order.
 ///
-/// The list is tag-gated: deferred surface such as JSONL sources, vector
-/// modes, or watch mode must never appear here before its release tag.
-pub const COMPILED_CAPABILITIES: [&str; 5] = [
+/// The list is tag-gated: deferred surface such as vector modes or watch mode
+/// must never appear here before its release tag.
+pub const COMPILED_CAPABILITIES: [&str; 18] = [
     "filesystem-ingest",
+    "filesystem-source-registration",
+    "confirmed-index-deletion",
+    "jsonl-snapshot",
+    "multi-source-ingest",
+    "multi-project",
     "search-exact",
     "search-bm25",
     "evidence-get",
+    "backup-verified",
+    "managed-backup-disposition",
+    "prune-plan-apply",
+    "forget-physical-rewrite",
+    "restore-exact-state",
+    "migrate-n-minus-one",
+    "config-migrate-n-minus-one",
     "mcp-stdio-read-only",
+    "model-artifact-lifecycle",
 ];
 
 /// Detect the `hsum --version --verbose` form from the raw argument list.
@@ -599,11 +1385,12 @@ pub fn render_verbose_version() -> String {
     format!(
         "hsum {}\n\
          API version: {MCP_API_VERSION}\n\
-         Readable schema versions: {SCHEMA_VERSION}-{SCHEMA_VERSION}\n\
+         Readable schema versions: {}-{SCHEMA_VERSION}\n\
          Writable schema versions: {SCHEMA_VERSION}-{SCHEMA_VERSION}\n\
          Target: {}\n\
          Capabilities: {}\n",
         env!("CARGO_PKG_VERSION"),
+        SCHEMA_VERSION - 1,
         env!("HSUM_TARGET_TRIPLE"),
         COMPILED_CAPABILITIES.join(", "),
     )

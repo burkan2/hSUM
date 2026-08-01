@@ -1,7 +1,8 @@
-# hSUM `0.1.0-alpha.2` release implementation status
+# hSUM current checkout implementation status
 
-**Snapshot:** 2026-07-26
-**Scope:** Published public prerelease from protected `main` at `ef54758`
+**Snapshot:** 2026-08-01
+**Scope:** Current source checkout after the public `0.1.0-alpha.4` prerelease;
+published alpha.2 evidence is retained below as a historical release record.
 
 This matrix maps the published alpha.2 surface to implementation, test, and
 release evidence. “Implemented” means a code path and focused tests exist in
@@ -17,38 +18,122 @@ artifact, and production-documentation evidence.
 | Bounded filesystem discovery | Implemented for Unix alpha target | `src/ingest/filesystem.rs` | `tests/filesystem_ingest.rs` |
 | Deterministic chunking and literal extraction | Implemented | `src/ingest/chunk.rs`, `src/ingest/literals.rs`, `src/ingest/quote_bloom.rs` | `tests/chunking.rs`, `tests/literals.rs`, `tests/quote_bloom.rs` |
 | Atomic generations and deletion guards | Implemented | `src/store/generation.rs`, `src/store/lock.rs` | `tests/ingest_generations.rs`, `src/app/tests.rs`, `tests/multiprocess.rs` |
-| Immutable SQLite evidence store | Implemented | `src/store/open.rs`, `src/store/schema.rs`, `migrations/0001_alpha1.sql` | `tests/store_foundation.rs` |
+| Immutable SQLite evidence store | Implemented at schema 3 | `src/store/open.rs`, `src/store/schema.rs`, migrations `0001` through `0003` | `tests/store_foundation.rs`, `tests/store_doctor.rs` |
 | Exact/quoted/BM25 retrieval and deterministic fusion | Implemented | `src/search/query.rs`, `src/search/retrieval.rs` | `tests/query_contract.rs`, `tests/search_contract.rs` |
 | Canonical citation and historical `get` | Implemented | `src/domain/citation.rs`, `src/search/get.rs` | `tests/get_contract.rs` |
-| Bounded source-drift observation | Implemented for Unix alpha target | `src/status.rs` | `tests/source_drift.rs`, `tests/runtime_process.rs` |
+| Shared read-only Search/Get/Status application use cases | Implemented | `src/app/search_evidence.rs`, `src/app/evidence.rs`, `src/app/status_evidence.rs`, adapters in `src/runtime.rs` and `src/mcp.rs` | CLI/MCP ranking, packet, cursor, bounds, cancellation, historical-citation, and Status-field parity in `tests/runtime_process.rs` and `tests/mcp_contract.rs` |
+| Shared `hsum.api.v1` protocol DTOs and cursor | Implemented for Search, Get, and Status | `src/protocol/evidence.rs`, `src/protocol/status.rs`, `src/protocol/cursor.rs`, adapters in `src/runtime.rs` and `src/mcp.rs` | Complete normalized CLI/MCP Get-object, Search-core, and Status-core equality plus CLI → MCP → CLI pagination in `tests/runtime_process.rs`; frozen cursor vector and MCP schema/transport contracts in module tests and `tests/mcp_contract.rs` |
+| Frozen lexical retrieval evaluation | Implemented as development evidence | `benches/agent_ab/tasks.json`, `tasks.schema.json`, `tasks.sha256`, `benchmark.py` | 25 balanced queries, graded document labels, deterministic validation, isolated equal-corpus snapshots, 20 harness tests, three raw index builds plus aggregate JSON/HTML/SVG; hSUM leads mean quality but is slower and has unresolved cross-build rank variance |
+| Bounded source-drift observation | Implemented for filesystem evidence on the Unix alpha target; JSONL evidence is explicit `snapshot_only` | `src/status.rs`, `src/app/stored_source.rs` | `tests/source_drift.rs`, `tests/runtime_process.rs`, `tests/jsonl_connector.rs` |
 | Status and actionable storage/source problems | Implemented | `src/status.rs`, `src/store/capacity.rs` | `tests/store_foundation.rs`, `tests/runtime_process.rs` |
-| Read-only full doctor | Implemented | `src/store/doctor.rs` | `tests/store_doctor.rs` |
+| Full Doctor plus bounded abandoned-row repair and body-free report | Implemented; repair/report unreleased | `src/store/doctor.rs`, Doctor CLI/runtime adapters, private canonical report writer | invariant/heap/body-free/idempotent-repair coverage in `tests/store_doctor.rs`; grammar and real-process report/non-overwrite/repair coverage in `tests/cli_contract.rs` and `tests/runtime_process.rs` |
 | Capacity, quota, locality, and durability preflight | Implemented | `src/store/capacity.rs`, `src/store/open.rs` | module tests plus init/ingest process tests |
-| Four-tool, project-bound MCP stdio | Implemented | `src/mcp.rs` | `tests/mcp_contract.rs`, `tests/runtime_process.rs` |
+| Four-tool, project-bound, read-only MCP stdio | Implemented; tool calls do not initialize or ingest | `src/mcp.rs` | `tests/mcp_contract.rs`, `tests/runtime_process.rs` |
 | Generated client snippets and local client probe | Implemented | `src/runtime.rs` | `tests/runtime_process.rs` |
 | Shared public error taxonomy | Implemented | `src/domain/error.rs`, transport mappings in `src/runtime.rs` and `src/mcp.rs` | domain, CLI, MCP, and process contract tests |
 | Completion and man generation | Implemented | `src/cli.rs` | `tests/cli_contract.rs` |
-| JSONL, vectors/models, watcher, HTTP, backup/prune/forget/restore | Not implemented | Intentionally absent from the alpha command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
-| GitHub release archives | Alpha.2 published | `.github/workflows/release.yml`, `scripts/release-smoke.sh` | Checksums, SPDX SBOM attestations, signed-tag guard, Linux/macOS release jobs |
-| crates.io package or installer | Not available | `Cargo.toml` sets `publish = false`; archive-only alpha policy | Explicitly deferred; no public install claim |
+| Strict JSONL snapshot connector core | Implemented and exposed through selected-project source commands | `src/ingest/jsonl.rs`, `src/app/jsonl_connector.rs`, source-kind-aware generation/schema/doctor/Get/status paths | parser property tests plus `tests/jsonl_connector.rs` for decoded offsets, identity, deletion guards, no-prefix failure, default carry-forward, strict abort, one-generation multi-source commit, immutable Get, `snapshot_only`, and preflight/quota reporting |
+| Selected-project JSONL source management and mixed ingest | Implemented; unreleased | `src/cli.rs`, `src/runtime.rs`, `src/app/source_management.rs`, `src/app/project_ingest.rs`, `src/store/source.rs`, `src/store/generation.rs` | CLI grammar in `tests/cli_contract.rs`; real-process add/list/idempotency/conflict/default/strict/remove/re-add lifecycle in `tests/jsonl_cli.rs` |
+| Named multi-project and filesystem-source management | Implemented; unreleased | `src/app/project_management.rs`, `src/store/project.rs`, trust-binding retargeting in `src/config/trust.rs`, CLI/runtime adapters | grammar and confirmation contracts in `tests/cli_contract.rs`; two-root create/list/use/attach/detach/set-root/isolation/history/init lifecycle in `tests/project_cli.rs`; collision-safe retargeting in `tests/trust_registry.rs` |
+| Explicit filesystem-source registration | Implemented; unreleased | `source add fs` in `src/cli.rs` and `src/runtime.rs`; validation in `src/app/source_management.rs`; transactional catalog registration/reactivation in `src/store/source.rs` | grammar in `tests/cli_contract.rs`; real-process canonicalization, metadata-only registration, exact idempotency, conflict/broad-root refusal, activation UUID reuse, no implicit ingest, and stable-UUID reactivation in `tests/filesystem_source_cli.rs` |
+| Confirmed whole-index deletion | Implemented; unreleased | `index delete NAME --confirm` in `src/cli.rs` and `src/runtime.rs`; fenced reference cleanup and quarantine removal in `src/app/index_management.rs`; identity-checked bulk trust cleanup in `src/config/trust.rs` | grammar in `tests/cli_contract.rs`; real-process missing/malformed/reader-busy refusal, byte-preserving pre-commit failures, configured-default/all-binding cleanup, other-index isolation, stale-pointer safety, name reuse, and quarantine resume in `tests/index_delete_cli.rs`; epoch/idempotency coverage in `tests/trust_registry.rs` |
+| Verified backup, prune/migration, durable forget, and guarded restore | Implemented; unreleased | `src/store/maintenance.rs`, `src/store/forget_ledger.rs`, `migrations/0003_maintenance.sql`, shared reader/exclusive replacement fences, CLI/runtime adapters | store-level explicit prune-selector/backup/stale-plan/history-floor/N-1 plus forget/copy/raw-byte/old-reader/reingest/old-backup/restore/checkpoint-resume fixtures in `tests/maintenance.rs`; real-process prune/migration/forget/restore in `tests/maintenance_cli.rs`; replacement-lock process coverage in `tests/multiprocess.rs` |
+| Managed-backup inventory and forget disposition | Implemented; unreleased | bounded global registry in `src/store/managed_backup.rs`; lossless path encoding, pending/completed receipts, exact classification and keep/purge in `src/runtime.rs`; `backup list` plus mutually exclusive required forget flags in `src/cli.rs` | grammar in `tests/cli_contract.rs`; real-process inventory, missing-choice non-mutation, keep/purge, changed-backup preflight, untracked-copy preservation, and cleanup in `tests/managed_backup_cli.rs` |
+| Pinned local model-artifact lifecycle | Implemented; unreleased, without product inference or vectors | embedded exact BGE-small manifest and content-addressed cache in `assets/models/` and `src/model/`; explicit HTTPS install plus local import/list/verify/pin-aware remove in `src/cli.rs` and `src/runtime.rs` | manifest/path/checksum/idempotency/symlink/removal unit coverage in `src/model/`; grammar and offline/no-partial process coverage in `tests/cli_contract.rs` and `tests/model_cli.rs` |
+| FastEmbed CPU portability probe | Opt-in development probe; macOS arm64 passes locally, Linux x86_64 pending native-runner execution | feature-gated verified-byte adapter in `src/model/inference.rs`; fixed release-mode harness and inputs in `examples/` and `benches/model_portability/`; manual native matrix in `.github/workflows/model-portability.yml` | adapter shape/norm/tamper tests plus checked-in Apple M2 JSON: 149.4 ms init, 7.79 ms batch-1 p95, 90.42 ms batch-8 p95, 394.3 MB peak RSS growth; no vectors or semantic modes |
+| User config and trust-registry migration | Implemented; unreleased | schema-2 config/trust loaders and epochs in `src/app/context.rs` and `src/config/trust.rs`; hashed two-file ceremony in `src/config/migration.rs`; CLI/runtime adapters | library refusal/exact-backup/structural-plan/resume coverage in `tests/config_migration.rs`; N-1 non-mutation and complete process ceremony in `tests/config_migration_cli.rs`; CLI grammar and schema diagnosis fixtures |
+| Remaining canonical Alpha.2 management surfaces | Complete in the current checkout; unreleased | No intentionally absent Alpha.2 management surface remains | Full local gate must continue passing before semantic retrieval work begins |
+| Vector storage, semantic/hybrid retrieval, watcher, and HTTP | Not implemented | Intentionally absent from the current command surface; the FastEmbed adapter remains an opt-in probe | Rejected-surface assertions in `tests/cli_contract.rs` |
+| GitHub release archives | Alpha.4 published | `.github/workflows/release.yml`, `scripts/release-smoke.sh` | Checksums, SPDX SBOM attestations, signed-tag guard, Linux/macOS release jobs |
+| Installer | Available in alpha.4 | `scripts/install.sh`, `scripts/installer-smoke.sh` | Checksum verification plus isolated/network-denied smoke |
+| crates.io package | Not available | `Cargo.toml` sets `publish = false` | Explicitly deferred; no crates.io claim |
 
 ## Current invariants
 
-- Runtime ingest and retrieval are local; the binary has no network transport.
-  MCP uses the process's stdin and stdout.
-- One alpha index is bound to exactly one project and one filesystem source.
-- MCP opens the selected database read-only and query-only and exposes no
-  mutation tool.
+- Runtime ingest and retrieval are local. The sole network path is the explicit
+  `model install embedding` command; `HSUM_OFFLINE=1` disables it too. MCP uses
+  the process's stdin and stdout.
+- Each selected context remains bound to exactly one named project and one
+  active filesystem authority, with zero or more attached JSONL snapshot
+  sources. One managed index can contain multiple bounded projects and sources;
+  binding-based selection remains exact and project-scoped.
+- MCP opens the selected database read-only and query-only, exposes no mutation
+  tool, and does not initialize or ingest as a side effect of retrieval.
 - Indexed content is untrusted and is marked as such in CLI JSON and MCP
   evidence.
 - Generations activate atomically; an all-failed scan does not advance the
   active generation or epoch.
+- Confirmed pruning preserves the monotonic index epoch while moving the
+  retained-history floor forward; its canonical manifest and affected revision
+  namespaces remain recorded in the index.
 - Canonical citations bind index, source, document, revision hash, and byte
   span.
+- CLI `get` and MCP `evidence_get` resolve evidence, capture the cited drift
+  target, and derive source/hash state through one read-only application
+  handler, then construct the complete wire object through one shared protocol
+  DTO. Live verification compares against the immutable cited revision,
+  including when the indexed document head has advanced.
+- CLI `search` and MCP `evidence_search` execute ranking, bounded page
+  selection, cursor snapshot validation, and live-source observation through
+  one read-only application handler, then derive response metadata, passage
+  identity, score, duplicate citations, and typed source state through one
+  protocol mapping. Compatibility projections preserve the CLI
+  combined-span/`name` diagnostics layout and MCP split-span/`retriever`
+  transport layout. Both adapters use one opaque query/snapshot-bound cursor,
+  while MCP retains final wire-size trimming as a transport responsibility.
+- CLI `status` and MCP `evidence_status` read index identity, project counts,
+  source health, and shared actionable problems through one read-only
+  application handler and one SQLite snapshot, then construct health issues,
+  repair objects, and their compatibility envelopes through one protocol
+  mapping. Storage inspection happens only after that snapshot closes; the
+  adapters retain their public packet shapes.
 - Storage preflight reserves the greater of 64 MiB or 10% of managed index
   bytes in addition to the estimated write.
 
-## Published alpha.2 evidence
+## Current-checkout qualification
+
+- The public alpha.4 tag contains the original zero-touch auto-enrollment and
+  once-per-task refresh behavior. Current source restores the canonical
+  read-only MCP boundary; that change is unreleased until a later tag.
+- Existing alpha.4 workspace-policy files remain parseable, but their roots are
+  not consumed by MCP. Explicit `integration activate`, `init`, and `ingest`
+  remain the state-changing paths.
+- The frozen local retrieval benchmark is 25 author-labeled tasks on this
+  repository, not external or stable-release evidence. Across three fresh
+  indexes, hSUM leads mean graded quality but is much slower than grep, misses
+  every paraphrase and multi-evidence task, and changes ordering materially
+  across identical-corpus rebuilds. Exact scores live outside the evaluated
+  corpus in `benches/agent_ab/README.md` with the full protocol and limitations.
+
+## Local Alpha.2 JSONL source-lifecycle evidence on 2026-08-01
+
+- `cargo xtask check` passed on this checkout: formatting, Clippy with warnings
+  denied, all unit and integration tests, and doctests.
+- The JSONL integration suite passed all 11 cases covering strict whole-file
+  failure, exact decoded offsets, stable identity, explicit and absence
+  deletion guards, quota preflight, default carry-forward, strict batch abort,
+  one-generation multi-source commits, immutable Get, and `snapshot_only`
+  reporting.
+- The real-process lifecycle suite covers add/list, exact idempotency, conflict
+  refusal, mixed dry-run and ingest, default partial and strict abort behavior,
+  one shared generation, all-failed preservation, confirmed removal, active
+  retrieval exclusion, historical Get, and same-UUID reattachment.
+- The named-project process suite qualifies create/list/use, project-local
+  source attach/detach, root replacement across two repositories, active scope
+  isolation, historical Get, persistent binding retargeting, and compatible
+  init reruns. Trust tests additionally freeze collision refusal without
+  registry mutation.
+- The filesystem-source registration process suite proves canonical bounded-root
+  registration without attachment or ingest, exact idempotency and collision
+  refusal, unchanged scope/epoch/trust selection, registered-UUID reuse during
+  confirmed root activation, and same-UUID reactivation after retirement.
+- The confirmed-index-deletion process suite proves exact name targeting,
+  reader-fence refusal without mutation, malformed-config and recovery-conflict
+  refusal, configured-default and trust cleanup, other-index isolation,
+  stale-pointer non-authorization, immediate name reuse, and fixed-quarantine
+  resume after interrupted cleanup.
+
+## Published alpha.2 evidence (historical)
 
 - Annotated GPG-signed tag `v0.1.0-alpha.2` resolves to protected-branch merge
   `ef54758`; its public GitHub prerelease contains macOS arm64 and Linux x86_64

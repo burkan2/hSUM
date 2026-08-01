@@ -8,7 +8,7 @@ use std::time::Duration;
 use std::os::unix::fs::PermissionsExt;
 
 use hsum::config::TrustRegistry;
-use hsum::store::WriterLock;
+use hsum::store::{WriterLock, pipeline_fingerprint};
 use rusqlite::Connection;
 use serde_json::{Value, json};
 use tempfile::{TempDir, tempdir};
@@ -189,6 +189,185 @@ fn init_search_get_status_context_and_doctor_are_process_complete() {
     let doctor_output = String::from_utf8_lossy(&doctor.stdout);
     assert!(doctor_output.contains("Index diagnosis passed"));
     assert!(doctor_output.contains("hard links cannot be distinguished"));
+}
+
+#[test]
+fn doctor_integrity_repair_and_body_free_report_are_process_complete() {
+    let (repository, home) = initialized();
+    let context = run(home.path(), repository.path(), &["context", "--json"]);
+    let context: Value = serde_json::from_slice(&context.stdout).unwrap();
+    let database_path = Path::new(context["database_path"].as_str().unwrap());
+    let connection = Connection::open(database_path).unwrap();
+    connection
+        .execute(
+            "INSERT INTO generations(
+                state, created_at, pipeline_fingerprint
+             ) VALUES ('abandoned', '2026-08-01T00:00:00Z', ?1)",
+            [pipeline_fingerprint().as_bytes().as_slice()],
+        )
+        .unwrap();
+    drop(connection);
+
+    let integrity = run(home.path(), repository.path(), &["doctor", "--integrity"]);
+    assert!(integrity.status.success());
+    assert!(String::from_utf8_lossy(&integrity.stdout).contains("Abandoned generations: 1"));
+
+    let repair = run(
+        home.path(),
+        repository.path(),
+        &["doctor", "--repair", "--confirm"],
+    );
+    assert!(
+        repair.status.success(),
+        "repair stderr: {}",
+        String::from_utf8_lossy(&repair.stderr)
+    );
+    let repair_text = String::from_utf8_lossy(&repair.stdout);
+    assert!(repair_text.contains("Abandoned generations removed: 1"));
+    assert!(repair_text.contains("Abandoned generations: 0"));
+
+    let report_path = repository.path().join("doctor-report.json");
+    let report = run(
+        home.path(),
+        repository.path(),
+        &[
+            "doctor",
+            "report",
+            "--output",
+            report_path.to_str().unwrap(),
+        ],
+    );
+    assert!(
+        report.status.success(),
+        "report stderr: {}",
+        String::from_utf8_lossy(&report.stderr)
+    );
+    let report_text = String::from_utf8_lossy(&report.stdout);
+    assert!(report_text.contains("Included fields:"));
+    assert!(report_text.contains("Excluded: document bodies"));
+    let report_json: Value = serde_json::from_slice(&fs::read(&report_path).unwrap()).unwrap();
+    assert_eq!(report_json["format"], "hsum.doctor-report.v1");
+    assert_eq!(report_json["body_free"], true);
+    assert_eq!(report_json["query_free"], true);
+    let report_bytes = fs::read(&report_path).unwrap();
+    assert!(
+        !report_bytes
+            .windows(b"alpha-beta".len())
+            .any(|window| window == b"alpha-beta")
+    );
+
+    let repeated = run(
+        home.path(),
+        repository.path(),
+        &[
+            "doctor",
+            "report",
+            "--output",
+            report_path.to_str().unwrap(),
+        ],
+    );
+    assert_eq!(repeated.status.code(), Some(2));
+    assert!(repeated.stdout.is_empty());
+}
+
+#[test]
+fn cli_returned_citation_round_trips_across_multiple_chunks() {
+    let repository = tempdir().unwrap();
+    fs::create_dir(repository.path().join(".git")).unwrap();
+    let body = format!(
+        "# Left\n{}\n\n# Target\nCOMPOSITE_CITATION_TARGET\n{}\n\n# Right\n{}\n",
+        "left context ".repeat(180),
+        "middle context ".repeat(180),
+        "right context ".repeat(180),
+    );
+    fs::write(repository.path().join("composite.md"), &body).unwrap();
+    let home = tempdir().unwrap();
+    let init = run(
+        home.path(),
+        repository.path(),
+        &[
+            "init",
+            "--index",
+            "composite-fixture",
+            "--project",
+            "default",
+        ],
+    );
+    assert!(
+        init.status.success(),
+        "init stderr: {}",
+        String::from_utf8_lossy(&init.stderr)
+    );
+
+    let search = run(
+        home.path(),
+        repository.path(),
+        &[
+            "search",
+            "COMPOSITE_CITATION_TARGET",
+            "--limit",
+            "1",
+            "--json",
+        ],
+    );
+    assert!(
+        search.status.success(),
+        "search stderr: {}",
+        String::from_utf8_lossy(&search.stderr)
+    );
+    let search_json: Value = serde_json::from_slice(&search.stdout).unwrap();
+    let search_citation = search_json["results"][0]["citation_uri"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let max_bytes = body.len().to_string();
+
+    let expanded = run(
+        home.path(),
+        repository.path(),
+        &["get", &search_citation, "--max-bytes", &max_bytes, "--json"],
+    );
+    assert!(
+        expanded.status.success(),
+        "first get stderr: {}",
+        String::from_utf8_lossy(&expanded.stderr)
+    );
+    let expanded_json: Value = serde_json::from_slice(&expanded.stdout).unwrap();
+    let returned_citation = expanded_json["returned_citation_uri"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert_ne!(returned_citation, search_citation);
+    assert_eq!(expanded_json["content"], body);
+
+    let round_trip = run(
+        home.path(),
+        repository.path(),
+        &[
+            "get",
+            &returned_citation,
+            "--max-bytes",
+            &max_bytes,
+            "--json",
+        ],
+    );
+    assert!(
+        round_trip.status.success(),
+        "second get stderr: {}",
+        String::from_utf8_lossy(&round_trip.stderr)
+    );
+    let round_trip_json: Value = serde_json::from_slice(&round_trip.stdout).unwrap();
+    assert_eq!(round_trip_json["requested_citation_uri"], returned_citation);
+    assert_eq!(round_trip_json["returned_citation_uri"], returned_citation);
+    assert_eq!(round_trip_json["content"], expanded_json["content"]);
+    assert_eq!(
+        round_trip_json["requested_line_span"],
+        expanded_json["returned_line_span"]
+    );
+    assert_eq!(
+        round_trip_json["returned_line_span"],
+        expanded_json["returned_line_span"]
+    );
 }
 
 #[test]
@@ -720,7 +899,7 @@ fn all_source_failure_exits_one_without_activating_a_generation() {
     assert_eq!(failed.status.code(), Some(1));
     assert!(
         String::from_utf8_lossy(&failed.stdout)
-            .starts_with("Filesystem ingest failed; no generation was activated.\n")
+            .starts_with("Ingest failed; no generation was activated.\n")
     );
     assert!(String::from_utf8_lossy(&failed.stdout).contains(": failed (accepted 0, failed 1"));
     assert!(String::from_utf8_lossy(&failed.stderr).starts_with("FAILED:"));
@@ -777,13 +956,13 @@ fn offline_error_help_is_self_contained_and_linked_from_real_failures() {
     assert_eq!(unknown_error.lines().count(), 4);
     assert!(unknown_error.contains("learn: hsum help error "));
 
-    // A real failure names the offline command above rather than a hosted URL.
+    // A real failure names both the offline command and version-matched docs.
     let (repository, home) = initialized();
     let failing = run(home.path(), repository.path(), &["search", "\"broken"]);
     assert_eq!(failing.status.code(), Some(2));
     let failure_text = String::from_utf8_lossy(&failing.stderr);
     assert!(failure_text.contains("learn: hsum help error QUERY_SYNTAX"));
-    assert!(!failure_text.contains("https://"));
+    assert!(failure_text.contains("https://hsum.dev/docs/0.1.0-alpha.4/errors/QUERY_SYNTAX"));
 }
 
 /// Drives one real `hsum mcp` subprocess: initialize handshake, then the
@@ -849,17 +1028,305 @@ fn frame_with_id(frames: &[Value], id: u64) -> &Value {
         .unwrap_or_else(|| panic!("no response frame with id {id}"))
 }
 
+fn assert_get_packets_equivalent(cli: &Value, mcp: &Value) {
+    assert!(cli["request_id"].as_str().is_some_and(|id| !id.is_empty()));
+    assert!(mcp["request_id"].as_str().is_some_and(|id| !id.is_empty()));
+    let mut normalized_cli = cli.clone();
+    let mut normalized_mcp = mcp.clone();
+    normalized_cli["request_id"] = json!("<request-id>");
+    normalized_mcp["request_id"] = json!("<request-id>");
+    assert_eq!(
+        normalized_cli, normalized_mcp,
+        "CLI and MCP get packets must differ only by request identity"
+    );
+}
+
+fn normalize_mcp_search_passage(mcp: &Value) -> Value {
+    let mut normalized = mcp.clone();
+    let passage = normalized.as_object_mut().unwrap();
+    let byte_span = passage.remove("byte_span").unwrap();
+    let line_span = passage.remove("line_span").unwrap();
+    passage.insert(
+        "span".to_owned(),
+        json!({
+            "start_byte": byte_span["start"],
+            "end_byte": byte_span["end"],
+            "start_line": line_span["start"],
+            "end_line": line_span["end"],
+        }),
+    );
+    if let Some(lists) = passage
+        .get_mut("score")
+        .and_then(Value::as_object_mut)
+        .and_then(|score| score.get_mut("lists"))
+        .and_then(Value::as_array_mut)
+    {
+        for rank in lists {
+            let rank = rank.as_object_mut().unwrap();
+            let retriever = rank.remove("retriever").unwrap();
+            rank.insert("name".to_owned(), retriever);
+        }
+    }
+    normalized
+}
+
+fn normalized_cli_search_core(search: &Value) -> Value {
+    json!({
+        "schema_version": search["schema_version"],
+        "project_id": search["project_id"],
+        "scope_revision": search["scope_revision"],
+        "generation": search["generation"],
+        "index_epoch": search["index_epoch"],
+        "requested_mode": search["requested_mode"],
+        "effective_mode": search["effective_mode"],
+        "retrievers": search["retrievers"],
+        "results": search["results"],
+        "stop_reason": search["stop_reason"],
+        "next_cursor": search["next_cursor"],
+    })
+}
+
+fn normalized_mcp_search_core(search: &Value) -> Value {
+    let results: Vec<Value> = search["results"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(normalize_mcp_search_passage)
+        .collect();
+    json!({
+        "schema_version": search["schema_version"],
+        "project_id": search["project_id"],
+        "scope_revision": search["scope_revision"],
+        "generation": search["generation"],
+        "index_epoch": search["index_epoch"],
+        "requested_mode": search["requested_mode"],
+        "effective_mode": search["effective_mode"],
+        "retrievers": search["retrievers"],
+        "results": results,
+        "stop_reason": search["stop_reason"],
+        "next_cursor": search["next_cursor"],
+    })
+}
+
+fn normalized_cli_status_core(status: &Value) -> Value {
+    let sources = status["sources"].as_array().unwrap();
+    let health_issues: Vec<Value> = sources
+        .iter()
+        .filter_map(|source| {
+            source["last_error_code"].as_str().map(|code| {
+                json!({
+                    "source_id": source["source_id"],
+                    "code": code,
+                    "detail": source["last_error_detail"],
+                    "observed_at": source["last_error_at"],
+                })
+            })
+        })
+        .collect();
+    json!({
+        "schema_version": status["schema_version"],
+        "index_id": status["index_id"],
+        "project_id": status["project_id"],
+        "active_generation": status["active_generation"],
+        "index_epoch": status["index_epoch"],
+        "source_count": sources.len(),
+        "document_count": status["active_documents"],
+        "passage_count": status["active_passages"],
+        "health_issues": health_issues,
+        "index_problems": status["problems"],
+        "read_only": status["database_read_only"],
+        "query_only": status["query_only"],
+    })
+}
+
+fn normalized_mcp_status_core(status: &Value) -> Value {
+    json!({
+        "schema_version": status["schema_version"],
+        "index_id": status["index_id"],
+        "project_id": status["project_id"],
+        "active_generation": status["active_generation"],
+        "index_epoch": status["index_epoch"],
+        "source_count": status["source_count"],
+        "document_count": status["document_count"],
+        "passage_count": status["passage_count"],
+        "health_issues": status["health_issues"],
+        "index_problems": status["index_problems"],
+        "read_only": status["read_only"],
+        "query_only": status["query_only"],
+    })
+}
+
+fn search_citations(packet: &Value) -> Vec<String> {
+    packet["results"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|result| result["citation_uri"].as_str().unwrap().to_owned())
+        .collect()
+}
+
+#[test]
+fn cli_cursor_pages_one_stable_window_and_round_trips_through_mcp() {
+    let repository = tempdir().unwrap();
+    fs::create_dir(repository.path().join(".git")).unwrap();
+    for index in 0..20 {
+        fs::write(
+            repository.path().join(format!("evidence-{index:02}.md")),
+            format!("# Evidence {index:02}\nalpha cursor marker-{index:02}\n"),
+        )
+        .unwrap();
+    }
+    let home = tempdir().unwrap();
+    let init = run(
+        home.path(),
+        repository.path(),
+        &["init", "--index", "cursor-fixture", "--project", "default"],
+    );
+    assert!(
+        init.status.success(),
+        "init stderr: {}",
+        String::from_utf8_lossy(&init.stderr)
+    );
+
+    let expected = run(
+        home.path(),
+        repository.path(),
+        &["search", "alpha", "--limit", "20", "--json"],
+    );
+    assert!(expected.status.success());
+    let expected: Value = serde_json::from_slice(&expected.stdout).unwrap();
+    let expected_citations = search_citations(&expected);
+    assert_eq!(expected_citations.len(), 20);
+    assert!(expected["next_cursor"].is_null());
+
+    let first = run(
+        home.path(),
+        repository.path(),
+        &["search", "alpha", "--limit", "7", "--json"],
+    );
+    assert!(first.status.success());
+    let first: Value = serde_json::from_slice(&first.stdout).unwrap();
+    let first_cursor = first["next_cursor"].as_str().unwrap().to_owned();
+    assert!(first_cursor.starts_with("v1."));
+
+    let registry = TrustRegistry::load(&home.path().join("config/trusted-projects.toml")).unwrap();
+    let binding = registry.bindings()[0].binding_id().to_string();
+    let frames = run_mcp_tool_calls(
+        home.path(),
+        repository.path(),
+        &["mcp", "--binding", &binding],
+        &[json!({
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "tools/call",
+            "params": {
+                "name": "evidence_search",
+                "arguments": {
+                    "query": "alpha",
+                    "mode": "auto",
+                    "limit": 7,
+                    "cursor": first_cursor,
+                    "timeout_ms": 10_000,
+                    "explain": false
+                }
+            }
+        })],
+        &[7],
+    );
+    let second = &frame_with_id(&frames, 7)["result"]["structuredContent"];
+    let second_cursor = second["next_cursor"].as_str().unwrap().to_owned();
+
+    let third = run(
+        home.path(),
+        repository.path(),
+        &[
+            "search",
+            "alpha",
+            "--limit",
+            "6",
+            "--cursor",
+            &second_cursor,
+            "--json",
+        ],
+    );
+    assert!(
+        third.status.success(),
+        "third page stderr: {}",
+        String::from_utf8_lossy(&third.stderr)
+    );
+    let third: Value = serde_json::from_slice(&third.stdout).unwrap();
+    assert!(third["next_cursor"].is_null());
+
+    let paged = search_citations(&first)
+        .into_iter()
+        .chain(search_citations(second))
+        .chain(search_citations(&third))
+        .collect::<Vec<_>>();
+    assert_eq!(paged, expected_citations);
+
+    let human = run(
+        home.path(),
+        repository.path(),
+        &["search", "alpha", "--limit", "7"],
+    );
+    assert!(human.status.success());
+    assert!(
+        String::from_utf8(human.stdout)
+            .unwrap()
+            .contains("next cursor: v1.")
+    );
+
+    let query_mismatch = run(
+        home.path(),
+        repository.path(),
+        &[
+            "search",
+            "different-query",
+            "--cursor",
+            first["next_cursor"].as_str().unwrap(),
+            "--json",
+        ],
+    );
+    assert_eq!(query_mismatch.status.code(), Some(1));
+    let query_error: Value = serde_json::from_slice(&query_mismatch.stderr).unwrap();
+    assert_eq!(query_error["code"], "STALE_CURSOR");
+    assert_eq!(query_error["subcode"], "QUERY_FINGERPRINT");
+    assert_eq!(query_error["details"]["argument"], "cursor");
+
+    fs::write(
+        repository.path().join("evidence-00.md"),
+        "# Evidence 00\nalpha cursor marker changed after paging\n",
+    )
+    .unwrap();
+    let ingest = run(home.path(), repository.path(), &["ingest"]);
+    assert!(ingest.status.success());
+    let stale = run(
+        home.path(),
+        repository.path(),
+        &[
+            "search",
+            "alpha",
+            "--cursor",
+            first["next_cursor"].as_str().unwrap(),
+            "--json",
+        ],
+    );
+    assert_eq!(stale.status.code(), Some(1));
+    let stale_error: Value = serde_json::from_slice(&stale.stderr).unwrap();
+    assert_eq!(stale_error["code"], "STALE_CURSOR");
+    assert_eq!(stale_error["subcode"], "INDEX_EPOCH");
+    assert_eq!(stale_error["details"]["argument"], "cursor");
+}
+
 #[test]
 fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
     let repository = tempdir().unwrap();
     fs::create_dir(repository.path().join(".git")).unwrap();
     // Distinct match densities give a meaningful, non-trivial rank order that
     // both transports must reproduce exactly.
-    fs::write(
-        repository.path().join("guide.md"),
-        b"# Guide\nparity-alpha appears here first.\nparity-alpha again.\nparity-alpha third.\n",
-    )
-    .unwrap();
+    let cited_guide =
+        b"# Guide\nparity-alpha appears here first.\nparity-alpha again.\nparity-alpha third.\n";
+    fs::write(repository.path().join("guide.md"), cited_guide).unwrap();
     fs::write(
         repository.path().join("notes.md"),
         b"# Notes\nparity-alpha appears once with beta context.\n",
@@ -900,6 +1367,28 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
         String::from_utf8_lossy(&cli.stderr)
     );
     let cli_packet: Value = serde_json::from_slice(&cli.stdout).unwrap();
+    let citation = cli_packet["results"][0]["citation_uri"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let cli_get = run(
+        home.path(),
+        repository.path(),
+        &[
+            "get",
+            &citation,
+            "--max-bytes",
+            "65536",
+            "--verify-source-hash",
+            "--json",
+        ],
+    );
+    assert!(
+        cli_get.status.success(),
+        "get stderr: {}",
+        String::from_utf8_lossy(&cli_get.stderr)
+    );
+    let cli_get_packet: Value = serde_json::from_slice(&cli_get.stdout).unwrap();
 
     let cli_error_run = run(
         home.path(),
@@ -908,6 +1397,14 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
     );
     assert_eq!(cli_error_run.status.code(), Some(2));
     let cli_error: Value = serde_json::from_slice(&cli_error_run.stderr).unwrap();
+
+    let cli_status_run = run(home.path(), repository.path(), &["status", "--json"]);
+    assert!(
+        cli_status_run.status.success(),
+        "status stderr: {}",
+        String::from_utf8_lossy(&cli_status_run.stderr)
+    );
+    let cli_status: Value = serde_json::from_slice(&cli_status_run.stdout).unwrap();
 
     let registry = TrustRegistry::load(&home.path().join("config/trusted-projects.toml")).unwrap();
     let binding = registry.bindings()[0].binding_id().to_string();
@@ -940,25 +1437,41 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
                     "arguments": {"query": "\"parity-alpha"}
                 }
             }),
+            json!({
+                "jsonrpc": "2.0",
+                "id": 4,
+                "method": "tools/call",
+                "params": {
+                    "name": "evidence_get",
+                    "arguments": {
+                        "citation_uri": citation,
+                        "max_bytes": 65_536,
+                        "verify_source_hash": true
+                    }
+                }
+            }),
+            json!({
+                "jsonrpc": "2.0",
+                "id": 6,
+                "method": "tools/call",
+                "params": {
+                    "name": "evidence_status",
+                    "arguments": {}
+                }
+            }),
         ],
-        &[2, 3],
+        &[2, 3, 4, 6],
     );
     let mcp_packet = &frame_with_id(&frames, 2)["result"]["structuredContent"];
     let mcp_error = &frame_with_id(&frames, 3)["error"]["data"];
+    let mcp_get_packet = &frame_with_id(&frames, 4)["result"]["structuredContent"];
+    let mcp_status = &frame_with_id(&frames, 6)["result"]["structuredContent"];
 
-    for key in [
-        "schema_version",
-        "project_id",
-        "scope_revision",
-        "generation",
-        "index_epoch",
-        "requested_mode",
-        "effective_mode",
-        "retrievers",
-        "stop_reason",
-    ] {
-        assert_eq!(cli_packet[key], mcp_packet[key], "top-level {key} parity");
-    }
+    assert_eq!(
+        normalized_cli_search_core(&cli_packet),
+        normalized_mcp_search_core(mcp_packet),
+        "CLI and MCP search packets must expose the same authoritative core"
+    );
     assert_eq!(cli_packet["requested_mode"], "auto");
     assert_eq!(cli_packet["effective_mode"], "lexical");
     assert!(
@@ -973,75 +1486,128 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
     );
 
     let cli_results = cli_packet["results"].as_array().unwrap();
-    let mcp_results = mcp_packet["results"].as_array().unwrap();
     assert!(cli_results.len() >= 3, "fixture must rank multiple files");
-    assert_eq!(cli_results.len(), mcp_results.len());
-    for (cli_result, mcp_result) in cli_results.iter().zip(mcp_results) {
-        for key in [
-            "citation_uri",
-            "index_id",
-            "source_id",
-            "document_id",
-            "revision_sha256",
-            "source_uri",
-            "title",
-            "content",
-            "content_sha256",
-            "source_updated_at",
-            "indexed_at",
-            "head_generation",
-            "source_state",
-            "untrusted_content",
-            "duplicate_citations",
-        ] {
-            assert_eq!(cli_result[key], mcp_result[key], "passage {key} parity");
-        }
+    for cli_result in cli_results {
         assert_eq!(cli_result["untrusted_content"], json!(true));
         assert_eq!(cli_result["source_state"], "metadata_unchanged");
-        assert_eq!(
-            cli_result["span"]["start_byte"],
-            mcp_result["byte_span"]["start"]
-        );
-        assert_eq!(
-            cli_result["span"]["end_byte"],
-            mcp_result["byte_span"]["end"]
-        );
-        assert_eq!(
-            cli_result["span"]["start_line"],
-            mcp_result["line_span"]["start"]
-        );
-        assert_eq!(
-            cli_result["span"]["end_line"],
-            mcp_result["line_span"]["end"]
-        );
-        assert_eq!(
-            cli_result["score"]["fused"], mcp_result["score"]["fused"],
-            "fused score parity"
-        );
-        assert_eq!(
-            cli_result["score"]["fusion_units"], mcp_result["score"]["fusion_units"],
-            "fusion unit parity"
-        );
-        let cli_lists = cli_result["score"]["lists"].as_array().unwrap();
-        let mcp_lists = mcp_result["score"]["lists"].as_array().unwrap();
-        assert_eq!(cli_lists.len(), mcp_lists.len());
-        for (cli_rank, mcp_rank) in cli_lists.iter().zip(mcp_lists) {
-            assert_eq!(cli_rank["name"], mcp_rank["retriever"], "retriever parity");
-            assert_eq!(cli_rank["rank"], mcp_rank["rank"]);
-            assert_eq!(
-                cli_rank["contribution_units"],
-                mcp_rank["contribution_units"]
-            );
-            assert_eq!(cli_rank["backend_score"], mcp_rank["backend_score"]);
-        }
     }
+    assert_eq!(cli_packet["degraded_mode"], json!([]));
+    assert_eq!(cli_packet["hints"], json!([]));
+    assert!(cli_packet["examined"].is_object());
+    assert!(cli_packet["timing_ms"].is_object());
+    assert_eq!(mcp_packet["truncated"], json!(false));
+    assert!(mcp_packet["body_bytes"].is_number());
+    assert_eq!(
+        mcp_packet["freshness"],
+        json!({"policy": "manual", "state": "not_managed", "problem": null})
+    );
 
     for key in ["code", "subcode", "message", "retryable"] {
         assert_eq!(cli_error[key], mcp_error[key], "error {key} parity");
     }
-    assert!(cli_error.get("docs_url").is_none());
-    assert!(mcp_error.get("docs_url").is_none());
+    assert_eq!(cli_error["docs_url"], mcp_error["docs_url"]);
+    assert!(
+        cli_error["docs_url"]
+            .as_str()
+            .unwrap()
+            .starts_with("https://hsum.dev/docs/0.1.0-alpha.4/errors/")
+    );
     assert_eq!(cli_error["code"], "INVALID_ARGUMENT");
     assert_eq!(cli_error["subcode"], "QUERY_SYNTAX");
     assert_eq!(cli_error["retryable"], json!(false));
+
+    assert_get_packets_equivalent(&cli_get_packet, mcp_get_packet);
+
+    assert_eq!(
+        normalized_cli_status_core(&cli_status),
+        normalized_mcp_status_core(mcp_status),
+        "CLI and MCP status packets must expose the same authoritative core"
+    );
+    assert_eq!(mcp_status["model_fingerprint"], Value::Null);
+    assert_eq!(mcp_status["degraded_modes"], json!([]));
+    assert_eq!(
+        mcp_status["freshness"],
+        json!({"policy": "manual", "state": "not_managed", "problem": null})
+    );
+    assert!(
+        cli_status["request_id"]
+            .as_str()
+            .is_some_and(|id| !id.is_empty())
+    );
+    assert!(
+        mcp_status["request_id"]
+            .as_str()
+            .is_some_and(|id| !id.is_empty())
+    );
+
+    // Advance the indexed head, then restore only the live file to the cited
+    // bytes. Verification must compare against the immutable cited revision,
+    // not the newer indexed head.
+    let cited_relative_path = cli_get_packet["source_uri"]
+        .as_str()
+        .and_then(|uri| uri.strip_prefix("repo://"))
+        .expect("fixture citations use repository-relative URIs");
+    let cited_path = repository.path().join(cited_relative_path);
+    let cited_content = cli_get_packet["content"]
+        .as_str()
+        .expect("fixture content is UTF-8")
+        .to_owned();
+    fs::write(
+        &cited_path,
+        b"# Guide\na newer indexed head replaces the parity fixture.\n",
+    )
+    .unwrap();
+    let ingest = run(home.path(), repository.path(), &["ingest"]);
+    assert!(
+        ingest.status.success(),
+        "ingest stderr: {}",
+        String::from_utf8_lossy(&ingest.stderr)
+    );
+    fs::write(&cited_path, &cited_content).unwrap();
+
+    let cli_historical = run(
+        home.path(),
+        repository.path(),
+        &[
+            "get",
+            &citation,
+            "--max-bytes",
+            "65536",
+            "--verify-source-hash",
+            "--json",
+        ],
+    );
+    assert!(
+        cli_historical.status.success(),
+        "historical get stderr: {}",
+        String::from_utf8_lossy(&cli_historical.stderr)
+    );
+    let cli_historical: Value = serde_json::from_slice(&cli_historical.stdout).unwrap();
+    let historical_frames = run_mcp_tool_calls(
+        home.path(),
+        repository.path(),
+        &["mcp", "--binding", &binding],
+        &[json!({
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "tools/call",
+            "params": {
+                "name": "evidence_get",
+                "arguments": {
+                    "citation_uri": citation,
+                    "max_bytes": 65_536,
+                    "verify_source_hash": true
+                }
+            }
+        })],
+        &[5],
+    );
+    let mcp_historical = &frame_with_id(&historical_frames, 5)["result"]["structuredContent"];
+    assert_get_packets_equivalent(&cli_historical, mcp_historical);
+    assert_eq!(
+        cli_historical["content"].as_str(),
+        Some(cited_content.as_str())
+    );
+    assert_eq!(cli_historical["source_state"], "content_unchanged");
+    assert_eq!(cli_historical["source_hash_verification"], "unchanged");
 }

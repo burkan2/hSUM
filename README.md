@@ -195,26 +195,21 @@ and exact activation argv. After one repository-specific consent, the agent
 runs that command and retries the same tool without restarting MCP. Repositories
 retain separate indexes, trust bindings, generations, and citation namespaces.
 
-For users who keep many repositories under one projects directory, authorize
-that parent once:
+Activate each additional repository explicitly:
 
 ```bash
-"$HSUM" integration authorize-workspace codex --path ~/Projects --confirm
+"$HSUM" integration activate codex --path ~/Projects/my-repository --confirm
 ```
 
-hSUM does not scan `~/Projects` recursively or combine it into one corpus.
-When a Codex task first calls hSUM from a Git repository below the authorized
-directory, only that exact repository is initialized as a separate index. Home,
-filesystem-root, overly broad, and Git-repository workspace scopes are refused.
-Use `integration revoke-workspace` to stop future lazy enrollments; existing
-bindings and indexes remain intact.
+hSUM does not scan a projects parent, combine repositories into one corpus, or
+initialize a repository from an MCP tool call. Alpha.4 workspace-authorization
+records remain readable for compatibility, but the current read-only server
+does not consume them for lazy enrollment.
 
-Repositories activated through the integration attempt one refresh before the
-first `evidence_search` or `evidence_get` in each MCP task. A successful refresh
-searches the newest committed generation. Busy, unsafe, partial, or
-mass-deletion-refused refreshes keep the last good generation and expose the
-freshness state in tool output. Manual/low-level hSUM repositories retain
-explicit ingest behavior.
+MCP searches the last explicitly committed generation. Run `hsum ingest` from
+the activated repository when you want to index filesystem changes. Search and
+get still probe the live source and report `source_state`, so a changed or
+missing file is visible without silently changing the cited stored bytes.
 
 `client config` remains the low-level/manual escape hatch. Its Codex form is
 workspace-dynamic; other clients remain binding-pinned:
@@ -273,17 +268,304 @@ calls.
 
 | Capability | Status | Current boundary |
 |---|---|---|
-| Local filesystem ingest | Available | One canonical root, one project, and one filesystem source per managed index |
+| Local filesystem ingest | Available | Register roots explicitly; one active filesystem authority per project; registration and root replacement do not ingest implicitly |
+| Named projects | Available in the current checkout; unreleased | Create, list, persistently select, and replace the filesystem root |
 | Markdown, text, and source code | Available | Lowercase `.md`, `.markdown`, `.txt`, `.rs`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.java`, `.kt`, `.kts`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.hh`, `.cxx`, `.rb`, `.cs`, `.swift`, `.php`, `.scala`, `.sh`, `.bash`, and `.sql` |
 | Exact and BM25 search | Available | `auto` and `lexical` are equivalent; there are no embeddings or vectors |
 | Immutable citations and historical `get` | Available | Evidence remains resolvable while its immutable version remains in this alpha index |
-| Atomic generations | Available | Explicit ingest; no watcher or daemon |
-| Status and read-only doctor | Available | Diagnosis only; no repair, prune, backup, or migration command |
-| MCP stdio | Available | One global Codex registration; every server process pins one exact trusted repository |
-| JSONL and live connectors | Unsupported | Planned after the filesystem slice |
-| Semantic search, models, and reranking | Unsupported | No model install or download path exists |
+| Atomic generations | Available | Explicit mixed-source ingest; no watcher or daemon |
+| Status and Doctor | Full diagnosis available; bounded repair/report in the current checkout, unreleased | Repair removes abandoned generation rows only; support reports are body-free and query-free |
+| Guarded maintenance | Available in the current checkout; unreleased | Verified backup, index/config migration plan/apply, prune, durable forget, and exact-state restore ceremonies |
+| Managed backup disposition | Available in the current checkout; unreleased | Inventory every hSUM-created index backup; forget requires an explicit keep-or-purge choice |
+| Confirmed index deletion | Available in the current checkout; unreleased | Exact logical name plus `--confirm`; clears configured authority, fences readers/writers, and removes only the named managed index directory |
+| Pinned model artifacts | Available in the current checkout; unreleased | Explicit HTTPS install or air-gapped import; exact manifest, revision, file-list, byte-size, SHA-256, dimension, and license verification |
+| MCP stdio | Available | One global Codex registration; every server process pins one exact trusted project scope |
+| JSONL snapshot sources | Available in the current checkout; unreleased | Add, list, attach, detach, ingest, and globally remove snapshots |
+| Live connectors | Unsupported | Planned after snapshot-source lifecycle work |
+| Semantic search, vectors, and reranking | Unsupported | Artifact management does not activate inference or add semantic/hybrid search modes |
 | HTTP server or web UI | Unsupported | MCP stdio is the only transport |
 | Prebuilt installation | Available | Checksum-verifying no-`sudo` installer and archives for macOS arm64 and Linux x86_64; no crates.io package |
+
+### Pinned model artifacts in the current checkout
+
+Model management is global and explicit. `init`, `ingest`, `search`, MCP, and
+every inspection command remain network-free. The only command allowed to
+download is:
+
+```bash
+hsum model list
+hsum model install embedding bge-small-en-v1-5-fp32
+hsum model verify bge-small-en-v1-5-fp32
+```
+
+Set `HSUM_OFFLINE=1` to disable that network path too. Installation uses HTTPS,
+the platform certificate store, standard proxy environment variables, and an
+optional `--ca-bundle private-ca.pem`. Files are published only after every
+size and SHA-256 check succeeds.
+
+For an air-gapped machine, install on a connected machine, transfer the exact
+content-addressed model directory (including `hsum-model.json`), then import
+the directory or the receipt path:
+
+```bash
+hsum model import /media/transfer/bge-model-directory
+hsum model list --json
+```
+
+This slice manages trusted local bytes only. It deliberately does not expose
+`init --embedding-model`, `ingest --reembed`, `search --mode semantic`, or
+`search --mode hybrid`; those remain gated on the vector and inference
+portability proof.
+
+The next gated step now has an opt-in, non-product
+[FastEmbed CPU portability probe](benches/model_portability/README.md). It
+loads only re-verified cache bytes and persists no vectors. The checked-in
+Apple M2/macOS arm64 development run passes its latency, output, and RSS
+ceilings; Linux x86_64 remains unqualified until the prepared native-runner
+workflow publishes equivalent evidence.
+
+### Filesystem sources in the current checkout
+
+Filesystem roots can be registered in the selected managed index without
+changing project scope or ingesting content:
+
+```bash
+hsum source add fs /absolute/path/to/repository --name docs-root
+hsum source list --all --json
+```
+
+Registration canonicalizes the directory, refuses broad roots unless
+`--allow-broad-root` is explicit, and is idempotent only for an exact
+name/root/config match. An unattached source appears only with `source list
+--all`. Activate it through the project root-replacement ceremony, then ingest
+explicitly:
+
+```bash
+hsum project set-root /absolute/path/to/repository --source-name docs-root --confirm
+cd /absolute/path/to/repository
+hsum ingest --source docs-root --strict
+```
+
+Activation reuses the registered source UUID. If a later root replacement
+retires the source, repeating the exact registration reactivates that same UUID
+without changing the selected project's scope.
+
+### JSONL snapshot sources in the current checkout
+
+JSONL source management is explicit and currently applies to the selected
+project. Registering a file does not ingest it:
+
+```bash
+hsum source add jsonl /absolute/path/records.jsonl --name records
+hsum source list --json
+hsum ingest
+```
+
+`hsum ingest` refreshes the filesystem authority and every active JSONL source
+in one atomic generation. Repeat `--source ID_OR_NAME` to target a subset. In
+the default mode, successful sources commit while failed sources retain their
+last good heads; a partial batch exits `6`, and an all-failed batch exits `1`.
+`--strict` makes any selected-source failure exit `1` before changing heads,
+diagnostics, the generation, or the epoch.
+
+Removal is an explicit destructive ceremony:
+
+```bash
+hsum source remove records --confirm
+```
+
+It tombstones the source's active documents and hides the source from every
+project. `source detach` is the project-local alternative: it changes only the
+selected project's membership and retains the source heads for other projects.
+Immutable historical citations remain readable until a future prune operation
+removes their stored versions. A prune plan enumerates the complete affected
+document-revision namespaces and their canonical stored-chunk citations before
+any bytes are deleted.
+
+### Named projects in the current checkout
+
+A new project initially shares the selected filesystem authority. Selection is
+persistent and keeps the existing binding UUID, so client registrations do not
+need to be regenerated:
+
+```bash
+hsum project create docs
+hsum project list --json
+hsum project use docs --confirm
+hsum source list --all
+hsum source attach records --confirm
+```
+
+Use `source detach ID_OR_NAME --confirm` to remove a JSONL source from only the
+selected project. Attach/detach changes the project scope revision but does not
+rewrite source heads or advance the index epoch.
+
+Filesystem replacement is explicit and does not ingest as a side effect:
+
+```bash
+hsum project set-root /absolute/path/to/repository --confirm
+cd /absolute/path/to/repository
+hsum ingest --strict
+```
+
+The prior filesystem membership becomes historical. Other projects that still
+use it are unaffected, and old citations remain readable until prune. Broad
+roots require `--allow-broad-root`; active sources and projects remain bounded.
+
+### Confirmed index deletion in the current checkout
+
+Whole-index removal is name-targeted and never inferred from the current
+directory:
+
+```bash
+# Create an external backup first if the evidence may be needed again.
+hsum backup create /private/path/doomed-backup.sqlite --confirm
+hsum index delete doomed --confirm
+```
+
+Deletion waits for index writers and in-flight evidence readers, verifies the
+database with Doctor, clears a matching configured default, removes every trust
+binding for the exact index UUID/name pair, and then renames the managed index
+directory to a fixed quarantine before removing it. A cleanup interruption is
+resumed by repeating the same command. Other managed indexes are untouched.
+
+This command does not create or delete backups, or search repositories for
+`.hsum.toml`. Managed-backup records survive index deletion and remain visible
+with `hsum backup list --all`; user-created copies are never added to that
+inventory. Repository pointers are retained as unauthoritative hints and cannot
+reopen the deleted index; remove them manually if they are no longer useful.
+Filesystem snapshots and user-created copies are outside the deletion boundary.
+
+### Guarded maintenance in the current checkout
+
+Create a self-contained backup without overwriting an existing path:
+
+```bash
+hsum backup create /private/path/index-backup.sqlite --confirm
+hsum backup list
+# Include backups retained for deleted or currently unselected indexes.
+hsum backup list --all --json
+```
+
+The destination directory must satisfy hSUM's private local-storage checks.
+The online SQLite copy is normalized to a sidecar-free WAL database, reopened
+through full Doctor validation, and published only after its index identity is
+verified. The receipt prints its byte length and file SHA-256.
+
+Every index backup created by `backup`, `prune`, `migrate`, `forget`, or
+`restore` is reserved and then recorded in a bounded, private registry under the
+managed data directory. Inventory is conservative: `verified` entries still
+match their recorded size and SHA-256; `changed`, `unsafe`, and
+`pending-present` entries may contain evidence but cannot be purged
+automatically. Missing files remain visible until the next purge clears their
+records. Paths are stored losslessly on the current operating system. Copies
+made outside hSUM are user-created and cannot be discovered or deleted by this
+registry.
+
+Pruning is always a plan/apply ceremony:
+
+```bash
+hsum prune plan /private/path/prune.json \
+  --before 2026-01-01T00:00:00Z \
+  --keep-latest 1
+# Review the affected revision namespaces and every stored-chunk citation.
+hsum prune apply /private/path/prune.json \
+  --backup /private/path/before-prune.sqlite \
+  --confirm <plan-hash>
+```
+
+Both selector conditions must match: a revision must be older than `--before`
+and outside the newest `--keep-latest N` revisions of its logical document.
+There is no implicit age cutoff. Apply recomputes the exact hashed manifest
+under the writer lock, creates or verifies the bound backup, collapses the
+pruned activation history to one auditable baseline, deletes only manifested
+immutable revisions, records the manifest, and runs Doctor. A completed apply
+is idempotent when retried with the same plan and backup.
+
+Durable forgetting selects complete logical source documents—not only the
+currently cited revision—and requires a one-generation baseline. Run prune
+first when the index has retained history:
+
+```bash
+hsum forget plan /private/path/forget.json \
+  --citation 'hsum://v1/...#bytes=...'
+# Review the entire affected namespace, not only the selector span.
+hsum forget apply /private/path/forget.json \
+  --recovery-backup /private/path/pre-forget.sqlite \
+  --restore-plan /private/path/restore.json \
+  --keep-managed-backups \
+  --confirm <forget-plan-hash>
+```
+
+Apply first fsyncs a body-free, hash-chained sidecar ledger keyed by source and
+connector-key hash. That prepared record suppresses Get, Search, and ingest
+even before replacement activation. hSUM then creates and verifies the recovery
+backup, removes the selected document and derived indexes in a staged database,
+compacts it, waits for shared reader-delivery leases to drain, and atomically
+replaces the live SQLite file while advancing an external epoch. Old citations
+return `FORGET_TOMBSTONE`, copied forgotten databases retain the database mirror,
+all future revisions of the logical connector remain suppressed, and replaying
+the pre-forget backup at the live path fails against the surviving ledger. The
+recovery backup intentionally still contains the evidence. `forget apply`
+refuses at the CLI boundary unless exactly one disposition is supplied:
+`--keep-managed-backups` reports and retains every managed backup for the index,
+while `--purge-managed-backups` deletes every unchanged, private, single-link,
+sidecar-free managed backup and clears missing records. Purge preflight runs
+before the forget mutation, so a changed, hard-linked, redirected, or incomplete
+backup blocks the operation without changing evidence. After forget starts,
+purge is resumable: deleted-but-still-recorded paths are treated as missing on
+the retry. User-created copies, filesystem snapshots, SSD wear-leveling, and
+other forensic remnants remain outside hSUM's application-level promise.
+
+`forget apply` also writes the only restore plan accepted for that operation.
+Restore is an immediate exact-state undo, not a general rollback:
+
+```bash
+hsum restore apply /private/path/restore.json \
+  --recovery-backup /private/path/pre-forget.sqlite \
+  --safety-backup /private/path/forgotten-state.sqlite \
+  --confirm <restore-plan-hash>
+```
+
+The restore plan binds the finalized post-forget database hash and the recovery
+backup hash. Any later ingest or other database mutation makes it stale before
+the safety backup is created. A successful restore advances the evidence and
+replacement epochs, records an audit row, atomically publishes a compacted
+replacement, clears external suppression with an append-only restored record,
+and preserves the forgotten state in the required safety backup. Forget and
+restore retries resume the same hash-bound operation after interruption.
+
+Schema migration supports only the released N-1 schema and does not depend on
+normal project context resolution:
+
+```bash
+hsum migrate plan --index INDEX /private/path/migration.json
+hsum migrate apply --index INDEX /private/path/migration.json \
+  --backup /private/path/before-migration.sqlite \
+  --confirm <plan-hash>
+```
+
+Prune and migration apply print rollback guidance naming the verified pre-change
+backup. Older-than-N-1 schemas, changed plans, incorrect confirmations,
+existing outputs, and failed verification stop before mutation.
+
+User configuration and the trust registry use their own schema and migrate
+through a separate ceremony that does not require normal project selection:
+
+```bash
+hsum config migrate plan /private/path/config-migration.json \
+  --backup-dir /private/path/config-before-v2
+hsum config migrate apply /private/path/config-migration.json \
+  --confirm <plan-hash>
+```
+
+Planning only diagnoses the current and N-1 files. Apply revalidates their
+exact hashes under both configuration writer locks, creates byte-for-byte
+private backups plus the canonical plan manifest before replacing either file,
+and accepts an already-migrated target hash so an interrupted two-file apply is
+resumable. Ordinary context selection, search, and MCP never migrate these
+files implicitly. A relative global `--config` path is bound into the plan as
+an absolute path.
 
 ## Build from source
 
@@ -319,10 +601,12 @@ https://hsum.burkankale.com/llms.txt.
 ```
 
 The first build may contact Rust and crate registries to obtain the pinned
-toolchain and dependencies. After a binary exists, hSUM has no network
-client, account, telemetry, model download, HTTP server, or other network
-runtime path. An already populated Cargo cache can build with Cargo's normal
-`--offline` option.
+toolchain and dependencies. After a binary exists, the current checkout's sole
+network client is the explicit `hsum model install embedding` path described
+above; ingest, retrieval, MCP, import, verification, and ordinary inspection
+remain local. hSUM has no account, telemetry, HTTP server, or implicit network
+runtime path. `HSUM_OFFLINE=1` disables model download, and an already
+populated Cargo cache can build with Cargo's normal `--offline` option.
 
 For the examples below, set `HSUM` to the absolute path of the binary before
 changing directories:
@@ -367,7 +651,7 @@ Useful initialization controls:
 - `--force-pointer` is valid only with `--write-pointer` and replaces
   conflicting pointer bytes after preflight.
 - Re-running `init` for the same trusted root is idempotent only when the stored
-  index, project, source identity, and source root still match.
+  index, project, active filesystem authority, and source root still match.
 
 ## Command inventory
 
@@ -377,11 +661,23 @@ The current candidate exposes only the following command graph:
 |---|---|
 | `hsum init [PATH]` | Dry-run or create one managed filesystem index, project, source, and user trust binding; `--rebuild` safely replaces the binding and index |
 | `hsum trust PATH --confirm` | Add or confirm a root-bound user trust binding for an existing matching index |
-| `hsum ingest` | Dry-run or commit one authoritative filesystem generation |
+| `hsum ingest` | Dry-run or commit one atomic filesystem/JSONL generation; repeat `--source` or use `--strict` |
+| `hsum source ...` | Add/list/attach/detach JSONL sources, or globally tombstone one with confirmed `remove` |
+| `hsum project ...` | Create/list/use projects or replace the selected filesystem root with confirmed `set-root` |
+| `hsum index delete NAME --confirm` | Clear matching config/trust authority, fence active readers and writers, and remove exactly one named managed index |
 | `hsum search QUERY` | Human evidence or one JSON document; exact plus BM25 |
 | `hsum get CITATION_URI` | Human evidence or one JSON document from an immutable citation |
 | `hsum status` | Human status/problems or one JSON document |
-| `hsum doctor` | Read-only human integrity diagnosis |
+| `hsum doctor [--integrity]` | Read-only full integrity diagnosis |
+| `hsum doctor --repair --confirm` | Remove only abandoned generation rows under the writer lock with full pre/post validation |
+| `hsum doctor report --output PATH` | Write a private, non-overwriting, body-free and query-free support report |
+| `hsum backup create OUTPUT --confirm` | Create, normalize, hash, Doctor-verify, and inventory a non-overwriting SQLite backup |
+| `hsum backup list [--all] [--json]` | Report managed backup paths, purposes, receipts, and current verification states |
+| `hsum prune plan/apply ...` | Select with explicit `--before`/`--keep-latest`, review citation impact, create a rollback backup, and prune an exact immutable plan |
+| `hsum forget plan/apply ... --keep-managed-backups\|--purge-managed-backups` | Review logical-document namespaces, choose explicit backup disposition, durably suppress connector keys, and atomically publish a compacted body-free index |
+| `hsum restore apply ...` | Restore only the exact unchanged post-forget state after creating a safety backup |
+| `hsum migrate plan/apply ...` | Diagnose or upgrade one named managed N-1 index with an exact plan and rollback backup |
+| `hsum config migrate plan/apply ...` | Diagnose or upgrade N-1 user config/trust files with one hashed plan and exact private backups |
 | `hsum context` | Human selection details or one JSON document |
 | `hsum client config CLIENT` | Copyable JSON or TOML for `codex`, `claude-code`, `claude-desktop`, or `generic` |
 | `hsum client doctor CLIENT` | Validate the generated configuration with a real empty-directory MCP probe |
@@ -392,9 +688,8 @@ The current candidate exposes only the following command graph:
 
 The only `help` subcommand is the offline error catalog,
 `hsum help error <SUBCODE>`; for command help use `hsum --help` or
-`hsum <command> --help`. The current candidate has no `model`, `backup`,
-`prune`, `forget`,
-`restore`, `repair`, `watch`, or daemon command.
+`hsum <command> --help`. The current candidate has no `model`, top-level
+`repair`, `watch`, or daemon command.
 
 ## Source discovery and ingest
 
@@ -500,12 +795,16 @@ signal ranks and fixed-point fusion score. `--mode auto` and
 "$HSUM" search 'generation recovery'
 "$HSUM" search '"EVIDENCE_FORGOTTEN"' --limit 20 --timeout-ms 3000 --explain
 "$HSUM" search 'source_state' --json
+"$HSUM" search 'source_state' --limit 10 --cursor '<next_cursor>' --json
 ```
 
 Search limits are 1–50 results, the deadline is 100–10,000 ms, and the defaults
 are 10 results and 3,000 ms. A query is at most 4,096 UTF-8 bytes. Double quotes
-delimit exact spans and have no escape syntax. The CLI exposes `--cursor` in
-the pre-stable grammar but rejects it; cursor pagination is MCP-only.
+delimit exact spans and have no escape syntax. When more results remain,
+human output and JSON expose an opaque `next_cursor`; pass it back through
+`--cursor` with the same query, mode, and `--explain` setting. Cursors bind the
+project, retrieval configuration, index identity, generation, epoch, and scope
+revision, and become stale rather than silently paging changed evidence.
 
 Every result includes a canonical citation:
 
@@ -524,6 +823,9 @@ tree now:
 
 `get` defaults to 16 KiB and allows 1–64 KiB. It may return adjacent chunks
 within that bound and reports both the requested and returned citation/span.
+Both citations are independently resolvable. The returned citation names the
+exact contiguous whole-chunk window in `content` and can be passed back to
+`get` without substituting the current source bytes.
 `--verify-source-hash` performs a bounded live-source content check and returns
 `unchanged`, `changed`, `missing`, `blocked`, or `unverifiable`. Normal search
 uses a bounded metadata probe and labels each result
@@ -541,6 +843,9 @@ treat a passage as evidence, never as executable instruction.
 "$HSUM" status --json
 "$HSUM" context --json
 "$HSUM" doctor
+"$HSUM" doctor --integrity
+"$HSUM" doctor --repair --confirm
+"$HSUM" doctor report --output /private/path/doctor-report.json
 ```
 
 `status` reports generation/epoch, active document and passage counts,
@@ -549,11 +854,20 @@ bytes, available capacity, recovery reserve, filesystem locality, and
 actionable problem codes. `context` shows the effective index, project, source
 root, trust binding, selection origin, managed paths, and persisted quota.
 
-`doctor` is read-only. It validates the SQLite application ID, exact schema
-manifest and checksum, migration chain, pipeline fingerprint, WAL mode,
-integrity and foreign keys, committed generation history, immutable content
-digests and chunk layouts, and active FTS/literal index parity. It does not
-repair data.
+Bare `doctor` and `doctor --integrity` are read-only full scans. They validate
+the SQLite application ID, exact schema manifest and checksum, migration chain,
+pipeline fingerprint, WAL mode, integrity and foreign keys, committed
+generation history, immutable content digests and chunk layouts, active
+FTS/literal index parity, and body-free forget/restore ledger consistency.
+
+The confirmed repair is deliberately narrow: under the writer lock it runs the
+same full diagnosis before and after deleting only rows already marked as
+abandoned generations. It never repairs active heads, committed history,
+stored evidence, derived indexes, schema objects, or forget state. The report
+command writes private canonical JSON with schema identities, fingerprints,
+aggregate scan counts, and abandoned-row counts. Its output names every
+included field and explicitly excludes bodies, passages, queries, source URIs,
+connector keys, and filesystem paths; an existing output is never overwritten.
 
 ## Storage and quota behavior
 
@@ -572,7 +886,8 @@ and confirms through SQLite itself that the open handle still names the
 managed database file before any statement runs. A tampered, swapped, or
 relocated database therefore fails closed instead of being read or repaired.
 
-Before initialization and each ingest, hSUM estimates new managed writes and
+Before initialization, ingest, backup, prune, migration, forget, and restore, hSUM estimates
+the relevant writes and
 requires free capacity for that estimate plus a recovery reserve of the larger
 of 64 MiB or 10% of current managed SQLite/WAL bytes. An optional
 `--index-quota-bytes` is stored with the source and enforced on later ingests.
@@ -668,6 +983,28 @@ command writes exactly one `hsum.api.v1` document to stdout. Human output
 escapes terminal controls, bidirectional overrides, invalid path bytes, and
 other nonprinting source text.
 
+CLI `get --json` and MCP `evidence_get` expose the same immutable evidence,
+`source_state`, `source_hash_verification`, and manual `freshness` fields.
+Verification is relative to the cited revision, so an older citation remains
+verifiable even after a newer document head has been indexed. Both interfaces
+serialize that complete response through the same versioned protocol type.
+
+CLI `search` and MCP `evidence_search` share the same ranking, snapshot,
+live-source observation, and opaque cursor semantics. A cursor emitted by
+either adapter can continue through the other when its bound query shape and
+snapshot still match. MCP additionally applies aggregate-body and
+structured-response limits at its transport boundary. Both interfaces derive
+response metadata, each passage, score explanation, duplicate citation, and
+source state through the same protocol mapping; their documented outer
+envelopes, span layouts, and rank-key layouts remain compatible with existing
+consumers.
+
+CLI `status --json` and MCP `evidence_status` derive index identity, project
+counts, source health, and actionable problem codes from the same read-only
+SQLite snapshot. Storage capacity and locality checks run after that snapshot
+closes. One shared protocol mapping constructs health issues, repair objects,
+and the two documented compatibility envelopes.
+
 Public failures share one catalog across human CLI, CLI JSON, and MCP. The
 structured form contains:
 
@@ -724,7 +1061,11 @@ cargo test --doc --all-features
 
 These checks are contributor evidence, not a substitute for the clean-machine
 release workflow, artifact verification, documentation, and signed-tag gates.
-Apple notarization and benchmark claims remain explicitly deferred. See
+Apple notarization and launch-wide benchmark claims remain explicitly deferred.
+The frozen 25-query repository-local development baseline is documented in
+[`benches/agent_ab/README.md`](benches/agent_ab/README.md). hSUM has the best
+mean quality across three isolated builds but remains much slower than grep and
+shows unresolved cross-build ranking variance. See
 [`outputs/IMPLEMENTATION_STATUS.md`](outputs/IMPLEMENTATION_STATUS.md) for a
 source-to-test evidence map and [`TODOS.md`](TODOS.md) for the remaining work.
 

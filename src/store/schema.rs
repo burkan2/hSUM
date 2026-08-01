@@ -1,11 +1,19 @@
 use crate::domain::Sha256Digest;
 use crate::ingest::ChunkKind;
+use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 
 pub const APPLICATION_ID: i32 = i32::from_be_bytes(*b"HSUM");
-pub const SCHEMA_VERSION: u32 = 1;
+pub const SCHEMA_VERSION: u32 = 3;
 
 pub(crate) const MIGRATION_0001: &str = include_str!("../../migrations/0001_alpha1.sql");
+pub(crate) const MIGRATION_0002: &str = include_str!("../../migrations/0002_jsonl_sources.sql");
+pub(crate) const MIGRATION_0003: &str = include_str!("../../migrations/0003_maintenance.sql");
+pub(crate) const MIGRATIONS: [(u32, &str); 3] = [
+    (1, MIGRATION_0001),
+    (2, MIGRATION_0002),
+    (3, MIGRATION_0003),
+];
 
 const PIPELINE_DESCRIPTOR_SUFFIX: &str = concat!(
     "connector_key=platform-raw-relative-bytes:no-unicode-or-case-normalization\n",
@@ -18,11 +26,32 @@ const PIPELINE_DESCRIPTOR_SUFFIX: &str = concat!(
     "literals=case-sensitive:max-64:bytes-2..128\n",
     "quote_bloom=byte-trigram:bits-4096:hashes-4:sha256-double-hash-be\n",
     "embedding=none\n",
+    "jsonl=v1:complete-snapshot:id-identity:plain-text:strict-bounds\n",
 );
 static PIPELINE_DESCRIPTOR: OnceLock<String> = OnceLock::new();
 
 pub fn schema_checksum() -> Sha256Digest {
-    Sha256Digest::of_bytes(MIGRATION_0001.as_bytes())
+    schema_checksum_through(SCHEMA_VERSION)
+}
+
+pub(crate) fn schema_checksum_through(version: u32) -> Sha256Digest {
+    let mut hasher = Sha256::new();
+    hasher.update(b"hsum.schema-chain.v1\0");
+    for (migration_version, sql) in MIGRATIONS {
+        if migration_version > version {
+            break;
+        }
+        hasher.update(migration_version.to_be_bytes());
+        hasher.update((sql.len() as u64).to_be_bytes());
+        hasher.update(sql.as_bytes());
+    }
+    Sha256Digest::from_bytes(hasher.finalize().into())
+}
+
+pub(crate) fn migration_checksum(version: u32) -> Option<Sha256Digest> {
+    MIGRATIONS.iter().find_map(|(candidate, sql)| {
+        (*candidate == version).then(|| Sha256Digest::of_bytes(sql.as_bytes()))
+    })
 }
 
 pub fn pipeline_fingerprint() -> Sha256Digest {
@@ -73,7 +102,7 @@ mod tests {
         // `init --rebuild` validates and replaces the incompatible index.
         assert_eq!(
             pipeline_fingerprint().to_string(),
-            "ff465d499d3e917ab4f468dc6dec0cbf9b343cbbab661190f808c92d79bccf5b"
+            "d61e7a913b8d3fd7b58a3eeefb8ac7d4633647ad646c2d2c1a58db6d13ca980d"
         );
     }
 

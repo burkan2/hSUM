@@ -280,6 +280,8 @@ pub enum SearchError {
     DeadlineExceeded,
     #[error("SQLite operation failed")]
     Sqlite(#[from] rusqlite::Error),
+    #[error("the validated index path changed during search")]
+    Store(#[from] crate::store::StoreError),
 }
 
 impl IndexDb {
@@ -295,12 +297,14 @@ impl IndexDb {
         let result = execute_search(self, project_id, request, started, deadline);
         drop(interrupt);
 
-        match result {
+        let result = match result {
             Err(SearchError::Sqlite(error)) if is_interrupted(&error) => {
                 Err(SearchError::DeadlineExceeded)
             }
             result => result,
-        }
+        }?;
+        self.verify_live_identity()?;
+        Ok(result)
     }
 }
 
@@ -1013,7 +1017,7 @@ fn fetch_identifier_hint_page(
              JOIN passage_literals AS pl ON pl.literal = atoms.literal
              JOIN active_passages AS ap ON ap.id = pl.passage_id
              JOIN project_sources AS ps ON ps.source_id = ap.source_id
-             WHERE ps.project_id = ?
+             WHERE ps.project_id = ? AND ps.removed_at IS NULL
          ),
          ranked(passage_id, matched_atoms, matched_bytes, longest_atom) AS (
              SELECT passage_id, COUNT(*), SUM(byte_len), MAX(byte_len)
@@ -1296,7 +1300,9 @@ fn passage_columns() -> String {
     )
 }
 const PASSAGE_JOINS: &str = "
-    JOIN project_sources AS ps ON ps.source_id = ap.source_id
+    JOIN project_sources AS ps
+      ON ps.source_id = ap.source_id
+     AND ps.removed_at IS NULL
     JOIN document_heads AS dh
       ON dh.document_id = ap.document_id
      AND dh.document_version_id = ap.document_version_id

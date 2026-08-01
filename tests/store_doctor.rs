@@ -3,6 +3,7 @@ use std::env;
 use std::path::Path;
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Duration;
 
 use hsum::domain::{IndexId, ProjectId, SafeSlug, SourceId};
 use hsum::ingest::{
@@ -107,7 +108,62 @@ fn doctor_accepts_a_fresh_index_without_logical_mutation() {
     assert!(report.read_only);
     assert_eq!(report.scan.content_blobs, 0);
     assert_eq!(report.scan.max_body_rows_in_flight, 0);
+    assert_eq!(report.abandoned_generations, 0);
     assert_eq!(logical_snapshot(&path), before);
+}
+
+#[test]
+fn doctor_repair_removes_only_abandoned_generations_and_is_idempotent() {
+    let directory = tempdir().unwrap();
+    let path = directory.path().join("index.sqlite");
+    create_indexed_fixture(&path);
+    let connection = Connection::open(&path).unwrap();
+    connection
+        .execute(
+            "INSERT INTO generations(
+                state, created_at, pipeline_fingerprint
+             ) VALUES ('abandoned', '2026-08-01T00:00:00Z', ?1)",
+            [pipeline_fingerprint().as_bytes().as_slice()],
+        )
+        .unwrap();
+    drop(connection);
+
+    assert_eq!(Doctor::run(&path).unwrap().abandoned_generations, 1);
+    let repaired = Doctor::repair_abandoned(&path, Duration::from_secs(1)).unwrap();
+    assert_eq!(repaired.removed_abandoned_generations, 1);
+    assert_eq!(repaired.report.abandoned_generations, 0);
+
+    let connection = Connection::open(&path).unwrap();
+    let committed: i64 = connection
+        .query_row(
+            "SELECT COUNT(*) FROM generations WHERE state = 'committed'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    assert_eq!(committed, 1);
+    drop(connection);
+
+    let repeated = Doctor::repair_abandoned(&path, Duration::from_secs(1)).unwrap();
+    assert_eq!(repeated.removed_abandoned_generations, 0);
+    assert_eq!(repeated.report.abandoned_generations, 0);
+}
+
+#[test]
+fn doctor_support_report_is_body_free_and_query_free() {
+    let directory = tempdir().unwrap();
+    let path = directory.path().join("index.sqlite");
+    create_indexed_fixture(&path);
+
+    let report = Doctor::support_report(&path).unwrap();
+    let encoded = serde_json::to_string(&report).unwrap();
+
+    assert_eq!(report.format, "hsum.doctor-report.v1");
+    assert!(report.body_free);
+    assert!(report.query_free);
+    assert!(!encoded.contains("alpha-beta"));
+    assert!(!encoded.contains("repo:///"));
+    assert!(!encoded.contains("connector_key"));
 }
 
 #[test]
@@ -561,7 +617,7 @@ fn doctor_rejects_an_epoch_that_disagrees_with_two_committed_generations() {
     assert!(matches!(
         Doctor::run(&path),
         Err(StoreError::GenerationInvariant(
-            "index epoch does not equal committed activation history"
+            "index epoch does not equal retained committed activation history"
         ))
     ));
 }
@@ -873,6 +929,6 @@ fn collect_rows<T>(
 fn schema_checksum_is_a_frozen_migration_fixture() {
     assert_eq!(
         schema_checksum().to_string(),
-        "006c34cb6bec7b2312c36edf0cc2dd3bfdb6827bedacecf611efe6adad011e4b"
+        "eb4cc88ccd7ddf5eda24326747b24173d850220bc0e4ac55f51bf15d81c4169c"
     );
 }

@@ -235,7 +235,7 @@ fn initialize_with_rebuild_observer(
                 active_passages: inspection.active_passages,
             })
         } else {
-            validate_trusted_database(
+            let inspection = validate_trusted_database(
                 &database_path,
                 binding.index_id(),
                 binding.project_id(),
@@ -255,7 +255,7 @@ fn initialize_with_rebuild_observer(
                 database_path,
                 index_id: binding.index_id(),
                 project_id: binding.project_id(),
-                source_id: derive_source_id(binding.index_id(), binding.project_id()),
+                source_id: inspection.filesystem_source_id,
                 binding_id: Some(binding.binding_id()),
                 rebuild: None,
                 reused: true,
@@ -669,7 +669,8 @@ fn validate_trusted_database_with_policy(
             "SELECT COUNT(*)
          FROM project_sources AS ps
          JOIN sources AS s ON s.id = ps.source_id
-         WHERE ps.project_id = ?1",
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
+           AND ps.removed_at IS NULL AND s.removed_at IS NULL",
             [expected_project_id.as_uuid().as_bytes().as_slice()],
             |row| row.get(0),
         )
@@ -682,41 +683,23 @@ fn validate_trusted_database_with_policy(
         });
     }
 
-    let expected_source_id = derive_source_id(expected_index_id, expected_project_id);
-    let source_matches: bool = connection
-        .query_row(
-            "SELECT EXISTS(
-            SELECT 1
-            FROM project_sources AS ps
-            JOIN sources AS s ON s.id = ps.source_id
-            WHERE ps.project_id = ?1 AND s.id = ?2 AND s.kind = 'filesystem'
-        )",
-            [
-                expected_project_id.as_uuid().as_bytes().as_slice(),
-                expected_source_id.as_uuid().as_bytes().as_slice(),
-            ],
-            |row| row.get(0),
-        )
-        .map_err(StoreError::from)?;
-    if !source_matches {
-        return Err(InitError::TrustedSourceIdentityMismatch {
-            expected: expected_source_id,
-        });
-    }
-
-    let (source_logical_uri, source_config_json): (String, String) = connection
-        .query_row(
-            "SELECT s.logical_uri, s.config_json
+    let (source_id_bytes, source_logical_uri, source_config_json): (Vec<u8>, String, String) =
+        connection
+            .query_row(
+                "SELECT s.id, s.logical_uri, s.config_json
              FROM project_sources AS ps
              JOIN sources AS s ON s.id = ps.source_id
-             WHERE ps.project_id = ?1 AND s.id = ?2",
-            [
-                expected_project_id.as_uuid().as_bytes().as_slice(),
-                expected_source_id.as_uuid().as_bytes().as_slice(),
-            ],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )
-        .map_err(StoreError::from)?;
+             WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
+               AND ps.removed_at IS NULL AND s.removed_at IS NULL",
+                [expected_project_id.as_uuid().as_bytes().as_slice()],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .map_err(StoreError::from)?;
+    let filesystem_source_id = uuid::Uuid::from_slice(&source_id_bytes)
+        .map(SourceId::from_uuid)
+        .map_err(|_| InitError::TrustedSourceIdentityMismatch {
+            expected: derive_source_id(expected_index_id, expected_project_id),
+        })?;
     let expected_root_text = expected_root
         .to_str()
         .ok_or_else(|| InitError::NonUtf8Root {
@@ -740,6 +723,7 @@ fn validate_trusted_database_with_policy(
         .map_err(StoreError::from)?;
     Ok(TrustedIndexInspection {
         pipeline_fingerprint: report.pipeline_fingerprint,
+        filesystem_source_id,
         active_documents: u64::try_from(active_documents)
             .map_err(|_| StoreError::IntegerOverflow)?,
         active_passages: u64::try_from(active_passages).map_err(|_| StoreError::IntegerOverflow)?,
@@ -748,6 +732,7 @@ fn validate_trusted_database_with_policy(
 
 struct TrustedIndexInspection {
     pipeline_fingerprint: Sha256Digest,
+    filesystem_source_id: SourceId,
     active_documents: u64,
     active_passages: u64,
 }
@@ -773,7 +758,7 @@ fn find_enclosing_git_root(start: &Path) -> Option<PathBuf> {
     })
 }
 
-fn enforce_safe_root(
+pub(crate) fn enforce_safe_root(
     root: &Path,
     current: &Path,
     environment_home: Option<&Path>,
@@ -1024,7 +1009,7 @@ fn unregister_and_save(
         })?;
     create_private_directory(parent)?;
     let _lock = WriterLock::acquire(path, TRUST_LOCK_TIMEOUT)?;
-    let registry = load_registry(path)?;
+    let mut registry = load_registry(path)?;
     let Some(current_binding) = registry
         .bindings()
         .iter()
@@ -1039,13 +1024,8 @@ fn unregister_and_save(
             binding_id: expected_binding.binding_id(),
         });
     }
-    let retained = registry
-        .bindings()
-        .iter()
-        .filter(|binding| binding.binding_id() != expected_binding.binding_id())
-        .cloned()
-        .collect();
-    Ok(TrustRegistry::from_bindings(retained)?.save_atomic(path)?)
+    registry.remove_binding(expected_binding.binding_id())?;
+    Ok(registry.save_atomic(path)?)
 }
 
 fn register_and_save(
@@ -1438,7 +1418,7 @@ pub enum InitError {
         expected_id: ProjectId,
         expected_name: SafeSlug,
     },
-    #[error("alpha.4 requires exactly one source in the trusted project; found {found}")]
+    #[error("the trusted project requires exactly one active filesystem authority; found {found}")]
     AlphaSourceCardinality { found: usize },
     #[error("trusted project is not linked to its expected filesystem source {expected}")]
     TrustedSourceIdentityMismatch { expected: SourceId },

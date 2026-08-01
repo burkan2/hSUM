@@ -120,7 +120,8 @@ and returned (`src/mcp.rs:2639-2678`).
 > file's current contents. Set verify_source_hash to compare against the live
 > file; it reports unchanged, changed, missing, blocked, or unverifiable. Use
 > this to recover a passage seen earlier in the session and to find out whether
-> it has since moved or been edited.
+> it has since moved or been edited. returned_citation_uri names the exact
+> returned byte window and always resolves again.
 
 `evidence_project`:
 

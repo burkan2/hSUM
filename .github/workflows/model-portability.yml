@@ -1,0 +1,98 @@
+name: Model portability
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/model-portability.yml
+      - Cargo.lock
+      - Cargo.toml
+      - assets/models/**
+      - benches/model_portability/**
+      - examples/model-portability.rs
+      - src/model/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: model-portability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fastembed-cpu:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+            dependency_command: ldd
+          - name: macOS arm64
+            runner: macos-15
+            expected_arch: arm64
+            dependency_command: otool -L
+    env:
+      CARGO_INCREMENTAL: "0"
+      HSUM_HOME: ${{ runner.temp }}/hsum-model-portability
+      REPORT_PATH: ${{ runner.temp }}/model-portability-${{ matrix.expected_arch }}.json
+      DEPENDENCIES_PATH: ${{ runner.temp }}/model-portability-${{ matrix.expected_arch }}-dependencies.txt
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Confirm the native runner architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the network-capable model installer
+        shell: bash
+        run: cargo +1.91.0 build --locked --release --bin hsum
+
+      - name: Install and verify the exact pinned model artifact
+        shell: bash
+        run: |
+          target/release/hsum model install embedding bge-small-en-v1-5-fp32 \
+            --no-progress --json
+          target/release/hsum model verify bge-small-en-v1-5-fp32 --json
+
+      - name: Build the opt-in FastEmbed CPU probe
+        shell: bash
+        run: |
+          cargo +1.91.0 build --locked --release \
+            --features model-portability --example model-portability
+
+      - name: Record executable format and dynamic dependencies
+        shell: bash
+        run: |
+          {
+            file target/release/examples/model-portability
+            ${{ matrix.dependency_command }} target/release/examples/model-portability
+          } > "$DEPENDENCIES_PATH"
+
+      - name: Run the fixed protocol without model-network access
+        env:
+          HSUM_OFFLINE: "1"
+        shell: bash
+        run: |
+          target/release/examples/model-portability \
+            --output "$REPORT_PATH"
+          python3 -c 'import json,os; report=json.load(open(os.environ["REPORT_PATH"], encoding="utf-8")); assert report["passed"] is True'
+
+      - name: Upload machine-readable portability evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: model-portability-${{ matrix.expected_arch }}
+          path: |
+            ${{ env.REPORT_PATH }}
+            ${{ env.DEPENDENCIES_PATH }}
+          if-no-files-found: error
+          compression-level: 0

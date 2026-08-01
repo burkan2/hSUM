@@ -8,16 +8,22 @@ authors = ["Burkan Alp Kale, ArgonGate Ltd."]
 license = "MIT OR Apache-2.0"
 publish = false
 
+[features]
+default = []
+model-portability = ["dep:fastembed"]
+
 [dependencies]
 aho-corasick = "=1.1.4"
 clap = { version = "=4.6.2", features = ["derive", "env"] }
 clap_complete = "=4.6.7"
 clap_mangen = "=0.3.0"
 directories = "=6.0.0"
+fastembed = { version = "=5.17.4", optional = true, default-features = false, features = ["ort-download-binaries-rustls-tls"] }
 hex = "=0.4.3"
 ignore = "=0.4.30"
+reqwest = { version = "=0.13.4", default-features = false, features = ["rustls", "system-proxy"] }
 rmcp = { version = "=2.2.0", default-features = false, features = ["macros", "server", "transport-io"] }
-rusqlite = { version = "=0.39.0", default-features = false, features = ["bundled", "limits"] }
+rusqlite = { version = "=0.39.0", default-features = false, features = ["backup", "bundled", "limits"] }
 rustix = { version = "=1.1.4", features = ["fs", "process"] }
 schemars = "=1.2.1"
 serde = { version = "=1.0.229", features = ["derive"] }
@@ -42,3 +48,8 @@ path = "src/main.rs"
 [[bin]]
 name = "xtask"
 path = "src/bin/xtask.rs"
+
+[[example]]
+name = "model-portability"
+path = "examples/model-portability.rs"
+required-features = ["model-portability"]
