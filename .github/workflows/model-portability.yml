@@ -8,7 +8,7 @@ on:
       - Cargo.lock
       - Cargo.toml
       - assets/models/**
-      - benches/model_portability/**
+      - benches/model_portability/inputs.json
       - examples/model-portability.rs
       - src/model/**
 

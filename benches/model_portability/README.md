@@ -66,17 +66,26 @@ HSUM_OFFLINE=1 target/release/examples/model-portability \
 
 ## Current evidence
 
-The checked-in [macOS arm64 report](results/macos-arm64-local.json) is local
-development evidence from a dirty checkout, not clean-runner or release
-qualification.
+GitHub Actions run
+[`30712610005`](https://github.com/burkan2/hSUM/actions/runs/30712610005)
+executed the protocol from a clean pull-request merge checkout. The reports and
+native dependency manifests are checked in alongside the earlier dirty-checkout
+Apple M2 development report.
 
-| Platform | Result | Initialize | Batch-1 p95 | Batch-8 p95 | Batch-8 throughput | Peak RSS growth |
-|---|---|---:|---:|---:|---:|---:|
-| Apple M2, macOS arm64 | Pass | 149.4 ms | 7.79 ms | 90.42 ms | 96.9 docs/s | 394.3 MB |
-| Ubuntu 24.04, Linux x86_64 | Pending clean-runner execution | — | — | — | — | — |
+| Platform | Evidence | Result | Initialize | Batch-1 p95 | Batch-8 p95 | Batch-8 throughput | Peak RSS growth |
+|---|---|---|---:|---:|---:|---:|---:|
+| AMD EPYC 7763, Linux x86_64 | [JSON](results/linux-x86_64-gha-30712610005.json), [dependencies](results/linux-x86_64-gha-30712610005-dependencies.txt) | Pass | 282.4 ms | 10.26 ms | 72.69 ms | 112.0 docs/s | 313.1 MB |
+| Apple M1 virtual, macOS arm64 | [JSON](results/macos-arm64-gha-30712610005.json), [dependencies](results/macos-arm64-gha-30712610005-dependencies.txt) | Pass | 212.2 ms | 15.44 ms | 144.63 ms | 65.0 docs/s | 362.9 MB |
+| Apple M2, macOS arm64 | [dirty-checkout JSON](results/macos-arm64-local.json) | Pass | 149.4 ms | 7.79 ms | 90.42 ms | 96.9 docs/s | 394.3 MB |
 
-The macOS release-mode probe is a 31 MB arm64 Mach-O whose `otool -L` output
-contains only Apple system libraries and frameworks; it does not require a
-separate ONNX Runtime dylib. Linux remains explicitly unqualified until the
-manual `Model portability` workflow runs on GitHub's native x86_64 runner and
-publishes its JSON plus `ldd` evidence.
+The Linux executable is an x86-64 ELF dynamically linked only to the standard
+GNU C/C++ runtime libraries. The macOS executable is an arm64 Mach-O linked
+only to Apple system libraries and frameworks; neither requires a separately
+installed ONNX Runtime library.
+
+Outputs are deterministic across all 23 calls within each workload and runner,
+but the embedding digests differ between x86_64 and arm64. This probe therefore
+qualifies runtime portability, latency, and memory ceilings—not bit-for-bit
+cross-architecture vector reproducibility. Before hSUM persists vectors, the
+next slice must define a numerical compatibility tolerance or record enough
+runtime provenance to regenerate an index consistently.

@@ -1,0 +1,97 @@
+{
+  "schema_version": "hsum.model-portability.v1",
+  "passed": true,
+  "qualification": "development_portability_probe",
+  "platform": {
+    "os": "macos",
+    "arch": "aarch64",
+    "os_version": "Darwin 24.6.0",
+    "cpu": "Apple M1 (Virtual)",
+    "logical_cpus": 3
+  },
+  "checkout": {
+    "git_revision": "e74c5456c1a5c757839e207c5f0162e34c61ab41",
+    "dirty": false,
+    "hsum_version": "0.1.0-alpha.4"
+  },
+  "runtime": {
+    "backend": "FastEmbed",
+    "fastembed_version": "5.17.4",
+    "execution_provider": "CPU",
+    "network_model_loading": false
+  },
+  "model": {
+    "id": "bge-small-en-v1-5-fp32",
+    "manifest_sha256": "b01ac36f13dbf65c0ecbd96c0025d20a7442a248704d7f43a553861d93ba833f",
+    "dimension": 384,
+    "verified_bytes": 133806060,
+    "pooling": "cls"
+  },
+  "configuration": {
+    "max_length": 512,
+    "intra_threads": 4,
+    "warmups": 3,
+    "iterations": 20,
+    "fixed_input_sha256": "d356234ec5cd6a989b3871a186411604086faa4c94ffc13ef50996e4436bef7e"
+  },
+  "stages_ms": {
+    "verify": 159.433833,
+    "read_verified_bytes": 115.10970800000001,
+    "initialize": 212.177583
+  },
+  "memory": {
+    "baseline_rss_bytes": 5586944,
+    "peak_rss_bytes": 368492544,
+    "peak_delta_bytes": 362905600,
+    "final_rss_bytes": 368492544,
+    "sample_interval_ms": 20
+  },
+  "workloads": [
+    {
+      "name": "interactive_query",
+      "documents_per_call": 1,
+      "latency_ms": {
+        "min": 6.777417,
+        "mean": 11.58955855,
+        "p50": 11.424709,
+        "p95": 15.442958999999998,
+        "max": 15.570416
+      },
+      "throughput_documents_per_second": 86.28456344439452,
+      "output_sha256": "40cd8cd0cb7cabd8fbec856710c89be7a8f97f541ebde744d18df9f867fd0128",
+      "deterministic": true,
+      "min_l2_norm": 1.0000004,
+      "max_l2_norm": 1.0000004
+    },
+    {
+      "name": "ingest_batch_8",
+      "documents_per_call": 8,
+      "latency_ms": {
+        "min": 104.34170900000001,
+        "mean": 123.00100215,
+        "p50": 121.716666,
+        "p95": 144.625625,
+        "max": 149.00395799999998
+      },
+      "throughput_documents_per_second": 65.04012048815652,
+      "output_sha256": "6f2a801bc11408ee6477c83c1def01b4f5d53a3c3b9f1a0b3c8033014a79afed",
+      "deterministic": true,
+      "min_l2_norm": 0.99999994,
+      "max_l2_norm": 1.0000004
+    }
+  ],
+  "thresholds": {
+    "max_initialize_ms": 10000.0,
+    "max_interactive_p95_ms": 500.0,
+    "max_batch_p95_ms": 1500.0,
+    "max_peak_rss_delta_bytes": 1073741824
+  },
+  "checks": {
+    "correct_dimension": true,
+    "deterministic_outputs": true,
+    "initialize_within_limit": true,
+    "interactive_p95_within_limit": true,
+    "batch_p95_within_limit": true,
+    "peak_rss_delta_within_limit": true
+  }
+}
