@@ -15,8 +15,8 @@ pub use capacity::{
     StoragePreflight, StoragePreflightError, SyncRootKind, classify_sync_root,
     storage_reserve_bytes,
 };
-pub(crate) use doctor::FingerprintPolicy;
 pub use doctor::{Doctor, DoctorRepairOutcome, DoctorReport, DoctorScanStats, DoctorSupportReport};
+pub(crate) use doctor::{FingerprintPolicy, inspect_migration_source_with_policy};
 pub(crate) use forget_ledger::{
     ForgetLedger, ForgetLedgerTarget, ForgetOperationState, ReplacementEpoch,
 };

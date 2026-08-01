@@ -11,10 +11,11 @@ for its release tags. During alpha, only the current tagged release is supported
   semantic search. The loader accepts only re-hashed bytes from the verified
   hSUM model cache, pins BGE-small CLS pooling, validates normalized
   384-dimensional output, and records staged latency, deterministic output
-  digests, and sampled RSS. Local macOS arm64 development evidence passes; a
-  manual native-runner workflow keeps Linux x86_64 qualification explicit and
-  pending until its artifact is published. Release license inventory now
-  resolves all Cargo features so the opt-in runtime graph is included.
+  digests, and sampled RSS. Clean GitHub runners pass on Linux x86_64 and macOS
+  arm64, with checked-in JSON and native dependency evidence; outputs are
+  deterministic within each platform but not bit-identical across them.
+  Release license inventory now resolves all Cargo features so the opt-in
+  runtime graph is included.
 
 - Added the first Beta.1 model-artifact lifecycle without enabling vectors or
   semantic search. The binary embeds one exact FastEmbed-compatible
@@ -148,6 +149,13 @@ for its release tags. During alpha, only the current tagged release is supported
   fresh-index ranking variance for later hardening.
 
 ### Fixed
+
+- Restored the published alpha.1 recovery path across both versioned stores.
+  The release smoke now migrates v1 config/trust through the hash-bound backup
+  ceremony, distinguishes N-1 migration from older-schema upgrade guidance,
+  validates the frozen alpha.1 schema/checksum without accepting its stale
+  pipeline, and permits only explicit dry-run plus citation-invalidating
+  rebuild replacement.
 
 - `get` now accepts a citation spanning one or more contiguous whole chunks from
   the same immutable document revision. A `returned_citation_uri` produced by

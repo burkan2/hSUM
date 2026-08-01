@@ -35,6 +35,9 @@ pub fn schema_checksum() -> Sha256Digest {
 }
 
 pub(crate) fn schema_checksum_through(version: u32) -> Sha256Digest {
+    if version == 1 {
+        return Sha256Digest::of_bytes(MIGRATION_0001.as_bytes());
+    }
     let mut hasher = Sha256::new();
     hasher.update(b"hsum.schema-chain.v1\0");
     for (migration_version, sql) in MIGRATIONS {
@@ -103,6 +106,14 @@ mod tests {
         assert_eq!(
             pipeline_fingerprint().to_string(),
             "d61e7a913b8d3fd7b58a3eeefb8ac7d4633647ad646c2d2c1a58db6d13ca980d"
+        );
+    }
+
+    #[test]
+    fn published_alpha_1_schema_checksum_is_frozen() {
+        assert_eq!(
+            schema_checksum_through(1).to_string(),
+            "006c34cb6bec7b2312c36edf0cc2dd3bfdb6827bedacecf611efe6adad011e4b"
         );
     }
 

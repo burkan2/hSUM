@@ -5654,10 +5654,9 @@ fn store_subcode(error: &StoreError) -> ErrorSubcode {
             ErrorSubcode::WriterLock
         }
         StoreError::InvalidApplicationId { .. } => ErrorSubcode::ApplicationId,
-        StoreError::UnsupportedSchemaVersion { current, found } if found > current => {
-            ErrorSubcode::DowngradeUnsupported
+        StoreError::UnsupportedSchemaVersion { current, found } => {
+            schema_subcode(*found, *current, current.saturating_sub(1))
         }
-        StoreError::UnsupportedSchemaVersion { .. } => ErrorSubcode::MigrationRequired,
         StoreError::SchemaChecksumMismatch
         | StoreError::SchemaManifestMismatch
         | StoreError::MissingSchemaObject(_)
@@ -5801,6 +5800,31 @@ mod tests {
         assert_eq!(
             store_subcode(&StoreError::AlreadyExists(PathBuf::from("index.sqlite"))),
             ErrorSubcode::IndexPathOccupied
+        );
+    }
+
+    #[test]
+    fn schema_age_maps_to_migrate_upgrade_or_downgrade_guidance() {
+        assert_eq!(
+            store_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 2,
+            }),
+            ErrorSubcode::MigrationRequired
+        );
+        assert_eq!(
+            store_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 1,
+            }),
+            ErrorSubcode::UpgradeRequired
+        );
+        assert_eq!(
+            store_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 4,
+            }),
+            ErrorSubcode::DowngradeUnsupported
         );
     }
 

@@ -25,8 +25,9 @@ use crate::ingest::{
 };
 use crate::search::SearchRequest;
 use crate::store::{
-    DeleteConfirmations, Doctor, FilesystemScope, FingerprintPolicy, IndexDb, IngestOutcome,
-    OpenMode, StoragePreflight, StoragePreflightError, StoreError, WriterLock,
+    DeleteConfirmations, Doctor, DoctorReport, FilesystemScope, FingerprintPolicy, IndexDb,
+    IngestOutcome, OpenMode, SCHEMA_VERSION, StoragePreflight, StoragePreflightError, StoreError,
+    WriterLock, inspect_migration_source_with_policy,
 };
 
 const TRUST_LOCK_TIMEOUT: Duration = Duration::from_secs(5);
@@ -218,13 +219,12 @@ fn initialize_with_rebuild_observer(
                     crate::store::DEFAULT_WRITER_LOCK_TIMEOUT,
                 )?)
             };
-            let inspection = validate_trusted_database_with_policy(
+            let inspection = validate_trusted_database_for_rebuild(
                 &database_path,
                 binding.index_id(),
                 binding.project_id(),
                 binding.project_name(),
                 &canonical_root,
-                FingerprintPolicy::Tolerate,
             )?;
             rebuild_lock = writer_lock;
             Some(RebuildSummary {
@@ -370,11 +370,7 @@ fn initialize_with_rebuild_observer(
             .expect("rebuild requires the existing binding validated above");
         unregister_and_save(&trust_path, binding)?;
         observe_rebuild(RebuildCheckpoint::TrustBindingRemoved);
-        let database = IndexDb::open_existing_with_policy(
-            &database_path,
-            OpenMode::ReadWrite,
-            FingerprintPolicy::Tolerate,
-        )?;
+        let database = IndexDb::open_existing_for_maintenance(&database_path, OpenMode::ReadWrite)?;
         database.remove()?;
         observe_rebuild(RebuildCheckpoint::DatabaseRemoved);
         drop(rebuild_lock.take());
@@ -635,6 +631,67 @@ fn validate_trusted_database_with_policy(
     fingerprint_policy: FingerprintPolicy,
 ) -> Result<TrustedIndexInspection, InitError> {
     let report = Doctor::run_with_policy(database_path, fingerprint_policy)?;
+    let database =
+        IndexDb::open_existing_with_policy(database_path, OpenMode::ReadOnly, fingerprint_policy)?;
+    validate_trusted_database_contents(
+        &database,
+        &report,
+        expected_index_id,
+        expected_project_id,
+        expected_project_name,
+        expected_root,
+    )
+}
+
+fn validate_trusted_database_for_rebuild(
+    database_path: &Path,
+    expected_index_id: IndexId,
+    expected_project_id: ProjectId,
+    expected_project_name: &SafeSlug,
+    expected_root: &Path,
+) -> Result<TrustedIndexInspection, InitError> {
+    let database = IndexDb::open_existing_for_maintenance(database_path, OpenMode::ReadOnly)?;
+    let raw_schema_version: i64 = database
+        .connection()
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .map_err(StoreError::from)?;
+    let found = u32::try_from(raw_schema_version)
+        .map_err(|_| StoreError::InvalidSchemaVersion(raw_schema_version))?;
+    if found == SCHEMA_VERSION {
+        drop(database);
+        return validate_trusted_database_with_policy(
+            database_path,
+            expected_index_id,
+            expected_project_id,
+            expected_project_name,
+            expected_root,
+            FingerprintPolicy::Tolerate,
+        );
+    }
+    let report = inspect_migration_source_with_policy(
+        database.connection(),
+        true,
+        found,
+        FingerprintPolicy::Tolerate,
+    )?;
+    validate_trusted_database_contents(
+        &database,
+        &report,
+        expected_index_id,
+        expected_project_id,
+        expected_project_name,
+        expected_root,
+    )
+}
+
+fn validate_trusted_database_contents(
+    database: &IndexDb,
+    report: &DoctorReport,
+    expected_index_id: IndexId,
+    expected_project_id: ProjectId,
+    expected_project_name: &SafeSlug,
+    expected_root: &Path,
+) -> Result<TrustedIndexInspection, InitError> {
     if report.index_id != expected_index_id {
         return Err(InitError::TrustedIndexIdentityMismatch {
             expected: expected_index_id,
@@ -642,8 +699,6 @@ fn validate_trusted_database_with_policy(
         });
     }
 
-    let database =
-        IndexDb::open_existing_with_policy(database_path, OpenMode::ReadOnly, fingerprint_policy)?;
     let connection = database.connection();
     let project_matches: bool = connection
         .query_row(
@@ -664,13 +719,21 @@ fn validate_trusted_database_with_policy(
         });
     }
 
-    let linked_sources: i64 = connection
-        .query_row(
-            "SELECT COUNT(*)
+    let linked_source_query = if report.schema_version >= 2 {
+        "SELECT COUNT(*)
          FROM project_sources AS ps
          JOIN sources AS s ON s.id = ps.source_id
          WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
-           AND ps.removed_at IS NULL AND s.removed_at IS NULL",
+           AND ps.removed_at IS NULL AND s.removed_at IS NULL"
+    } else {
+        "SELECT COUNT(*)
+         FROM project_sources AS ps
+         JOIN sources AS s ON s.id = ps.source_id
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'"
+    };
+    let linked_sources: i64 = connection
+        .query_row(
+            linked_source_query,
             [expected_project_id.as_uuid().as_bytes().as_slice()],
             |row| row.get(0),
         )
@@ -683,22 +746,31 @@ fn validate_trusted_database_with_policy(
         });
     }
 
+    let source_query = if report.schema_version >= 2 {
+        "SELECT s.id, s.logical_uri, s.config_json
+         FROM project_sources AS ps
+         JOIN sources AS s ON s.id = ps.source_id
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
+           AND ps.removed_at IS NULL AND s.removed_at IS NULL"
+    } else {
+        "SELECT s.id, s.logical_uri, s.config_json
+         FROM project_sources AS ps
+         JOIN sources AS s ON s.id = ps.source_id
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'"
+    };
     let (source_id_bytes, source_logical_uri, source_config_json): (Vec<u8>, String, String) =
         connection
             .query_row(
-                "SELECT s.id, s.logical_uri, s.config_json
-             FROM project_sources AS ps
-             JOIN sources AS s ON s.id = ps.source_id
-             WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
-               AND ps.removed_at IS NULL AND s.removed_at IS NULL",
+                source_query,
                 [expected_project_id.as_uuid().as_bytes().as_slice()],
                 |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
             )
             .map_err(StoreError::from)?;
+    let expected_source_id = derive_source_id(expected_index_id, expected_project_id);
     let filesystem_source_id = uuid::Uuid::from_slice(&source_id_bytes)
         .map(SourceId::from_uuid)
         .map_err(|_| InitError::TrustedSourceIdentityMismatch {
-            expected: derive_source_id(expected_index_id, expected_project_id),
+            expected: expected_source_id,
         })?;
     let expected_root_text = expected_root
         .to_str()

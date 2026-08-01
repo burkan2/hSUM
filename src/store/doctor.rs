@@ -384,8 +384,22 @@ pub(crate) fn inspect_migration_source(
     require_read_only: bool,
     version: u32,
 ) -> Result<DoctorReport, StoreError> {
+    inspect_migration_source_with_policy(
+        connection,
+        require_read_only,
+        version,
+        FingerprintPolicy::Reject,
+    )
+}
+
+pub(crate) fn inspect_migration_source_with_policy(
+    connection: &Connection,
+    require_read_only: bool,
+    version: u32,
+    policy: FingerprintPolicy,
+) -> Result<DoctorReport, StoreError> {
     let transaction = connection.unchecked_transaction()?;
-    let report = inspect_migration_snapshot(&transaction, require_read_only, version)?;
+    let report = inspect_migration_snapshot(&transaction, require_read_only, version, policy)?;
     transaction.rollback()?;
     Ok(report)
 }
@@ -394,6 +408,7 @@ fn inspect_migration_snapshot(
     connection: &Connection,
     require_read_only: bool,
     version: u32,
+    policy: FingerprintPolicy,
 ) -> Result<DoctorReport, StoreError> {
     if version == 0 || version >= SCHEMA_VERSION {
         return Err(StoreError::UnsupportedSchemaVersion {
@@ -421,7 +436,7 @@ fn inspect_migration_snapshot(
 
     validate_schema_manifest_through(connection, version)?;
     let (index_id, stored_pipeline_fingerprint) =
-        validate_metadata_through(connection, version, FingerprintPolicy::Reject)?;
+        validate_metadata_through(connection, version, policy)?;
     validate_migration_chain_through(connection, version)?;
     let mut scan = DoctorScanStats::default();
     let body_scan = BodyScanTracker::default();

@@ -1734,7 +1734,12 @@ fn store_error_subcode(error: &StoreError) -> ErrorSubcode {
         StoreError::UnsupportedSchemaVersion { current, found } if found > current => {
             ErrorSubcode::DowngradeUnsupported
         }
-        StoreError::UnsupportedSchemaVersion { .. } => ErrorSubcode::MigrationRequired,
+        StoreError::UnsupportedSchemaVersion { current, found }
+            if found.saturating_add(1) == *current =>
+        {
+            ErrorSubcode::MigrationRequired
+        }
+        StoreError::UnsupportedSchemaVersion { .. } => ErrorSubcode::UpgradeRequired,
         StoreError::IntegrityCheckFailed(_) => ErrorSubcode::SqliteCorrupt,
         StoreError::ForeignKeyCheckFailed
         | StoreError::ScopeConflict
@@ -2901,6 +2906,31 @@ mod tests {
         assert_eq!(
             data["docs_url"],
             "https://hsum.dev/docs/0.1.0-alpha.4/errors/CLIENT_CANCELLED"
+        );
+    }
+
+    #[test]
+    fn schema_age_preserves_migration_and_upgrade_distinction() {
+        assert_eq!(
+            store_error_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 2,
+            }),
+            ErrorSubcode::MigrationRequired
+        );
+        assert_eq!(
+            store_error_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 1,
+            }),
+            ErrorSubcode::UpgradeRequired
+        );
+        assert_eq!(
+            store_error_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 4,
+            }),
+            ErrorSubcode::DowngradeUnsupported
         );
     }
 }
