@@ -37,13 +37,19 @@ jobs:
             dependency_command: otool -L
     env:
       CARGO_INCREMENTAL: "0"
-      HSUM_HOME: ${{ runner.temp }}/hsum-model-portability
-      REPORT_PATH: ${{ runner.temp }}/model-portability-${{ matrix.expected_arch }}.json
-      DEPENDENCIES_PATH: ${{ runner.temp }}/model-portability-${{ matrix.expected_arch }}-dependencies.txt
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+
+      - name: Prepare runner-local evidence paths
+        shell: bash
+        run: |
+          {
+            echo "HSUM_HOME=$RUNNER_TEMP/hsum-model-portability"
+            echo "REPORT_PATH=$RUNNER_TEMP/model-portability-${{ matrix.expected_arch }}.json"
+            echo "DEPENDENCIES_PATH=$RUNNER_TEMP/model-portability-${{ matrix.expected_arch }}-dependencies.txt"
+          } >> "$GITHUB_ENV"
 
       - name: Confirm the native runner architecture
         shell: bash
