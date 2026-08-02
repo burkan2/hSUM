@@ -5181,6 +5181,7 @@ fn rank_summary(rank: &RankExplanation) -> String {
         Retriever::Exact => "exact",
         Retriever::ExactFallback => "exact fallback",
         Retriever::Lexical => "BM25",
+        Retriever::Vector => "vector",
     };
     format!("{name} #{}", rank.rank)
 }
@@ -5732,6 +5733,10 @@ fn map_search_error(error: SearchError) -> RuntimeFailure {
         SearchError::ProjectNotFound => ErrorSubcode::ProjectNotFound,
         SearchError::DeadlineExceeded => ErrorSubcode::RequestDeadline,
         SearchError::NonFiniteScore => ErrorSubcode::NonfiniteScore,
+        SearchError::QueryEmbeddingRequired | SearchError::InvalidQueryEmbedding(_) => {
+            ErrorSubcode::Invariant
+        }
+        SearchError::SemanticUnavailable => ErrorSubcode::ModelNotConfigured,
         SearchError::Corrupt(_) => ErrorSubcode::HeadIndexMismatch,
         SearchError::Sqlite(error) => sqlite_subcode(error),
         SearchError::Store(error) => store_subcode(error),

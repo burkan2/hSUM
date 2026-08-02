@@ -256,7 +256,21 @@ Optional watch mode and additional integrations are not on the critical path.
     only historical cache/provenance; physical forget removes affected vector
     evidence; guarded restore recovers it byte-for-byte. Focused suites, the
     serialized complete local test gate, formatting, and strict all-feature
-    Clippy pass. Native target proof and semantic/hybrid retrieval remain next.
+    Clippy pass. Native target proof remains open.
+  - Current-checkout filtered-retrieval checkpoint: semantic core requests now
+    accept exactly one validated, finite, normalized 384-value query vector and
+    refuse absent or model-incompatible active vector generations. One SQLite
+    read snapshot selects the active A/B slot, enumerates at most 64 active
+    project sources, and applies each source UUID as the sqlite-vec partition
+    predicate before KNN. Each source uses filtered K+1 at K=50 and an exact
+    scalar cosine/rowid fallback only for cutoff ties; merged candidates use
+    distance, source UUID, document UUID, and start-byte ordering before the
+    existing guarded passage decoder and deterministic dedupe path. Adversarial
+    source-isolation and reverse-insertion tie tests, semantic lifecycle and
+    validation fixtures, all lexical search contracts, the serialized complete
+    local suite, formatting, and strict Clippy pass. Worker cancellation/memory
+    qualification, hybrid fusion, public CLI/MCP/API exposure, native target
+    evidence, and stable release qualification remain open in sequence.
 - Evaluate recency, source diversity, rare-token statistics, query expansion,
   neighboring context, and reranking one experiment at a time against a frozen
   exact/BM25 baseline.

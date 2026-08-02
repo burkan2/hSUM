@@ -1927,6 +1927,16 @@ fn map_search_error(error: SearchError) -> ErrorData {
         SearchError::NonFiniteScore => {
             public_error(ErrorSubcode::NonfiniteScore, json!({"operation": "search"}))
         }
+        SearchError::QueryEmbeddingRequired | SearchError::InvalidQueryEmbedding(_) => {
+            public_error(
+                ErrorSubcode::Invariant,
+                json!({"operation": "semantic_search_request"}),
+            )
+        }
+        SearchError::SemanticUnavailable => public_error(
+            ErrorSubcode::ModelNotConfigured,
+            json!({"operation": "semantic_search"}),
+        ),
         SearchError::ExactMatcher => public_error(
             ErrorSubcode::Invariant,
             json!({"operation": "exact_matcher"}),

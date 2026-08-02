@@ -6,6 +6,7 @@ use hsum::domain::{
 };
 use hsum::ingest::{QuoteBloom, SnapshotRevision, body_sha256, revision_sha256};
 use hsum::model::{IndexModelState, ModelArtifactState, builtin_manifests, discover_model_pins};
+use hsum::search::{Retriever, SearchError, SearchMode, SearchRequest, SearchStopReason};
 use hsum::store::{
     DeleteConfirmations, Doctor, EMBEDDING_DIMENSION, EmbeddingCacheOutcome, EmbeddingModelPin,
     EmbeddingProvenanceRecord, FilesystemScope, IndexDb, IndexEmbeddingProfile, OpenMode,
@@ -376,6 +377,85 @@ fn cached_reembedding_builds_and_atomically_flips_the_shadow_slot() {
 }
 
 #[test]
+fn semantic_search_requires_validated_complete_vectors_and_returns_guarded_evidence() {
+    let directory = private_tempdir();
+    let path = directory.path().join("index.sqlite");
+    let (mut database, _) = pinned_database_with_chunk(&path);
+    let scope = fixture_scope();
+    let request =
+        SearchRequest::new("conceptual query", SearchMode::Semantic, 10, 3_000, true).unwrap();
+
+    assert!(matches!(
+        database.search(scope.project_id, &request),
+        Err(SearchError::QueryEmbeddingRequired)
+    ));
+    let query = unit_vector(0);
+    let request = request.with_query_embedding(&query).unwrap();
+    assert!(matches!(
+        database.search(scope.project_id, &request),
+        Err(SearchError::SemanticUnavailable)
+    ));
+
+    cache_active_inputs(&mut database);
+    let outcome = database.commit_cached_reembedding().unwrap();
+    let response = database.search(scope.project_id, &request).unwrap();
+
+    assert_eq!(response.generation, Some(outcome.generation_id));
+    assert_eq!(response.effective_mode, SearchMode::Semantic);
+    assert_eq!(response.retrievers, vec![Retriever::Vector]);
+    assert_eq!(response.stop_reason, SearchStopReason::UniqueExhausted);
+    assert_eq!(response.examined.vector, 1);
+    assert_eq!(response.results.len(), 1);
+    assert_eq!(response.results[0].content, "semantic alpha beta\n");
+    assert_eq!(response.results[0].score.lists.len(), 1);
+    assert_eq!(
+        response.results[0].score.lists[0].retriever,
+        Retriever::Vector
+    );
+    assert_eq!(response.results[0].score.lists[0].backend_score, Some(0.0));
+
+    Connection::open(&path)
+        .unwrap()
+        .execute(
+            "UPDATE generations
+             SET embedding_model_fingerprint = ?1
+             WHERE id = ?2",
+            rusqlite::params![
+                Sha256Digest::of_bytes(b"different model")
+                    .as_bytes()
+                    .as_slice(),
+                outcome.generation_id,
+            ],
+        )
+        .unwrap();
+    assert!(matches!(
+        database.search(scope.project_id, &request),
+        Err(SearchError::SemanticUnavailable)
+    ));
+}
+
+#[test]
+fn semantic_query_embedding_rejects_wrong_shape_nonfinite_and_unnormalized_input() {
+    let request = SearchRequest::new("query", SearchMode::Semantic, 10, 3_000, false).unwrap();
+    assert!(matches!(
+        request
+            .clone()
+            .with_query_embedding(&vec![0.0; EMBEDDING_DIMENSION as usize - 1]),
+        Err(SearchError::InvalidQueryEmbedding("vector dimension"))
+    ));
+    let mut nonfinite = unit_vector(0);
+    nonfinite[1] = f32::NAN;
+    assert!(matches!(
+        request.clone().with_query_embedding(&nonfinite),
+        Err(SearchError::InvalidQueryEmbedding("non-finite component"))
+    ));
+    assert!(matches!(
+        request.with_query_embedding(&vec![0.0; EMBEDDING_DIMENSION as usize]),
+        Err(SearchError::InvalidQueryEmbedding("vector normalization"))
+    ));
+}
+
+#[test]
 fn incomplete_reembedding_cache_rolls_back_without_a_generation_or_slot_flip() {
     let directory = private_tempdir();
     let path = directory.path().join("index.sqlite");
@@ -667,12 +747,10 @@ fn pinned_database_with_chunk(path: &std::path::Path) -> (IndexDb, i64) {
 }
 
 fn fixture_embedding(chunk_id: i64) -> PreparedChunkEmbedding {
-    let mut vector = vec![0.0; EMBEDDING_DIMENSION as usize];
-    vector[0] = 1.0;
     PreparedChunkEmbedding::new(
         chunk_id,
         Sha256Digest::of_bytes(b"canonical embedding input"),
-        vector,
+        unit_vector(0),
         fixture_provenance("macos", "aarch64"),
     )
     .unwrap()
@@ -687,15 +765,19 @@ fn cache_active_inputs(database: &mut IndexDb) {
             .unwrap()
             .is_empty()
     );
-    let mut vector = vec![0.0; EMBEDDING_DIMENSION as usize];
-    vector[0] = 1.0;
     let embedding = PreparedChunkEmbedding::from_input(
         &inputs[0],
-        vector,
+        unit_vector(0),
         fixture_provenance("macos", "aarch64"),
     )
     .unwrap();
     database.cache_chunk_embedding(&embedding).unwrap();
+}
+
+fn unit_vector(coordinate: usize) -> Vec<f32> {
+    let mut vector = vec![0.0; EMBEDDING_DIMENSION as usize];
+    vector[coordinate] = 1.0;
+    vector
 }
 
 fn fixture_provenance(target_os: &str, target_arch: &str) -> EmbeddingProvenanceRecord {
