@@ -16,9 +16,10 @@ use hsum::mcp::{
     MAX_MCP_SEARCH_BODY_BYTES, McpServerError, WorkspaceMcpServer, retrieval_config_fingerprint,
     serve_io, serve_workspace_io, validate_frame, validate_response_size,
 };
+use hsum::model::builtin_manifests;
 use hsum::store::{
-    DeleteConfirmations, FilesystemScope, IndexDb, OpenMode, PreparedChunk, PreparedDocument,
-    prepare_passage_literals,
+    DeleteConfirmations, EmbeddingModelPin, FilesystemScope, IndexDb, IndexEmbeddingProfile,
+    OpenMode, PreparedChunk, PreparedDocument, prepare_passage_literals,
 };
 use rmcp::ServerHandler;
 use rmcp::handler::server::wrapper::Parameters;
@@ -117,6 +118,13 @@ fn server_advertises_exactly_four_read_only_project_bound_tools() {
         "evidence_search",
         &["cursor", "explain", "limit", "mode", "query", "timeout_ms"],
     );
+    let search_schema = tools
+        .iter()
+        .find(|tool| tool.name.as_ref() == "evidence_search")
+        .unwrap();
+    let search_schema = serde_json::to_string(&search_schema.input_schema).unwrap();
+    assert!(search_schema.contains("hybrid"));
+    assert!(search_schema.contains("semantic"));
     assert_schema_properties(
         &tools,
         "evidence_get",
@@ -129,6 +137,89 @@ fn server_advertises_exactly_four_read_only_project_bound_tools() {
         assert!(!schema.contains("\"project_id\""));
         assert!(!schema.contains("\"index_id\""));
     }
+}
+
+#[test]
+fn mcp_auto_reports_install_capability_and_explicit_vector_modes_fail_typed() {
+    let directory = tempdir().unwrap();
+    harden_fixture_directory(directory.path());
+    let path = directory.path().join("semantic.sqlite");
+    let manifest = &builtin_manifests()[0];
+    let pin = EmbeddingModelPin::new(
+        manifest.id.clone(),
+        manifest.upstream_revision.clone(),
+        manifest.fingerprint().unwrap(),
+        manifest.dimension,
+    )
+    .unwrap();
+    let mut database = IndexDb::create_with_embedding_profile(
+        &path,
+        index_id(),
+        &IndexEmbeddingProfile::Pinned(pin),
+    )
+    .unwrap();
+    let scope = fixture_scope();
+    database
+        .apply_filesystem_snapshot(
+            &scope,
+            &[document(
+                b"semantic.md",
+                "semantic.md",
+                "repo://semantic.md",
+                b"semantic evidence\n",
+            )],
+            &[],
+            DeleteConfirmations::default(),
+        )
+        .unwrap();
+    drop(database);
+
+    let server = HsumMcpServer::new_with_model_cache(
+        &path,
+        scope.project_id,
+        directory.path().join("models"),
+    )
+    .unwrap();
+    let auto = server
+        .evidence_search(Parameters(EvidenceSearchInput {
+            query: "semantic evidence".to_owned(),
+            mode: Some(EvidenceSearchMode::Auto),
+            limit: Some(10),
+            cursor: None,
+            timeout_ms: Some(3_000),
+            explain: Some(true),
+        }))
+        .unwrap()
+        .0;
+    assert_eq!(auto.requested_mode, "auto");
+    assert_eq!(auto.effective_mode, "lexical");
+    assert_eq!(
+        auto.hints,
+        vec!["semantic_available_after_model_install".to_owned()]
+    );
+    assert!(auto.degraded_mode.is_empty());
+    assert_eq!(auto.examined.vector, 0);
+    assert_eq!(auto.timing_ms.query_embedding, 0);
+
+    for mode in [EvidenceSearchMode::Semantic, EvidenceSearchMode::Hybrid] {
+        let result = server.evidence_search(Parameters(EvidenceSearchInput {
+            query: "semantic evidence".to_owned(),
+            mode: Some(mode),
+            limit: Some(10),
+            cursor: None,
+            timeout_ms: Some(3_000),
+            explain: Some(false),
+        }));
+        let error = match result {
+            Ok(_) => panic!("explicit vector mode must not degrade"),
+            Err(error) => error,
+        };
+        let data = error.data.unwrap();
+        assert_eq!(data["code"], "MODEL_MISSING");
+        assert_eq!(data["subcode"], "MODEL_NOT_INSTALLED");
+        assert_eq!(data["retryable"], false);
+    }
+    assert!(!directory.path().join("models").exists());
 }
 
 #[test]
@@ -227,13 +318,13 @@ fn response_and_body_caps_are_fixed_protocol_constants() {
 }
 
 #[test]
-fn retrieval_config_fingerprint_is_frozen_for_alpha_four() {
+fn retrieval_config_fingerprint_is_frozen_for_the_beta_retriever_set() {
     // Derived from the binary version and pipeline_fingerprint() (see
     // src/mcp.rs retrieval_config_fingerprint), so the digest also moves at a
     // release or ingest-pipeline boundary, not just for retrieval config.
     assert_eq!(
         retrieval_config_fingerprint(),
-        "e87f1d65c2b9487702a6197be15783a8c3d00b9f442dc6cb98986108a96e1614"
+        "b479c7021c4e9af3f9f3cf37924e1aa16677bec04534693c8de049b4edf954bd"
     );
 }
 

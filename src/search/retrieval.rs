@@ -42,6 +42,7 @@ const RANK_FUSION_K: u64 = 60;
 pub enum SearchMode {
     Auto,
     Lexical,
+    Hybrid,
     Semantic,
 }
 
@@ -50,6 +51,7 @@ impl SearchMode {
         match self {
             Self::Auto => "auto",
             Self::Lexical => "lexical",
+            Self::Hybrid => "hybrid",
             Self::Semantic => "semantic",
         }
     }
@@ -159,6 +161,18 @@ impl SearchRequest {
         self.explain
     }
 
+    pub(crate) fn with_deadline_ms(mut self, deadline_ms: u64) -> Result<Self, SearchError> {
+        if !(MIN_SEARCH_DEADLINE_MS..=MAX_SEARCH_DEADLINE_MS).contains(&deadline_ms) {
+            return Err(SearchError::InvalidDeadline {
+                requested_ms: deadline_ms,
+                minimum_ms: MIN_SEARCH_DEADLINE_MS,
+                maximum_ms: MAX_SEARCH_DEADLINE_MS,
+            });
+        }
+        self.deadline_ms = deadline_ms;
+        Ok(self)
+    }
+
     pub fn with_query_embedding(mut self, embedding: &[f32]) -> Result<Self, SearchError> {
         if embedding.len() != EMBEDDING_DIMENSION as usize {
             return Err(SearchError::InvalidQueryEmbedding("vector dimension"));
@@ -187,6 +201,10 @@ impl SearchRequest {
             .as_deref()
             .ok_or(SearchError::QueryEmbeddingRequired)
     }
+
+    fn query_embedding_if_present(&self) -> Option<&[u8]> {
+        self.query_embedding.as_deref()
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -207,6 +225,7 @@ pub struct CandidateCounts {
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct SearchTiming {
+    pub query_embedding_ms: u64,
     pub exact_ms: u64,
     pub exact_fallback_ms: u64,
     pub lexical_ms: u64,
@@ -224,6 +243,8 @@ pub struct SearchResponse {
     pub requested_mode: SearchMode,
     pub effective_mode: SearchMode,
     pub retrievers: Vec<Retriever>,
+    pub degraded_mode: Vec<String>,
+    pub hints: Vec<String>,
     pub results: Vec<EvidencePassage>,
     pub stop_reason: SearchStopReason,
     pub examined: CandidateCounts,
@@ -406,6 +427,42 @@ fn execute_search(
         return Ok(response);
     }
 
+    let use_vector = match request.mode {
+        SearchMode::Auto => {
+            context.vectors_complete && request.query_embedding_if_present().is_some()
+        }
+        SearchMode::Lexical => false,
+        SearchMode::Hybrid => {
+            let _ = request.query_embedding()?;
+            if !context.vectors_complete {
+                return Err(SearchError::SemanticUnavailable);
+            }
+            true
+        }
+        SearchMode::Semantic => unreachable!("semantic search returned above"),
+    };
+
+    let vector_started = Instant::now();
+    let vector_page = if use_vector {
+        Some(fetch_project_vector_candidates(
+            &transaction,
+            project_id,
+            context.vector_slot,
+            request.query_embedding()?,
+            deadline,
+        )?)
+    } else {
+        None
+    };
+    let vector_elapsed = if use_vector {
+        vector_started.elapsed()
+    } else {
+        Duration::ZERO
+    };
+    let mut vector_depth = vector_page
+        .as_ref()
+        .map_or(0, |page| page.candidates.len().min(INITIAL_CANDIDATE_DEPTH));
+
     let exact_started = Instant::now();
     let mut exact = ExactPager::new(&request.query)?;
     #[cfg(test)]
@@ -446,7 +503,9 @@ fn execute_search(
             &context,
             &exact_candidates[..exact_depth],
             &lexical,
-            &[],
+            vector_page
+                .as_ref()
+                .map_or(&[], |page| &page.candidates[..vector_depth]),
             request.explain,
             deadline,
         )?;
@@ -500,10 +559,23 @@ fn execute_search(
             lexical.extend(page.candidates);
         }
 
+        if !exact.deadline
+            && !lexical_deadline
+            && Instant::now() < deadline
+            && let Some(page) = vector_page.as_ref()
+            && vector_depth < page.candidates.len()
+        {
+            let next_depth = (vector_depth + INITIAL_CANDIDATE_DEPTH).min(page.candidates.len());
+            progressed |= next_depth > vector_depth;
+            vector_depth = next_depth;
+        }
+
         if !progressed {
             stop_reason = if exact.work_exhausted()
                 || (!lexical_exhausted && lexical.len() == MAX_CANDIDATES_PER_LIST)
-            {
+                || vector_page.as_ref().is_some_and(|page| {
+                    vector_depth == page.candidates.len() && page.work_exhausted
+                }) {
                 SearchStopReason::WorkBudgetExhausted
             } else {
                 SearchStopReason::UniqueExhausted
@@ -518,6 +590,9 @@ fn execute_search(
         retrievers.push(Retriever::ExactFallback);
     }
     retrievers.push(Retriever::Lexical);
+    if use_vector {
+        retrievers.push(Retriever::Vector);
+    }
 
     Ok(SearchResponse {
         project_id,
@@ -525,21 +600,28 @@ fn execute_search(
         generation: context.generation,
         index_epoch: context.index_epoch,
         requested_mode: request.mode,
-        effective_mode: SearchMode::Lexical,
+        effective_mode: if use_vector {
+            SearchMode::Hybrid
+        } else {
+            SearchMode::Lexical
+        },
         retrievers,
+        degraded_mode: Vec::new(),
+        hints: Vec::new(),
         results,
         stop_reason,
         examined: CandidateCounts {
             exact: exact_depth,
             exact_fallback: exact.fallback_examined,
             lexical: lexical.len(),
-            vector: 0,
+            vector: vector_depth,
         },
         timing: SearchTiming {
+            query_embedding_ms: 0,
             exact_ms: millis(exact_elapsed),
             exact_fallback_ms: millis(exact.fallback_elapsed),
             lexical_ms: millis(lexical_elapsed),
-            vector_ms: 0,
+            vector_ms: millis(vector_elapsed),
             fusion_ms: millis(fusion_elapsed),
             total_ms: millis(started.elapsed()),
         },
@@ -614,15 +696,18 @@ fn execute_semantic_search(
         requested_mode: request.mode,
         effective_mode: SearchMode::Semantic,
         retrievers: vec![Retriever::Vector],
+        degraded_mode: Vec::new(),
+        hints: Vec::new(),
         results,
         stop_reason,
         examined: CandidateCounts {
             exact: 0,
             exact_fallback: 0,
             lexical: 0,
-            vector: examined,
+            vector: depth,
         },
         timing: SearchTiming {
+            query_embedding_ms: 0,
             exact_ms: 0,
             exact_fallback_ms: 0,
             lexical_ms: 0,
@@ -2231,6 +2316,10 @@ mod tests {
             exact_contribution(1) + lexical_contribution(3),
             40_463_179_807
         );
+        assert_eq!(
+            exact_contribution(1) + lexical_contribution(3) + lexical_contribution(2),
+            56_592_212_065
+        );
         assert_eq!(lexical_contribution(1), 16_393_442_623);
     }
 
@@ -2331,6 +2420,83 @@ mod tests {
     }
 
     #[test]
+    fn hybrid_dedupe_and_equal_unit_ties_are_stable_and_explanations_are_bounded() {
+        let context = SearchContext {
+            index_id: IndexId::from_uuid(
+                Uuid::parse_str("018f47f0-9d9a-7a63-b4cc-8d6f2c8a4400").unwrap(),
+            ),
+            scope_revision: 0,
+            generation: Some(1),
+            index_epoch: 1,
+            vector_slot: VectorSlot::A,
+            vectors_complete: true,
+        };
+        let winner = test_passage(1, 1, 1, 0, 100, "canonical winner");
+        let overlap = test_passage(2, 1, 1, 50, 150, "overlapping evidence");
+        let same_content = test_passage(3, 3, 3, 0, 100, "canonical winner");
+        let lexical_tie = test_passage(4, 4, 4, 0, 100, "lexical tie");
+        let vector_tie = test_passage(5, 5, 5, 0, 100, "vector tie");
+
+        let exact = vec![ExactCandidate {
+            passage: winner.clone(),
+            matched_atoms: 1,
+            matched_bytes: 16,
+            longest_atom: 16,
+            fallback: false,
+        }];
+        let lexical = vec![
+            LexicalCandidate {
+                passage: overlap,
+                score: -2.0,
+            },
+            LexicalCandidate {
+                passage: lexical_tie.clone(),
+                score: -1.0,
+            },
+        ];
+        let vector = vec![
+            VectorCandidate {
+                passage: same_content,
+                distance: 0.0,
+            },
+            VectorCandidate {
+                passage: vector_tie.clone(),
+                distance: 0.5,
+            },
+        ];
+
+        let results = fuse_and_dedupe(
+            &context,
+            &exact,
+            &lexical,
+            &vector,
+            true,
+            Instant::now() + Duration::from_secs(1),
+        )
+        .unwrap();
+
+        assert_eq!(results.len(), 3);
+        assert_eq!(results[0].content, winner.content);
+        assert_eq!(results[0].duplicate_citations.len(), 2);
+        assert!(
+            results[0]
+                .duplicate_citations
+                .iter()
+                .any(|duplicate| duplicate.reason == DuplicateReason::SameContent)
+        );
+        assert!(
+            results[0]
+                .duplicate_citations
+                .iter()
+                .any(|duplicate| duplicate.reason == DuplicateReason::OverlappingSpan)
+        );
+        assert_eq!(results[1].source_id, lexical_tie.source_id);
+        assert_eq!(results[2].source_id, vector_tie.source_id);
+        assert_eq!(results[1].score.fusion_units, results[2].score.fusion_units);
+        assert!(results.iter().all(|result| result.score.lists.len() <= 3));
+    }
+
+    #[test]
     fn deadline_guard_interrupts_a_running_sqlite_operation() {
         let connection = Connection::open_in_memory().unwrap();
         let deadline = Instant::now() + Duration::from_millis(20);
@@ -2408,6 +2574,44 @@ mod tests {
                 .unwrap();
         }
         directory
+    }
+
+    fn test_passage(
+        id: i64,
+        source_suffix: u16,
+        document_suffix: u16,
+        start: u64,
+        end: u64,
+        content: &str,
+    ) -> Passage {
+        let source_id = SourceId::from_uuid(
+            Uuid::parse_str(&format!(
+                "018f47f0-9d9a-7a63-b4cc-8d6f2c8a{source_suffix:04x}"
+            ))
+            .unwrap(),
+        );
+        let document_id = DocumentId::from_uuid(
+            Uuid::parse_str(&format!(
+                "018f47f0-9d9a-7a63-b4cc-8d6f2c8b{document_suffix:04x}"
+            ))
+            .unwrap(),
+        );
+        Passage {
+            id,
+            source_id,
+            document_id,
+            revision_sha256: Sha256Digest::of_bytes(format!("revision-{id}").as_bytes()),
+            source_uri: format!("repo://passage-{id}.md"),
+            title: format!("passage-{id}.md"),
+            byte_span: ByteSpan::new(start, end).unwrap(),
+            line_span: LineSpan::new(1, 1).unwrap(),
+            content: content.to_owned(),
+            content_sha256: Sha256Digest::of_bytes(content.as_bytes()),
+            quote_bloom: QuoteBloom::from_content(content.as_bytes()),
+            source_updated_at: None,
+            indexed_at: "2026-08-02T00:00:00Z".to_owned(),
+            head_generation: 1,
+        }
     }
 
     fn unit_vector_blob(coordinate: usize) -> Vec<u8> {

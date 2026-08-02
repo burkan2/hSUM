@@ -22,14 +22,14 @@ use crate::app::{
     DeleteIndexRequest, EffectiveContext, EvidenceSourceState, FilesystemIngestError, GetEvidence,
     GetEvidenceError, GetEvidenceFieldLimits, GetEvidenceRequest, IndexManagementError, InitError,
     InitNextStep, InitOutcome, InitRequest, PointerOutcome, ProjectIngestError, ProjectIngestPlan,
-    ProjectManagementError, SearchEvidence, SearchEvidenceError, SearchEvidenceFieldLimits,
-    SearchEvidencePage, SearchEvidenceRequest, SearchEvidenceSnapshot, SetProjectRootRequest,
-    SourceConfigError, SourceManagementError, StatusEvidence, StatusEvidenceError,
-    StatusEvidenceFieldLimits, StatusEvidenceRequest, TrustRequest, add_filesystem_source,
-    add_jsonl_source, attach_jsonl_source, create_project, delete_index, detach_jsonl_source,
-    ingest_project_sources_with_timeout, initialize, list_projects, list_sources_in_scope,
-    plan_project_sources_with_timeout, remove_jsonl_source, resolve_context, resolve_trust_target,
-    set_project_root, trust_repository, use_project,
+    ProjectManagementError, SearchEmbeddingRuntime, SearchEvidence, SearchEvidenceError,
+    SearchEvidenceFieldLimits, SearchEvidencePage, SearchEvidenceRequest, SearchEvidenceSnapshot,
+    SetProjectRootRequest, SourceConfigError, SourceManagementError, StatusEvidence,
+    StatusEvidenceError, StatusEvidenceFieldLimits, StatusEvidenceRequest, TrustRequest,
+    add_filesystem_source, add_jsonl_source, attach_jsonl_source, create_project, delete_index,
+    detach_jsonl_source, ingest_project_sources_with_timeout, initialize, list_projects,
+    list_sources_in_scope, plan_project_sources_with_timeout, remove_jsonl_source, resolve_context,
+    resolve_trust_target, set_project_root, trust_repository, use_project,
 };
 use crate::cli::{
     AgentPolicyMode, BackupCommand, BackupCreateArgs, BackupListArgs, Cli, ClientCommand,
@@ -61,16 +61,17 @@ use crate::integration::{
     IntegrationError, WorkspacePolicy, WorkspacePolicyError,
 };
 use crate::mcp::{
-    MAX_MCP_FRAME_BYTES, McpServerError, serve_stdio, serve_workspace_stdio, validate_frame,
+    MAX_MCP_FRAME_BYTES, McpServerError, serve_stdio_with_model_cache, serve_workspace_stdio,
+    validate_frame,
 };
 use crate::model::{
     EmbeddingInferenceError, EmbeddingOptions, IndexModelState, ModelArtifactState, ModelError,
-    ModelMutation, ModelStore, discover_model_pins,
+    ModelMutation, ModelStore, QueryEmbeddingError, discover_model_pins,
 };
 use crate::protocol::{
     API_VERSION as MCP_API_VERSION, CliSearchOutput, CliStatusOutput, EvidenceGetOutput,
     GetPacketError, SearchCursorError, SearchCursorStaleCause, SearchCursorState,
-    decode_search_cursor, encode_search_cursor, retrieval_config_fingerprint,
+    decode_search_cursor, encode_search_cursor, retrieval_execution_fingerprint,
     search_cursor_stale_cause,
 };
 use crate::search::query::QueryError;
@@ -1842,6 +1843,8 @@ fn run_search(
     let mode = match arguments.mode {
         CliSearchMode::Auto => SearchMode::Auto,
         CliSearchMode::Lexical => SearchMode::Lexical,
+        CliSearchMode::Hybrid => SearchMode::Hybrid,
+        CliSearchMode::Semantic => SearchMode::Semantic,
     };
     let decoded_cursor = decode_search_cursor(
         arguments.cursor.as_deref(),
@@ -1851,14 +1854,6 @@ fn run_search(
         arguments.explain,
     )
     .map_err(map_search_cursor_error)?;
-    let config_fingerprint = retrieval_config_fingerprint();
-    if decoded_cursor
-        .state
-        .as_ref()
-        .is_some_and(|expected| expected.config_fingerprint.as_str() != config_fingerprint.as_str())
-    {
-        return Err(RuntimeFailure::stale_cursor(ErrorSubcode::QueryFingerprint));
-    }
     let expected_snapshot = decoded_cursor
         .state
         .as_ref()
@@ -1871,10 +1866,20 @@ fn run_search(
         arguments.explain,
     )
     .map_err(map_search_error)?;
+    let embedding_runtime = if mode == SearchMode::Lexical {
+        None
+    } else {
+        Some(
+            SearchEmbeddingRuntime::new(context.managed_paths.model_cache_dir())
+                .map_err(SearchEvidenceError::from)
+                .map_err(map_search_evidence_error)?,
+        )
+    };
     let outcome = SearchEvidence::execute(&SearchEvidenceRequest {
         index_path: context.database_path.clone(),
         project_id: context.project_id,
         search: request,
+        embedding_runtime,
         expected_snapshot,
         page: SearchEvidencePage {
             offset: decoded_cursor.offset,
@@ -1889,6 +1894,7 @@ fn run_search(
         cancelled: None,
     })
     .map_err(map_search_evidence_error)?;
+    let config_fingerprint = retrieval_execution_fingerprint(&outcome.response);
     let cursor_state = SearchCursorState {
         index_id: outcome.snapshot.index_id,
         scope_revision: outcome.snapshot.scope_revision,
@@ -4494,7 +4500,8 @@ async fn run_mcp(
     request.config_file = None;
     let context = resolve_context(&request).map_err(map_context_error)?;
     let _ = global;
-    serve_stdio(context.database_path, context.project_id)
+    let model_cache = context.managed_paths.model_cache_dir();
+    serve_stdio_with_model_cache(context.database_path, context.project_id, model_cache)
         .await
         .map_err(map_mcp_server_error)?;
     Ok(crate::cli::ProcessExitCategory::Success)
@@ -4698,6 +4705,21 @@ fn render_search_human(
 ) -> Result<(), RuntimeFailure> {
     let executable = absolute_executable()?;
     let mut output = String::new();
+    output.push_str("mode: ");
+    output.push_str(response.requested_mode.as_str());
+    output.push_str(" -> ");
+    output.push_str(response.effective_mode.as_str());
+    output.push('\n');
+    for degraded in &response.degraded_mode {
+        output.push_str("degraded: ");
+        output.push_str(&escape_terminal_text(degraded));
+        output.push('\n');
+    }
+    for hint in &response.hints {
+        output.push_str("hint: ");
+        output.push_str(&escape_terminal_text(hint));
+        output.push('\n');
+    }
     for (index, passage) in response.results.iter().enumerate() {
         let state = EvidenceSourceState::from_observation(drift_for(
             drift,
@@ -5654,6 +5676,14 @@ fn map_search_evidence_error(error: SearchEvidenceError) -> RuntimeFailure {
     match error {
         SearchEvidenceError::Store(error) => map_store_error(error),
         SearchEvidenceError::Search(error) => map_search_error(error),
+        SearchEvidenceError::ModelNotConfigured => RuntimeFailure::from_error(
+            ErrorSubcode::ModelNotConfigured,
+            "semantic_search",
+            "the selected index has no embedding model configured",
+        ),
+        SearchEvidenceError::QueryEmbedding(error) => {
+            RuntimeFailure::from_error(query_embedding_subcode(&error), "query_embedding", error)
+        }
         SearchEvidenceError::Status(error) => map_status_error(error),
         SearchEvidenceError::SourceConfig(error) => {
             RuntimeFailure::from_error(source_config_subcode(&error), "search_source_root", error)
@@ -5691,6 +5721,22 @@ fn map_search_evidence_error(error: SearchEvidenceError) -> RuntimeFailure {
             "search",
             "search deadline expired",
         ),
+    }
+}
+
+const fn query_embedding_subcode(error: &QueryEmbeddingError) -> ErrorSubcode {
+    match error {
+        QueryEmbeddingError::ModelMissing => ErrorSubcode::ModelNotInstalled,
+        QueryEmbeddingError::ModelUnverified | QueryEmbeddingError::ModelIncompatible => {
+            ErrorSubcode::ModelFingerprint
+        }
+        QueryEmbeddingError::Busy => ErrorSubcode::ModelQueue,
+        QueryEmbeddingError::Restarting => ErrorSubcode::ModelRestarting,
+        QueryEmbeddingError::Cancelled => ErrorSubcode::ClientCancelled,
+        QueryEmbeddingError::Deadline => ErrorSubcode::RequestDeadline,
+        QueryEmbeddingError::InvalidRequest(_) | QueryEmbeddingError::Protocol => {
+            ErrorSubcode::Invariant
+        }
     }
 }
 
@@ -6042,6 +6088,7 @@ fn store_subcode(error: &StoreError) -> ErrorSubcode {
 fn map_mcp_server_error(error: McpServerError) -> RuntimeFailure {
     let subcode = match &error {
         McpServerError::Store(error) => store_subcode(error),
+        McpServerError::QueryEmbedding(error) => query_embedding_subcode(error),
         McpServerError::ProjectNotFound => ErrorSubcode::ProjectNotFound,
         McpServerError::InvalidMetadata => ErrorSubcode::Invariant,
         McpServerError::Initialize(_) => ErrorSubcode::ClientDisconnected,

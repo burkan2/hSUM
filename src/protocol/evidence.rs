@@ -125,18 +125,21 @@ impl CliSearchOutput {
     }
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, JsonSchema, Serialize)]
 pub struct CandidateCountsOutput {
     pub exact: usize,
     pub exact_fallback: usize,
     pub lexical: usize,
+    pub vector: usize,
 }
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, JsonSchema, Serialize)]
 pub struct SearchTimingOutput {
+    pub query_embedding: u64,
     pub exact: u64,
     pub exact_fallback: u64,
     pub lexical: u64,
+    pub vector: u64,
     pub fusion: u64,
     pub total: u64,
 }
@@ -210,11 +213,15 @@ pub struct EvidenceSearchOutput {
     pub requested_mode: String,
     pub effective_mode: String,
     pub retrievers: Vec<String>,
+    pub degraded_mode: Vec<String>,
+    pub hints: Vec<String>,
     pub results: Vec<EvidencePassageOutput>,
     pub stop_reason: String,
     pub next_cursor: Option<String>,
     pub truncated: bool,
     pub body_bytes: usize,
+    pub examined: CandidateCountsOutput,
+    pub timing_ms: SearchTimingOutput,
     pub freshness: EvidenceFreshnessOutput,
 }
 
@@ -240,6 +247,8 @@ struct SearchEnvelopeData {
     requested_mode: String,
     effective_mode: String,
     retrievers: Vec<String>,
+    degraded_mode: Vec<String>,
+    hints: Vec<String>,
     results: Vec<SearchPassageData>,
     stop_reason: &'static str,
     examined: CandidateCounts,
@@ -260,6 +269,8 @@ impl SearchEnvelopeData {
                 .into_iter()
                 .map(|retriever| retriever.as_str().to_owned())
                 .collect(),
+            degraded_mode: response.degraded_mode,
+            hints: response.hints,
             results: response
                 .results
                 .into_iter()
@@ -295,8 +306,8 @@ impl SearchEnvelopeData {
             requested_mode: self.requested_mode,
             effective_mode: self.effective_mode,
             retrievers: self.retrievers,
-            degraded_mode: Vec::new(),
-            hints: Vec::new(),
+            degraded_mode: self.degraded_mode,
+            hints: self.hints,
             results: self
                 .results
                 .into_iter()
@@ -308,11 +319,14 @@ impl SearchEnvelopeData {
                 exact: self.examined.exact,
                 exact_fallback: self.examined.exact_fallback,
                 lexical: self.examined.lexical,
+                vector: self.examined.vector,
             },
             timing_ms: SearchTimingOutput {
+                query_embedding: self.timing.query_embedding_ms,
                 exact: self.timing.exact_ms,
                 exact_fallback: self.timing.exact_fallback_ms,
                 lexical: self.timing.lexical_ms,
+                vector: self.timing.vector_ms,
                 fusion: self.timing.fusion_ms,
                 total: self.timing.total_ms,
             },
@@ -335,6 +349,8 @@ impl SearchEnvelopeData {
             requested_mode: self.requested_mode,
             effective_mode: self.effective_mode,
             retrievers: self.retrievers,
+            degraded_mode: self.degraded_mode,
+            hints: self.hints,
             results: self
                 .results
                 .into_iter()
@@ -344,6 +360,21 @@ impl SearchEnvelopeData {
             next_cursor: None,
             truncated: false,
             body_bytes,
+            examined: CandidateCountsOutput {
+                exact: self.examined.exact,
+                exact_fallback: self.examined.exact_fallback,
+                lexical: self.examined.lexical,
+                vector: self.examined.vector,
+            },
+            timing_ms: SearchTimingOutput {
+                query_embedding: self.timing.query_embedding_ms,
+                exact: self.timing.exact_ms,
+                exact_fallback: self.timing.exact_fallback_ms,
+                lexical: self.timing.lexical_ms,
+                vector: self.timing.vector_ms,
+                fusion: self.timing.fusion_ms,
+                total: self.timing.total_ms,
+            },
             freshness,
         }
     }

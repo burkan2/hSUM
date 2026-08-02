@@ -686,9 +686,18 @@ fn defaults_match_the_alpha4_contract() {
 }
 
 #[test]
-fn semantic_search_remains_deferred_while_embedding_rebuild_and_doctor_parse() {
-    assert_usage_error(&["hsum", "search", "needle", "--mode", "semantic"]);
-    assert_usage_error(&["hsum", "search", "needle", "--mode", "hybrid"]);
+fn semantic_and_hybrid_search_parse_without_adding_an_embedding_mutation_flag() {
+    let Command::Search(semantic) =
+        parse(&["hsum", "search", "needle", "--mode", "semantic"]).command
+    else {
+        panic!("expected semantic search");
+    };
+    assert_eq!(semantic.mode, SearchMode::Semantic);
+    let Command::Search(hybrid) = parse(&["hsum", "search", "needle", "--mode", "hybrid"]).command
+    else {
+        panic!("expected hybrid search");
+    };
+    assert_eq!(hybrid.mode, SearchMode::Hybrid);
     assert_usage_error(&["hsum", "search", "needle", "--embedding-model", "x"]);
     let parsed = parse(&["hsum", "ingest", "--reembed"]);
     let Command::Ingest(arguments) = parsed.command else {
@@ -937,14 +946,13 @@ fn completions_are_nonempty_deterministic_and_derived_from_alpha4_command() {
         assert!(text.contains("hsum"));
         assert!(text.contains("search"));
         assert!(
-            !text.contains("semantic"),
-            "{shell} completion leaked a deferred search mode"
-        );
-        assert!(
             !text.contains("_hsum__help"),
             "{shell} completion leaked Clap's implicit help subcommand"
         );
     }
+    let bash = String::from_utf8(render_completions(CompletionShell::Bash)).unwrap();
+    assert!(bash.contains("semantic"));
+    assert!(bash.contains("hybrid"));
 }
 
 #[test]
@@ -1023,17 +1031,16 @@ fn verbose_version_report_is_golden_and_tag_gated() {
              multi-project, search-exact, search-bm25, evidence-get, backup-verified, \
              managed-backup-disposition, prune-plan-apply, forget-physical-rewrite, restore-exact-state, \
              migrate-n-minus-one, config-migrate-n-minus-one, mcp-stdio-read-only, \
-             model-artifact-lifecycle, embedding-profile, embedding-reembed\n",
+             model-artifact-lifecycle, embedding-profile, embedding-reembed, search-semantic, search-hybrid\n",
         )
     );
 
     let rendered = render_verbose_version();
-    for deferred in ["semantic", "hybrid", "vector", "watch"] {
-        assert!(
-            !rendered.contains(deferred),
-            "verbose version leaked deferred capability {deferred:?}"
-        );
-    }
+    let deferred = "watch";
+    assert!(
+        !rendered.contains(deferred),
+        "verbose version leaked deferred capability {deferred:?}"
+    );
 }
 
 #[test]

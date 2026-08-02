@@ -72,8 +72,8 @@ pub use project_management::{
     list_projects, resolve_project_selector, set_project_root, use_project,
 };
 pub use search_evidence::{
-    SearchEvidence, SearchEvidenceError, SearchEvidenceFieldLimits, SearchEvidenceOutcome,
-    SearchEvidencePage, SearchEvidenceRequest, SearchEvidenceSnapshot,
+    SearchEmbeddingRuntime, SearchEvidence, SearchEvidenceError, SearchEvidenceFieldLimits,
+    SearchEvidenceOutcome, SearchEvidencePage, SearchEvidenceRequest, SearchEvidenceSnapshot,
 };
 pub use source_config::{
     FILESYSTEM_SOURCE_CONFIG_SCHEMA_VERSION, FilesystemSourceConfig,

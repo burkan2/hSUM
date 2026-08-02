@@ -495,7 +495,7 @@ pub struct IndexDeleteArgs {
     pub lock_timeout_ms: u64,
 }
 
-/// Retrieval modes available in alpha.4.
+/// Retrieval modes available in the current Beta.1 checkout.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 #[value(rename_all = "kebab-case")]
 pub enum SearchMode {
@@ -503,6 +503,10 @@ pub enum SearchMode {
     Auto,
     /// Exact identifiers and quotes plus lexical BM25.
     Lexical,
+    /// Exact, lexical, and compatible local-vector retrieval.
+    Hybrid,
+    /// Compatible local-vector retrieval only.
+    Semantic,
 }
 
 /// Arguments for `hsum search`.
@@ -512,7 +516,7 @@ pub struct SearchArgs {
     #[arg(value_name = "QUERY")]
     pub query: String,
 
-    /// Retrieval mode; alpha.4 auto and lexical are equivalent.
+    /// Retrieval mode; auto adds vectors only when compatible local evidence exists.
     #[arg(long, value_enum, default_value = "auto")]
     pub mode: SearchMode,
 
@@ -1349,7 +1353,7 @@ pub struct McpArgs {
 ///
 /// The list is tag-gated: deferred surface such as vector modes or watch mode
 /// must never appear here before its release tag.
-pub const COMPILED_CAPABILITIES: [&str; 20] = [
+pub const COMPILED_CAPABILITIES: [&str; 22] = [
     "filesystem-ingest",
     "filesystem-source-registration",
     "confirmed-index-deletion",
@@ -1370,6 +1374,8 @@ pub const COMPILED_CAPABILITIES: [&str; 20] = [
     "model-artifact-lifecycle",
     "embedding-profile",
     "embedding-reembed",
+    "search-semantic",
+    "search-hybrid",
 ];
 
 /// Detect the `hsum --version --verbose` form from the raw argument list.

@@ -435,6 +435,135 @@ fn semantic_search_requires_validated_complete_vectors_and_returns_guarded_evide
 }
 
 #[test]
+fn hybrid_search_fuses_exact_lexical_and_vector_ranks_without_weakening_explicit_modes() {
+    let directory = private_tempdir();
+    let path = directory.path().join("index.sqlite");
+    let profile = IndexEmbeddingProfile::Pinned(fixture_pin());
+    let mut database =
+        IndexDb::create_with_embedding_profile(&path, IndexId::new_v4(), &profile).unwrap();
+    let documents = [
+        prepared_document_named(
+            b"primary.md",
+            "primary.md",
+            "repo://primary.md",
+            b"alpha-beta semantic primary\n",
+        ),
+        prepared_document_named(
+            b"secondary.md",
+            "secondary.md",
+            "repo://secondary.md",
+            b"alpha-beta lexical secondary\n",
+        ),
+    ];
+    database
+        .apply_filesystem_snapshot(
+            &fixture_scope(),
+            &documents,
+            &[],
+            DeleteConfirmations::default(),
+        )
+        .unwrap();
+
+    let query = unit_vector(0);
+    let hybrid = SearchRequest::new("alpha-beta", SearchMode::Hybrid, 10, 3_000, true)
+        .unwrap()
+        .with_query_embedding(&query)
+        .unwrap();
+    assert!(matches!(
+        database.search(fixture_scope().project_id, &hybrid),
+        Err(SearchError::SemanticUnavailable)
+    ));
+
+    let inputs = database.load_embedding_input_batch(0, 8).unwrap();
+    assert_eq!(inputs.len(), 2);
+    for input in &inputs {
+        let coordinate = usize::from(input.text().contains("secondary"));
+        let embedding = PreparedChunkEmbedding::from_input(
+            input,
+            unit_vector(coordinate),
+            fixture_provenance("macos", "aarch64"),
+        )
+        .unwrap();
+        database.cache_chunk_embedding(&embedding).unwrap();
+    }
+    database.commit_cached_reembedding().unwrap();
+
+    let response = database
+        .search(fixture_scope().project_id, &hybrid)
+        .unwrap();
+    assert_eq!(response.requested_mode, SearchMode::Hybrid);
+    assert_eq!(response.effective_mode, SearchMode::Hybrid);
+    assert_eq!(
+        response.retrievers,
+        vec![Retriever::Exact, Retriever::Lexical, Retriever::Vector]
+    );
+    assert_eq!(response.examined.exact, 2);
+    assert_eq!(response.examined.lexical, 2);
+    assert_eq!(response.examined.vector, 2);
+
+    let primary = response
+        .results
+        .iter()
+        .find(|result| result.content.contains("semantic primary"))
+        .unwrap();
+    assert_eq!(primary.score.lists.len(), 3);
+    assert_eq!(
+        primary
+            .score
+            .lists
+            .iter()
+            .map(|list| list.retriever)
+            .collect::<Vec<_>>(),
+        vec![Retriever::Exact, Retriever::Lexical, Retriever::Vector]
+    );
+    assert_eq!(
+        primary.score.fusion_units,
+        primary
+            .score
+            .lists
+            .iter()
+            .map(|list| list.contribution_units)
+            .sum::<u64>()
+    );
+
+    let auto = SearchRequest::new("alpha-beta", SearchMode::Auto, 10, 3_000, true)
+        .unwrap()
+        .with_query_embedding(&query)
+        .unwrap();
+    let auto_response = database.search(fixture_scope().project_id, &auto).unwrap();
+    assert_eq!(auto_response.effective_mode, SearchMode::Hybrid);
+    assert_eq!(auto_response.results, response.results);
+
+    let lexical = SearchRequest::new("alpha-beta", SearchMode::Lexical, 10, 3_000, true)
+        .unwrap()
+        .with_query_embedding(&query)
+        .unwrap();
+    let lexical_response = database
+        .search(fixture_scope().project_id, &lexical)
+        .unwrap();
+    assert_eq!(lexical_response.effective_mode, SearchMode::Lexical);
+    assert_eq!(
+        lexical_response.retrievers,
+        vec![Retriever::Exact, Retriever::Lexical]
+    );
+    assert_eq!(lexical_response.examined.vector, 0);
+    assert!(lexical_response.results.iter().all(|result| {
+        result
+            .score
+            .lists
+            .iter()
+            .all(|list| list.retriever != Retriever::Vector)
+    }));
+
+    let missing_embedding =
+        SearchRequest::new("alpha-beta", SearchMode::Hybrid, 10, 3_000, false).unwrap();
+    assert!(matches!(
+        database.search(fixture_scope().project_id, &missing_embedding),
+        Err(SearchError::QueryEmbeddingRequired)
+    ));
+}
+
+#[test]
 fn semantic_query_embedding_rejects_wrong_shape_nonfinite_and_unnormalized_input() {
     let request = SearchRequest::new("query", SearchMode::Semantic, 10, 3_000, false).unwrap();
     assert!(matches!(
@@ -836,9 +965,15 @@ fn prepared_document() -> PreparedDocument {
 }
 
 fn prepared_document_with_body(body: &[u8]) -> PreparedDocument {
-    let connector_key = b"notes.md";
-    let source_uri = "repo://notes.md";
-    let title = "notes.md";
+    prepared_document_named(b"notes.md", "notes.md", "repo://notes.md", body)
+}
+
+fn prepared_document_named(
+    connector_key: &[u8],
+    title: &str,
+    source_uri: &str,
+    body: &[u8],
+) -> PreparedDocument {
     let metadata = json!({});
     let revision = revision_sha256(&SnapshotRevision {
         body,

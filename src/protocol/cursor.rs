@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::domain::{IndexId, ProjectId};
 use crate::protocol::API_VERSION;
-use crate::search::{MAX_SEARCH_LIMIT, SearchMode};
+use crate::search::{MAX_SEARCH_LIMIT, SearchMode, SearchResponse};
 
 pub const MAX_SEARCH_CURSOR_BYTES: usize = 256;
 
@@ -15,10 +15,10 @@ const PAYLOAD_BYTES: usize = 139;
 const CURSOR_CHECKSUM_DOMAIN: &[u8] = b"hsum.mcp.cursor.v1";
 const RETRIEVAL_CONFIG_DESCRIPTOR: &str = concat!(
     "hsum.retrieval-config.v1\n",
-    "modes=auto,lexical:auto-effective-lexical\n",
-    "retrievers=identifier-literal,quoted-byte-bloom-aho,fts5-bm25\n",
+    "modes=auto,lexical,hybrid,semantic:auto-capability-aware\n",
+    "retrievers=identifier-literal,quoted-byte-bloom-aho,fts5-bm25,sqlite-vec-cosine\n",
     "candidates=initial-50:step-50:max-per-list-500:max-results-50\n",
-    "fusion=integer-rrf:k-60:scale-1000000000000:exact-weight-3/2:lexical-weight-1\n",
+    "fusion=integer-rrf:k-60:scale-1000000000000:exact-weight-3/2:lexical-weight-1:vector-weight-1\n",
     "rounding=half-up\n",
     "dedupe=same-content-sha256-or-same-document-overlap-at-least-half\n",
     "order=fusion-desc,matched-exact-bytes-desc,source-id,document-id,start-byte\n",
@@ -64,6 +64,34 @@ pub fn retrieval_config_fingerprint() -> String {
         crate::store::pipeline_fingerprint(),
     );
     hex::encode(Sha256::digest(descriptor.as_bytes()))
+}
+
+pub fn retrieval_execution_fingerprint(response: &SearchResponse) -> String {
+    let mut hasher = Sha256::new();
+    for value in [
+        b"hsum.retrieval-execution.v1".as_slice(),
+        retrieval_config_fingerprint().as_bytes(),
+        response.effective_mode.as_str().as_bytes(),
+    ] {
+        hasher.update((value.len() as u64).to_be_bytes());
+        hasher.update(value);
+    }
+    hasher.update((response.retrievers.len() as u64).to_be_bytes());
+    for retriever in &response.retrievers {
+        update_framed(&mut hasher, retriever.as_str().as_bytes());
+    }
+    for values in [&response.degraded_mode, &response.hints] {
+        hasher.update((values.len() as u64).to_be_bytes());
+        for value in values {
+            update_framed(&mut hasher, value.as_bytes());
+        }
+    }
+    hex::encode(hasher.finalize())
+}
+
+fn update_framed(hasher: &mut Sha256, value: &[u8]) {
+    hasher.update((value.len() as u64).to_be_bytes());
+    hasher.update(value);
 }
 
 pub fn encode_search_cursor(
@@ -343,5 +371,35 @@ mod tests {
             ),
             Err(SearchCursorError::QueryFingerprint)
         );
+    }
+
+    #[test]
+    fn execution_fingerprint_binds_effective_retrievers_and_degradation() {
+        let mut response = SearchResponse {
+            project_id: ProjectId::from_uuid(uuid::Uuid::parse_str(PROJECT_UUID).unwrap()),
+            scope_revision: 1,
+            generation: Some(1),
+            index_epoch: 1,
+            requested_mode: SearchMode::Auto,
+            effective_mode: SearchMode::Lexical,
+            retrievers: vec![
+                crate::search::Retriever::Exact,
+                crate::search::Retriever::Lexical,
+            ],
+            degraded_mode: Vec::new(),
+            hints: Vec::new(),
+            results: Vec::new(),
+            stop_reason: crate::search::SearchStopReason::UniqueExhausted,
+            examined: crate::search::CandidateCounts::default(),
+            timing: crate::search::SearchTiming::default(),
+        };
+        let lexical = retrieval_execution_fingerprint(&response);
+        response.effective_mode = SearchMode::Hybrid;
+        response.retrievers.push(crate::search::Retriever::Vector);
+        assert_ne!(retrieval_execution_fingerprint(&response), lexical);
+        response.effective_mode = SearchMode::Lexical;
+        response.retrievers.pop();
+        response.hints.push("query_embedding_busy".to_owned());
+        assert_ne!(retrieval_execution_fingerprint(&response), lexical);
     }
 }

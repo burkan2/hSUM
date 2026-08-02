@@ -7,7 +7,7 @@ mod status;
 pub use cursor::{
     DecodedSearchCursor, MAX_SEARCH_CURSOR_BYTES, SearchCursorError, SearchCursorStaleCause,
     SearchCursorState, decode_search_cursor, encode_search_cursor, retrieval_config_fingerprint,
-    search_cursor_stale_cause,
+    retrieval_execution_fingerprint, search_cursor_stale_cause,
 };
 pub use evidence::{
     ByteSpanOutput, CandidateCountsOutput, CliDuplicateCitationOutput, CliRankExplanationOutput,

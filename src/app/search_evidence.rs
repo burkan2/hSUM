@@ -1,4 +1,7 @@
 use std::collections::BTreeSet;
+use std::fmt;
+use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use rusqlite::{Connection, OptionalExtension};
@@ -8,11 +11,41 @@ use uuid::Uuid;
 use crate::app::SourceConfigError;
 use crate::app::stored_source::{StoredSource, StoredSourceRootError, stored_source};
 use crate::domain::{IndexId, ProjectId};
+use crate::model::{
+    ModelError, ModelStore, QueryEmbeddingControl, QueryEmbeddingError, QueryEmbeddingRequest,
+    QueryEmbeddingService,
+};
 use crate::search::{
-    MAX_SEARCH_LIMIT, SearchError, SearchRequest, SearchResponse, SearchStopReason,
+    MAX_SEARCH_LIMIT, MIN_SEARCH_DEADLINE_MS, SearchError, SearchMode, SearchRequest,
+    SearchResponse, SearchStopReason,
 };
 use crate::status::{DocumentDrift, DriftOptions, Status, StatusError};
-use crate::store::{ForgetLedger, IndexDb, OpenMode, StoreError};
+use crate::store::{ForgetLedger, IndexDb, IndexEmbeddingProfile, OpenMode, StoreError};
+
+#[derive(Clone)]
+pub struct SearchEmbeddingRuntime {
+    cache_root: PathBuf,
+    service: Arc<QueryEmbeddingService>,
+}
+
+impl SearchEmbeddingRuntime {
+    pub fn new(cache_root: PathBuf) -> Result<Self, QueryEmbeddingError> {
+        let service = Arc::new(QueryEmbeddingService::new(cache_root.clone())?);
+        Ok(Self {
+            cache_root,
+            service,
+        })
+    }
+}
+
+impl fmt::Debug for SearchEmbeddingRuntime {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter
+            .debug_struct("SearchEmbeddingRuntime")
+            .field("cache_root", &self.cache_root)
+            .finish_non_exhaustive()
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SearchEvidenceFieldLimits {
@@ -83,6 +116,7 @@ pub struct SearchEvidenceRequest {
     pub index_path: std::path::PathBuf,
     pub project_id: ProjectId,
     pub search: SearchRequest,
+    pub embedding_runtime: Option<SearchEmbeddingRuntime>,
     pub expected_snapshot: Option<SearchEvidenceSnapshot>,
     pub page: SearchEvidencePage,
     pub field_limits: SearchEvidenceFieldLimits,
@@ -108,6 +142,10 @@ pub enum SearchEvidenceError {
     Store(#[from] StoreError),
     #[error(transparent)]
     Search(#[from] SearchError),
+    #[error("the selected index has no embedding model configured")]
+    ModelNotConfigured,
+    #[error(transparent)]
+    QueryEmbedding(#[from] QueryEmbeddingError),
     #[error(transparent)]
     Status(#[from] StatusError),
     #[error("stored filesystem source configuration is invalid")]
@@ -136,34 +174,68 @@ pub enum SearchEvidenceError {
 #[derive(Debug)]
 pub struct SearchEvidence;
 
+struct PreparedSearch {
+    search: SearchRequest,
+    degraded_mode: Vec<String>,
+    hints: Vec<String>,
+    embedding_elapsed: Duration,
+    snapshot: SearchEvidenceSnapshot,
+}
+
 impl SearchEvidence {
     pub fn execute(
         request: &SearchEvidenceRequest,
     ) -> Result<SearchEvidenceOutcome, SearchEvidenceError> {
-        checkpoint(request)?;
-        let database = IndexDb::open_existing(&request.index_path, OpenMode::ReadOnly)?;
-        if let Some(observer) = request.connection_observer {
-            observer(database.connection());
-        }
-
-        if let Some(expected) = request.expected_snapshot.as_ref() {
-            let transaction = database.connection().unchecked_transaction()?;
-            let actual = read_snapshot(&transaction, request.project_id)?;
-            transaction.rollback()?;
-            if expected != &actual {
-                return Err(SearchEvidenceError::SnapshotChanged {
-                    expected: expected.clone(),
-                    actual,
-                });
+        let started = Instant::now();
+        let mut query_embedding_elapsed = Duration::ZERO;
+        let (database, mut response, snapshot, degraded_mode, hints) = loop {
+            checkpoint(request)?;
+            let prepared = prepare_query_embedding(request, started)?;
+            query_embedding_elapsed += prepared.embedding_elapsed;
+            checkpoint(request)?;
+            let database = IndexDb::open_existing(&request.index_path, OpenMode::ReadOnly)?;
+            if let Some(observer) = request.connection_observer {
+                observer(database.connection());
             }
-        }
 
-        checkpoint(request)?;
-        let mut response = database.search(request.project_id, &request.search)?;
+            checkpoint(request)?;
+            let response = match database.search(request.project_id, &prepared.search) {
+                Ok(response) => response,
+                Err(error) => {
+                    let actual = read_snapshot(database.connection(), request.project_id)?;
+                    if actual != prepared.snapshot {
+                        checkpoint(request)?;
+                        continue;
+                    }
+                    return Err(error.into());
+                }
+            };
+            let snapshot = SearchEvidenceSnapshot {
+                index_id: read_index_id(database.connection())?,
+                scope_revision: response.scope_revision,
+                index_epoch: response.index_epoch,
+                generation: response.generation,
+            };
+            if snapshot != prepared.snapshot {
+                checkpoint(request)?;
+                continue;
+            }
+            break (
+                database,
+                response,
+                snapshot,
+                prepared.degraded_mode,
+                prepared.hints,
+            );
+        };
+        response.degraded_mode = degraded_mode;
+        response.hints = hints;
+        response.timing.query_embedding_ms = millis(query_embedding_elapsed);
+        response.timing.total_ms = millis(started.elapsed());
         if request.deadline_stop_is_error && response.stop_reason == SearchStopReason::Deadline {
             return Err(SearchEvidenceError::Deadline);
         }
-        let index_id = read_index_id(database.connection())?;
+        let index_id = snapshot.index_id;
         let forget_ledger = ForgetLedger::read(&request.index_path, index_id)?;
         response.results.retain(|passage| {
             !forget_ledger.suppresses_document(passage.source_id, passage.document_id)
@@ -171,12 +243,6 @@ impl SearchEvidence {
         validate_search_fields(&response, request.field_limits)?;
         checkpoint(request)?;
 
-        let snapshot = SearchEvidenceSnapshot {
-            index_id,
-            scope_revision: response.scope_revision,
-            index_epoch: response.index_epoch,
-            generation: response.generation,
-        };
         if let Some(expected) = request.expected_snapshot.as_ref()
             && expected != &snapshot
         {
@@ -258,6 +324,197 @@ impl SearchEvidence {
     }
 }
 
+fn prepare_query_embedding(
+    request: &SearchEvidenceRequest,
+    started: Instant,
+) -> Result<PreparedSearch, SearchEvidenceError> {
+    let request_deadline = started
+        .checked_add(Duration::from_millis(request.search.deadline_ms()))
+        .unwrap_or(started);
+    let deadline = request
+        .operation_deadline
+        .map_or(request_deadline, |operation| {
+            operation.min(request_deadline)
+        });
+
+    let preflight = IndexDb::open_existing(&request.index_path, OpenMode::ReadOnly)?;
+    let snapshot = read_snapshot(preflight.connection(), request.project_id)?;
+    if let Some(expected) = request.expected_snapshot.as_ref()
+        && expected != &snapshot
+    {
+        return Err(SearchEvidenceError::SnapshotChanged {
+            expected: expected.clone(),
+            actual: snapshot,
+        });
+    }
+    if request.search.mode() == SearchMode::Lexical {
+        drop(preflight);
+        return Ok(PreparedSearch {
+            search: remaining_search_request(request, deadline)?,
+            degraded_mode: Vec::new(),
+            hints: Vec::new(),
+            embedding_elapsed: Duration::ZERO,
+            snapshot,
+        });
+    }
+    let profile = preflight.embedding_profile()?;
+    let vectors_complete = preflight.has_complete_vector_membership()?;
+    preflight.verify_live_identity()?;
+    drop(preflight);
+
+    let explicit_vector = matches!(
+        request.search.mode(),
+        SearchMode::Hybrid | SearchMode::Semantic
+    );
+    let IndexEmbeddingProfile::Pinned(pin) = profile else {
+        return if explicit_vector {
+            Err(SearchEvidenceError::ModelNotConfigured)
+        } else {
+            Ok(PreparedSearch {
+                search: remaining_search_request(request, deadline)?,
+                degraded_mode: Vec::new(),
+                hints: Vec::new(),
+                embedding_elapsed: Duration::ZERO,
+                snapshot,
+            })
+        };
+    };
+    let Some(runtime) = request.embedding_runtime.as_ref() else {
+        return if explicit_vector {
+            Err(QueryEmbeddingError::Restarting.into())
+        } else {
+            Ok(PreparedSearch {
+                search: remaining_search_request(request, deadline)?,
+                degraded_mode: Vec::new(),
+                hints: vec!["query_embedding_busy".to_owned()],
+                embedding_elapsed: Duration::ZERO,
+                snapshot,
+            })
+        };
+    };
+    let store = ModelStore::new(runtime.cache_root.clone());
+    let manifest = store
+        .manifest(pin.model_id())
+        .map_err(|_| QueryEmbeddingError::ModelIncompatible)?;
+    let manifest_fingerprint = manifest
+        .fingerprint()
+        .map_err(|_| QueryEmbeddingError::ModelIncompatible)?;
+    if manifest.upstream_revision != pin.upstream_revision()
+        || manifest_fingerprint != pin.model_fingerprint()
+        || manifest.dimension != pin.dimension()
+    {
+        return if explicit_vector {
+            Err(QueryEmbeddingError::ModelIncompatible.into())
+        } else {
+            Ok(PreparedSearch {
+                search: remaining_search_request(request, deadline)?,
+                degraded_mode: vec!["model_incompatible".to_owned()],
+                hints: Vec::new(),
+                embedding_elapsed: Duration::ZERO,
+                snapshot,
+            })
+        };
+    }
+
+    if !vectors_complete {
+        let artifact = match store.inspect(manifest) {
+            Ok(()) => None,
+            Err(ModelError::NotInstalled { .. }) => Some(QueryEmbeddingError::ModelMissing),
+            Err(_) => Some(QueryEmbeddingError::ModelUnverified),
+        };
+        if explicit_vector {
+            return Err(artifact
+                .unwrap_or(QueryEmbeddingError::ModelIncompatible)
+                .into());
+        }
+        let hints = if matches!(artifact, Some(QueryEmbeddingError::ModelMissing)) {
+            vec!["semantic_available_after_model_install".to_owned()]
+        } else {
+            Vec::new()
+        };
+        return Ok(PreparedSearch {
+            search: remaining_search_request(request, deadline)?,
+            degraded_mode: Vec::new(),
+            hints,
+            embedding_elapsed: Duration::ZERO,
+            snapshot,
+        });
+    }
+    let embedding_request = QueryEmbeddingRequest::new(
+        pin.model_id(),
+        pin.model_fingerprint(),
+        request.search.query().original(),
+    )?;
+    let embedding_started = Instant::now();
+    let embedding = runtime.service.embed(
+        embedding_request,
+        QueryEmbeddingControl {
+            deadline,
+            cancelled: request.cancelled,
+        },
+    );
+    let embedding_elapsed = embedding_started.elapsed();
+    let embedding = match embedding {
+        Ok(embedding) => embedding,
+        Err(QueryEmbeddingError::Busy | QueryEmbeddingError::Restarting)
+            if request.search.mode() == SearchMode::Auto =>
+        {
+            return Ok(PreparedSearch {
+                search: remaining_search_request(request, deadline)?,
+                degraded_mode: Vec::new(),
+                hints: vec!["query_embedding_busy".to_owned()],
+                embedding_elapsed,
+                snapshot,
+            });
+        }
+        Err(QueryEmbeddingError::ModelMissing) if request.search.mode() == SearchMode::Auto => {
+            return Ok(PreparedSearch {
+                search: remaining_search_request(request, deadline)?,
+                degraded_mode: vec!["degraded_missing".to_owned()],
+                hints: Vec::new(),
+                embedding_elapsed,
+                snapshot,
+            });
+        }
+        Err(QueryEmbeddingError::ModelUnverified | QueryEmbeddingError::ModelIncompatible)
+            if request.search.mode() == SearchMode::Auto =>
+        {
+            return Ok(PreparedSearch {
+                search: remaining_search_request(request, deadline)?,
+                degraded_mode: vec!["model_incompatible".to_owned()],
+                hints: Vec::new(),
+                embedding_elapsed,
+                snapshot,
+            });
+        }
+        Err(error) => return Err(error.into()),
+    };
+    let search = remaining_search_request(request, deadline)?.with_query_embedding(&embedding)?;
+    Ok(PreparedSearch {
+        search,
+        degraded_mode: Vec::new(),
+        hints: Vec::new(),
+        embedding_elapsed,
+        snapshot,
+    })
+}
+
+fn remaining_search_request(
+    request: &SearchEvidenceRequest,
+    deadline: Instant,
+) -> Result<SearchRequest, SearchEvidenceError> {
+    let remaining = deadline.saturating_duration_since(Instant::now());
+    let remaining_ms = u64::try_from(remaining.as_millis()).unwrap_or(u64::MAX);
+    if remaining_ms < MIN_SEARCH_DEADLINE_MS {
+        return Err(SearchEvidenceError::Deadline);
+    }
+    Ok(request.search.clone().with_deadline_ms(remaining_ms)?)
+}
+
+fn millis(duration: Duration) -> u64 {
+    u64::try_from(duration.as_millis()).unwrap_or(u64::MAX)
+}
+
 fn select_page(
     response: &SearchResponse,
     page: SearchEvidencePage,
@@ -314,22 +571,44 @@ fn read_snapshot(
     connection: &Connection,
     project_id: ProjectId,
 ) -> Result<SearchEvidenceSnapshot, SearchEvidenceError> {
-    let scope_revision: i64 = connection
-        .query_row(
-            "SELECT scope_revision FROM projects WHERE id = ?1",
-            [project_id.as_uuid().as_bytes().as_slice()],
-            |row| row.get(0),
+    let (scope_revision, index_id, index_epoch, generation): (i64, Vec<u8>, Vec<u8>, Vec<u8>) =
+        connection
+            .query_row(
+                "SELECT p.scope_revision,
+                        (SELECT value FROM index_meta WHERE key = 'index_uuid'),
+                        (SELECT value FROM index_meta WHERE key = 'index_epoch'),
+                        (SELECT value FROM index_meta WHERE key = 'active_generation')
+                 FROM projects AS p
+                 WHERE p.id = ?1",
+                [project_id.as_uuid().as_bytes().as_slice()],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .optional()?
+            .ok_or(SearchError::ProjectNotFound)?;
+    let index_id = Uuid::from_slice(&index_id)
+        .map(IndexId::from_uuid)
+        .map_err(|_| SearchEvidenceError::Corrupt("invalid index identity"))?;
+    let index_epoch = String::from_utf8(index_epoch)
+        .map_err(|_| SearchEvidenceError::Corrupt("invalid index metadata"))?
+        .parse()
+        .map_err(|_| SearchEvidenceError::Corrupt("invalid index epoch"))?;
+    let generation = String::from_utf8(generation)
+        .map_err(|_| SearchEvidenceError::Corrupt("invalid index metadata"))?;
+    let generation = if generation.is_empty() {
+        None
+    } else {
+        Some(
+            generation
+                .parse()
+                .map_err(|_| SearchEvidenceError::Corrupt("invalid generation metadata"))?,
         )
-        .optional()?
-        .ok_or(SearchError::ProjectNotFound)?;
+    };
     Ok(SearchEvidenceSnapshot {
-        index_id: read_index_id(connection)?,
+        index_id,
         scope_revision: u64::try_from(scope_revision)
             .map_err(|_| SearchEvidenceError::Corrupt("negative scope revision"))?,
-        index_epoch: read_meta_text(connection, "index_epoch")?
-            .parse()
-            .map_err(|_| SearchEvidenceError::Corrupt("invalid index epoch"))?,
-        generation: read_optional_meta_i64(connection, "active_generation")?,
+        index_epoch,
+        generation,
     })
 }
 
@@ -342,29 +621,6 @@ fn read_index_id(connection: &Connection) -> Result<IndexId, SearchEvidenceError
     let uuid = Uuid::from_slice(&value)
         .map_err(|_| SearchEvidenceError::Corrupt("invalid index identity"))?;
     Ok(IndexId::from_uuid(uuid))
-}
-
-fn read_meta_text(connection: &Connection, key: &str) -> Result<String, SearchEvidenceError> {
-    let value: Vec<u8> = connection.query_row(
-        "SELECT value FROM index_meta WHERE key = ?1",
-        [key],
-        |row| row.get(0),
-    )?;
-    String::from_utf8(value).map_err(|_| SearchEvidenceError::Corrupt("invalid index metadata"))
-}
-
-fn read_optional_meta_i64(
-    connection: &Connection,
-    key: &str,
-) -> Result<Option<i64>, SearchEvidenceError> {
-    let value = read_meta_text(connection, key)?;
-    if value.is_empty() {
-        return Ok(None);
-    }
-    value
-        .parse()
-        .map(Some)
-        .map_err(|_| SearchEvidenceError::Corrupt("invalid generation metadata"))
 }
 
 fn checkpoint(request: &SearchEvidenceRequest) -> Result<(), SearchEvidenceError> {
@@ -403,6 +659,7 @@ mod tests {
             index_path: "/unused-after-checkpoint".into(),
             project_id: ProjectId::new_v4(),
             search: SearchRequest::with_defaults("fixture").unwrap(),
+            embedding_runtime: None,
             expected_snapshot: None,
             page: SearchEvidencePage::unbounded(1),
             field_limits: SearchEvidenceFieldLimits::CLI,

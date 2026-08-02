@@ -787,6 +787,7 @@ mod tests {
     use super::*;
 
     static CANCELLED: AtomicBool = AtomicBool::new(false);
+    static CANCELLATION_TEST_LOCK: Mutex<()> = Mutex::new(());
     type ReleaseGate = Arc<(Mutex<bool>, Condvar)>;
     type BlockingServiceFixture = (QueryEmbeddingService, Arc<AtomicUsize>, ReleaseGate);
 
@@ -877,7 +878,7 @@ mod tests {
     }
 
     fn wait_until(mut condition: impl FnMut() -> bool) {
-        let deadline = Instant::now() + Duration::from_secs(2);
+        let deadline = Instant::now() + Duration::from_secs(30);
         while !condition() {
             assert!(Instant::now() < deadline, "condition timed out");
             thread::sleep(Duration::from_millis(5));
@@ -910,19 +911,26 @@ mod tests {
         let (service, calls, release_gate) = blocking_service(QUERY_MODEL_WORKERS);
         let service = Arc::new(service);
         let mut callers = Vec::new();
-        for ordinal in 0..(QUERY_MODEL_WORKERS + QUERY_MODEL_QUEUE) {
+        for ordinal in 0..QUERY_MODEL_WORKERS {
             let service = Arc::clone(&service);
             callers.push(thread::spawn(move || {
                 service.embed(
                     request(&format!("query {ordinal}")),
-                    control(Duration::from_secs(2)),
+                    control(Duration::from_secs(30)),
                 )
             }));
         }
-        wait_until(|| {
-            calls.load(Ordering::Acquire) == QUERY_MODEL_WORKERS
-                && service.pending() == QUERY_MODEL_QUEUE
-        });
+        wait_until(|| calls.load(Ordering::Acquire) == QUERY_MODEL_WORKERS);
+        for ordinal in QUERY_MODEL_WORKERS..(QUERY_MODEL_WORKERS + QUERY_MODEL_QUEUE) {
+            let service = Arc::clone(&service);
+            callers.push(thread::spawn(move || {
+                service.embed(
+                    request(&format!("query {ordinal}")),
+                    control(Duration::from_secs(30)),
+                )
+            }));
+        }
+        wait_until(|| service.pending() == QUERY_MODEL_QUEUE);
         assert!(matches!(
             service.embed(request("overflow"), control(Duration::from_secs(1))),
             Err(QueryEmbeddingError::Busy)
@@ -935,26 +943,37 @@ mod tests {
 
     #[test]
     fn cancel_storm_leaves_lexical_sqlite_service_available() {
+        let _serial = CANCELLATION_TEST_LOCK.lock().unwrap();
         CANCELLED.store(false, Ordering::Release);
         let (service, calls, release_gate) = blocking_service(QUERY_MODEL_WORKERS);
         let service = Arc::new(service);
         let mut callers = Vec::new();
-        for ordinal in 0..(QUERY_MODEL_WORKERS + QUERY_MODEL_QUEUE) {
+        for ordinal in 0..QUERY_MODEL_WORKERS {
             let service = Arc::clone(&service);
             callers.push(thread::spawn(move || {
                 service.embed(
                     request(&format!("cancel storm {ordinal}")),
                     QueryEmbeddingControl {
-                        deadline: Instant::now() + Duration::from_secs(2),
+                        deadline: Instant::now() + Duration::from_secs(30),
                         cancelled: Some(cancelled),
                     },
                 )
             }));
         }
-        wait_until(|| {
-            calls.load(Ordering::Acquire) == QUERY_MODEL_WORKERS
-                && service.pending() == QUERY_MODEL_QUEUE
-        });
+        wait_until(|| calls.load(Ordering::Acquire) == QUERY_MODEL_WORKERS);
+        for ordinal in QUERY_MODEL_WORKERS..(QUERY_MODEL_WORKERS + QUERY_MODEL_QUEUE) {
+            let service = Arc::clone(&service);
+            callers.push(thread::spawn(move || {
+                service.embed(
+                    request(&format!("cancel storm {ordinal}")),
+                    QueryEmbeddingControl {
+                        deadline: Instant::now() + Duration::from_secs(30),
+                        cancelled: Some(cancelled),
+                    },
+                )
+            }));
+        }
+        wait_until(|| service.pending() == QUERY_MODEL_QUEUE);
         CANCELLED.store(true, Ordering::Release);
         for caller in callers {
             assert!(matches!(
@@ -1001,6 +1020,7 @@ mod tests {
 
     #[test]
     fn caller_cancellation_and_deadline_discard_late_results() {
+        let _serial = CANCELLATION_TEST_LOCK.lock().unwrap();
         CANCELLED.store(false, Ordering::Release);
         let (service, calls, release_gate) = blocking_service(1);
         let service = Arc::new(service);

@@ -136,6 +136,38 @@ fn init_pins_without_downloading_and_reembed_requires_the_exact_artifact() {
     );
     assert!(!home.path().join("cache/models").exists());
 
+    let auto = run(
+        home.path(),
+        working.path(),
+        &["search", "semantic evidence", "--json"],
+        true,
+    );
+    assert!(auto.status.success(), "{}", stderr(&auto));
+    let auto: Value = serde_json::from_slice(&auto.stdout).unwrap();
+    assert_eq!(auto["requested_mode"], "auto");
+    assert_eq!(auto["effective_mode"], "lexical");
+    assert_eq!(
+        auto["hints"],
+        json!(["semantic_available_after_model_install"])
+    );
+    assert_eq!(auto["degraded_mode"], json!([]));
+    assert_eq!(auto["examined"]["vector"], 0);
+    assert_eq!(auto["timing_ms"]["query_embedding"], 0);
+
+    for mode in ["semantic", "hybrid"] {
+        let explicit = run(
+            home.path(),
+            working.path(),
+            &["search", "semantic evidence", "--mode", mode, "--json"],
+            true,
+        );
+        assert_eq!(explicit.status.code(), Some(3), "{}", stderr(&explicit));
+        let error: Value = serde_json::from_slice(&explicit.stderr).unwrap();
+        assert_eq!(error["code"], "MODEL_MISSING");
+        assert_eq!(error["subcode"], "MODEL_NOT_INSTALLED");
+        assert_eq!(error["retryable"], false);
+    }
+
     let listed = run(
         home.path(),
         working.path(),

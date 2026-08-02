@@ -281,15 +281,37 @@ Optional watch mode and additional integrations are not on the critical path.
     coalescing, replacement, frame/output validation, real child termination,
     a cancel storm that leaves lexical SQLite search responsive, and a real
     offline missing-model process exchange. The serialized complete local
-    suite, formatting, and strict all-feature Clippy pass. Native worker
-    memory/target evidence, hybrid fusion, public CLI/MCP/API exposure, and
-    stable release qualification remain open in sequence.
-- Evaluate recency, source diversity, rare-token statistics, query expansion,
-  neighboring context, and reranking one experiment at a time against a frozen
-  exact/BM25 baseline.
-- Promote a signal only when predefined retrieval and task metrics improve
-  without regressing exact-token quality, explainability, determinism, or
-  latency.
+    suite, formatting, and strict all-feature Clippy pass.
+  - Current-checkout hybrid checkpoint: one bounded loop adaptively combines at
+    most three independently ranked exact, BM25, and filtered-vector lists at
+    depth increments of 50. The frozen integer weighted reciprocal-rank formula
+    gives exact evidence 1.5 times the lexical/vector contribution, then uses
+    deterministic source/document/span tie order. Same-content and inclusive
+    50%-overlap suppression preserve duplicate citations, rank explanations are
+    bounded to the contributing lists, and explicit lexical/semantic modes do
+    not acquire unintended retrievers. Frozen-score, equal-rank, overlap, and
+    three-list integration fixtures pass without changing the 15-query lexical
+    contract suite.
+  - Current-checkout public-transport checkpoint: CLI and project-bound
+    read-only MCP expose `auto`, `lexical`, `hybrid`, and `semantic` through the
+    shared application use case. Exactly one two-worker service is shared per
+    process; model inference occurs before SQLite retrieval and a one-statement
+    snapshot preflight plus deadline-bounded retry prevents generation mixing.
+    Auto reports typed degraded/hint state and falls back only under the
+    documented model/queue conditions; explicit vector modes return typed
+    failures. CLI/MCP share mode, retriever counts, component timings,
+    explanations, degradation, hints, and an effective-retriever cursor
+    fingerprint. The 22-case vector suite, CLI/MCP/process parity suites, and
+    the repository-owned `cargo xtask check` gate pass. Native product-mode
+    evidence and stable release qualification remain open.
+- Build and freeze the canonical held-out evaluation next: at least 100 queries
+  over at least three independently structured corpora, with accepted spans,
+  four-point labels, at least 30 semantic/paraphrase cases, external retriever
+  comparisons, NDCG@10, MRR@10, exact-token top-three recall, and paired
+  query-level bootstrap intervals from a checked-in seed. Diagnose lexical
+  cross-build variance without changing the frozen scoring contract. Promote
+  hybrid only if every non-inferiority and positive-value gate passes;
+  otherwise retain the documented lexical-first stable fallback.
 
 ## P2 — External agent-task evaluation
 
