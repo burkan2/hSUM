@@ -240,7 +240,10 @@ Optional watch mode and additional integrations are not on the critical path.
     `SQLITE_INTERRUPT` as `chunks iter error`. The canonical storage revision
     uses filtered `K+1` plus a source/slot-scoped exact tie fallback and maps the
     generic error only from owned cancellation/deadline state. The complete
-    local gate passes; Linux x86_64/macOS arm64 workflow evidence remains open.
+    local gate passes. Native workflow run `30732989326` passes on Linux x86_64
+    and macOS arm64 with identical revised tie membership and dependency
+    identity, closing the portability prerequisite for production vector
+    storage.
 - Evaluate recency, source diversity, rare-token statistics, query expansion,
   neighboring context, and reranking one experiment at a time against a frozen
   exact/BM25 baseline.

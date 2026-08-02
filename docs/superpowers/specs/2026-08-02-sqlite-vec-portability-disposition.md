@@ -1,7 +1,7 @@
 # sqlite-vec portability disposition and storage revision
 
 **Date:** 2026-08-02
-**Status:** Accepted canonical Beta.1 storage revision, pending native evidence
+**Status:** Accepted canonical Beta.1 storage revision; native evidence passing
 **Authority:** The failure branch in `work/local-rust-evidence-bus-design.md`
 
 ## Decision
@@ -57,8 +57,14 @@ WAL reader snapshots, shadow-slot flipping, 64-source fan-out, cancellation,
 wrong dimensions, corrupt shadow storage, RSS, database bytes, and native
 dynamic dependencies.
 
-Production schema and semantic retrieval remain blocked until Linux x86_64 and
-macOS arm64 both pass `.github/workflows/vector-portability.yml`. Once they do,
-implementation must preserve this adapter as an explicit tested boundary; a
-future sqlite-vec upgrade cannot remove it without rerunning the raw cutoff and
-interruption probes and publishing a new disposition.
+Linux x86_64 and macOS arm64 both passed
+[workflow run 30732989326](https://github.com/burkan2/hSUM/actions/runs/30732989326),
+including its cross-target fan-in. The retained reports live under
+`benches/sqlite_vec/results/`; Linux measured 64.54 ms fan-out p95 and 8.01 MB
+RSS growth, while macOS measured 46.75 ms and 10.90 MB. Both returned exactly
+3,200 candidates with identical revised tie-boundary membership and ordering.
+
+Production vector persistence is therefore unblocked. Implementation must
+preserve this adapter as an explicit tested boundary; a future sqlite-vec
+upgrade cannot remove it without rerunning the raw cutoff and interruption
+probes and publishing a new disposition.

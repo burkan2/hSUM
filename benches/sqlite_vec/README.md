@@ -82,6 +82,26 @@ The composite macOS executable is arm64 Mach-O and links only Apple system
 libraries/frameworks plus the standard C++ runtime; neither sqlite-vec nor ONNX
 Runtime needs a separately installed dynamic library.
 
+## Native qualification
+
+[GitHub Actions run 30732989326](https://github.com/burkan2/hSUM/actions/runs/30732989326)
+qualified the storage revision on the two stable release targets from clean PR
+merge commit `c47dd3759cc4e0cd1139eb0053270232ad494f8e`, which contains branch head
+`3daef71d23335fafce96eb9bcb23bbcd0589c13a` as its second parent.
+
+| Target | Result | Fan-out p95 | RSS growth | Retained evidence |
+|---|---:|---:|---:|---|
+| Linux x86_64 | Pass | 64.54 ms | 8.01 MB | [report](results/linux-x86_64-run-30732989326-v2.json), [dependencies](results/linux-x86_64-run-30732989326-dependencies.txt) |
+| macOS arm64 | Pass | 46.75 ms | 10.90 MB | [report](results/macos-arm64-run-30732989326-v2.json), [dependencies](results/macos-arm64-run-30732989326-dependencies.txt) |
+
+Both targets returned exactly 3,200 candidates, selected passage IDs
+`4033..=4082` at the adversarial tie boundary in both shadow slots, preserved
+the raw backend failures, and passed every revised storage check. The retained
+[fan-in disposition](results/native-disposition-run-30732989326-v1.json) binds
+the shared sqlite-vec, FastEmbed, ORT, and ONNX Runtime identities. This closes
+the portability prerequisite for production vector storage; it does not remove
+the required adapter or qualify raw sqlite-vec behavior.
+
 ## Reproduce
 
 Choose a new output path because reports refuse to overwrite evidence:
