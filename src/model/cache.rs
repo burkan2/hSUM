@@ -10,6 +10,7 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::domain::Sha256Digest;
+use crate::store::{IndexDb, IndexEmbeddingProfile, OpenMode};
 
 use super::manifest::{
     MODEL_RECEIPT_FILE, ManifestError, ModelFile, ModelManifest, builtin_manifests,
@@ -224,6 +225,54 @@ pub enum ModelArtifactState {
     Invalid,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IndexModelState {
+    LexicalOnly,
+    ConfiguredUninstalled,
+    InstalledUnindexed,
+    Indexed,
+    DegradedMissing,
+}
+
+impl IndexModelState {
+    #[must_use]
+    pub const fn derive(
+        profile: &IndexEmbeddingProfile,
+        artifact: ModelArtifactState,
+        complete_vector_membership: bool,
+    ) -> Self {
+        Self::derive_with_history(
+            profile,
+            artifact,
+            complete_vector_membership,
+            complete_vector_membership,
+        )
+    }
+
+    #[must_use]
+    pub const fn derive_with_history(
+        profile: &IndexEmbeddingProfile,
+        artifact: ModelArtifactState,
+        complete_vector_membership: bool,
+        model_was_used: bool,
+    ) -> Self {
+        if matches!(profile, IndexEmbeddingProfile::LexicalOnly) {
+            return Self::LexicalOnly;
+        }
+        match (artifact, complete_vector_membership) {
+            (ModelArtifactState::Installed, true) => Self::Indexed,
+            (ModelArtifactState::Installed, false) => Self::InstalledUnindexed,
+            (ModelArtifactState::Missing | ModelArtifactState::Invalid, _) if model_was_used => {
+                Self::DegradedMissing
+            }
+            (ModelArtifactState::Missing | ModelArtifactState::Invalid, _) => {
+                Self::ConfiguredUninstalled
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct ModelInventoryItem {
     pub id: String,
@@ -286,7 +335,7 @@ pub fn discover_model_pins(
         Err(error) => return Err(ModelError::Io(error)),
     }
 
-    let fingerprint = manifest.fingerprint()?.to_string();
+    let fingerprint = manifest.fingerprint()?;
     let mut pins = Vec::new();
     for entry in fs::read_dir(&indexes)? {
         let entry = entry?;
@@ -304,23 +353,22 @@ pub fn discover_model_pins(
             Ok(_) => return Err(ModelError::PinDiscovery(index_name)),
             Err(_) => return Err(ModelError::PinDiscovery(index_name)),
         }
-        let connection = Connection::open_with_flags(
-            &database_path,
-            OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        )
-        .map_err(|_| ModelError::PinDiscovery(index_name.clone()))?;
-        let profile = connection
-            .query_row(
-                "SELECT value FROM index_meta WHERE key = 'embedding_profile'",
-                [],
-                |row| row.get::<_, Vec<u8>>(0),
-            )
-            .optional()
-            .map_err(|_| ModelError::PinDiscovery(index_name.clone()))?;
-        if profile
-            .as_deref()
-            .is_some_and(|profile| profile_pins_manifest(profile, &manifest.id, &fingerprint))
-        {
+        let pinned = match IndexDb::open_existing(&database_path, OpenMode::ReadOnly) {
+            Ok(database) => match database
+                .embedding_profile()
+                .map_err(|_| ModelError::PinDiscovery(index_name.clone()))?
+            {
+                IndexEmbeddingProfile::LexicalOnly => false,
+                IndexEmbeddingProfile::Pinned(pin) => {
+                    pin.model_id() == manifest.id
+                        && pin.upstream_revision() == manifest.upstream_revision
+                        && pin.model_fingerprint() == fingerprint
+                        && pin.dimension() == manifest.dimension
+                }
+            },
+            Err(_) => legacy_profile_may_pin(&database_path, &index_name)?,
+        };
+        if pinned {
             pins.push(index_name);
         }
     }
@@ -328,27 +376,21 @@ pub fn discover_model_pins(
     Ok(pins)
 }
 
-fn profile_pins_manifest(profile: &[u8], id: &str, fingerprint: &str) -> bool {
-    if profile == b"none" || profile.is_empty() {
-        return false;
-    }
-    let Ok(profile) = std::str::from_utf8(profile) else {
-        return true;
-    };
-    if profile == id || profile == fingerprint {
-        return true;
-    }
-    let Ok(value) = serde_json::from_str::<serde_json::Value>(profile) else {
-        return true;
-    };
-    value
-        .get("model_id")
-        .and_then(serde_json::Value::as_str)
-        .is_some_and(|value| value == id)
-        || value
-            .get("manifest_sha256")
-            .and_then(serde_json::Value::as_str)
-            .is_some_and(|value| value == fingerprint)
+fn legacy_profile_may_pin(database_path: &Path, index_name: &str) -> Result<bool, ModelError> {
+    let connection = Connection::open_with_flags(
+        database_path,
+        OpenFlags::SQLITE_OPEN_READ_ONLY | OpenFlags::SQLITE_OPEN_NO_MUTEX,
+    )
+    .map_err(|_| ModelError::PinDiscovery(index_name.to_owned()))?;
+    let profile = connection
+        .query_row(
+            "SELECT value FROM index_meta WHERE key = 'embedding_profile'",
+            [],
+            |row| row.get::<_, Vec<u8>>(0),
+        )
+        .optional()
+        .map_err(|_| ModelError::PinDiscovery(index_name.to_owned()))?;
+    Ok(profile.as_deref() != Some(b"none"))
 }
 
 pub(crate) struct StagingArtifact {

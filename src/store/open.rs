@@ -16,8 +16,11 @@ use time::format_description::well_known::Rfc3339;
 use crate::domain::IndexId;
 use crate::store::doctor::{FingerprintPolicy, InspectionDepth, inspect_connection};
 use crate::store::schema::{
-    APPLICATION_ID, MIGRATIONS, SCHEMA_VERSION, migration_checksum, pipeline_fingerprint,
-    schema_checksum,
+    APPLICATION_ID, MIGRATIONS, SCHEMA_VERSION, migration_checksum, schema_checksum,
+};
+use crate::store::vector::{
+    IndexEmbeddingProfile, ensure_sqlite_vec_registered, insert_embedding_metadata,
+    read_embedding_profile,
 };
 
 const MAX_VALUE_BYTES: i32 = 32 * 1024 * 1024;
@@ -38,15 +41,30 @@ pub enum OpenMode {
 
 impl IndexDb {
     pub fn create(path: &Path, index_id: IndexId) -> Result<Self, StoreError> {
-        Self::create_with_durability(path, index_id, &OsIndexDurability)
+        Self::create_with_embedding_profile(path, index_id, &IndexEmbeddingProfile::LexicalOnly)
+    }
+
+    pub fn create_with_embedding_profile(
+        path: &Path,
+        index_id: IndexId,
+        embedding_profile: &IndexEmbeddingProfile,
+    ) -> Result<Self, StoreError> {
+        Self::create_with_durability(path, index_id, embedding_profile, &OsIndexDurability)
     }
 
     fn create_with_durability(
         path: &Path,
         index_id: IndexId,
+        embedding_profile: &IndexEmbeddingProfile,
         durability: &impl IndexDurability,
     ) -> Result<Self, StoreError> {
-        Self::create_with_durability_and_observer(path, index_id, durability, &mut |_| {})
+        Self::create_with_durability_and_observer(
+            path,
+            index_id,
+            embedding_profile,
+            durability,
+            &mut |_| {},
+        )
     }
 
     #[doc(hidden)]
@@ -55,15 +73,23 @@ impl IndexDb {
         index_id: IndexId,
         mut observer: impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
-        Self::create_with_durability_and_observer(path, index_id, &OsIndexDurability, &mut observer)
+        Self::create_with_durability_and_observer(
+            path,
+            index_id,
+            &IndexEmbeddingProfile::LexicalOnly,
+            &OsIndexDurability,
+            &mut observer,
+        )
     }
 
     fn create_with_durability_and_observer(
         path: &Path,
         index_id: IndexId,
+        embedding_profile: &IndexEmbeddingProfile,
         durability: &impl IndexDurability,
         observer: &mut impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
+        ensure_sqlite_vec_registered()?;
         let parent = ValidatedParent::acquire(path)?;
         parent.require_sidecars_absent()?;
         let mut reservation = reserve_new_file(parent)?;
@@ -101,7 +127,7 @@ impl IndexDb {
         let applied_at = OffsetDateTime::now_utc().format(&Rfc3339)?;
         let index_uuid = *index_id.as_uuid().as_bytes();
         let schema_digest = schema_checksum();
-        let pipeline_digest = pipeline_fingerprint();
+        let pipeline_digest = crate::store::schema::pipeline_fingerprint_for(embedding_profile);
 
         connection.pragma_update(None, "foreign_keys", false)?;
         let transaction_result =
@@ -137,12 +163,11 @@ impl IndexDb {
         }
 
         let metadata_result = (|| -> Result<(), rusqlite::Error> {
-            let metadata: [(&str, &[u8]); 10] = [
+            let metadata: [(&str, &[u8]); 9] = [
                 ("index_uuid", index_uuid.as_slice()),
                 ("api_version", b"hsum.api.v1"),
-                ("schema_version", b"3"),
+                ("schema_version", b"4"),
                 ("schema_checksum", schema_digest.as_bytes().as_slice()),
-                ("embedding_profile", b"none"),
                 (
                     "pipeline_fingerprint",
                     pipeline_digest.as_bytes().as_slice(),
@@ -161,6 +186,7 @@ impl IndexDb {
         })();
         reservation.observe_sidecars()?;
         metadata_result?;
+        insert_embedding_metadata(&transaction, embedding_profile)?;
         let commit_result = transaction.commit();
         reservation.observe_sidecars()?;
         commit_result?;
@@ -268,6 +294,7 @@ impl IndexDb {
         path: &Path,
         observer: &mut impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
+        ensure_sqlite_vec_registered()?;
         let identity = validate_index_path(path, FileAccess::ReadOnly)?;
         identity.validate_sidecars()?;
         identity.revalidate_namespace()?;
@@ -298,6 +325,7 @@ impl IndexDb {
         path: &Path,
         observer: &mut impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
+        ensure_sqlite_vec_registered()?;
         let identity = validate_index_path(path, FileAccess::ReadWrite)?;
         identity.validate_sidecars()?;
         identity.revalidate_namespace()?;
@@ -334,6 +362,10 @@ impl IndexDb {
 
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    pub fn embedding_profile(&self) -> Result<IndexEmbeddingProfile, StoreError> {
+        read_embedding_profile(&self.connection)
     }
 
     #[doc(hidden)]
@@ -1232,6 +1264,8 @@ pub(crate) fn configure_connection(connection: &Connection) -> Result<(), StoreE
 pub enum StoreError {
     #[error("SQLite operation failed")]
     Sqlite(#[from] rusqlite::Error),
+    #[error("sqlite-vec static registration failed with SQLite code {0}")]
+    SqliteVecRegistration(i32),
     #[error("filesystem operation failed")]
     Io(#[from] io::Error),
     #[error("time formatting failed")]
@@ -1276,6 +1310,8 @@ pub enum StoreError {
     ReadWriteRequired,
     #[error("prepared document is invalid: {0}")]
     InvalidPreparedDocument(&'static str),
+    #[error("prepared embedding is invalid: {0}")]
+    InvalidEmbedding(&'static str),
     #[error("snapshot contains a duplicate connector key")]
     DuplicateConnectorKey,
     #[error("the filesystem source or project conflicts with the index")]
@@ -1395,6 +1431,7 @@ mod tests {
         let database = IndexDb::create_with_durability(
             &path,
             IndexId::new_v4(),
+            &IndexEmbeddingProfile::LexicalOnly,
             &InspectCommittedSchema {
                 called: &called,
                 fail_after_inspection: false,
@@ -1415,6 +1452,7 @@ mod tests {
         let error = IndexDb::create_with_durability(
             &path,
             IndexId::new_v4(),
+            &IndexEmbeddingProfile::LexicalOnly,
             &InspectCommittedSchema {
                 called: &called,
                 fail_after_inspection: true,

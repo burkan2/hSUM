@@ -23,7 +23,12 @@ use crate::store::lock::WriterLock;
 use crate::store::open::{IndexDb, OpenMode, StoreError, configure_connection};
 use crate::store::schema::{
     APPLICATION_ID, MIGRATIONS, SCHEMA_VERSION, chunk_kind_for_fingerprint, chunker_fingerprint,
-    migration_checksum, pipeline_fingerprint, schema_checksum, schema_checksum_through,
+    migration_checksum, pipeline_fingerprint, pipeline_fingerprint_for, schema_checksum,
+    schema_checksum_through,
+};
+use crate::store::vector::{
+    IndexEmbeddingProfile, read_embedding_profile, validate_active_vector_membership,
+    validate_stored_provenance, validate_stored_vector_blob,
 };
 use crate::store::{ForgetLedger, ForgetOperationState, ReplacementEpoch};
 
@@ -50,6 +55,10 @@ const REQUIRED_TABLES: &[&str] = &[
     "forget_runs",
     "forgotten_documents",
     "restore_runs",
+    "embedding_provenance",
+    "chunk_embeddings",
+    "passages_vec_a",
+    "passages_vec_b",
 ];
 
 const REQUIRED_INDEXES: &[&str] = &[
@@ -60,9 +69,9 @@ const REQUIRED_INDEXES: &[&str] = &[
     "active_passages_version_idx",
     "passage_literals_lookup_idx",
     "source_sync_errors_generation_idx",
+    "chunk_embeddings_chunk_idx",
 ];
 
-const EXPECTED_SCHEMA_OBJECTS: i64 = 49;
 const MAX_SCHEMA_OBJECT_TYPE_BYTES: i64 = 16;
 const MAX_SCHEMA_OBJECT_NAME_BYTES: i64 = 128;
 const MAX_SCHEMA_TABLE_NAME_BYTES: i64 = 128;
@@ -441,7 +450,7 @@ fn inspect_migration_snapshot(
     let mut scan = DoctorScanStats::default();
     let body_scan = BodyScanTracker::default();
     validate_integrity(connection)?;
-    validate_generation_invariants(connection, stored_pipeline_fingerprint, 1)?;
+    validate_generation_invariants(connection, stored_pipeline_fingerprint, 1, false)?;
     validate_immutable_evidence(connection, &mut scan, &body_scan)?;
     validate_active_indexes(connection, &mut scan)?;
     scan.max_body_rows_in_flight = body_scan.finish();
@@ -511,8 +520,11 @@ fn inspect_snapshot(
             connection,
             stored_pipeline_fingerprint,
             history_floor_epoch,
+            true,
         )?;
+        validate_generation_embedding_profile(connection)?;
         validate_immutable_evidence(connection, &mut scan, &body_scan)?;
+        validate_embedding_cache(connection)?;
         validate_active_indexes(connection, &mut scan)?;
         validate_forget_ledger(connection)?;
         scan.max_body_rows_in_flight = body_scan.finish();
@@ -609,14 +621,8 @@ fn validate_schema_manifest_through(
 
 fn schema_manifest_fingerprint(
     connection: &Connection,
-    require_current_count: bool,
+    _require_current_count: bool,
 ) -> Result<Sha256Digest, StoreError> {
-    let object_count: i64 =
-        connection.query_row("SELECT COUNT(*) FROM sqlite_schema", [], |row| row.get(0))?;
-    if require_current_count && object_count != EXPECTED_SCHEMA_OBJECTS {
-        return Err(StoreError::SchemaManifestMismatch);
-    }
-
     let invalid_field: bool = connection.query_row(
         "SELECT EXISTS(
              SELECT 1
@@ -680,13 +686,14 @@ fn validate_metadata(
 ) -> Result<(IndexId, Sha256Digest), StoreError> {
     let metadata_count: i64 =
         connection.query_row("SELECT COUNT(*) FROM index_meta", [], |row| row.get(0))?;
-    if metadata_count != 10 {
+    if metadata_count != 15 {
         return Err(StoreError::InvalidMetadata("key set"));
     }
 
     expect_metadata(connection, "api_version", b"hsum.api.v1")?;
-    expect_metadata(connection, "schema_version", b"3")?;
-    expect_metadata(connection, "embedding_profile", b"none")?;
+    expect_metadata(connection, "schema_version", b"4")?;
+    let embedding_profile = read_embedding_profile(connection)?;
+    expect_active_vector_slot(connection)?;
     expect_metadata(connection, "schema_checksum", schema_checksum().as_bytes()).map_err(
         |error| match error {
             StoreError::InvalidMetadata(_) => StoreError::SchemaChecksumMismatch,
@@ -696,7 +703,8 @@ fn validate_metadata(
     let raw_pipeline_fingerprint = metadata_value(connection, "pipeline_fingerprint")?;
     let stored_pipeline_fingerprint =
         digest_metadata(&raw_pipeline_fingerprint, "pipeline_fingerprint")?;
-    if policy == FingerprintPolicy::Reject && stored_pipeline_fingerprint != pipeline_fingerprint()
+    if policy == FingerprintPolicy::Reject
+        && stored_pipeline_fingerprint != pipeline_fingerprint_for(&embedding_profile)
     {
         return Err(StoreError::PipelineFingerprintMismatch);
     }
@@ -744,13 +752,26 @@ fn validate_metadata_through(
 ) -> Result<(IndexId, Sha256Digest), StoreError> {
     let metadata_count: i64 =
         connection.query_row("SELECT COUNT(*) FROM index_meta", [], |row| row.get(0))?;
-    let expected_count = if version >= 3 { 10 } else { 8 };
+    let expected_count = if version >= 4 {
+        15
+    } else if version >= 3 {
+        10
+    } else {
+        8
+    };
     if metadata_count != expected_count {
         return Err(StoreError::InvalidMetadata("key set"));
     }
     expect_metadata(connection, "api_version", b"hsum.api.v1")?;
     expect_metadata(connection, "schema_version", version.to_string().as_bytes())?;
-    expect_metadata(connection, "embedding_profile", b"none")?;
+    let expected_pipeline_fingerprint = if version >= 4 {
+        let profile = read_embedding_profile(connection)?;
+        expect_active_vector_slot(connection)?;
+        pipeline_fingerprint_for(&profile)
+    } else {
+        expect_metadata(connection, "embedding_profile", b"none")?;
+        pipeline_fingerprint()
+    };
     expect_metadata(
         connection,
         "schema_checksum",
@@ -763,7 +784,8 @@ fn validate_metadata_through(
     let raw_pipeline_fingerprint = metadata_value(connection, "pipeline_fingerprint")?;
     let stored_pipeline_fingerprint =
         digest_metadata(&raw_pipeline_fingerprint, "pipeline_fingerprint")?;
-    if policy == FingerprintPolicy::Reject && stored_pipeline_fingerprint != pipeline_fingerprint()
+    if policy == FingerprintPolicy::Reject
+        && stored_pipeline_fingerprint != expected_pipeline_fingerprint
     {
         return Err(StoreError::PipelineFingerprintMismatch);
     }
@@ -782,6 +804,13 @@ fn validate_metadata_through(
     let uuid =
         Uuid::from_slice(&raw_index_id).map_err(|_| StoreError::InvalidMetadata("index_uuid"))?;
     Ok((IndexId::from_uuid(uuid), stored_pipeline_fingerprint))
+}
+
+fn expect_active_vector_slot(connection: &Connection) -> Result<(), StoreError> {
+    match metadata_value(connection, "active_vector_slot")?.as_slice() {
+        b"0" | b"1" => Ok(()),
+        _ => Err(StoreError::InvalidMetadata("active_vector_slot")),
+    }
 }
 
 fn validate_migration_chain(connection: &Connection) -> Result<(), StoreError> {
@@ -913,6 +942,7 @@ fn validate_generation_invariants(
     connection: &Connection,
     stored_pipeline_fingerprint: Sha256Digest,
     history_floor_epoch: u64,
+    vector_schema: bool,
 ) -> Result<(), StoreError> {
     let unexpected_pipeline_count: i64 = connection.query_row(
         "SELECT COUNT(*) FROM generations WHERE pipeline_fingerprint != ?1",
@@ -925,7 +955,7 @@ fn validate_generation_invariants(
         ));
     }
 
-    let replay = replay_committed_generations(connection, history_floor_epoch)?;
+    let replay = replay_committed_generations(connection, history_floor_epoch, vector_schema)?;
     let raw_active_generation = metadata_value(connection, "active_generation")?;
     let active_generation = if raw_active_generation.is_empty() {
         None
@@ -1038,6 +1068,136 @@ fn validate_generation_invariants(
     Ok(())
 }
 
+fn validate_generation_embedding_profile(connection: &Connection) -> Result<(), StoreError> {
+    let profile = read_embedding_profile(connection)?;
+    let invalid: bool = match profile {
+        IndexEmbeddingProfile::LexicalOnly => connection.query_row(
+            "SELECT EXISTS(
+                 SELECT 1 FROM generations
+                 WHERE embedding_model_id IS NOT NULL
+                    OR embedding_revision IS NOT NULL
+                    OR embedding_model_fingerprint IS NOT NULL
+                    OR embedding_dimension IS NOT NULL
+                    OR vector_state != 'absent'
+             )",
+            [],
+            |row| row.get(0),
+        )?,
+        IndexEmbeddingProfile::Pinned(pin) => connection.query_row(
+            "SELECT EXISTS(
+                 SELECT 1 FROM generations
+                 WHERE embedding_model_id IS NULL
+                    OR embedding_model_id != ?1
+                    OR embedding_revision IS NULL
+                    OR embedding_revision != ?2
+                    OR embedding_model_fingerprint IS NULL
+                    OR embedding_model_fingerprint != ?3
+                    OR embedding_dimension IS NULL
+                    OR embedding_dimension != ?4
+                    OR vector_state NOT IN ('absent', 'complete')
+             )",
+            params![
+                pin.model_id(),
+                pin.upstream_revision(),
+                pin.model_fingerprint().as_bytes().as_slice(),
+                i64::from(pin.dimension()),
+            ],
+            |row| row.get(0),
+        )?,
+    };
+    if invalid {
+        return Err(StoreError::GenerationInvariant(
+            "generation embedding profile",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_embedding_cache(connection: &Connection) -> Result<(), StoreError> {
+    let profile = read_embedding_profile(connection)?;
+    if profile == IndexEmbeddingProfile::LexicalOnly {
+        let unexpected: bool = connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM embedding_provenance)
+                 OR EXISTS(SELECT 1 FROM chunk_embeddings)
+                 OR EXISTS(SELECT 1 FROM passages_vec_a)
+                 OR EXISTS(SELECT 1 FROM passages_vec_b)",
+            [],
+            |row| row.get(0),
+        )?;
+        if unexpected {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "lexical-only embedding storage",
+            ));
+        }
+        return Ok(());
+    }
+    let IndexEmbeddingProfile::Pinned(pin) = profile else {
+        unreachable!("lexical-only profile returned above")
+    };
+
+    let mut provenance = BTreeMap::new();
+    let mut provenance_statement = connection.prepare(
+        "SELECT fingerprint, compatibility_fingerprint, schema_version, canonical_json
+         FROM embedding_provenance ORDER BY fingerprint",
+    )?;
+    let mut rows = provenance_statement.query([])?;
+    while let Some(row) = rows.next()? {
+        if provenance.len() >= 64 {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "embedding provenance cardinality",
+            ));
+        }
+        let raw_fingerprint = row.get::<_, Vec<u8>>(0)?;
+        let raw_compatibility = row.get::<_, Vec<u8>>(1)?;
+        let schema_version = row.get::<_, String>(2)?;
+        let canonical_json = row.get::<_, String>(3)?;
+        let record = validate_stored_provenance(
+            &canonical_json,
+            &raw_fingerprint,
+            &raw_compatibility,
+            &schema_version,
+        )?;
+        if record.model_id() != pin.model_id()
+            || record.upstream_revision() != pin.upstream_revision()
+            || record.manifest_fingerprint() != pin.model_fingerprint()
+            || record.dimension() != pin.dimension()
+        {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "embedding provenance model pin",
+            ));
+        }
+        let fingerprint = digest_from_blob(&raw_fingerprint)?;
+        if provenance.insert(fingerprint, record).is_some() {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "embedding provenance identity",
+            ));
+        }
+    }
+
+    let mut embedding_statement = connection.prepare(
+        "SELECT model_fingerprint, vector_dimension, vector_blob, provenance_fingerprint
+         FROM chunk_embeddings ORDER BY id",
+    )?;
+    let mut rows = embedding_statement.query([])?;
+    while let Some(row) = rows.next()? {
+        let model_fingerprint = digest_from_blob(&row.get::<_, Vec<u8>>(0)?)?;
+        let dimension = row.get::<_, i64>(1)?;
+        let vector_blob = row.get::<_, Vec<u8>>(2)?;
+        let provenance_fingerprint = digest_from_blob(&row.get::<_, Vec<u8>>(3)?)?;
+        if model_fingerprint != pin.model_fingerprint()
+            || dimension != i64::from(pin.dimension())
+            || !provenance.contains_key(&provenance_fingerprint)
+        {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "chunk embedding model provenance",
+            ));
+        }
+        validate_stored_vector_blob(&vector_blob)?;
+    }
+    validate_active_vector_membership(connection)?;
+    Ok(())
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ReplayedHead {
     document_version_id: Option<i64>,
@@ -1054,6 +1214,7 @@ struct GenerationReplay {
 fn replay_committed_generations(
     connection: &Connection,
     history_floor_epoch: u64,
+    vector_schema: bool,
 ) -> Result<GenerationReplay, StoreError> {
     let noncommitted_change_count: i64 = connection.query_row(
         "SELECT COUNT(*)
@@ -1085,18 +1246,26 @@ fn replay_committed_generations(
     let committed_count =
         u64::try_from(raw_committed_count).map_err(|_| StoreError::IntegerOverflow)?;
 
+    let vector_generation_clause = if vector_schema {
+        "AND g.vector_state != 'complete'"
+    } else {
+        ""
+    };
     let empty_committed_generation = connection
         .query_row(
-            "SELECT g.id
+            &format!(
+                "SELECT g.id
              FROM generations AS g
              WHERE g.state = 'committed'
+               {vector_generation_clause}
                AND NOT EXISTS (
                    SELECT 1
                    FROM generation_changes AS gc
                    WHERE gc.generation_id = g.id
                )
              ORDER BY g.id
-             LIMIT 1",
+             LIMIT 1"
+            ),
             [],
             |row| row.get::<_, i64>(0),
         )

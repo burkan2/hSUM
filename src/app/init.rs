@@ -26,8 +26,8 @@ use crate::ingest::{
 use crate::search::SearchRequest;
 use crate::store::{
     DeleteConfirmations, Doctor, DoctorReport, FilesystemScope, FingerprintPolicy, IndexDb,
-    IngestOutcome, OpenMode, SCHEMA_VERSION, StoragePreflight, StoragePreflightError, StoreError,
-    WriterLock, inspect_migration_source_with_policy,
+    IndexEmbeddingProfile, IngestOutcome, OpenMode, SCHEMA_VERSION, StoragePreflight,
+    StoragePreflightError, StoreError, WriterLock, inspect_migration_source_with_policy,
 };
 
 const TRUST_LOCK_TIMEOUT: Duration = Duration::from_secs(5);
@@ -50,6 +50,7 @@ pub struct InitRequest {
     pub allow_broad_root: bool,
     pub allow_large_source: bool,
     pub index_quota_bytes: Option<u64>,
+    pub embedding_profile: IndexEmbeddingProfile,
 }
 
 impl InitRequest {
@@ -69,6 +70,7 @@ impl InitRequest {
             allow_broad_root: false,
             allow_large_source: false,
             index_quota_bytes: None,
+            embedding_profile: IndexEmbeddingProfile::LexicalOnly,
         }
     }
 }
@@ -226,6 +228,9 @@ fn initialize_with_rebuild_observer(
                 binding.project_name(),
                 &canonical_root,
             )?;
+            if inspection.embedding_profile != request.embedding_profile {
+                return Err(InitError::EmbeddingProfileMismatch);
+            }
             rebuild_lock = writer_lock;
             Some(RebuildSummary {
                 previous_binding_id: binding.binding_id(),
@@ -242,7 +247,9 @@ fn initialize_with_rebuild_observer(
                 binding.project_name(),
                 &canonical_root,
             )?;
-
+            if inspection.embedding_profile != request.embedding_profile {
+                return Err(InitError::EmbeddingProfileMismatch);
+            }
             let pointer = if request.dry_run {
                 pointer_plan.dry_run_outcome()
             } else {
@@ -375,7 +382,11 @@ fn initialize_with_rebuild_observer(
         observe_rebuild(RebuildCheckpoint::DatabaseRemoved);
         drop(rebuild_lock.take());
     }
-    let mut database = IndexDb::create(&database_path, index_id)?;
+    let mut database = IndexDb::create_with_embedding_profile(
+        &database_path,
+        index_id,
+        &request.embedding_profile,
+    )?;
     if request.rebuild {
         observe_rebuild(RebuildCheckpoint::ReplacementDatabaseCreated);
     }
@@ -793,8 +804,14 @@ fn validate_trusted_database_contents(
     let active_passages: i64 = connection
         .query_row("SELECT COUNT(*) FROM active_passages", [], |row| row.get(0))
         .map_err(StoreError::from)?;
+    let embedding_profile = if report.schema_version == SCHEMA_VERSION {
+        database.embedding_profile()?
+    } else {
+        IndexEmbeddingProfile::LexicalOnly
+    };
     Ok(TrustedIndexInspection {
         pipeline_fingerprint: report.pipeline_fingerprint,
+        embedding_profile,
         filesystem_source_id,
         active_documents: u64::try_from(active_documents)
             .map_err(|_| StoreError::IntegerOverflow)?,
@@ -804,6 +821,7 @@ fn validate_trusted_database_contents(
 
 struct TrustedIndexInspection {
     pipeline_fingerprint: Sha256Digest,
+    embedding_profile: IndexEmbeddingProfile,
     filesystem_source_id: SourceId,
     active_documents: u64,
     active_passages: u64,
@@ -1469,6 +1487,10 @@ pub enum InitError {
     ForcePointerWithoutWrite,
     #[error("--rebuild cannot be combined with --no-ingest")]
     RebuildWithoutIngest,
+    #[error(
+        "the existing index has a different immutable embedding profile; create a new named index"
+    )]
+    EmbeddingProfileMismatch,
     #[error("repository root has no existing trust binding to rebuild: {root}")]
     RebuildBindingRequired { root: PathBuf },
     #[error("trust binding changed while rebuild was preparing: {binding_id}")]

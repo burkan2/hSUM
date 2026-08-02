@@ -229,7 +229,8 @@ Optional watch mode and additional integrations are not on the critical path.
     vectors. Native Linux x86_64 and macOS arm64 v2 probes pass, record all
     3,456 reference components plus exact model/runtime/input provenance, and
     pass the preregistered cross-architecture component, vector, cosine,
-    distance, and deterministic-ordering contract. Vector storage and stable
+    distance, and deterministic-ordering contract. Production schema-v4 vector
+    storage now passes the complete local gate; native storage and stable
     release qualification remain open.
 - Prove filtered vector scope correctness, deterministic equal-distance
   ordering, portable SQLite/vector packaging, memory bounds, cancellation, and
@@ -244,6 +245,18 @@ Optional watch mode and additional integrations are not on the critical path.
     and macOS arm64 with identical revised tie membership and dependency
     identity, closing the portability prerequisite for production vector
     storage.
+  - Current-checkout storage/lifecycle checkpoint: schema v4 pins one immutable
+    embedding profile per index, stores canonical 25-field provenance and
+    content-addressed vectors, and maintains active membership in sqlite-vec
+    A/B shadow slots. `init --embedding-model` is offline and pins without a
+    download; `ingest --reembed` verifies the exact installed artifact, skips
+    cached inputs before inference, preflights capacity, batches at most eight,
+    and atomically flips a complete generation. Doctor validates provenance,
+    cache, and slot parity. Backup preserves vectors exactly; prune reclaims
+    only historical cache/provenance; physical forget removes affected vector
+    evidence; guarded restore recovers it byte-for-byte. Focused suites, the
+    serialized complete local test gate, formatting, and strict all-feature
+    Clippy pass. Native target proof and semantic/hybrid retrieval remain next.
 - Evaluate recency, source diversity, rare-token statistics, query expansion,
   neighboring context, and reranking one experiment at a time against a frozen
   exact/BM25 baseline.

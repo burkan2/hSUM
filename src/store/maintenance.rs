@@ -22,6 +22,9 @@ use crate::store::open::{IndexDb, OpenMode, StoreError};
 use crate::store::schema::{
     MIGRATIONS, SCHEMA_VERSION, migration_checksum, schema_checksum, schema_checksum_through,
 };
+use crate::store::vector::{
+    delete_active_vector_membership_for_document, insert_embedding_metadata_for_migration,
+};
 use crate::store::{
     ForgetLedger, ForgetLedgerTarget, ForgetOperationState, ReplacementEpoch, ReplacementLock,
     WriterLock,
@@ -407,6 +410,19 @@ pub fn apply_prune(
         }
     }
     transaction.execute(
+        "DELETE FROM chunk_embeddings
+         WHERE chunk_id IN (
+             SELECT chunk.id
+             FROM chunks AS chunk
+             JOIN chunk_layouts AS layout ON layout.id = chunk.chunk_layout_id
+             WHERE NOT EXISTS (
+                 SELECT 1 FROM document_versions AS version
+                 WHERE version.content_blob_id = layout.content_blob_id
+             )
+         )",
+        [],
+    )?;
+    transaction.execute(
         "DELETE FROM chunks
          WHERE chunk_layout_id IN (
              SELECT layout.id
@@ -430,6 +446,14 @@ pub fn apply_prune(
          WHERE NOT EXISTS (
              SELECT 1 FROM document_versions
              WHERE document_versions.content_blob_id = content_blobs.id
+         )",
+        [],
+    )?;
+    transaction.execute(
+        "DELETE FROM embedding_provenance
+         WHERE NOT EXISTS (
+             SELECT 1 FROM chunk_embeddings
+             WHERE chunk_embeddings.provenance_fingerprint = embedding_provenance.fingerprint
          )",
         [],
     )?;
@@ -1221,6 +1245,9 @@ pub fn apply_migration(
                 [],
             )?;
         }
+        if step.version == 4 {
+            insert_embedding_metadata_for_migration(&transaction)?;
+        }
     }
     transaction.pragma_update(None, "user_version", plan.plan.to_schema_version)?;
     transaction.execute(
@@ -1659,6 +1686,7 @@ fn apply_forget_to_staging(
              )",
             [document_id.as_slice()],
         )?;
+        delete_active_vector_membership_for_document(&transaction, document_id.as_slice())?;
         transaction.execute(
             "DELETE FROM active_passages WHERE document_id = ?1",
             [document_id.as_slice()],
@@ -1752,6 +1780,11 @@ fn apply_forget_to_staging(
 
 fn delete_unreferenced_content(transaction: &Connection) -> Result<(), MaintenanceError> {
     transaction.execute(
+        "DELETE FROM chunk_embeddings
+         WHERE chunk_id NOT IN (SELECT chunk_id FROM active_passages)",
+        [],
+    )?;
+    transaction.execute(
         "DELETE FROM chunks
          WHERE id NOT IN (SELECT chunk_id FROM active_passages)",
         [],
@@ -1768,6 +1801,14 @@ fn delete_unreferenced_content(transaction: &Connection) -> Result<(), Maintenan
          WHERE NOT EXISTS (
              SELECT 1 FROM document_versions
              WHERE document_versions.content_blob_id = content_blobs.id
+         )",
+        [],
+    )?;
+    transaction.execute(
+        "DELETE FROM embedding_provenance
+         WHERE NOT EXISTS (
+             SELECT 1 FROM chunk_embeddings
+             WHERE chunk_embeddings.provenance_fingerprint = embedding_provenance.fingerprint
          )",
         [],
     )?;

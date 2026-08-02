@@ -9,6 +9,7 @@ mod open;
 mod project;
 mod schema;
 mod source;
+mod vector;
 
 pub use capacity::{
     FilesystemAssessment, FilesystemLocality, MINIMUM_STORAGE_RESERVE_BYTES, StorageInspection,
@@ -49,11 +50,17 @@ pub use project::{
 };
 pub use schema::{
     APPLICATION_ID, SCHEMA_VERSION, chunker_fingerprint, pipeline_descriptor, pipeline_fingerprint,
-    schema_checksum,
+    pipeline_fingerprint_for, schema_checksum,
 };
 pub use source::{
     ConfiguredSource, ConfiguredSourceKind, FilesystemSourceRegistration, SourceMembershipOutcome,
     SourceRegistration, attach_jsonl_source_with_timeout, configure_filesystem_source_with_timeout,
     configure_jsonl_source_with_timeout, detach_jsonl_source_with_timeout, list_index_sources,
     list_project_sources,
+};
+pub use vector::{
+    EMBEDDING_DIMENSION, EMBEDDING_PROVENANCE_SCHEMA, EmbeddingCacheOutcome, EmbeddingInput,
+    EmbeddingModelPin, EmbeddingProfileError, EmbeddingProvenanceError, EmbeddingProvenanceRecord,
+    IndexEmbeddingProfile, MAX_EMBEDDING_INPUT_BATCH, PreparedChunkEmbedding, ReembedOutcome,
+    ReembedPlan, SQLITE_VEC_VERSION, prepare_embedding_input,
 };

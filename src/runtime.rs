@@ -2,6 +2,7 @@ use std::env;
 use std::fmt;
 use std::fs;
 use std::io::{self, BufRead, BufReader, Read, Write};
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command as ProcessCommand, ExitCode, Stdio};
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -62,7 +63,10 @@ use crate::integration::{
 use crate::mcp::{
     MAX_MCP_FRAME_BYTES, McpServerError, serve_stdio, serve_workspace_stdio, validate_frame,
 };
-use crate::model::{ModelError, ModelMutation, ModelStore, discover_model_pins};
+use crate::model::{
+    EmbeddingInferenceError, EmbeddingOptions, IndexModelState, ModelArtifactState, ModelError,
+    ModelMutation, ModelStore, discover_model_pins,
+};
 use crate::protocol::{
     API_VERSION as MCP_API_VERSION, CliSearchOutput, CliStatusOutput, EvidenceGetOutput,
     GetPacketError, SearchCursorError, SearchCursorStaleCause, SearchCursorState,
@@ -77,13 +81,14 @@ use crate::search::{
 use crate::status::{DocumentDrift, SourceStatus, SourceSyncState, StatusError, StatusReport};
 use crate::store::{
     BackupReservation, DEFAULT_WRITER_LOCK_TIMEOUT, DeleteConfirmations, Doctor, DoctorReport,
-    DoctorSupportReport, FilesystemLocality, ForgetPlan, IngestOutcome, MaintenanceError,
+    DoctorSupportReport, EmbeddingModelPin, EmbeddingProvenanceRecord, FilesystemLocality,
+    ForgetPlan, IndexDb, IndexEmbeddingProfile, IngestOutcome, MaintenanceError,
     ManagedBackupCatalog, ManagedBackupDisposition, ManagedBackupDispositionOutcome,
-    ManagedBackupError, ManagedBackupInventoryItem, ManagedBackupKind, MigrationPlan, PlanEnvelope,
-    PrunePlan, ReaderLease, RestorePlan, SourceIngestState, StoragePreflight,
-    StoragePreflightError, StoreError, WriterLock, apply_forget, apply_migration, apply_prune,
-    apply_restore, create_backup, inspect_backup, plan_forget, plan_migration, plan_prune,
-    read_plan, validate_plan_envelope, write_plan, write_private_json,
+    ManagedBackupError, ManagedBackupInventoryItem, ManagedBackupKind, MigrationPlan, OpenMode,
+    PlanEnvelope, PreparedChunkEmbedding, PrunePlan, ReaderLease, RestorePlan, SourceIngestState,
+    StoragePreflight, StoragePreflightError, StoreError, WriterLock, apply_forget, apply_migration,
+    apply_prune, apply_restore, create_backup, inspect_backup, plan_forget, plan_migration,
+    plan_prune, read_plan, validate_plan_envelope, write_plan, write_private_json,
 };
 
 const SOURCE_PROBE_TIMEOUT: Duration = Duration::from_millis(500);
@@ -339,10 +344,15 @@ fn run_model_list(
     current_dir: PathBuf,
     arguments: ModelListArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
-    let selected_index = direct_context(global, managed_paths.clone(), current_dir)
-        .ok()
+    let selected_context = direct_context(global, managed_paths.clone(), current_dir).ok();
+    let selected_index = selected_context
+        .as_ref()
         .map(|context| context.index_name.to_string());
     let store = ModelStore::new(managed_paths.model_cache_dir());
+    let selected_index_state = selected_context
+        .as_ref()
+        .map(|context| resolve_index_model_state(context, &store))
+        .transpose()?;
     let inventory = store.inventory();
     let mut output = Vec::with_capacity(inventory.len());
     for (manifest, item) in store.manifests().iter().zip(inventory) {
@@ -372,10 +382,22 @@ fn run_model_list(
             "schema_version": "hsum.model-list.v1",
             "request_id": Uuid::new_v4().to_string(),
             "selected_index": selected_index,
+            "selected_index_state": selected_index_state,
             "models": output,
         }))?;
     } else {
         let mut human = String::new();
+        if let Some(state) = selected_index_state {
+            push_line(
+                &mut human,
+                "Selected index state",
+                serde_json::to_value(state)
+                    .ok()
+                    .and_then(|value| value.as_str().map(str::to_owned))
+                    .as_deref()
+                    .expect("index model states serialize as strings"),
+            );
+        }
         for (ordinal, model) in output.iter().enumerate() {
             if ordinal > 0 {
                 human.push('\n');
@@ -453,6 +475,52 @@ fn run_model_list(
         write_stdout(human.as_bytes())?;
     }
     Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn resolve_index_model_state(
+    context: &EffectiveContext,
+    store: &ModelStore<'_>,
+) -> Result<IndexModelState, RuntimeFailure> {
+    let database = IndexDb::open_existing(&context.database_path, OpenMode::ReadOnly)
+        .map_err(map_store_error)?;
+    let profile = database.embedding_profile().map_err(map_store_error)?;
+    let artifact = match &profile {
+        IndexEmbeddingProfile::LexicalOnly => ModelArtifactState::Missing,
+        IndexEmbeddingProfile::Pinned(pin) => {
+            let manifest = store.manifest(pin.model_id()).map_err(map_model_error)?;
+            let fingerprint = manifest
+                .fingerprint()
+                .map_err(ModelError::from)
+                .map_err(map_model_error)?;
+            if manifest.upstream_revision != pin.upstream_revision()
+                || fingerprint != pin.model_fingerprint()
+                || manifest.dimension != pin.dimension()
+            {
+                return Err(RuntimeFailure::from_error(
+                    ErrorSubcode::ModelFingerprint,
+                    "model_state",
+                    "the embedded manifest does not match the selected index pin",
+                ));
+            }
+            match store.inspect(manifest) {
+                Ok(()) => ModelArtifactState::Installed,
+                Err(ModelError::NotInstalled { .. }) => ModelArtifactState::Missing,
+                Err(_) => ModelArtifactState::Invalid,
+            }
+        }
+    };
+    let complete = database
+        .has_complete_vector_membership()
+        .map_err(map_store_error)?;
+    let model_was_used = database
+        .has_completed_vector_generation()
+        .map_err(map_store_error)?;
+    Ok(IndexModelState::derive_with_history(
+        &profile,
+        artifact,
+        complete,
+        model_was_used,
+    ))
 }
 
 fn run_model_verify(
@@ -596,6 +664,25 @@ fn map_model_error(error: ModelError) -> RuntimeFailure {
     RuntimeFailure::from_error(subcode, "model", error)
 }
 
+fn map_embedding_inference_error(error: EmbeddingInferenceError) -> RuntimeFailure {
+    match error {
+        EmbeddingInferenceError::Artifact(error) => map_model_error(error),
+        error @ (EmbeddingInferenceError::WrongKind(_)
+        | EmbeddingInferenceError::ManifestFileMissing(_)
+        | EmbeddingInferenceError::OutputDimension { .. }
+        | EmbeddingInferenceError::DimensionOverflow) => {
+            RuntimeFailure::from_error(ErrorSubcode::ModelDimension, "reembed", error)
+        }
+        error @ (EmbeddingInferenceError::FastEmbed(_)
+        | EmbeddingInferenceError::EmptyInput
+        | EmbeddingInferenceError::OutputCount { .. }
+        | EmbeddingInferenceError::NonFinite { .. }
+        | EmbeddingInferenceError::NotNormalized { .. }) => {
+            RuntimeFailure::from_error(ErrorSubcode::ModelFingerprint, "reembed", error)
+        }
+    }
+}
+
 fn run_error_help(
     arguments: &ErrorHelpArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
@@ -666,6 +753,32 @@ fn run_init(
     current_dir: PathBuf,
     arguments: InitArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let embedding_profile = match arguments.embedding_model.as_ref() {
+        None => IndexEmbeddingProfile::LexicalOnly,
+        Some(model_id) => {
+            let store = ModelStore::new(managed_paths.model_cache_dir());
+            let manifest = store.manifest(model_id.as_str()).map_err(map_model_error)?;
+            let fingerprint = manifest
+                .fingerprint()
+                .map_err(ModelError::from)
+                .map_err(map_model_error)?;
+            IndexEmbeddingProfile::Pinned(
+                EmbeddingModelPin::new(
+                    manifest.id.clone(),
+                    manifest.upstream_revision.clone(),
+                    fingerprint,
+                    manifest.dimension,
+                )
+                .map_err(|error| {
+                    RuntimeFailure::from_error(
+                        ErrorSubcode::ModelFingerprint,
+                        "init_embedding_profile",
+                        error,
+                    )
+                })?,
+            )
+        }
+    };
     let mut request = InitRequest::new(current_dir, managed_paths);
     request.requested_root = arguments.path;
     request.index_name = arguments.index;
@@ -678,6 +791,7 @@ fn run_init(
     request.allow_broad_root = arguments.allow_broad_root;
     request.allow_large_source = arguments.allow_large_source;
     request.index_quota_bytes = arguments.index_quota_bytes;
+    request.embedding_profile = embedding_profile;
 
     let outcome = initialize(&request).map_err(map_init_error)?;
     let ingest_exit = outcome.ingest.as_ref().map_or(
@@ -726,6 +840,14 @@ fn run_init(
     push_line(&mut output, "Index", outcome.index_name.as_str());
     push_line(&mut output, "Project", outcome.project_name.as_str());
     push_line(&mut output, "Data", &human_path(&outcome.database_path));
+    push_line(
+        &mut output,
+        "Embedding profile",
+        arguments
+            .embedding_model
+            .as_ref()
+            .map_or("lexical_only", |value| value.as_str()),
+    );
     if let Some(binding_id) = outcome.binding_id {
         push_line(&mut output, "Binding", &binding_id.to_string());
     }
@@ -810,6 +932,15 @@ fn run_init(
             output.push_str("Connect Codex:\n  ");
             output.push_str(&shell_quote_path(&executable));
             output.push_str(" integration install codex --confirm\n");
+        }
+        if let Some(model_id) = &arguments.embedding_model {
+            output.push_str("Semantic setup:\n  ");
+            output.push_str(&shell_quote_path(&executable));
+            output.push_str(" model install embedding ");
+            output.push_str(model_id.as_str());
+            output.push_str("\n  ");
+            output.push_str(&shell_quote_path(&executable));
+            output.push_str(" ingest --reembed\n");
         }
     }
     write_stdout(output.as_bytes())?;
@@ -918,6 +1049,9 @@ fn run_ingest(
     arguments: IngestArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
     let context = direct_context(global, managed_paths, current_dir.clone())?;
+    if arguments.reembed {
+        return run_reembed(&context, Duration::from_millis(arguments.lock_timeout_ms));
+    }
     let confirmations = DeleteConfirmations {
         allow_empty_snapshot: arguments.allow_empty_snapshot,
         allow_mass_delete: arguments.allow_mass_delete,
@@ -965,6 +1099,199 @@ fn run_ingest(
         _ => {}
     }
     Ok(ingest_exit)
+}
+
+fn run_reembed(
+    context: &EffectiveContext,
+    lock_timeout: Duration,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let mut database = IndexDb::open_existing(&context.database_path, OpenMode::ReadWrite)
+        .map_err(map_store_error)?;
+    let profile = database.embedding_profile().map_err(map_store_error)?;
+    let IndexEmbeddingProfile::Pinned(pin) = profile else {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::ModelNotInstalled,
+            "reembed",
+            "the selected index is lexical-only; create a new index with --embedding-model",
+        ));
+    };
+    let initial_plan = database.plan_reembedding().map_err(map_store_error)?;
+    StoragePreflight::run(
+        &context.database_path,
+        initial_plan.estimated_write_bytes,
+        context.index_quota_bytes,
+    )
+    .map_err(|error| {
+        RuntimeFailure::from_error(storage_preflight_subcode(&error), "reembed", error)
+    })?;
+    let store = ModelStore::new(context.managed_paths.model_cache_dir());
+    let manifest = store.manifest(pin.model_id()).map_err(map_model_error)?;
+    let manifest_fingerprint = manifest
+        .fingerprint()
+        .map_err(ModelError::from)
+        .map_err(map_model_error)?;
+    if manifest.upstream_revision != pin.upstream_revision()
+        || manifest_fingerprint != pin.model_fingerprint()
+        || manifest.dimension != pin.dimension()
+    {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::ModelFingerprint,
+            "reembed",
+            "the embedded model manifest does not match the index pin",
+        ));
+    }
+    let artifact = store
+        .verify_embedding_artifact(pin.model_id())
+        .map_err(map_embedding_inference_error)?;
+    let options = EmbeddingOptions::new(
+        NonZeroUsize::new(512).expect("the frozen maximum length is nonzero"),
+        NonZeroUsize::new(2).expect("the frozen worker count is nonzero"),
+    );
+    let mut model = artifact
+        .read()
+        .and_then(|bytes| bytes.initialize(options))
+        .map_err(map_embedding_inference_error)?;
+    if model.fingerprint() != pin.model_fingerprint() || model.dimension() != pin.dimension() {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::ModelFingerprint,
+            "reembed",
+            "the verified inference session does not match the index pin",
+        ));
+    }
+    let provenance_json =
+        serde_json_canonicalizer::to_string(model.provenance()).map_err(|error| {
+            RuntimeFailure::from_error(ErrorSubcode::ModelFingerprint, "reembed_provenance", error)
+        })?;
+    let provenance = EmbeddingProvenanceRecord::from_json(&provenance_json).map_err(|error| {
+        RuntimeFailure::from_error(ErrorSubcode::ModelFingerprint, "reembed_provenance", error)
+    })?;
+
+    let writer_lock =
+        WriterLock::acquire(&context.database_path, lock_timeout).map_err(map_store_error)?;
+    let plan = database.plan_reembedding().map_err(map_store_error)?;
+    let storage_preflight = StoragePreflight::run(
+        &context.database_path,
+        plan.estimated_write_bytes,
+        context.index_quota_bytes,
+    )
+    .map_err(|error| {
+        RuntimeFailure::from_error(storage_preflight_subcode(&error), "reembed", error)
+    })?;
+
+    let mut after_passage_id = 0_i64;
+    let mut cached = 0_u64;
+    let mut concurrently_reused = 0_u64;
+    loop {
+        let inputs = database
+            .load_embedding_input_batch(after_passage_id, 8)
+            .map_err(map_store_error)?;
+        if inputs.is_empty() {
+            break;
+        }
+        let mut missing_inputs = Vec::with_capacity(inputs.len());
+        for input in &inputs {
+            if !database
+                .has_cached_embedding(input)
+                .map_err(map_store_error)?
+            {
+                missing_inputs.push(input);
+            }
+        }
+        if missing_inputs.is_empty() {
+            after_passage_id = inputs
+                .last()
+                .expect("a nonempty batch has a last input")
+                .passage_id();
+            continue;
+        }
+        let texts = missing_inputs
+            .iter()
+            .map(|input| input.text().to_owned())
+            .collect::<Vec<_>>();
+        let batch_size = NonZeroUsize::new(texts.len())
+            .expect("a nonempty embedding input batch has a nonzero size");
+        let vectors = model
+            .embed(&texts, batch_size)
+            .map_err(map_embedding_inference_error)?;
+        if vectors.len() != missing_inputs.len() {
+            return Err(map_store_error(StoreError::InvalidEmbedding(
+                "embedding batch cardinality",
+            )));
+        }
+        for (input, vector) in missing_inputs.into_iter().zip(vectors) {
+            let prepared = PreparedChunkEmbedding::from_input(input, vector, provenance.clone())
+                .map_err(map_store_error)?;
+            let cache_outcome = database
+                .cache_chunk_embedding_with_lock(&writer_lock, &prepared)
+                .map_err(map_store_error)?;
+            let counter = match cache_outcome {
+                crate::store::EmbeddingCacheOutcome::Inserted { .. } => &mut cached,
+                crate::store::EmbeddingCacheOutcome::Reused { .. } => &mut concurrently_reused,
+            };
+            *counter = counter.checked_add(1).ok_or_else(|| {
+                RuntimeFailure::from_error(
+                    ErrorSubcode::MemoryBudget,
+                    "reembed",
+                    "embedding count overflowed",
+                )
+            })?;
+        }
+        after_passage_id = inputs
+            .last()
+            .expect("a nonempty batch has a last input")
+            .passage_id();
+    }
+    let outcome = database
+        .commit_cached_reembedding_with_lock(&writer_lock)
+        .map_err(map_store_error)?;
+    let mut output = String::new();
+    output.push_str("Semantic re-embedding committed.\n");
+    push_line(&mut output, "Model", pin.model_id());
+    push_line(
+        &mut output,
+        "Model fingerprint",
+        &pin.model_fingerprint().to_string(),
+    );
+    push_line(&mut output, "Inputs cached", &cached.to_string());
+    push_line(
+        &mut output,
+        "Inputs reused",
+        &plan
+            .cached_inputs
+            .checked_add(concurrently_reused)
+            .ok_or_else(|| {
+                RuntimeFailure::from_error(
+                    ErrorSubcode::MemoryBudget,
+                    "reembed",
+                    "embedding reuse count overflowed",
+                )
+            })?
+            .to_string(),
+    );
+    push_line(
+        &mut output,
+        "Estimated write bytes",
+        &plan.estimated_write_bytes.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Active passages",
+        &outcome.passages.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Generation",
+        &outcome.generation_id.to_string(),
+    );
+    push_line(&mut output, "Index epoch", &outcome.index_epoch.to_string());
+    push_line(
+        &mut output,
+        "Vector slot",
+        &outcome.active_vector_slot.to_string(),
+    );
+    write_stdout(output.as_bytes())?;
+    render_storage_warnings(&storage_preflight)?;
+    Ok(crate::cli::ProcessExitCategory::Success)
 }
 
 fn ingest_exit_category(outcome: &IngestOutcome) -> crate::cli::ProcessExitCategory {
@@ -4945,6 +5272,7 @@ fn init_subcode(error: &InitError) -> ErrorSubcode {
         }
         InitError::TrustConfirmationRequired => ErrorSubcode::TrustConfirmationRequired,
         InitError::RebuildWithoutIngest => ErrorSubcode::ConfigInvalid,
+        InitError::EmbeddingProfileMismatch => ErrorSubcode::ModelFingerprint,
         InitError::RebuildBindingRequired { .. } => ErrorSubcode::IndexNotFound,
         InitError::ForcePointerWithoutWrite | InitError::UnsafePointerPath { .. } => {
             ErrorSubcode::PointerInvalid
@@ -5647,7 +5975,9 @@ fn store_subcode(error: &StoreError) -> ErrorSubcode {
         StoreError::Io(error) => io_subcode(error, ErrorSubcode::IndexWrite),
         StoreError::Time(_) => ErrorSubcode::Unexpected,
         StoreError::AlreadyExists(_) => ErrorSubcode::IndexPathOccupied,
-        StoreError::WalUnavailable(_) => ErrorSubcode::UnsupportedStorage,
+        StoreError::WalUnavailable(_) | StoreError::SqliteVecRegistration(_) => {
+            ErrorSubcode::UnsupportedStorage
+        }
         StoreError::MissingPath(_) => ErrorSubcode::IndexNotFound,
         StoreError::UnsafeIndexPath(_) => ErrorSubcode::UnsupportedStorage,
         StoreError::WriterLockBusy { .. } | StoreError::ReplacementLockBusy { .. } => {
@@ -5693,6 +6023,7 @@ fn store_subcode(error: &StoreError) -> ErrorSubcode {
         }
         StoreError::IntegerOverflow => ErrorSubcode::MemoryBudget,
         StoreError::InvalidPreparedDocument(_)
+        | StoreError::InvalidEmbedding(_)
         | StoreError::DuplicateConnectorKey
         | StoreError::HashCollision
         | StoreError::WriterLockMismatch

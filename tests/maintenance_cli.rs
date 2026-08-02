@@ -7,6 +7,8 @@ use serde_json::Value;
 use sha2::{Digest, Sha256};
 use tempfile::{TempDir, tempdir};
 
+use hsum::store::{IndexDb, OpenMode};
+
 fn run(home: &Path, repository: &Path, arguments: &[&str]) -> Output {
     Command::new(env!("CARGO_BIN_EXE_hsum"))
         .args(arguments)
@@ -149,7 +151,7 @@ fn process_backup_and_prune_ceremony_invalidates_the_manifested_revision() {
 fn process_migration_ceremony_upgrades_a_managed_n_minus_one_index() {
     let (repository, home) = fixture();
     let database = home.path().join("data/indexes/maintenance/index.sqlite");
-    downgrade_to_schema_2(&database);
+    downgrade_to_schema_3(&database);
     let plan_path = repository.path().join("migration.json");
     let plan = run(
         home.path(),
@@ -169,10 +171,10 @@ fn process_migration_ceremony_upgrades_a_managed_n_minus_one_index() {
     );
     let plan: Value = serde_json::from_slice(&fs::read(&plan_path).unwrap()).unwrap();
     let hash = plan["plan_hash"].as_str().unwrap();
-    assert_eq!(plan["plan"]["from_schema_version"], 2);
-    assert_eq!(plan["plan"]["to_schema_version"], 3);
+    assert_eq!(plan["plan"]["from_schema_version"], 3);
+    assert_eq!(plan["plan"]["to_schema_version"], 4);
 
-    let backup = repository.path().join("schema-2.sqlite");
+    let backup = repository.path().join("schema-3.sqlite");
     let apply = run(
         home.path(),
         repository.path(),
@@ -193,7 +195,7 @@ fn process_migration_ceremony_upgrades_a_managed_n_minus_one_index() {
         "migration apply failed: {}",
         String::from_utf8_lossy(&apply.stderr)
     );
-    assert!(String::from_utf8_lossy(&apply.stdout).contains("2 -> 3"));
+    assert!(String::from_utf8_lossy(&apply.stdout).contains("3 -> 4"));
     assert!(
         run(home.path(), repository.path(), &["doctor"])
             .status
@@ -315,45 +317,72 @@ fn process_forget_and_immediate_restore_ceremony_round_trips_one_citation() {
     );
 }
 
-fn downgrade_to_schema_2(path: &Path) {
+fn downgrade_to_schema_3(path: &Path) {
+    drop(IndexDb::open_existing(path, OpenMode::ReadWrite).unwrap());
     let connection = Connection::open(path).unwrap();
     connection
         .pragma_update(None, "foreign_keys", false)
         .unwrap();
     connection
         .execute_batch(
-            "DROP TABLE pruned_revision_namespaces;
-             DROP TABLE prune_runs;
-             DROP TABLE forgotten_documents;
-             DROP TABLE forget_runs;
-             DROP TABLE restore_runs;
-             DELETE FROM index_meta WHERE key = 'history_floor_epoch';
-             DELETE FROM index_meta WHERE key = 'replacement_epoch';
-             DELETE FROM schema_migrations WHERE version = 3;",
+            "DROP TABLE passages_vec_a;
+             DROP TABLE passages_vec_b;
+             DROP TABLE chunk_embeddings;
+             DROP TABLE embedding_provenance;
+             DELETE FROM index_meta
+             WHERE key IN (
+                 'embedding_model_id',
+                 'embedding_revision',
+                 'embedding_model_fingerprint',
+                 'embedding_dimension',
+                 'active_vector_slot'
+             );
+             DELETE FROM schema_migrations WHERE version = 4;",
+        )
+        .unwrap();
+    connection
+        .execute_batch("PRAGMA writable_schema = ON;")
+        .unwrap();
+    connection
+        .execute(
+            "DELETE FROM sqlite_schema WHERE name = 'sqlite_sequence'",
+            [],
         )
         .unwrap();
     connection
         .execute(
-            "UPDATE index_meta SET value = CAST('2' AS BLOB) WHERE key = 'schema_version'",
+            "UPDATE sqlite_schema SET sql = ?1
+             WHERE type = 'table' AND name = 'generations'",
+            [released_generation_sql()],
+        )
+        .unwrap();
+    connection
+        .execute_batch("PRAGMA writable_schema = RESET;")
+        .unwrap();
+    connection.execute_batch("VACUUM;").unwrap();
+    connection
+        .execute(
+            "UPDATE index_meta SET value = CAST('3' AS BLOB) WHERE key = 'schema_version'",
             [],
         )
         .unwrap();
     connection
         .execute(
             "UPDATE index_meta SET value = ?1 WHERE key = 'schema_checksum'",
-            params![schema_2_checksum().as_slice()],
+            params![schema_3_checksum().as_slice()],
         )
         .unwrap();
-    connection.pragma_update(None, "user_version", 2).unwrap();
+    connection.pragma_update(None, "user_version", 3).unwrap();
     connection
         .pragma_update(None, "foreign_keys", true)
         .unwrap();
 }
 
-fn schema_2_checksum() -> [u8; 32] {
+fn schema_3_checksum() -> [u8; 32] {
     let migrations = [
         (1_u32, include_str!("../migrations/0001_alpha1.sql")),
         (2_u32, include_str!("../migrations/0002_jsonl_sources.sql")),
+        (3_u32, include_str!("../migrations/0003_maintenance.sql")),
     ];
     let mut hasher = Sha256::new();
     hasher.update(b"hsum.schema-chain.v1\0");
@@ -363,4 +392,24 @@ fn schema_2_checksum() -> [u8; 32] {
         hasher.update(sql.as_bytes());
     }
     hasher.finalize().into()
+}
+
+fn released_generation_sql() -> String {
+    let connection = Connection::open_in_memory().unwrap();
+    connection
+        .execute_batch(include_str!("../migrations/0001_alpha1.sql"))
+        .unwrap();
+    connection
+        .execute_batch(include_str!("../migrations/0002_jsonl_sources.sql"))
+        .unwrap();
+    connection
+        .execute_batch(include_str!("../migrations/0003_maintenance.sql"))
+        .unwrap();
+    connection
+        .query_row(
+            "SELECT sql FROM sqlite_schema WHERE type = 'table' AND name = 'generations'",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap()
 }

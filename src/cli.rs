@@ -198,6 +198,10 @@ pub struct InitArgs {
         value_parser = value_parser!(u64).range(1..)
     )]
     pub index_quota_bytes: Option<u64>,
+
+    /// Immutable embedding model manifest to pin without downloading it.
+    #[arg(long, value_name = "MANIFEST_ID")]
+    pub embedding_model: Option<SafeSlug>,
 }
 
 /// Arguments for `hsum trust`.
@@ -251,6 +255,19 @@ pub struct IngestArgs {
     /// Abort the complete index-wide ingest if any targeted source fails.
     #[arg(long)]
     pub strict: bool,
+
+    /// Rebuild complete vector membership from the selected index's pinned model.
+    #[arg(
+        long,
+        conflicts_with_all = [
+            "dry_run",
+            "allow_empty_snapshot",
+            "allow_mass_delete",
+            "source",
+            "strict"
+        ]
+    )]
+    pub reembed: bool,
 }
 
 /// Arguments for `hsum source`.
@@ -1332,7 +1349,7 @@ pub struct McpArgs {
 ///
 /// The list is tag-gated: deferred surface such as vector modes or watch mode
 /// must never appear here before its release tag.
-pub const COMPILED_CAPABILITIES: [&str; 18] = [
+pub const COMPILED_CAPABILITIES: [&str; 20] = [
     "filesystem-ingest",
     "filesystem-source-registration",
     "confirmed-index-deletion",
@@ -1351,6 +1368,8 @@ pub const COMPILED_CAPABILITIES: [&str; 18] = [
     "config-migrate-n-minus-one",
     "mcp-stdio-read-only",
     "model-artifact-lifecycle",
+    "embedding-profile",
+    "embedding-reembed",
 ];
 
 /// Detect the `hsum --version --verbose` form from the raw argument list.

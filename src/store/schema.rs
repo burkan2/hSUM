@@ -4,18 +4,20 @@ use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 
 pub const APPLICATION_ID: i32 = i32::from_be_bytes(*b"HSUM");
-pub const SCHEMA_VERSION: u32 = 3;
+pub const SCHEMA_VERSION: u32 = 4;
 
 pub(crate) const MIGRATION_0001: &str = include_str!("../../migrations/0001_alpha1.sql");
 pub(crate) const MIGRATION_0002: &str = include_str!("../../migrations/0002_jsonl_sources.sql");
 pub(crate) const MIGRATION_0003: &str = include_str!("../../migrations/0003_maintenance.sql");
-pub(crate) const MIGRATIONS: [(u32, &str); 3] = [
+pub(crate) const MIGRATION_0004: &str = include_str!("../../migrations/0004_vector_storage.sql");
+pub(crate) const MIGRATIONS: [(u32, &str); 4] = [
     (1, MIGRATION_0001),
     (2, MIGRATION_0002),
     (3, MIGRATION_0003),
+    (4, MIGRATION_0004),
 ];
 
-const PIPELINE_DESCRIPTOR_SUFFIX: &str = concat!(
+const PIPELINE_DESCRIPTOR_PREFIX: &str = concat!(
     "connector_key=platform-raw-relative-bytes:no-unicode-or-case-normalization\n",
     "source_uri=repo-v1:rfc3986-unreserved:slash-preserved:uppercase-percent\n",
     "snapshot_hash=sha256-length-framed-rfc8785-utc\n",
@@ -25,9 +27,9 @@ const PIPELINE_DESCRIPTOR_SUFFIX: &str = concat!(
     "fts=unicode61:remove_diacritics-0:tokenchars-_-.:/\n",
     "literals=case-sensitive:max-64:bytes-2..128\n",
     "quote_bloom=byte-trigram:bits-4096:hashes-4:sha256-double-hash-be\n",
-    "embedding=none\n",
-    "jsonl=v1:complete-snapshot:id-identity:plain-text:strict-bounds\n",
 );
+const PIPELINE_DESCRIPTOR_SUFFIX: &str =
+    "jsonl=v1:complete-snapshot:id-identity:plain-text:strict-bounds\n";
 static PIPELINE_DESCRIPTOR: OnceLock<String> = OnceLock::new();
 
 pub fn schema_checksum() -> Sha256Digest {
@@ -61,6 +63,12 @@ pub fn pipeline_fingerprint() -> Sha256Digest {
     Sha256Digest::of_bytes(pipeline_descriptor().as_bytes())
 }
 
+pub fn pipeline_fingerprint_for(
+    embedding_profile: &crate::store::vector::IndexEmbeddingProfile,
+) -> Sha256Digest {
+    Sha256Digest::of_bytes(pipeline_descriptor_for(embedding_profile).as_bytes())
+}
+
 pub fn pipeline_descriptor() -> &'static str {
     PIPELINE_DESCRIPTOR
         .get_or_init(|| {
@@ -71,10 +79,28 @@ pub fn pipeline_descriptor() -> &'static str {
                 .join(",");
             format!(
                 "hsum.pipeline.v1\nfilesystem=v1:extensions={extensions}:symlinks=never\n\
-                 {PIPELINE_DESCRIPTOR_SUFFIX}"
+                 {PIPELINE_DESCRIPTOR_PREFIX}embedding=none\n{PIPELINE_DESCRIPTOR_SUFFIX}"
             )
         })
         .as_str()
+}
+
+fn pipeline_descriptor_for(
+    embedding_profile: &crate::store::vector::IndexEmbeddingProfile,
+) -> String {
+    if embedding_profile == &crate::store::vector::IndexEmbeddingProfile::LexicalOnly {
+        return pipeline_descriptor().to_owned();
+    }
+    let extensions = ChunkKind::EXTENSIONS
+        .iter()
+        .map(|(extension, _)| *extension)
+        .collect::<Vec<_>>()
+        .join(",");
+    format!(
+        "hsum.pipeline.v1\nfilesystem=v1:extensions={extensions}:symlinks=never\n\
+         {PIPELINE_DESCRIPTOR_PREFIX}{}{PIPELINE_DESCRIPTOR_SUFFIX}",
+        embedding_profile.descriptor(),
+    )
 }
 
 pub fn chunker_fingerprint(kind: ChunkKind) -> Sha256Digest {

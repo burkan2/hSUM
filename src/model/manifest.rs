@@ -109,7 +109,7 @@ pub struct ModelFile {
 }
 
 impl ModelFile {
-    fn validate(&self) -> Result<(), ManifestError> {
+    pub(crate) fn validate(&self) -> Result<(), ManifestError> {
         if self.bytes == 0 {
             return Err(ManifestError::EmptyFile(self.path.clone()));
         }

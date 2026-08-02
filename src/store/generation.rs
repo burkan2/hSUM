@@ -18,7 +18,10 @@ use crate::ingest::{
 use crate::store::capacity::StoragePreflight;
 use crate::store::doctor::Doctor;
 use crate::store::open::{IndexDb, StoreError};
-use crate::store::schema::{chunker_fingerprint, pipeline_fingerprint};
+use crate::store::schema::{chunker_fingerprint, pipeline_fingerprint_for};
+use crate::store::vector::{
+    IndexEmbeddingProfile, clear_active_vector_membership, read_embedding_profile,
+};
 use crate::store::{ForgetLedger, WriterLock};
 
 pub const DEFAULT_WRITER_LOCK_TIMEOUT: Duration = Duration::from_secs(5);
@@ -2754,16 +2757,36 @@ fn estimate_write_bytes(
 
 fn create_generation(transaction: &Transaction<'_>, now: &str) -> Result<i64, StoreError> {
     let lease_nonce = *Uuid::new_v4().as_bytes();
+    let profile = read_embedding_profile(transaction)?;
+    if matches!(profile, IndexEmbeddingProfile::Pinned(_)) {
+        clear_active_vector_membership(transaction)?;
+    }
+    let pipeline_fingerprint = pipeline_fingerprint_for(&profile);
+    let (model_id, revision, model_fingerprint, dimension) = match &profile {
+        IndexEmbeddingProfile::LexicalOnly => (None, None, None, None),
+        IndexEmbeddingProfile::Pinned(pin) => (
+            Some(pin.model_id()),
+            Some(pin.upstream_revision()),
+            Some(pin.model_fingerprint()),
+            Some(i64::from(pin.dimension())),
+        ),
+    };
     transaction.execute(
         "INSERT INTO generations(
             state, created_at, owner_pid, lease_nonce,
-            heartbeat_at, pipeline_fingerprint
-         ) VALUES ('building', ?1, ?2, ?3, ?1, ?4)",
+            heartbeat_at, pipeline_fingerprint, embedding_model_id,
+            embedding_revision, embedding_model_fingerprint, embedding_dimension,
+            vector_state
+         ) VALUES ('building', ?1, ?2, ?3, ?1, ?4, ?5, ?6, ?7, ?8, 'absent')",
         params![
             now,
             i64::from(std::process::id()),
             lease_nonce.as_slice(),
-            pipeline_fingerprint().as_bytes().as_slice(),
+            pipeline_fingerprint.as_bytes().as_slice(),
+            model_id,
+            revision,
+            model_fingerprint.map(|value| *value.as_bytes()),
+            dimension,
         ],
     )?;
     Ok(transaction.last_insert_rowid())

@@ -1,6 +1,6 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-08-02 after the B1-04 native portability disposition
+**Snapshot:** 2026-08-02 after the B1-05 through B1-08 complete local gate
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
@@ -50,10 +50,10 @@ supported without hiding a missing later gate.
 | B1-02 | Verified-byte FastEmbed CPU inference portability | Native target evidence passing | yes | yes | yes | yes | yes | no | v2 native reports from run `30731369195` |
 | B1-03 | Cross-architecture numerical compatibility and vector provenance | Native target evidence passing | yes | yes | yes | yes | yes | no | 3,456-component comparison, identical ordering, and full CI fan-in from runs `30731369195` and `30731864477` |
 | B1-04 | sqlite-vec static packaging and filtered-KNN portability spike | Native target evidence passing | yes | yes | yes | yes | yes | no | Raw failures retained; bounded storage revision passes both targets and fan-in in run `30732989326` |
-| B1-05 | Embedding schema, exact vector provenance, and index pins | Not started | no | no | no | no | no | no | Blocked in sequence on B1-04 proof |
-| B1-06 | Five-state semantic/model lifecycle | Not started | no | no | no | no | no | no | Blocked in sequence on vector storage |
-| B1-07 | Atomic re-embed, unchanged-content reuse, capacity, recovery | Not started | no | no | no | no | no | no | Blocked in sequence on lifecycle schema |
-| B1-08 | Vector-aware prune, forget, backup, and restore guarantees | Not started | no | no | no | no | no | no | Blocked in sequence on lifecycle schema |
+| B1-05 | Embedding schema, exact vector provenance, and index pins | Complete local gate passing | yes | yes | yes | no | no | no | Schema v4, immutable profile metadata, canonical provenance/cache, sqlite-vec A/B slots, Doctor tamper coverage |
+| B1-06 | Five-state semantic/model lifecycle | Complete local gate passing | yes | yes | yes | no | no | no | Exact pin-at-init and derived lexical/configured/installed/indexed/degraded states in model and process suites |
+| B1-07 | Atomic re-embed, unchanged-content reuse, capacity, recovery | Complete local gate passing | yes | yes | yes | no | no | no | Pre-inference cache reuse, bounded batches, capacity planning, atomic shadow-slot flip, rollback and invalidation fixtures |
+| B1-08 | Vector-aware prune, forget, backup, and restore guarantees | Complete local gate passing | yes | yes | yes | no | no | no | Exact vector preservation/reclamation/deletion/restoration in vector and maintenance suites |
 | B1-09 | Filtered semantic retrieval with project/source scope before KNN | Not started | no | no | no | no | no | no | Blocked in sequence on storage/lifecycle |
 | B1-10 | Semantic cancellation, timeout, memory, offline, typed model states | Not started | no | no | no | no | no | no | Blocked in sequence on semantic retrieval |
 | B1-11 | Weighted RRF across exact/BM25/vector candidates | Not started | no | no | no | no | no | no | Blocked in sequence on semantic retrieval |
@@ -111,9 +111,9 @@ never increase completion.
 
 Mechanically checked snapshot at this revision:
 
-- Stable core implementation coverage (A1/A2/B1 rows): **71.0%** (22/31).
-- All in-scope implementation coverage: **59.3%** (32/54).
-- Full stable-program evidence: **42.6%** (135/317 applicable evidence cells).
+- Stable core implementation coverage (A1/A2/B1 rows): **83.9%** (26/31).
+- All in-scope implementation coverage: **66.7%** (36/54).
+- Full stable-program evidence: **46.4%** (147/317 applicable evidence cells).
 - Release-qualified coverage: **13.0%** (7/54).
 
 The handoff's approximate 80% core-feature and 65% full-program figures remain
@@ -125,5 +125,5 @@ existed; they are not mixed with ledger percentages.
 No current implementation blocker requires user input. External authority may
 later be required for Developer ID/notarization, stable signing/publication,
 external label review, and independent dogfooding participants. Those rows
-remain incomplete; they do not block the current sqlite-vec spike and
-storage/lifecycle sequence.
+remain incomplete; they do not block the current semantic/hybrid retrieval
+sequence.

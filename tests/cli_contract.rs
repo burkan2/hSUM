@@ -686,11 +686,16 @@ fn defaults_match_the_alpha4_contract() {
 }
 
 #[test]
-fn semantic_search_remains_deferred_while_alpha2_doctor_surfaces_parse() {
+fn semantic_search_remains_deferred_while_embedding_rebuild_and_doctor_parse() {
     assert_usage_error(&["hsum", "search", "needle", "--mode", "semantic"]);
     assert_usage_error(&["hsum", "search", "needle", "--mode", "hybrid"]);
     assert_usage_error(&["hsum", "search", "needle", "--embedding-model", "x"]);
-    assert_usage_error(&["hsum", "ingest", "--reembed"]);
+    let parsed = parse(&["hsum", "ingest", "--reembed"]);
+    let Command::Ingest(arguments) = parsed.command else {
+        panic!("expected ingest");
+    };
+    assert!(arguments.reembed);
+    assert_usage_error(&["hsum", "ingest", "--reembed", "--dry-run"]);
     parse(&["hsum", "doctor", "--integrity"]);
     parse(&["hsum", "doctor", "--repair", "--confirm"]);
     parse(&[
@@ -1008,8 +1013,8 @@ fn verbose_version_report_is_golden_and_tag_gated() {
         concat!(
             "hsum 0.1.0-alpha.4\n",
             "API version: hsum.api.v1\n",
-            "Readable schema versions: 2-3\n",
-            "Writable schema versions: 3-3\n",
+            "Readable schema versions: 3-4\n",
+            "Writable schema versions: 4-4\n",
             "Target: ",
             env!("HSUM_TARGET_TRIPLE"),
             "\n",
@@ -1018,7 +1023,7 @@ fn verbose_version_report_is_golden_and_tag_gated() {
              multi-project, search-exact, search-bm25, evidence-get, backup-verified, \
              managed-backup-disposition, prune-plan-apply, forget-physical-rewrite, restore-exact-state, \
              migrate-n-minus-one, config-migrate-n-minus-one, mcp-stdio-read-only, \
-             model-artifact-lifecycle\n",
+             model-artifact-lifecycle, embedding-profile, embedding-reembed\n",
         )
     );
 

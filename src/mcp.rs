@@ -1719,7 +1719,9 @@ fn store_error_subcode(error: &StoreError) -> ErrorSubcode {
         StoreError::Io(error) => io_error_subcode(error),
         StoreError::Time(_) => ErrorSubcode::Unexpected,
         StoreError::AlreadyExists(_) => ErrorSubcode::IndexPathOccupied,
-        StoreError::WalUnavailable(_) => ErrorSubcode::UnsupportedStorage,
+        StoreError::WalUnavailable(_) | StoreError::SqliteVecRegistration(_) => {
+            ErrorSubcode::UnsupportedStorage
+        }
         StoreError::MissingPath(_) => ErrorSubcode::IndexNotFound,
         StoreError::UnsafeIndexPath(_) => ErrorSubcode::UnsupportedStorage,
         StoreError::InvalidApplicationId { .. } => ErrorSubcode::ApplicationId,
@@ -1766,6 +1768,7 @@ fn store_error_subcode(error: &StoreError) -> ErrorSubcode {
         StoreError::ReadOnlyRequired
         | StoreError::ReadWriteRequired
         | StoreError::InvalidPreparedDocument(_)
+        | StoreError::InvalidEmbedding(_)
         | StoreError::DuplicateConnectorKey
         | StoreError::HashCollision
         | StoreError::WriterLockMismatch

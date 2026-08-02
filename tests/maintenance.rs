@@ -319,15 +319,15 @@ fn prune_removes_abandoned_history_from_an_empty_index_without_zeroing_the_floor
 fn released_n_minus_one_fixture_migrates_only_after_plan_hash_confirmation() {
     let directory = tempdir().unwrap();
     let index = directory.path().join("index.sqlite");
-    let backup = directory.path().join("schema-2.sqlite");
+    let backup = directory.path().join("schema-3.sqlite");
     drop(create_database(&index));
-    downgrade_to_schema_2(&index);
+    downgrade_to_schema_3(&index);
 
     let plan = plan_migration(&index, "fixture", Duration::from_secs(1)).unwrap();
-    assert_eq!(plan.plan.from_schema_version, 2);
-    assert_eq!(plan.plan.to_schema_version, 3);
+    assert_eq!(plan.plan.from_schema_version, 3);
+    assert_eq!(plan.plan.to_schema_version, 4);
     assert_eq!(plan.plan.steps.len(), 1);
-    assert_eq!(plan.plan.steps[0].version, 3);
+    assert_eq!(plan.plan.steps[0].version, 4);
     let wrong = schema_checksum();
     assert!(matches!(
         apply_migration(
@@ -351,14 +351,14 @@ fn released_n_minus_one_fixture_migrates_only_after_plan_hash_confirmation() {
         Duration::from_secs(1),
     )
     .unwrap();
-    assert_eq!(outcome.from_schema_version, 2);
-    assert_eq!(outcome.to_schema_version, 3);
+    assert_eq!(outcome.from_schema_version, 3);
+    assert_eq!(outcome.to_schema_version, 4);
     Doctor::run(&index).unwrap();
     let old = Connection::open(&backup).unwrap();
     assert_eq!(
         old.pragma_query_value(None, "user_version", |row| row.get::<_, u32>(0))
             .unwrap(),
-        2
+        3
     );
 }
 
@@ -797,27 +797,52 @@ fn prepared_document(connector_key: &[u8], body: &[u8]) -> PreparedDocument {
     }
 }
 
-fn downgrade_to_schema_2(path: &Path) {
+fn downgrade_to_schema_3(path: &Path) {
     let connection = Connection::open(path).unwrap();
     connection
         .pragma_update(None, "foreign_keys", false)
         .unwrap();
     connection
         .execute_batch(
-            "DROP TABLE pruned_revision_namespaces;
-             DROP TABLE prune_runs;
-             DROP TABLE forgotten_documents;
-             DROP TABLE forget_runs;
-             DROP TABLE restore_runs;
-             DELETE FROM index_meta WHERE key = 'history_floor_epoch';
-             DELETE FROM index_meta WHERE key = 'replacement_epoch';
-             DELETE FROM schema_migrations WHERE version = 3;",
+            "DROP TABLE passages_vec_a;
+             DROP TABLE passages_vec_b;
+             DROP TABLE chunk_embeddings;
+             DROP TABLE embedding_provenance;
+             DELETE FROM index_meta
+             WHERE key IN (
+                 'embedding_model_id',
+                 'embedding_revision',
+                 'embedding_model_fingerprint',
+                 'embedding_dimension',
+                 'active_vector_slot'
+             );
+             DELETE FROM schema_migrations WHERE version = 4;",
         )
         .unwrap();
-    let checksum = schema_2_checksum();
+    connection
+        .execute_batch("PRAGMA writable_schema = ON;")
+        .unwrap();
     connection
         .execute(
-            "UPDATE index_meta SET value = CAST('2' AS BLOB) WHERE key = 'schema_version'",
+            "DELETE FROM sqlite_schema WHERE name = 'sqlite_sequence'",
+            [],
+        )
+        .unwrap();
+    connection
+        .execute(
+            "UPDATE sqlite_schema SET sql = ?1
+             WHERE type = 'table' AND name = 'generations'",
+            [released_generation_sql()],
+        )
+        .unwrap();
+    connection
+        .execute_batch("PRAGMA writable_schema = RESET;")
+        .unwrap();
+    connection.execute_batch("VACUUM;").unwrap();
+    let checksum = schema_3_checksum();
+    connection
+        .execute(
+            "UPDATE index_meta SET value = CAST('3' AS BLOB) WHERE key = 'schema_version'",
             [],
         )
         .unwrap();
@@ -827,16 +852,18 @@ fn downgrade_to_schema_2(path: &Path) {
             params![checksum.as_slice()],
         )
         .unwrap();
-    connection.pragma_update(None, "user_version", 2).unwrap();
+    connection.pragma_update(None, "user_version", 3).unwrap();
     connection
         .pragma_update(None, "foreign_keys", true)
         .unwrap();
+    assert_eq!(schema_rows(&connection), released_schema_3_rows());
 }
 
-fn schema_2_checksum() -> [u8; 32] {
+fn schema_3_checksum() -> [u8; 32] {
     let migrations = [
         (1_u32, include_str!("../migrations/0001_alpha1.sql")),
         (2_u32, include_str!("../migrations/0002_jsonl_sources.sql")),
+        (3_u32, include_str!("../migrations/0003_maintenance.sql")),
     ];
     let mut hasher = Sha256::new();
     hasher.update(b"hsum.schema-chain.v1\0");
@@ -846,6 +873,45 @@ fn schema_2_checksum() -> [u8; 32] {
         hasher.update(sql.as_bytes());
     }
     hasher.finalize().into()
+}
+
+fn released_schema_3_rows() -> Vec<(String, String, String, String)> {
+    let connection = Connection::open_in_memory().unwrap();
+    connection
+        .execute_batch(include_str!("../migrations/0001_alpha1.sql"))
+        .unwrap();
+    connection
+        .execute_batch(include_str!("../migrations/0002_jsonl_sources.sql"))
+        .unwrap();
+    connection
+        .execute_batch(include_str!("../migrations/0003_maintenance.sql"))
+        .unwrap();
+    schema_rows(&connection)
+}
+
+fn released_generation_sql() -> String {
+    released_schema_3_rows()
+        .into_iter()
+        .find_map(|(object_type, name, _, sql)| {
+            (object_type == "table" && name == "generations").then_some(sql)
+        })
+        .unwrap()
+}
+
+fn schema_rows(connection: &Connection) -> Vec<(String, String, String, String)> {
+    let mut statement = connection
+        .prepare(
+            "SELECT type, name, tbl_name, COALESCE(sql, '')
+             FROM sqlite_schema ORDER BY type, name, tbl_name",
+        )
+        .unwrap();
+    statement
+        .query_map([], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        })
+        .unwrap()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap()
 }
 
 fn count(connection: &Connection, table: &str) -> i64 {

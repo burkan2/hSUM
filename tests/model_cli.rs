@@ -107,3 +107,62 @@ fn airgapped_import_rejects_manifest_dimension_drift_before_copying() {
     assert_eq!(error["subcode"], "MODEL_DIMENSION");
     assert!(!home.path().join("cache/models").exists());
 }
+
+#[test]
+fn init_pins_without_downloading_and_reembed_requires_the_exact_artifact() {
+    let home = tempdir().unwrap();
+    let working = tempdir().unwrap();
+    fs::write(working.path().join("notes.md"), b"semantic evidence\n").unwrap();
+    let initialized = run(
+        home.path(),
+        working.path(),
+        &[
+            "init",
+            ".",
+            "--index",
+            "semantic",
+            "--project",
+            "default",
+            "--embedding-model",
+            MODEL_ID,
+            "--no-ingest",
+        ],
+        true,
+    );
+    assert!(initialized.status.success(), "{}", stderr(&initialized));
+    assert!(
+        String::from_utf8_lossy(&initialized.stdout)
+            .contains("Embedding profile: bge-small-en-v1-5-fp32")
+    );
+    assert!(!home.path().join("cache/models").exists());
+
+    let listed = run(
+        home.path(),
+        working.path(),
+        &["model", "list", "--json"],
+        true,
+    );
+    assert!(listed.status.success(), "{}", stderr(&listed));
+    let output: Value = serde_json::from_slice(&listed.stdout).unwrap();
+    assert_eq!(output["selected_index"], "semantic");
+    assert_eq!(output["selected_index_state"], "configured_uninstalled");
+    assert_eq!(output["models"][0]["state"], "missing");
+    assert_eq!(output["models"][0]["pinned_by_selected_index"], true);
+    assert_eq!(
+        output["models"][0]["pinned_by_indexes"],
+        json!(["semantic"])
+    );
+
+    let reembed = run(home.path(), working.path(), &["ingest", "--reembed"], true);
+    assert_eq!(reembed.status.code(), Some(3), "{}", stderr(&reembed));
+    assert!(stderr(&reembed).contains("MODEL_NOT_INSTALLED"));
+
+    let changed_pin = run(
+        home.path(),
+        working.path(),
+        &["init", ".", "--no-ingest"],
+        true,
+    );
+    assert_eq!(changed_pin.status.code(), Some(3));
+    assert!(stderr(&changed_pin).contains("MODEL_FINGERPRINT"));
+}
