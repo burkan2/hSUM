@@ -234,6 +234,13 @@ Optional watch mode and additional integrations are not on the critical path.
 - Prove filtered vector scope correctness, deterministic equal-distance
   ordering, portable SQLite/vector packaging, memory bounds, cancellation, and
   air-gapped model import before exposing semantic or hybrid modes.
+  - Current-checkout checkpoint: raw `sqlite-vec 0.1.7` proves filtered scope,
+    WAL reader visibility, shadow-slot flips, bounded memory, and corruption
+    refusal, but its cutoff membership depends on insertion order and it masks
+    `SQLITE_INTERRUPT` as `chunks iter error`. The canonical storage revision
+    uses filtered `K+1` plus a source/slot-scoped exact tie fallback and maps the
+    generic error only from owned cancellation/deadline state. The complete
+    local gate passes; Linux x86_64/macOS arm64 workflow evidence remains open.
 - Evaluate recency, source diversity, rare-token statistics, query expansion,
   neighboring context, and reranking one experiment at a time against a frozen
   exact/BM25 baseline.
