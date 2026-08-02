@@ -47,7 +47,7 @@ artifact, and production-documentation evidence.
 | Vector-aware maintenance | Implemented; complete local gate passing, unreleased | vector-aware backup, prune, physical forget, guarded restore, and ordinary-ingest invalidation in `src/store/maintenance.rs`, `src/store/generation.rs`, and `src/store/vector.rs` | exact preservation/reclamation/removal/recovery fixtures in `tests/vector_storage.rs`, `tests/maintenance.rs`, and `tests/maintenance_cli.rs` |
 | User config and trust-registry migration | Implemented; unreleased | schema-2 config/trust loaders and epochs in `src/app/context.rs` and `src/config/trust.rs`; hashed two-file ceremony in `src/config/migration.rs`; CLI/runtime adapters | library refusal/exact-backup/structural-plan/resume coverage in `tests/config_migration.rs`; N-1 non-mutation and complete process ceremony in `tests/config_migration_cli.rs`; CLI grammar and schema diagnosis fixtures |
 | Remaining canonical Alpha.2 management surfaces | Complete in the current checkout; unreleased | No intentionally absent Alpha.2 management surface remains | Full local gate must continue passing before semantic retrieval work begins |
-| Semantic/hybrid retrieval | Filtered semantic core implemented with the complete local gate passing; hybrid and public transports remain deferred | `SearchMode::Semantic` core request validation, active-generation/slot compatibility checks, per-project-source filtered sqlite-vec fan-out, deterministic K+1/exact tie fallback, guarded evidence materialization, and vector rank explanations in `src/search/retrieval.rs` | Two adversarial raw-adapter unit cases plus semantic lifecycle/input/materialization cases in `tests/vector_storage.rs`; all 15 lexical search contracts remain green; CLI/MCP rejection stays frozen until B1-13 |
+| Semantic/hybrid retrieval | Filtered semantic core and bounded private query workers implemented with the complete local gate passing; hybrid and public transports remain deferred | `SearchMode::Semantic` core request validation, active-generation/slot compatibility checks, per-project-source filtered sqlite-vec fan-out, deterministic K+1/exact tie fallback, guarded evidence materialization, and vector rank explanations in `src/search/retrieval.rs`; two-process/eight-queue offline inference boundary with coalescing, typed failures, deadline kill/replacement, and bounded frames in `src/model/worker.rs` | Two adversarial raw-adapter cases, semantic lifecycle/input/materialization fixtures, seven worker unit cases, and a real private-worker process exchange; all 15 lexical search contracts and the complete serialized local gate remain green; CLI/MCP rejection stays frozen until B1-13 |
 | Watcher and HTTP | Not implemented; canonical stable-v0.1 exclusions | Intentionally absent from the current command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
 | GitHub release archives | Alpha.4 published | `.github/workflows/release.yml`, `scripts/release-smoke.sh` | Checksums, SPDX SBOM attestations, signed-tag guard, Linux/macOS release jobs |
 | Installer | Available in alpha.4 | `scripts/install.sh`, `scripts/installer-smoke.sh` | Checksum verification plus isolated/network-denied smoke |
@@ -108,13 +108,14 @@ artifact, and production-documentation evidence.
 - Existing alpha.4 workspace-policy files remain parseable, but their roots are
   not consumed by MCP. Explicit `integration activate`, `init`, and `ingest`
   remain the state-changing paths.
-- The B1-05 through B1-09 product storage/lifecycle and filtered-semantic slice
-  passes its 21-case vector integration suite, two adversarial raw-adapter unit
-  cases, all 15 lexical search contracts, model/init/maintenance process
-  coverage, the complete serialized local test gate, formatting, and strict
-  all-target/all-feature Clippy. Native B1-09 evidence, semantic worker
-  cancellation/memory qualification, hybrid retrieval, public transport
-  exposure, and stable release qualification are not yet claimed.
+- The B1-05 through B1-10 product storage/lifecycle, filtered-semantic, and
+  bounded semantic-worker slice passes its 21-case vector integration suite,
+  two adversarial raw-adapter unit cases, seven worker unit cases, a real
+  private-worker process exchange, all 15 lexical search contracts,
+  model/init/maintenance process coverage, the complete serialized local test
+  gate, formatting, and strict all-target/all-feature Clippy. Native B1-09 and
+  B1-10 evidence, hybrid retrieval, public transport exposure, and stable
+  release qualification are not yet claimed.
 - The frozen local retrieval benchmark is 25 author-labeled tasks on this
   repository, not external or stable-release evidence. Across three fresh
   indexes, hSUM leads mean graded quality but is much slower than grep, misses

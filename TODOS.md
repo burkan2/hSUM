@@ -268,9 +268,22 @@ Optional watch mode and additional integrations are not on the critical path.
     existing guarded passage decoder and deterministic dedupe path. Adversarial
     source-isolation and reverse-insertion tie tests, semantic lifecycle and
     validation fixtures, all lexical search contracts, the serialized complete
-    local suite, formatting, and strict Clippy pass. Worker cancellation/memory
-    qualification, hybrid fusion, public CLI/MCP/API exposure, native target
-    evidence, and stable release qualification remain open in sequence.
+    local suite, formatting, and strict Clippy pass.
+  - Current-checkout semantic-worker checkpoint: query inference is isolated in
+    exactly two private child processes with at most eight queued leader jobs;
+    identical in-flight requests coalesce without weakening that admission
+    bound. Requests are limited to 4,096 UTF-8 bytes and bounded JSON-lines
+    frames, use only the verified local artifact cache, and return exact typed
+    missing, unverified, incompatible, busy, restarting, cancelled, deadline,
+    and protocol states. Callers discard cancelled or late results; an overdue
+    child is killed after a two-second grace period and replaced before later
+    work. Focused tests cover cancellation/deadline discard, hard admission,
+    coalescing, replacement, frame/output validation, real child termination,
+    a cancel storm that leaves lexical SQLite search responsive, and a real
+    offline missing-model process exchange. The serialized complete local
+    suite, formatting, and strict all-feature Clippy pass. Native worker
+    memory/target evidence, hybrid fusion, public CLI/MCP/API exposure, and
+    stable release qualification remain open in sequence.
 - Evaluate recency, source diversity, rare-token statistics, query expansion,
   neighboring context, and reranking one experiment at a time against a frozen
   exact/BM25 baseline.

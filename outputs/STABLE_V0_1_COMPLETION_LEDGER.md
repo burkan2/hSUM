@@ -1,6 +1,6 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-08-02 after the B1-05 through B1-09 complete local gate
+**Snapshot:** 2026-08-02 after the B1-05 through B1-10 complete local gate
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
@@ -55,8 +55,8 @@ supported without hiding a missing later gate.
 | B1-07 | Atomic re-embed, unchanged-content reuse, capacity, recovery | Complete local gate passing | yes | yes | yes | no | no | no | Pre-inference cache reuse, bounded batches, capacity planning, atomic shadow-slot flip, rollback and invalidation fixtures |
 | B1-08 | Vector-aware prune, forget, backup, and restore guarantees | Complete local gate passing | yes | yes | yes | no | no | no | Exact vector preservation/reclamation/deletion/restoration in vector and maintenance suites |
 | B1-09 | Filtered semantic retrieval with project/source scope before KNN | Complete local gate passing | yes | yes | yes | no | no | no | Transaction-scoped active-slot fan-out applies each project source UUID as a sqlite-vec partition predicate before KNN; K+1/exact tie fallback, guarded materialization, compatibility refusal, focused semantic fixtures, and the complete serialized local gate pass |
-| B1-10 | Semantic cancellation, timeout, memory, offline, typed model states | Not started | no | no | no | no | no | no | Next sequence-locked implementation row after B1-09 |
-| B1-11 | Weighted RRF across exact/BM25/vector candidates | Not started | no | no | no | no | no | no | Blocked in sequence on semantic cancellation and worker guarantees |
+| B1-10 | Semantic cancellation, timeout, memory, offline, typed model states | Complete local gate passing | yes | yes | yes | no | no | no | Two private model processes, eight queued leader jobs, identical-query coalescing, bounded request/response frames, caller cancellation/deadline discard, overdue child kill/replacement, offline verified-cache-only inference, exact typed failure states, cancel-storm lexical-survival proof, real-process missing-model protocol proof, and the complete serialized local gate pass |
+| B1-11 | Weighted RRF across exact/BM25/vector candidates | Not started | no | no | no | no | no | no | Next sequence-locked implementation row after B1-10 |
 | B1-12 | Hybrid overlap dedupe, stable ties, and bounded explanations | Not started | no | no | no | no | no | no | Blocked in sequence on hybrid retrieval |
 | B1-13 | Semantic/hybrid CLI, MCP, API, cursor, and isolation parity | Not started | no | no | no | no | no | no | Blocked in sequence on hybrid retrieval |
 | EVAL-02 | Stable 100-query, three-corpus, four-grade held-out set | Not started | no | no | no | n/a | no | no | Requires accepted spans and frozen fingerprints/order |
@@ -111,9 +111,9 @@ never increase completion.
 
 Mechanically checked snapshot at this revision:
 
-- Stable core implementation coverage (A1/A2/B1 rows): **87.1%** (27/31).
-- All in-scope implementation coverage: **68.5%** (37/54).
-- Full stable-program evidence: **47.3%** (150/317 applicable evidence cells).
+- Stable core implementation coverage (A1/A2/B1 rows): **90.3%** (28/31).
+- All in-scope implementation coverage: **70.4%** (38/54).
+- Full stable-program evidence: **48.3%** (153/317 applicable evidence cells).
 - Release-qualified coverage: **13.0%** (7/54).
 
 The handoff's approximate 80% core-feature and 65% full-program figures remain

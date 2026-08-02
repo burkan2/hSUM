@@ -98,6 +98,9 @@ const INTEGRATION_LOCK_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Parse the process arguments, execute one command, and return its stable exit status.
 pub async fn run_from_env() -> ExitCode {
+    if let Some(exit) = crate::model::run_private_model_worker_from_env() {
+        return exit;
+    }
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
         Err(error) => {
