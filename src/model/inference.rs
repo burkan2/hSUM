@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use fastembed::{
     InitOptionsUserDefined, Pooling, TextEmbedding, TokenizerFiles, UserDefinedEmbeddingModel,
 };
+use serde::Serialize;
 use thiserror::Error;
 
 use crate::domain::Sha256Digest;
@@ -18,6 +19,40 @@ const CONFIG_FILE: &str = "config.json";
 const SPECIAL_TOKENS_MAP_FILE: &str = "special_tokens_map.json";
 const TOKENIZER_CONFIG_FILE: &str = "tokenizer_config.json";
 const NORMALIZED_NORM_TOLERANCE: f32 = 0.001;
+
+pub const EMBEDDING_PROVENANCE_SCHEMA: &str = "hsum.embedding-provenance.v1";
+pub const FASTEMBED_VERSION: &str = "5.17.4";
+pub const ORT_CRATE_VERSION: &str = "2.0.0-rc.13";
+pub const ONNX_RUNTIME_VERSION: &str = "1.28.0";
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct EmbeddingProvenance {
+    pub schema_version: &'static str,
+    pub model_id: String,
+    pub upstream_repository: String,
+    pub upstream_revision: String,
+    pub manifest_sha256: Sha256Digest,
+    pub files: Vec<ModelFile>,
+    pub vector_dimension: u32,
+    pub pooling: &'static str,
+    pub normalization: &'static str,
+    pub normalization_implementation: &'static str,
+    pub component_type: &'static str,
+    pub quantization: &'static str,
+    pub output_selection: &'static str,
+    pub fastembed_version: &'static str,
+    pub ort_crate_version: &'static str,
+    pub onnx_runtime_version: &'static str,
+    pub onnx_runtime_build_info: String,
+    pub execution_provider: &'static str,
+    pub execution_provider_configuration: &'static str,
+    pub graph_optimization_level: &'static str,
+    pub target_os: &'static str,
+    pub target_arch: &'static str,
+    pub target_endianness: &'static str,
+    pub max_length: usize,
+    pub intra_threads: usize,
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct EmbeddingOptions {
@@ -68,11 +103,11 @@ impl VerifiedEmbeddingArtifact {
             required_file(&self.manifest, TOKENIZER_CONFIG_FILE)?,
         )?;
 
+        let bytes = self.manifest.files.iter().map(|file| file.bytes).sum();
         Ok(VerifiedEmbeddingBytes {
-            id: self.manifest.id,
+            manifest: self.manifest,
             fingerprint: self.fingerprint,
-            dimension: self.manifest.dimension,
-            bytes: self.manifest.files.iter().map(|file| file.bytes).sum(),
+            bytes,
             onnx,
             tokenizer_files: TokenizerFiles {
                 tokenizer_file,
@@ -86,9 +121,8 @@ impl VerifiedEmbeddingArtifact {
 
 #[derive(Debug)]
 pub struct VerifiedEmbeddingBytes {
-    id: String,
+    manifest: ModelManifest,
     fingerprint: Sha256Digest,
-    dimension: u32,
     bytes: u64,
     onnx: Vec<u8>,
     tokenizer_files: TokenizerFiles,
@@ -104,6 +138,12 @@ impl VerifiedEmbeddingBytes {
         self,
         options: EmbeddingOptions,
     ) -> Result<LocalTextEmbedding, EmbeddingInferenceError> {
+        let provenance = embedding_provenance(
+            &self.manifest,
+            self.fingerprint,
+            options,
+            ort::info().to_owned(),
+        );
         let model = UserDefinedEmbeddingModel::new(self.onnx, self.tokenizer_files)
             .with_pooling(Pooling::Cls);
         let options = InitOptionsUserDefined::new()
@@ -111,36 +151,73 @@ impl VerifiedEmbeddingBytes {
             .with_intra_threads(options.intra_threads());
         let model = TextEmbedding::try_new_from_user_defined(model, options)
             .map_err(|error| EmbeddingInferenceError::FastEmbed(error.to_string()))?;
-        Ok(LocalTextEmbedding {
-            id: self.id,
-            fingerprint: self.fingerprint,
-            dimension: self.dimension,
-            model,
-        })
+        Ok(LocalTextEmbedding { provenance, model })
+    }
+}
+
+fn embedding_provenance(
+    manifest: &ModelManifest,
+    fingerprint: Sha256Digest,
+    options: EmbeddingOptions,
+    onnx_runtime_build_info: String,
+) -> EmbeddingProvenance {
+    EmbeddingProvenance {
+        schema_version: EMBEDDING_PROVENANCE_SCHEMA,
+        model_id: manifest.id.clone(),
+        upstream_repository: manifest.upstream_repository.clone(),
+        upstream_revision: manifest.upstream_revision.clone(),
+        manifest_sha256: fingerprint,
+        files: manifest.files.clone(),
+        vector_dimension: manifest.dimension,
+        pooling: "cls",
+        normalization: "l2_after_pooling",
+        normalization_implementation: "fastembed::common::normalize",
+        component_type: "ieee754_binary32",
+        quantization: "none",
+        output_selection: "fastembed_default_precedence",
+        fastembed_version: FASTEMBED_VERSION,
+        ort_crate_version: ORT_CRATE_VERSION,
+        onnx_runtime_version: ONNX_RUNTIME_VERSION,
+        onnx_runtime_build_info,
+        execution_provider: "CPUExecutionProvider",
+        execution_provider_configuration: "default_cpu_fallback",
+        graph_optimization_level: "level3",
+        target_os: std::env::consts::OS,
+        target_arch: std::env::consts::ARCH,
+        target_endianness: if cfg!(target_endian = "little") {
+            "little"
+        } else {
+            "big"
+        },
+        max_length: options.max_length(),
+        intra_threads: options.intra_threads(),
     }
 }
 
 pub struct LocalTextEmbedding {
-    id: String,
-    fingerprint: Sha256Digest,
-    dimension: u32,
+    provenance: EmbeddingProvenance,
     model: TextEmbedding,
 }
 
 impl LocalTextEmbedding {
     #[must_use]
     pub fn id(&self) -> &str {
-        &self.id
+        &self.provenance.model_id
     }
 
     #[must_use]
     pub fn fingerprint(&self) -> Sha256Digest {
-        self.fingerprint
+        self.provenance.manifest_sha256
     }
 
     #[must_use]
     pub fn dimension(&self) -> u32 {
-        self.dimension
+        self.provenance.vector_dimension
+    }
+
+    #[must_use]
+    pub fn provenance(&self) -> &EmbeddingProvenance {
+        &self.provenance
     }
 
     pub fn embed(
@@ -155,7 +232,7 @@ impl LocalTextEmbedding {
             .model
             .embed(texts, Some(batch_size.get()))
             .map_err(|error| EmbeddingInferenceError::FastEmbed(error.to_string()))?;
-        validate_embeddings(texts.len(), self.dimension, &embeddings)?;
+        validate_embeddings(texts.len(), self.dimension(), &embeddings)?;
         Ok(embeddings)
     }
 }
@@ -416,6 +493,44 @@ mod tests {
             Err(EmbeddingInferenceError::NotNormalized { .. })
         ));
         validate_embeddings(1, 3, &[vec![1.0, 0.0, 0.0]]).unwrap();
+    }
+
+    #[test]
+    fn provenance_binds_exact_artifact_runtime_and_preprocessing_contract() {
+        let files: [(&str, &[u8]); 5] = [
+            (CONFIG_FILE, br#"{"pad_token_id":0}"#),
+            (ONNX_FILE, b"not a real ONNX model"),
+            (SPECIAL_TOKENS_MAP_FILE, br#"{}"#),
+            (TOKENIZER_FILE, br#"{}"#),
+            (
+                TOKENIZER_CONFIG_FILE,
+                br#"{"model_max_length":512,"pad_token":"[PAD]"}"#,
+            ),
+        ];
+        let manifest = manifest(&files);
+        let fingerprint = manifest.fingerprint().unwrap();
+        let options = EmbeddingOptions::new(
+            NonZeroUsize::new(512).unwrap(),
+            NonZeroUsize::new(4).unwrap(),
+        );
+        let provenance =
+            embedding_provenance(&manifest, fingerprint, options, "fixture build".to_owned());
+
+        assert_eq!(provenance.schema_version, EMBEDDING_PROVENANCE_SCHEMA);
+        assert_eq!(provenance.model_id, manifest.id);
+        assert_eq!(provenance.upstream_revision, manifest.upstream_revision);
+        assert_eq!(provenance.manifest_sha256, fingerprint);
+        assert_eq!(provenance.files, manifest.files);
+        assert_eq!(provenance.vector_dimension, 3);
+        assert_eq!(provenance.pooling, "cls");
+        assert_eq!(provenance.normalization, "l2_after_pooling");
+        assert_eq!(provenance.fastembed_version, "5.17.4");
+        assert_eq!(provenance.ort_crate_version, "2.0.0-rc.13");
+        assert_eq!(provenance.onnx_runtime_version, "1.28.0");
+        assert_eq!(provenance.onnx_runtime_build_info, "fixture build");
+        assert_eq!(provenance.execution_provider, "CPUExecutionProvider");
+        assert_eq!(provenance.max_length, 512);
+        assert_eq!(provenance.intra_threads, 4);
     }
 
     #[test]

@@ -10,7 +10,7 @@ publish = false
 
 [features]
 default = []
-model-portability = ["dep:fastembed"]
+model-portability = ["dep:fastembed", "dep:ort"]
 
 [dependencies]
 aho-corasick = "=1.1.4"
@@ -21,6 +21,7 @@ directories = "=6.0.0"
 fastembed = { version = "=5.17.4", optional = true, default-features = false, features = ["ort-download-binaries-rustls-tls"] }
 hex = "=0.4.3"
 ignore = "=0.4.30"
+ort = { version = "=2.0.0-rc.13", optional = true, default-features = false }
 reqwest = { version = "=0.13.4", default-features = false, features = ["rustls", "system-proxy"] }
 rmcp = { version = "=2.2.0", default-features = false, features = ["macros", "server", "transport-io"] }
 rusqlite = { version = "=0.39.0", default-features = false, features = ["backup", "bundled", "limits"] }

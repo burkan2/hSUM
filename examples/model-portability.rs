@@ -14,13 +14,15 @@ use std::time::{Duration, Instant};
 
 use clap::Parser;
 use hsum::config::ManagedPaths;
-use hsum::model::{EmbeddingOptions, LocalTextEmbedding, ModelStore};
+use hsum::model::{
+    EmbeddingOptions, EmbeddingProvenance, FASTEMBED_VERSION, LocalTextEmbedding, ModelStore,
+    ONNX_RUNTIME_VERSION, ORT_CRATE_VERSION,
+};
 use serde::Serialize;
 use sha2::{Digest, Sha256};
 
-const SCHEMA_VERSION: &str = "hsum.model-portability.v1";
+const SCHEMA_VERSION: &str = "hsum.model-portability.v2";
 const DEFAULT_MODEL: &str = "bge-small-en-v1-5-fp32";
-const FASTEMBED_VERSION: &str = "5.17.4";
 const INPUTS: &[u8] = include_bytes!("../benches/model_portability/inputs.json");
 const MAX_INITIALIZE_MS: f64 = 10_000.0;
 const MAX_INTERACTIVE_P95_MS: f64 = 500.0;
@@ -108,6 +110,7 @@ fn run(args: Args) -> Result<bool, Box<dyn std::error::Error>> {
             .is_some_and(|bytes| bytes <= MAX_PEAK_RSS_DELTA_BYTES),
     };
     let passed = checks.all();
+    let provenance = model.provenance().clone();
     let report = Report {
         schema_version: SCHEMA_VERSION,
         passed,
@@ -117,6 +120,9 @@ fn run(args: Args) -> Result<bool, Box<dyn std::error::Error>> {
         runtime: Runtime {
             backend: "FastEmbed",
             fastembed_version: FASTEMBED_VERSION,
+            ort_crate_version: ORT_CRATE_VERSION,
+            onnx_runtime_version: ONNX_RUNTIME_VERSION,
+            onnx_runtime_build_info: provenance.onnx_runtime_build_info.clone(),
             execution_provider: "CPU",
             network_model_loading: false,
         },
@@ -127,6 +133,7 @@ fn run(args: Args) -> Result<bool, Box<dyn std::error::Error>> {
             verified_bytes,
             pooling: "cls",
         },
+        provenance,
         configuration: Configuration {
             max_length: args.max_length.get(),
             intra_threads: args.threads.get(),
@@ -169,14 +176,20 @@ fn measure_workload(
 ) -> Result<Workload, Box<dyn std::error::Error>> {
     let batch_size = NonZeroUsize::new(inputs.len()).ok_or("workload input cannot be empty")?;
     let mut expected_digest = None;
+    let mut deterministic = true;
     for _ in 0..warmups.get() {
         let embeddings = model.embed(inputs, batch_size)?;
-        expected_digest.get_or_insert_with(|| embedding_digest(&embeddings));
+        let digest = embedding_digest(&embeddings);
+        if let Some(expected) = &expected_digest {
+            deterministic &= expected == &digest;
+        } else {
+            expected_digest = Some(digest);
+        }
     }
 
     let mut samples = Vec::with_capacity(iterations.get());
-    let mut deterministic = true;
     let mut output_digest = String::new();
+    let mut reference_embeddings = Vec::new();
     let mut min_norm = f32::INFINITY;
     let mut max_norm = f32::NEG_INFINITY;
     for _ in 0..iterations.get() {
@@ -197,6 +210,7 @@ fn measure_workload(
             min_norm = min_norm.min(norm);
             max_norm = max_norm.max(norm);
         }
+        reference_embeddings = embeddings;
     }
     let latency_ms = Latency::from_samples(&samples);
     let throughput_documents_per_second =
@@ -210,6 +224,7 @@ fn measure_workload(
         deterministic,
         min_l2_norm: min_norm,
         max_l2_norm: max_norm,
+        reference_embeddings,
     })
 }
 
@@ -250,6 +265,7 @@ struct Report {
     checkout: Checkout,
     runtime: Runtime,
     model: Model,
+    provenance: EmbeddingProvenance,
     configuration: Configuration,
     stages_ms: Stages,
     memory: Memory,
@@ -305,6 +321,9 @@ impl Checkout {
 struct Runtime {
     backend: &'static str,
     fastembed_version: &'static str,
+    ort_crate_version: &'static str,
+    onnx_runtime_version: &'static str,
+    onnx_runtime_build_info: String,
     execution_provider: &'static str,
     network_model_loading: bool,
 }
@@ -353,6 +372,7 @@ struct Workload {
     deterministic: bool,
     min_l2_norm: f32,
     max_l2_norm: f32,
+    reference_embeddings: Vec<Vec<f32>>,
 }
 
 #[derive(Debug, Serialize)]

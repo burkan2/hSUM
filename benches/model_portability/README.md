@@ -29,6 +29,18 @@ semantic or hybrid mode is added by this probe.
   Linux and `ps` on macOS
 - Output checks: count, dimension 384, finite values, unit L2 norm, and one
   stable SHA-256 digest across warmups and measured iterations
+- Evidence protocol v2 additionally records every reference `f32` component
+  from the final deterministic call. These values are portability evidence,
+  not production vector persistence. They allow component-wise, vector-norm,
+  cosine, distance, and ordering comparisons instead of treating a digest
+  mismatch as a numerical conclusion.
+- Every v2 report carries `hsum.embedding-provenance.v1`: model ID, exact
+  upstream repository and revision, canonical manifest hash, every artifact
+  file checksum and byte length, dimension, CLS pooling, post-pooling L2
+  normalization, IEEE-754 binary32 components, FastEmbed and `ort` crate
+  versions, the linked ONNX Runtime version and build identity, CPU execution
+  provider configuration, target OS/architecture/endianness, maximum length,
+  graph optimization level, and intra-op thread count.
 
 The portability ceiling is intentionally looser than the eventual hybrid
 search SLO because this slice isolates runtime viability rather than retrieval

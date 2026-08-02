@@ -889,6 +889,7 @@ dependencies = [
  "fastembed",
  "hex",
  "ignore",
+ "ort",
  "proptest",
  "reqwest",
  "rmcp",
