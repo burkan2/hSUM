@@ -226,8 +226,10 @@ Optional watch mode and additional integrations are not on the critical path.
     the same content-addressed cache. An opt-in FastEmbed `5.17.4` adapter now
     re-hashes those bytes, pins CLS pooling, validates normalized 384-value
     outputs, and records fixed CPU latency/RSS evidence without storing
-    vectors. The Apple M2/macOS arm64 development probe passes; native Linux
-    x86_64 execution, clean release packaging, vector storage, and cross-target
+    vectors. Native Linux x86_64 and macOS arm64 v2 probes pass, record all
+    3,456 reference components plus exact model/runtime/input provenance, and
+    pass the preregistered cross-architecture component, vector, cosine,
+    distance, and deterministic-ordering contract. Vector storage and stable
     release qualification remain open.
 - Prove filtered vector scope correctness, deterministic equal-distance
   ordering, portable SQLite/vector packaging, memory bounds, cancellation, and

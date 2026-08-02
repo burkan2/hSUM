@@ -9,6 +9,7 @@ on:
       - Cargo.toml
       - assets/models/**
       - benches/model_portability/inputs.json
+      - examples/model-portability-compare.rs
       - examples/model-portability.rs
       - src/model/**
 
@@ -100,5 +101,52 @@ jobs:
           path: |
             ${{ env.REPORT_PATH }}
             ${{ env.DEPENDENCIES_PATH }}
+          if-no-files-found: error
+          compression-level: 0
+
+  numerical-compatibility:
+    name: Cross-architecture numerical compatibility
+    needs: fastembed-cpu
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Download Linux x86_64 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: model-portability-x86_64
+          path: evidence/x86_64
+
+      - name: Download macOS arm64 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: model-portability-arm64
+          path: evidence/arm64
+
+      - name: Build the preregistered numerical comparator
+        shell: bash
+        run: |
+          cargo +1.91.0 build --locked --release \
+            --example model-portability-compare
+
+      - name: Compare every recorded float and deterministic ordering
+        shell: bash
+        run: |
+          target/release/examples/model-portability-compare \
+            evidence/x86_64/model-portability-x86_64.json \
+            evidence/arm64/model-portability-arm64.json \
+            --output "$RUNNER_TEMP/model-numerical-compatibility.json"
+
+      - name: Upload numerical compatibility evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: model-numerical-compatibility
+          path: ${{ runner.temp }}/model-numerical-compatibility.json
           if-no-files-found: error
           compression-level: 0

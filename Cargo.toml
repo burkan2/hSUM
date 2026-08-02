@@ -54,3 +54,7 @@ path = "src/bin/xtask.rs"
 name = "model-portability"
 path = "examples/model-portability.rs"
 required-features = ["model-portability"]
+
+[[example]]
+name = "model-portability-compare"
+path = "examples/model-portability-compare.rs"

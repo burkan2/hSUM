@@ -1,6 +1,6 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-08-02 at `e48455b26fa64b887eacc9b063b91758c159b097`
+**Snapshot:** 2026-08-02 after the B1-03 numerical-compatibility checkpoint
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
@@ -47,9 +47,9 @@ supported without hiding a missing later gate.
 | A2-08 | Durable forget, reader fencing, and guarded restore | Native target evidence passing | yes | yes | yes | yes | partial | no | maintenance and multi-process suites on both targets |
 | A2-09 | Confirmed whole-index deletion | Native target evidence passing | yes | yes | yes | yes | partial | no | `tests/index_delete_cli.rs` on both targets |
 | B1-01 | Pinned model manifest and explicit install/import lifecycle | Native target evidence passing | yes | yes | yes | yes | yes | no | model suites and PR #9 native CI |
-| B1-02 | Verified-byte FastEmbed CPU inference portability | Native target evidence passing | yes | yes | yes | yes | yes | no | native reports from run `30712610005` |
-| B1-03 | Cross-architecture numerical compatibility and vector provenance | In implementation | no | no | no | no | no | no | Digest mismatch is known; component-wise evidence is absent |
-| B1-04 | sqlite-vec static packaging and filtered-KNN portability spike | Not started | no | no | no | no | no | no | Must follow B1-03 |
+| B1-02 | Verified-byte FastEmbed CPU inference portability | Native target evidence passing | yes | yes | yes | yes | yes | no | v2 native reports from run `30731369195` |
+| B1-03 | Cross-architecture numerical compatibility and vector provenance | Native target evidence passing | yes | yes | yes | yes | yes | no | 3,456-component comparison, identical ordering, and full provenance from run `30731369195` |
+| B1-04 | sqlite-vec static packaging and filtered-KNN portability spike | Not started | no | no | no | no | no | no | Sequence unlocked by B1-03; this spike is next |
 | B1-05 | Embedding schema, exact vector provenance, and index pins | Not started | no | no | no | no | no | no | Blocked in sequence on B1-04 proof |
 | B1-06 | Five-state semantic/model lifecycle | Not started | no | no | no | no | no | no | Blocked in sequence on vector storage |
 | B1-07 | Atomic re-embed, unchanged-content reuse, capacity, recovery | Not started | no | no | no | no | no | no | Blocked in sequence on lifecycle schema |
@@ -111,9 +111,9 @@ never increase completion.
 
 Mechanically checked snapshot at this revision:
 
-- Stable core implementation coverage (A1/A2/B1 rows): **64.5%** (20/31).
-- All in-scope implementation coverage: **55.6%** (30/54).
-- Full stable-program evidence: **39.4%** (125/317 applicable evidence cells).
+- Stable core implementation coverage (A1/A2/B1 rows): **67.7%** (21/31).
+- All in-scope implementation coverage: **57.4%** (31/54).
+- Full stable-program evidence: **41.0%** (130/317 applicable evidence cells).
 - Release-qualified coverage: **13.0%** (7/54).
 
 The handoff's approximate 80% core-feature and 65% full-program figures remain
@@ -125,5 +125,5 @@ existed; they are not mixed with ledger percentages.
 No current implementation blocker requires user input. External authority may
 later be required for Developer ID/notarization, stable signing/publication,
 external label review, and independent dogfooding participants. Those rows
-remain incomplete; they do not block the current numerical-compatibility and
-sqlite-vec sequence.
+remain incomplete; they do not block the current sqlite-vec spike and
+storage/lifecycle sequence.
