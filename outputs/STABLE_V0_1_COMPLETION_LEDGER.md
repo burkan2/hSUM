@@ -1,11 +1,14 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-08-02 after the B1-05 through B1-10 complete local gate
+**Snapshot:** 2026-08-03 after the B1-05 through B1-13 complete local gate
+and the frozen held-out promotion decision
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
 This ledger is the denominator for completion claims. Rows are canonical
 release requirements, not commits, files, tests, or implementation slices.
+A prerelease artifact is valuable evidence, but never substitutes for stable
+release qualification of the current candidate.
 
 Status vocabulary:
 
@@ -27,13 +30,13 @@ supported without hiding a missing later gate.
 
 | ID | Canonical requirement | Status | Implementation | Focused tests | Complete local gate | Native targets | Documentation | Release gate | Primary evidence or open proof |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|
-| A1-01 | Pinned Rust workspace and one contributor check | Release-qualified | yes | yes | yes | yes | yes | yes | `rust-toolchain.toml`, `src/bin/xtask.rs`, alpha release evidence |
-| A1-02 | Safe initialization, root identity, trust, and project-bound selection | Release-qualified | yes | yes | yes | yes | yes | yes | `src/app/init.rs`, `src/config/`, alpha release evidence |
-| A1-03 | Capability-root filesystem ingest and deterministic chunking | Release-qualified | yes | yes | yes | yes | yes | yes | `src/ingest/`, filesystem and chunking suites |
-| A1-04 | Immutable SQLite evidence and atomic generations | Release-qualified | yes | yes | yes | yes | yes | yes | `src/store/`, generation and recovery suites |
-| A1-05 | Exact, quoted, and active-only BM25 retrieval | Release-qualified | yes | yes | yes | yes | yes | yes | `src/search/`, query/search contract suites |
-| A1-06 | Immutable citations, historical Get, and visible source drift | Release-qualified | yes | yes | yes | yes | yes | yes | citation/Get/drift suites |
-| A1-07 | Read-only Doctor foundation and actionable errors | Release-qualified | yes | yes | yes | yes | yes | yes | Doctor/error suites and published alpha docs |
+| A1-01 | Pinned Rust workspace and one contributor check | Native target evidence passing | yes | yes | yes | yes | yes | no | `rust-toolchain.toml`, `src/bin/xtask.rs`, and alpha release evidence; stable candidate rerun remains required |
+| A1-02 | Safe initialization, root identity, trust, and project-bound selection | Native target evidence passing | yes | yes | yes | yes | yes | no | `src/app/init.rs`, `src/config/`, and alpha release evidence; stable candidate rerun remains required |
+| A1-03 | Capability-root filesystem ingest and deterministic chunking | Native target evidence passing | yes | yes | yes | yes | yes | no | `src/ingest/`, filesystem/chunking suites, and alpha release evidence; stable candidate rerun remains required |
+| A1-04 | Immutable SQLite evidence and atomic generations | Native target evidence passing | yes | yes | yes | yes | yes | no | `src/store/`, generation/recovery suites, and alpha release evidence; stable candidate rerun remains required |
+| A1-05 | Exact, quoted, and active-only BM25 retrieval | Native target evidence passing | yes | yes | yes | yes | yes | no | `src/search/`, query/search suites, and alpha release evidence; stable candidate rerun remains required |
+| A1-06 | Immutable citations, historical Get, and visible source drift | Native target evidence passing | yes | yes | yes | yes | yes | no | citation/Get/drift suites and alpha release evidence; stable candidate rerun remains required |
+| A1-07 | Read-only Doctor foundation and actionable errors | Native target evidence passing | yes | yes | yes | yes | yes | no | Doctor/error suites and published alpha docs; stable candidate rerun remains required |
 | A1-08 | Project-bound read-only MCP stdio | Native target evidence passing | yes | yes | yes | yes | partial | no | Current read-only reconciliation is unreleased; PR #9 CI is green on both targets |
 | A1-09 | CLI/MCP/API Search, Get, Status parity and opaque cursors | Native target evidence passing | yes | yes | yes | yes | partial | no | protocol DTOs, cross-transport fixtures, and both PR #9 targets |
 | EVAL-01 | Frozen 25-query lexical control | Complete local gate passing | yes | yes | yes | n/a | yes | no | `benches/agent_ab/`; cross-build variance remains diagnosed but unresolved |
@@ -56,14 +59,14 @@ supported without hiding a missing later gate.
 | B1-08 | Vector-aware prune, forget, backup, and restore guarantees | Complete local gate passing | yes | yes | yes | no | no | no | Exact vector preservation/reclamation/deletion/restoration in vector and maintenance suites |
 | B1-09 | Filtered semantic retrieval with project/source scope before KNN | Complete local gate passing | yes | yes | yes | no | no | no | Transaction-scoped active-slot fan-out applies each project source UUID as a sqlite-vec partition predicate before KNN; K+1/exact tie fallback, guarded materialization, compatibility refusal, focused semantic fixtures, and the complete serialized local gate pass |
 | B1-10 | Semantic cancellation, timeout, memory, offline, typed model states | Complete local gate passing | yes | yes | yes | no | no | no | Two private model processes, eight queued leader jobs, identical-query coalescing, bounded request/response frames, caller cancellation/deadline discard, overdue child kill/replacement, offline verified-cache-only inference, exact typed failure states, cancel-storm lexical-survival proof, real-process missing-model protocol proof, and the complete serialized local gate pass |
-| B1-11 | Weighted RRF across exact/BM25/vector candidates | Not started | no | no | no | no | no | no | Next sequence-locked implementation row after B1-10 |
-| B1-12 | Hybrid overlap dedupe, stable ties, and bounded explanations | Not started | no | no | no | no | no | no | Blocked in sequence on hybrid retrieval |
-| B1-13 | Semantic/hybrid CLI, MCP, API, cursor, and isolation parity | Not started | no | no | no | no | no | no | Blocked in sequence on hybrid retrieval |
-| EVAL-02 | Stable 100-query, three-corpus, four-grade held-out set | Not started | no | no | no | n/a | no | no | Requires accepted spans and frozen fingerprints/order |
-| EVAL-03 | At least 30 preregistered semantic/paraphrase queries | Not started | no | no | no | n/a | no | no | Part of the stable held-out set |
-| EVAL-04 | Frozen external ripgrep, QMD, and lexical hSUM comparisons | Not started | no | no | no | n/a | no | no | Commands, versions, settings, and artifacts must be frozen |
-| EVAL-05 | NDCG@10, MRR@10, exact top-three, and paired bootstrap gates | Not started | no | no | no | n/a | no | no | Deterministic seed and 10,000 resamples required |
-| EVAL-06 | Evidence-based hybrid promotion or lexical-first disposition | Not started | no | no | no | yes | no | no | Cannot be decided before EVAL-02 through EVAL-05 |
+| B1-11 | Weighted RRF across exact/BM25/vector candidates | Complete local gate passing | yes | yes | yes | no | partial | no | Frozen integer-weight, equal-rank, and three-list fixtures plus the complete contributor gate pass at `011d669` |
+| B1-12 | Hybrid overlap dedupe, stable ties, and bounded explanations | Complete local gate passing | yes | yes | yes | no | partial | no | Same-content/overlap, exact citation preservation, and bounded explanation fixtures plus the complete contributor gate pass at `011d669` |
+| B1-13 | Semantic/hybrid CLI, MCP, API, cursor, and isolation parity | Complete local gate passing | yes | yes | yes | no | partial | no | Shared public modes, typed degradation, cursor execution fingerprint, and CLI/MCP/process parity fixtures plus the complete contributor gate pass at `011d669` |
+| EVAL-02 | Stable 100-query, three-corpus, four-grade held-out set | Complete local gate passing | yes | yes | yes | n/a | yes | no | `eval/` freezes 100 tasks, three corpus blob sets, accepted byte spans, labels, query order, migrations, model, and retrieval settings |
+| EVAL-03 | At least 30 preregistered semantic/paraphrase queries | Complete local gate passing | yes | yes | yes | n/a | yes | no | 35 semantic/paraphrase tasks validate before a run begins |
+| EVAL-04 | Frozen external ripgrep, QMD, and lexical hSUM comparisons | Complete local gate passing | yes | yes | yes | n/a | yes | no | Report-only ripgrep 15.1.0 and QMD 2.5.3 setup/commands/models are frozen and recorded in the raw result |
+| EVAL-05 | NDCG@10, MRR@10, exact top-three, and paired bootstrap gates | Complete local gate passing | yes | yes | yes | n/a | yes | no | Four-grade metrics and deterministic 10,000-resample paired bootstrap are unit-tested and persisted in the raw result |
+| EVAL-06 | Evidence-based hybrid promotion or lexical-first disposition | Documentation complete | yes | yes | yes | n/a | yes | no | `eval/results/heldout-v1-2026-08-02-macos-arm64.{json,md}` requires `stable-lexical-hybrid-beta`: semantic gain/NDCG pass; MRR lower bound and exact-token top-three gates fail |
 | Q-01 | Generation-boundary fault injection and prior-or-new recovery | Implemented | yes | yes | no | no | partial | no | Existing coverage is substantial; remaining durable boundaries are open |
 | Q-02 | Multi-process reader/writer and cancellation-versus-timeout qualification | Implemented | yes | yes | no | no | partial | no | Semantic worker and vector replacement cases remain open |
 | Q-03 | Same-target and cross-target deterministic ordering | Implemented | yes | yes | no | no | partial | no | Lexical cross-build/cross-target and hybrid proofs remain open |
@@ -111,10 +114,11 @@ never increase completion.
 
 Mechanically checked snapshot at this revision:
 
-- Stable core implementation coverage (A1/A2/B1 rows): **90.3%** (28/31).
-- All in-scope implementation coverage: **70.4%** (38/54).
-- Full stable-program evidence: **48.3%** (153/317 applicable evidence cells).
-- Release-qualified coverage: **13.0%** (7/54).
+- Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
+- All in-scope implementation coverage: **85.2%** (46/54).
+- Full stable-program evidence: **55.1%** (174/316 applicable evidence cells).
+- Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
+  stable candidate qualification.
 
 The handoff's approximate 80% core-feature and 65% full-program figures remain
 historical estimates calculated before this requirement/evidence denominator
@@ -125,5 +129,5 @@ existed; they are not mixed with ledger percentages.
 No current implementation blocker requires user input. External authority may
 later be required for Developer ID/notarization, stable signing/publication,
 external label review, and independent dogfooding participants. Those rows
-remain incomplete; they do not block the current semantic/hybrid retrieval
-sequence.
+remain incomplete; they do not block the current recovery, determinism,
+performance, documentation, and compatibility qualification sequence.

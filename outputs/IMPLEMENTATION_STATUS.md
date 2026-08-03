@@ -1,6 +1,6 @@
 # hSUM current checkout implementation status
 
-**Snapshot:** 2026-08-02
+**Snapshot:** 2026-08-03
 **Scope:** Current source checkout after the public `0.1.0-alpha.4` prerelease;
 published alpha.2 evidence is retained below as a historical release record.
 
@@ -8,6 +8,9 @@ This matrix maps the published alpha.2 surface to implementation, test, and
 release evidence. “Implemented” means a code path and focused tests exist in
 this checkout; the sections below separately record clean-runner, signed-tag,
 artifact, and production-documentation evidence.
+
+The canonical stable-v0.1 evidence states and remaining qualification work are
+tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
 
 | Surface | Checkout status | Primary implementation | Focused evidence |
 |---|---|---|---|

@@ -30,6 +30,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          # eval/manifest.toml freezes source blobs from commit 011d669 rather
+          # than the checkout tip, so validation needs its Git object history.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Confirm the supported runner architecture

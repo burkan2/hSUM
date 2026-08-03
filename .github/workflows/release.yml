@@ -66,6 +66,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          # The release gate validates the same frozen evaluation blobs as CI.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Confirm the supported runner architecture
