@@ -48,6 +48,7 @@ artifact, and production-documentation evidence.
 | User config and trust-registry migration | Implemented; unreleased | schema-2 config/trust loaders and epochs in `src/app/context.rs` and `src/config/trust.rs`; hashed two-file ceremony in `src/config/migration.rs`; CLI/runtime adapters | library refusal/exact-backup/structural-plan/resume coverage in `tests/config_migration.rs`; N-1 non-mutation and complete process ceremony in `tests/config_migration_cli.rs`; CLI grammar and schema diagnosis fixtures |
 | Remaining canonical Alpha.2 management surfaces | Complete in the current checkout; unreleased | No intentionally absent Alpha.2 management surface remains | Full local gate must continue passing before semantic retrieval work begins |
 | Semantic/hybrid retrieval | Implemented through the public CLI/MCP/API boundary; complete local gate passing, unreleased and not yet promoted | filtered semantic KNN and deterministic weighted exact/BM25/vector reciprocal-rank fusion in `src/search/retrieval.rs`; bounded explanations and overlap dedupe; two-process/eight-queue offline inference in `src/model/worker.rs`; snapshot-bound orchestration in `src/app/search_evidence.rs`; CLI/MCP modes and shared protocol fields in `src/cli.rs`, `src/runtime.rs`, `src/mcp.rs`, and `src/protocol/` | frozen integer fusion example, overlap/equal-rank fixtures, 22 vector cases, 15 lexical contracts, seven worker cases plus real child exchange, 26 CLI contracts, 31 MCP contracts, 13 process contracts, typed missing-model/degradation parity, execution-fingerprint cursor test, and the complete repository-owned contributor gate |
+| Held-out retrieval promotion evaluation | Complete; stable lexical-first and hybrid beta | frozen 100-query / three-corpus schema, strict standard-library harness, raw tool outputs, deterministic renderer, and lexical cross-build diagnosis in `eval/` | macOS arm64 result `eval/results/heldout-v1-2026-08-02-macos-arm64.json` binds manifest `a7771fac…`; semantic gain and NDCG non-inferiority pass, but MRR lower bound (-0.0312 < -0.02) and exact-token top-three non-regression fail, so the canonical gate forbids promotion |
 | Watcher and HTTP | Not implemented; canonical stable-v0.1 exclusions | Intentionally absent from the current command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
 | GitHub release archives | Alpha.4 published | `.github/workflows/release.yml`, `scripts/release-smoke.sh` | Checksums, SPDX SBOM attestations, signed-tag guard, Linux/macOS release jobs |
 | Installer | Available in alpha.4 | `scripts/install.sh`, `scripts/installer-smoke.sh` | Checksum verification plus isolated/network-denied smoke |
@@ -118,9 +119,11 @@ artifact, and production-documentation evidence.
   integration suite, raw-adapter and frozen-fusion unit cases, seven worker
   unit cases, a real private-worker process exchange, all 15 lexical search
   contracts, CLI/MCP/process parity and typed model-state coverage, and the
-  repository-owned `cargo xtask check` gate. Native B1-09/B1-10/B1-13 product
-  evidence, the held-out promotion evaluation, cross-client dogfood, and
-  stable release qualification are not yet claimed.
+  repository-owned `cargo xtask check` gate. The frozen 100-query held-out
+  evaluation is complete and requires the lexical-first / hybrid-beta
+  disposition recorded in `eval/results/heldout-v1-2026-08-02-macos-arm64.md`.
+  Native B1-09/B1-10/B1-13 product evidence, cross-client dogfood, and stable
+  release qualification are not yet claimed.
 - The frozen local retrieval benchmark is 25 author-labeled tasks on this
   repository, not external or stable-release evidence. Across three fresh
   indexes, hSUM leads mean graded quality but is much slower than grep, misses

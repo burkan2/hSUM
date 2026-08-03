@@ -304,14 +304,20 @@ Optional watch mode and additional integrations are not on the critical path.
     fingerprint. The 22-case vector suite, CLI/MCP/process parity suites, and
     the repository-owned `cargo xtask check` gate pass. Native product-mode
     evidence and stable release qualification remain open.
-- Build and freeze the canonical held-out evaluation next: at least 100 queries
-  over at least three independently structured corpora, with accepted spans,
-  four-point labels, at least 30 semantic/paraphrase cases, external retriever
-  comparisons, NDCG@10, MRR@10, exact-token top-three recall, and paired
-  query-level bootstrap intervals from a checked-in seed. Diagnose lexical
-  cross-build variance without changing the frozen scoring contract. Promote
-  hybrid only if every non-inferiority and positive-value gate passes;
-  otherwise retain the documented lexical-first stable fallback.
+- [x] Build and freeze the canonical held-out evaluation: 100 queries over
+  three independently structured corpora, accepted byte spans, four-point
+  labels, 35 semantic/paraphrase cases, report-only ripgrep/QMD comparisons,
+  NDCG@10, MRR@10, exact-token top-three recall, and deterministic
+  10,000-resample paired bootstrap intervals. The frozen harness, manifest,
+  labels, variance diagnosis, raw result, and rendered projection live in
+  `eval/`; the measured macOS arm64 result is
+  `eval/results/heldout-v1-2026-08-02-macos-arm64.{json,md}`.
+  Hybrid passed the semantic positive-value (+0.4371 NDCG@10; 95% lower
+  +0.3124) and NDCG non-inferiority gates, but failed MRR non-inferiority
+  (lower -0.0312 versus the required -0.02) and the exact-token top-three
+  gate (0.6571 versus lexical 0.7429). The required disposition is therefore
+  stable lexical-first with hybrid explicitly beta; no held-out labels or
+  retrieval weights were changed.
 
 ## P2 — External agent-task evaluation
 

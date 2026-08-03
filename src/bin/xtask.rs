@@ -13,10 +13,11 @@ fn main() -> ExitCode {
 }
 
 fn run_check() -> ExitCode {
-    let steps: &[(&str, &[&str])] = &[
-        ("fmt", &["fmt", "--all", "--", "--check"]),
+    let steps: &[(&str, &str, &[&str])] = &[
+        ("fmt", "cargo", &["fmt", "--all", "--", "--check"]),
         (
             "clippy",
+            "cargo",
             &[
                 "clippy",
                 "--all-targets",
@@ -26,13 +27,27 @@ fn run_check() -> ExitCode {
                 "warnings",
             ],
         ),
-        ("test", &["test", "--all-targets", "--all-features"]),
-        ("docs", &["test", "--doc", "--all-features"]),
+        (
+            "test",
+            "cargo",
+            &["test", "--all-targets", "--all-features"],
+        ),
+        ("docs", "cargo", &["test", "--doc", "--all-features"]),
+        (
+            "evaluation unit tests",
+            "python3",
+            &["-m", "unittest", "-v", "eval/test_harness.py"],
+        ),
+        (
+            "frozen evaluation inputs",
+            "python3",
+            &["eval/harness.py", "validate"],
+        ),
     ];
 
-    for (name, args) in steps {
+    for (name, program, args) in steps {
         eprintln!("==> {name}");
-        match Command::new("cargo").args(*args).status() {
+        match Command::new(program).args(*args).status() {
             Ok(status) if status.success() => {}
             Ok(status) => {
                 let code = status
@@ -42,7 +57,7 @@ fn run_check() -> ExitCode {
                 return ExitCode::from(code);
             }
             Err(error) => {
-                eprintln!("failed to run cargo {name}: {error}");
+                eprintln!("failed to run {name}: {error}");
                 return ExitCode::FAILURE;
             }
         }

@@ -7,6 +7,16 @@ for its release tags. During alpha, only the current tagged release is supported
 
 ### Added
 
+- Added the frozen stable-v0.1 held-out retrieval evaluation: 100 public
+  four-point-labeled tasks over three independently structured corpora, exact
+  byte-span labels, fixed query order, model/migration/retrieval fingerprints,
+  deterministic 10,000-resample paired bootstrap intervals, and report-only
+  ripgrep/QMD comparisons. The checked-in macOS arm64 raw result and Markdown
+  projection require the lexical-first stable disposition: hybrid's semantic
+  gain and NDCG non-inferiority pass, but its MRR confidence lower bound and
+  exact-token top-three non-regression do not. Hybrid therefore remains beta;
+  no retrieval weights or held-out labels were tuned after the result.
+
 - Added an opt-in FastEmbed CPU portability probe without enabling vectors or
   semantic search. The loader accepts only re-hashed bytes from the verified
   hSUM model cache, pins BGE-small CLS pooling, validates normalized
