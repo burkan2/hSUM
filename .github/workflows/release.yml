@@ -66,11 +66,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          # The release gate validates the same frozen evaluation blobs as CI.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Confirm the supported runner architecture
         shell: bash
         run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the evaluation Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
 
       - name: Install the pinned Rust toolchain
         shell: bash

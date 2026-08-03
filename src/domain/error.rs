@@ -98,7 +98,9 @@ pub enum ErrorSubcode {
     ModelNotInstalled,
     ModelFingerprint,
     ModelDimension,
+    ModelPinned,
     NetworkTransient,
+    NetworkPermanent,
     ChecksumMismatch,
     SourceRead,
     IndexWrite,
@@ -136,13 +138,22 @@ pub enum ErrorSubcode {
     FileTooLarge,
     EnumerationIncomplete,
     SourceChangedDuringRead,
+    MaintenanceOutputExists,
+    MaintenancePlanInvalid,
+    MaintenanceConfirmationMismatch,
+    MaintenancePlanStale,
+    MaintenanceNoWork,
+    ForgetRequiresPrune,
+    RestoreStateMismatch,
+    MaintenanceBackupMismatch,
+    PruneSelectorInvalid,
     Invariant,
     NonfiniteScore,
     Unexpected,
 }
 
 impl ErrorSubcode {
-    pub const ALL: [Self; 66] = [
+    pub const ALL: [Self; 77] = [
         Self::QueryEmpty,
         Self::QuerySyntax,
         Self::LimitOutOfRange,
@@ -168,7 +179,9 @@ impl ErrorSubcode {
         Self::ModelNotInstalled,
         Self::ModelFingerprint,
         Self::ModelDimension,
+        Self::ModelPinned,
         Self::NetworkTransient,
+        Self::NetworkPermanent,
         Self::ChecksumMismatch,
         Self::SourceRead,
         Self::IndexWrite,
@@ -206,6 +219,15 @@ impl ErrorSubcode {
         Self::FileTooLarge,
         Self::EnumerationIncomplete,
         Self::SourceChangedDuringRead,
+        Self::MaintenanceOutputExists,
+        Self::MaintenancePlanInvalid,
+        Self::MaintenanceConfirmationMismatch,
+        Self::MaintenancePlanStale,
+        Self::MaintenanceNoWork,
+        Self::ForgetRequiresPrune,
+        Self::RestoreStateMismatch,
+        Self::MaintenanceBackupMismatch,
+        Self::PruneSelectorInvalid,
         Self::Invariant,
         Self::NonfiniteScore,
         Self::Unexpected,
@@ -238,7 +260,9 @@ impl ErrorSubcode {
             Self::ModelNotInstalled => "MODEL_NOT_INSTALLED",
             Self::ModelFingerprint => "MODEL_FINGERPRINT",
             Self::ModelDimension => "MODEL_DIMENSION",
+            Self::ModelPinned => "MODEL_PINNED",
             Self::NetworkTransient => "NETWORK_TRANSIENT",
+            Self::NetworkPermanent => "NETWORK_PERMANENT",
             Self::ChecksumMismatch => "CHECKSUM_MISMATCH",
             Self::SourceRead => "SOURCE_READ",
             Self::IndexWrite => "INDEX_WRITE",
@@ -276,6 +300,15 @@ impl ErrorSubcode {
             Self::FileTooLarge => "FILE_TOO_LARGE",
             Self::EnumerationIncomplete => "ENUMERATION_INCOMPLETE",
             Self::SourceChangedDuringRead => "SOURCE_CHANGED_DURING_READ",
+            Self::MaintenanceOutputExists => "MAINTENANCE_OUTPUT_EXISTS",
+            Self::MaintenancePlanInvalid => "MAINTENANCE_PLAN_INVALID",
+            Self::MaintenanceConfirmationMismatch => "MAINTENANCE_CONFIRMATION_MISMATCH",
+            Self::MaintenancePlanStale => "MAINTENANCE_PLAN_STALE",
+            Self::MaintenanceNoWork => "MAINTENANCE_NO_WORK",
+            Self::ForgetRequiresPrune => "FORGET_REQUIRES_PRUNE",
+            Self::RestoreStateMismatch => "RESTORE_STATE_MISMATCH",
+            Self::MaintenanceBackupMismatch => "MAINTENANCE_BACKUP_MISMATCH",
+            Self::PruneSelectorInvalid => "PRUNE_SELECTOR_INVALID",
             Self::Invariant => "INVARIANT",
             Self::NonfiniteScore => "NONFINITE_SCORE",
             Self::Unexpected => "UNEXPECTED",
@@ -469,12 +502,26 @@ impl ErrorSubcode {
                 "its fingerprint or vector dimension differs from the pinned index contract",
                 "use the pinned model or create a new index",
             ),
+            Self::ModelPinned => ErrorSpec::new(
+                ErrorCode::InvalidArgument,
+                false,
+                "the model is still pinned by a discoverable index",
+                "removal would leave one or more indexes without their configured artifact",
+                "keep the model, or use --force only when an explicit degraded state is intended",
+            ),
             Self::NetworkTransient => ErrorSpec::new(
                 ErrorCode::DownloadFailed,
                 true,
                 "the model download failed temporarily",
                 "the explicit download encountered a transient network failure",
                 "retry the same model install command",
+            ),
+            Self::NetworkPermanent => ErrorSpec::new(
+                ErrorCode::DownloadFailed,
+                false,
+                "the model download was refused",
+                "the HTTPS request or local certificate configuration cannot succeed by retrying",
+                "check the model ID, proxy, certificate bundle, and upstream availability",
             ),
             Self::ChecksumMismatch => ErrorSpec::new(
                 ErrorCode::DownloadFailed,
@@ -657,15 +704,15 @@ impl ErrorSubcode {
             Self::MigrationRequired => ErrorSpec::new(
                 ErrorCode::SchemaTooOld,
                 false,
-                "the index requires an explicit schema migration",
-                "the index is one supported schema behind this binary",
+                "stored hSUM data requires an explicit schema migration",
+                "an index or configuration file is one supported schema behind this binary",
                 "run the printed migration plan command",
             ),
             Self::UpgradeRequired => ErrorSpec::new(
                 ErrorCode::SchemaTooOld,
                 false,
-                "the index requires an intermediate hSUM upgrade",
-                "its schema is older than this binary can diagnose directly",
+                "stored hSUM data requires an intermediate hSUM upgrade",
+                "its schema is older than this binary can migrate directly",
                 "install the printed intermediate version",
             ),
             Self::DowngradeUnsupported => ErrorSpec::new(
@@ -699,8 +746,8 @@ impl ErrorSubcode {
             Self::EnumerationIncomplete => ErrorSpec::new(
                 ErrorCode::SourceInvalid,
                 true,
-                "the filesystem enumeration was incomplete",
-                "at least one directory could not be listed authoritatively",
+                "the source snapshot enumeration was incomplete",
+                "at least one configured source could not be enumerated authoritatively",
                 "restore source access and retry without changing prior heads",
             ),
             Self::SourceChangedDuringRead => ErrorSpec::new(
@@ -709,6 +756,69 @@ impl ErrorSubcode {
                 "a source file changed while it was read",
                 "two stable descriptor reads could not capture one snapshot",
                 "retry after the writer becomes idle",
+            ),
+            Self::MaintenanceOutputExists => ErrorSpec::new(
+                ErrorCode::InvalidArgument,
+                false,
+                "a maintenance output path is already occupied",
+                "the ceremony never overwrites an existing plan or backup",
+                "choose a new output path or verify and resume the matching operation",
+            ),
+            Self::MaintenancePlanInvalid => ErrorSpec::new(
+                ErrorCode::InvalidArgument,
+                false,
+                "the maintenance plan is invalid",
+                "its format, content hash, or target index does not match the requested operation",
+                "generate and review a new plan for the selected index",
+            ),
+            Self::MaintenanceConfirmationMismatch => ErrorSpec::new(
+                ErrorCode::InvalidArgument,
+                false,
+                "maintenance confirmation does not match the reviewed plan",
+                "--confirm differs from the plan's canonical SHA-256",
+                "copy the exact plan hash printed by the matching plan command",
+            ),
+            Self::MaintenancePlanStale => ErrorSpec::new(
+                ErrorCode::InvalidArgument,
+                false,
+                "the maintenance plan is stale",
+                "the index changed before this unstarted plan could be applied",
+                "generate and review a new maintenance plan",
+            ),
+            Self::MaintenanceNoWork => ErrorSpec::new(
+                ErrorCode::InvalidArgument,
+                false,
+                "the maintenance plan contains no eligible work",
+                "the explicit selector matched no revisions or generations",
+                "adjust the selector or leave the index unchanged",
+            ),
+            Self::ForgetRequiresPrune => ErrorSpec::new(
+                ErrorCode::InvalidArgument,
+                false,
+                "forget requires a one-generation history baseline",
+                "older activation history still references the logical document",
+                "plan and apply an explicit prune before regenerating the forget plan",
+            ),
+            Self::RestoreStateMismatch => ErrorSpec::new(
+                ErrorCode::IntegrityFailed,
+                false,
+                "the live index no longer matches the restore plan",
+                "state changed after forget or the replacement recovery chain is incomplete",
+                "preserve all artifacts and inspect them with hsum doctor before retrying",
+            ),
+            Self::MaintenanceBackupMismatch => ErrorSpec::new(
+                ErrorCode::IntegrityFailed,
+                false,
+                "a maintenance backup does not match the operation",
+                "its index identity, schema, epoch, or SHA-256 differs from the reviewed plan",
+                "preserve the artifact and regenerate the ceremony from the live index",
+            ),
+            Self::PruneSelectorInvalid => ErrorSpec::new(
+                ErrorCode::InvalidArgument,
+                false,
+                "the prune selector is invalid",
+                "--before is not RFC3339 or --keep-latest is below one",
+                "provide an explicit RFC3339 cutoff and retain at least one revision",
             ),
             Self::Invariant => ErrorSpec::new(
                 ErrorCode::Internal,
@@ -777,6 +887,7 @@ pub struct PublicError {
     pub details: Value,
     pub next_action: &'static str,
     pub request_id: String,
+    pub docs_url: String,
     #[serde(skip)]
     cause: &'static str,
     #[serde(skip)]
@@ -802,6 +913,11 @@ impl PublicError {
             details,
             next_action: spec.fix,
             request_id: request_id.into(),
+            docs_url: format!(
+                "https://hsum.dev/docs/{}/errors/{}",
+                env!("CARGO_PKG_VERSION"),
+                subcode.as_str(),
+            ),
             cause: spec.cause,
             fix: spec.fix,
         }
@@ -817,9 +933,15 @@ impl PublicError {
 
     pub fn render_human(&self) -> String {
         format!(
-            "problem: {}\ncause: {}\nfix: {}\nlearn: hsum help error {} — code: {} — \
+            "problem: {}\ncause: {}\nfix: {}\nlearn: hsum help error {} — {} — code: {} — \
              request: {}",
-            self.message, self.cause, self.fix, self.subcode, self.subcode, self.request_id
+            self.message,
+            self.cause,
+            self.fix,
+            self.subcode,
+            self.docs_url,
+            self.subcode,
+            self.request_id
         )
     }
 }
@@ -837,7 +959,9 @@ mod tests {
                 "problem: the evidence citation is invalid\n",
                 "cause: the value is not a canonical hsum://v1 citation\n",
                 "fix: copy the complete citation from hsum search or evidence_search\n",
-                "learn: hsum help error CITATION_MALFORMED — code: CITATION_MALFORMED ",
+                "learn: hsum help error CITATION_MALFORMED — ",
+                "https://hsum.dev/docs/0.1.0-alpha.4/errors/CITATION_MALFORMED — ",
+                "code: CITATION_MALFORMED ",
                 "— request: req-123"
             )
         );
@@ -851,7 +975,10 @@ mod tests {
         assert_eq!(value["subcode"], "CITATION_MALFORMED");
         assert_eq!(value["retryable"], false);
         assert_eq!(value["request_id"], "req-123");
-        assert!(value.get("docs_url").is_none());
+        assert_eq!(
+            value["docs_url"],
+            "https://hsum.dev/docs/0.1.0-alpha.4/errors/CITATION_MALFORMED"
+        );
     }
 
     #[test]

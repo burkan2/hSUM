@@ -1,9 +1,10 @@
 use clap::{CommandFactory, Parser};
 use hsum::cli::{
-    AgentPolicyMode, Cli, ClientCommand, ClientKind, Command, CompletionShell, HelpCommand,
-    IntegrationClient, IntegrationCommand, ProcessExitCategory, SearchMode, escape_terminal_bytes,
-    escape_terminal_text, exit_code_for, render_completions, render_man, render_verbose_version,
-    verbose_version_requested,
+    AgentPolicyMode, BackupCommand, Cli, ClientCommand, ClientKind, Command, CompletionShell,
+    ForgetCommand, HelpCommand, IntegrationClient, IntegrationCommand, ModelCommand,
+    ModelInstallKind, ProcessExitCategory, ProjectCommand, SearchMode, SourceCommand,
+    SourceConnectorCommand, escape_terminal_bytes, escape_terminal_text, exit_code_for,
+    render_completions, render_man, render_verbose_version, verbose_version_requested,
 };
 use proptest::prelude::*;
 
@@ -40,14 +41,24 @@ fn alpha4_command_inventory_is_exact_and_ordered() {
             "init",
             "trust",
             "ingest",
+            "source",
+            "project",
+            "index",
             "search",
             "get",
             "status",
             "doctor",
+            "backup",
+            "prune",
+            "forget",
+            "restore",
+            "migrate",
+            "config",
             "context",
             "help",
             "client",
             "integration",
+            "model",
             "completions",
             "man",
             "mcp",
@@ -65,6 +76,14 @@ fn generated_help_has_only_alpha4_capabilities() {
         "ingest",
         "search",
         "doctor",
+        "backup",
+        "prune",
+        "forget",
+        "restore",
+        "migrate",
+        "config",
+        "index",
+        "model",
         "completions",
         "mcp",
         "--no-progress",
@@ -78,21 +97,195 @@ fn generated_help_has_only_alpha4_capabilities() {
             "root help omitted alpha.4 surface {available:?}"
         );
     }
-    for deferred in [
-        "model install",
-        "semantic",
-        "hybrid",
-        "reembed",
-        "backup",
-        "prune",
-        "forget",
-        "restore",
-    ] {
+    for deferred in ["semantic", "hybrid", "reembed"] {
         assert!(
             !help.contains(deferred),
             "root help leaked deferred surface {deferred:?}"
         );
     }
+}
+
+#[test]
+fn model_lifecycle_grammar_keeps_network_explicit() {
+    let Command::Model(model) = parse(&[
+        "hsum",
+        "model",
+        "install",
+        "embedding",
+        "bge-small-en-v1-5-fp32",
+        "--ca-bundle",
+        "private-ca.pem",
+        "--json",
+    ])
+    .command
+    else {
+        panic!("expected model command");
+    };
+    let ModelCommand::Install(install) = model.command else {
+        panic!("expected model install");
+    };
+    assert_eq!(install.kind, ModelInstallKind::Embedding);
+    assert_eq!(install.id, "bge-small-en-v1-5-fp32");
+    assert_eq!(
+        install.ca_bundle.as_deref(),
+        Some(std::path::Path::new("private-ca.pem"))
+    );
+    assert!(install.json);
+
+    assert!(matches!(
+        parse(&["hsum", "model", "import", "airgap", "--json"]).command,
+        Command::Model(_)
+    ));
+    assert!(matches!(
+        parse(&["hsum", "model", "list", "--json"]).command,
+        Command::Model(_)
+    ));
+    assert!(matches!(
+        parse(&["hsum", "model", "verify", "bge-small-en-v1-5-fp32"]).command,
+        Command::Model(_)
+    ));
+    assert!(matches!(
+        parse(&[
+            "hsum",
+            "model",
+            "remove",
+            "bge-small-en-v1-5-fp32",
+            "--force"
+        ])
+        .command,
+        Command::Model(_)
+    ));
+
+    assert_usage_error(&["hsum", "model", "install", "bge-small-en-v1-5-fp32"]);
+    assert_usage_error(&["hsum", "model", "install", "embedding"]);
+}
+
+#[test]
+fn maintenance_ceremonies_require_plans_backups_and_exact_hashes() {
+    assert!(matches!(
+        parse(&["hsum", "backup", "create", "backup.sqlite", "--confirm"]).command,
+        Command::Backup(_)
+    ));
+    let Command::Backup(backup) = parse(&["hsum", "backup", "list", "--all", "--json"]).command
+    else {
+        panic!("expected backup command");
+    };
+    let BackupCommand::List(list) = backup.command else {
+        panic!("expected backup list");
+    };
+    assert!(list.all);
+    assert!(list.json);
+    assert!(matches!(
+        parse(&[
+            "hsum",
+            "prune",
+            "plan",
+            "prune.json",
+            "--before",
+            "2099-01-01T00:00:00Z",
+        ])
+        .command,
+        Command::Prune(_)
+    ));
+    assert!(matches!(
+        parse(&[
+            "hsum",
+            "migrate",
+            "plan",
+            "--index",
+            "fixture",
+            "migration.json"
+        ])
+        .command,
+        Command::Migrate(_)
+    ));
+    assert!(matches!(
+        parse(&[
+            "hsum",
+            "forget",
+            "plan",
+            "forget.json",
+            "--citation",
+            CITATION,
+        ])
+        .command,
+        Command::Forget(_)
+    ));
+    assert!(matches!(
+        parse(&[
+            "hsum",
+            "restore",
+            "apply",
+            "restore.json",
+            "--recovery-backup",
+            "recovery.sqlite",
+            "--safety-backup",
+            "safety.sqlite",
+            "--confirm",
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        ])
+        .command,
+        Command::Restore(_)
+    ));
+
+    assert_usage_error(&["hsum", "backup", "create", "backup.sqlite"]);
+    assert_usage_error(&["hsum", "prune", "plan", "prune.json"]);
+    assert_usage_error(&[
+        "hsum",
+        "prune",
+        "apply",
+        "prune.json",
+        "--backup",
+        "backup.sqlite",
+    ]);
+    assert_usage_error(&[
+        "hsum",
+        "prune",
+        "apply",
+        "prune.json",
+        "--backup",
+        "backup.sqlite",
+        "--confirm",
+        "ABCDEF",
+    ]);
+    assert_usage_error(&["hsum", "migrate", "plan", "migration.json"]);
+    let forget_apply = [
+        "hsum",
+        "forget",
+        "apply",
+        "forget.json",
+        "--recovery-backup",
+        "recovery.sqlite",
+        "--restore-plan",
+        "restore.json",
+        "--confirm",
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    ];
+    assert_usage_error(&forget_apply);
+    let mut conflicting_disposition = forget_apply.to_vec();
+    conflicting_disposition.extend(["--purge-managed-backups", "--keep-managed-backups"]);
+    assert_usage_error(&conflicting_disposition);
+    let mut retained = forget_apply.to_vec();
+    retained.push("--keep-managed-backups");
+    let Command::Forget(forget) = parse(&retained).command else {
+        panic!("expected forget command");
+    };
+    let ForgetCommand::Apply(apply) = forget.command else {
+        panic!("expected forget apply");
+    };
+    assert!(apply.keep_managed_backups);
+    assert!(!apply.purge_managed_backups);
+    assert_usage_error(&["hsum", "forget", "plan", "forget.json"]);
+    assert_usage_error(&[
+        "hsum",
+        "restore",
+        "apply",
+        "restore.json",
+        "--recovery-backup",
+        "recovery.sqlite",
+        "--safety-backup",
+        "safety.sqlite",
+    ]);
 }
 
 #[test]
@@ -209,6 +402,11 @@ fn ingest_exposes_two_independent_deletion_guards() {
         "60000",
         "--allow-empty-snapshot",
         "--allow-mass-delete",
+        "--source",
+        "records",
+        "--source",
+        "018f47f0-a032-7978-a41a-10d768f60755",
+        "--strict",
     ]);
     let Command::Ingest(arguments) = parsed.command else {
         panic!("expected ingest");
@@ -217,6 +415,11 @@ fn ingest_exposes_two_independent_deletion_guards() {
     assert_eq!(arguments.lock_timeout_ms, 60_000);
     assert!(arguments.allow_empty_snapshot);
     assert!(arguments.allow_mass_delete);
+    assert_eq!(
+        arguments.source,
+        ["records", "018f47f0-a032-7978-a41a-10d768f60755"]
+    );
+    assert!(arguments.strict);
 
     let parsed = parse(&["hsum", "ingest", "--allow-empty-snapshot"]);
     let Command::Ingest(arguments) = parsed.command else {
@@ -224,6 +427,192 @@ fn ingest_exposes_two_independent_deletion_guards() {
     };
     assert!(arguments.allow_empty_snapshot);
     assert!(!arguments.allow_mass_delete);
+    assert!(arguments.source.is_empty());
+    assert!(!arguments.strict);
+}
+
+#[test]
+fn jsonl_source_management_is_explicit_and_confirmed() {
+    let parsed = parse(&[
+        "hsum",
+        "source",
+        "add",
+        "fs",
+        "/work/docs",
+        "--name",
+        "docs-root",
+        "--allow-broad-root",
+    ]);
+    let Command::Source(arguments) = parsed.command else {
+        panic!("expected source command");
+    };
+    let SourceCommand::Add(arguments) = arguments.command else {
+        panic!("expected source add");
+    };
+    let SourceConnectorCommand::Fs(arguments) = arguments.connector else {
+        panic!("expected filesystem connector");
+    };
+    assert_eq!(arguments.path.to_string_lossy(), "/work/docs");
+    assert_eq!(arguments.name.as_str(), "docs-root");
+    assert!(arguments.allow_broad_root);
+
+    let parsed = parse(&[
+        "hsum",
+        "source",
+        "add",
+        "jsonl",
+        "/work/records.jsonl",
+        "--name",
+        "records",
+    ]);
+    let Command::Source(arguments) = parsed.command else {
+        panic!("expected source command");
+    };
+    let SourceCommand::Add(arguments) = arguments.command else {
+        panic!("expected source add");
+    };
+    let SourceConnectorCommand::Jsonl(arguments) = arguments.connector else {
+        panic!("expected JSONL connector");
+    };
+    assert_eq!(arguments.path.to_string_lossy(), "/work/records.jsonl");
+    assert_eq!(arguments.name.as_str(), "records");
+
+    let parsed = parse(&["hsum", "source", "list", "--json"]);
+    let Command::Source(arguments) = parsed.command else {
+        panic!("expected source command");
+    };
+    let SourceCommand::List(arguments) = arguments.command else {
+        panic!("expected source list");
+    };
+    assert!(arguments.json);
+    assert!(!arguments.all);
+
+    let parsed = parse(&["hsum", "source", "list", "--all", "--json"]);
+    let Command::Source(arguments) = parsed.command else {
+        panic!("expected source command");
+    };
+    let SourceCommand::List(arguments) = arguments.command else {
+        panic!("expected source list");
+    };
+    assert!(arguments.all);
+
+    assert_usage_error(&["hsum", "source", "attach", "records"]);
+    let parsed = parse(&["hsum", "source", "attach", "records", "--confirm"]);
+    let Command::Source(arguments) = parsed.command else {
+        panic!("expected source command");
+    };
+    let SourceCommand::Attach(arguments) = arguments.command else {
+        panic!("expected source attach");
+    };
+    assert_eq!(arguments.source, "records");
+    assert!(arguments.confirm);
+
+    assert_usage_error(&["hsum", "source", "detach", "records"]);
+    let parsed = parse(&["hsum", "source", "detach", "records", "--confirm"]);
+    let Command::Source(arguments) = parsed.command else {
+        panic!("expected source command");
+    };
+    let SourceCommand::Detach(arguments) = arguments.command else {
+        panic!("expected source detach");
+    };
+    assert_eq!(arguments.source, "records");
+    assert!(arguments.confirm);
+
+    assert_usage_error(&["hsum", "source", "remove", "records"]);
+    let parsed = parse(&["hsum", "source", "remove", "records", "--confirm"]);
+    let Command::Source(arguments) = parsed.command else {
+        panic!("expected source command");
+    };
+    let SourceCommand::Remove(arguments) = arguments.command else {
+        panic!("expected source remove");
+    };
+    assert_eq!(arguments.source, "records");
+    assert!(arguments.confirm);
+}
+
+#[test]
+fn named_project_management_is_explicit_and_confirmed() {
+    let parsed = parse(&["hsum", "project", "create", "docs"]);
+    let Command::Project(arguments) = parsed.command else {
+        panic!("expected project command");
+    };
+    let ProjectCommand::Create(arguments) = arguments.command else {
+        panic!("expected project create");
+    };
+    assert_eq!(arguments.name.as_str(), "docs");
+
+    let parsed = parse(&["hsum", "project", "list", "--json"]);
+    let Command::Project(arguments) = parsed.command else {
+        panic!("expected project command");
+    };
+    let ProjectCommand::List(arguments) = arguments.command else {
+        panic!("expected project list");
+    };
+    assert!(arguments.json);
+
+    assert_usage_error(&["hsum", "project", "use", "docs"]);
+    let parsed = parse(&["hsum", "project", "use", "docs", "--confirm"]);
+    let Command::Project(arguments) = parsed.command else {
+        panic!("expected project command");
+    };
+    let ProjectCommand::Use(arguments) = arguments.command else {
+        panic!("expected project use");
+    };
+    assert_eq!(arguments.project, "docs");
+    assert!(arguments.confirm);
+
+    assert_usage_error(&["hsum", "project", "set-root", "/work/docs"]);
+    let parsed = parse(&[
+        "hsum",
+        "project",
+        "set-root",
+        "/work/docs",
+        "--source-name",
+        "docs-fs",
+        "--confirm",
+        "--allow-broad-root",
+    ]);
+    let Command::Project(arguments) = parsed.command else {
+        panic!("expected project command");
+    };
+    let ProjectCommand::SetRoot(arguments) = arguments.command else {
+        panic!("expected project set-root");
+    };
+    assert_eq!(arguments.path.to_string_lossy(), "/work/docs");
+    assert_eq!(arguments.source_name.unwrap().as_str(), "docs-fs");
+    assert!(arguments.confirm);
+    assert!(arguments.allow_broad_root);
+}
+
+#[test]
+fn whole_index_deletion_is_name_targeted_and_confirmed() {
+    assert_usage_error(&["hsum", "index", "delete", "fixture"]);
+    let parsed = parse(&[
+        "hsum",
+        "index",
+        "delete",
+        "fixture",
+        "--confirm",
+        "--lock-timeout-ms",
+        "60000",
+    ]);
+    let Command::Index(arguments) = parsed.command else {
+        panic!("expected index command");
+    };
+    let hsum::cli::IndexCommand::Delete(arguments) = arguments.command;
+    assert_eq!(arguments.name.as_str(), "fixture");
+    assert!(arguments.confirm);
+    assert_eq!(arguments.lock_timeout_ms, 60_000);
+
+    assert_usage_error(&[
+        "hsum",
+        "index",
+        "delete",
+        "fixture",
+        "--confirm",
+        "--lock-timeout-ms",
+        "60001",
+    ]);
 }
 
 #[test]
@@ -297,15 +686,86 @@ fn defaults_match_the_alpha4_contract() {
 }
 
 #[test]
-fn alpha_search_and_read_only_doctor_reject_deferred_options() {
-    assert_usage_error(&["hsum", "search", "needle", "--mode", "semantic"]);
-    assert_usage_error(&["hsum", "search", "needle", "--mode", "hybrid"]);
+fn semantic_and_hybrid_search_parse_without_adding_an_embedding_mutation_flag() {
+    let Command::Search(semantic) =
+        parse(&["hsum", "search", "needle", "--mode", "semantic"]).command
+    else {
+        panic!("expected semantic search");
+    };
+    assert_eq!(semantic.mode, SearchMode::Semantic);
+    let Command::Search(hybrid) = parse(&["hsum", "search", "needle", "--mode", "hybrid"]).command
+    else {
+        panic!("expected hybrid search");
+    };
+    assert_eq!(hybrid.mode, SearchMode::Hybrid);
     assert_usage_error(&["hsum", "search", "needle", "--embedding-model", "x"]);
-    assert_usage_error(&["hsum", "ingest", "--reembed"]);
-    assert_usage_error(&["hsum", "doctor", "--integrity"]);
+    let parsed = parse(&["hsum", "ingest", "--reembed"]);
+    let Command::Ingest(arguments) = parsed.command else {
+        panic!("expected ingest");
+    };
+    assert!(arguments.reembed);
+    assert_usage_error(&["hsum", "ingest", "--reembed", "--dry-run"]);
+    parse(&["hsum", "doctor", "--integrity"]);
+    parse(&["hsum", "doctor", "--repair", "--confirm"]);
+    parse(&[
+        "hsum",
+        "doctor",
+        "report",
+        "--output",
+        "/tmp/hsum-doctor-report.json",
+    ]);
     assert_usage_error(&["hsum", "doctor", "--repair"]);
+    assert_usage_error(&["hsum", "doctor", "--confirm"]);
     assert_usage_error(&["hsum", "doctor", "report"]);
+    assert_usage_error(&[
+        "hsum",
+        "doctor",
+        "--repair",
+        "--confirm",
+        "report",
+        "--output",
+        "/tmp/hsum-doctor-report.json",
+    ]);
     assert_usage_error(&["hsum", "model"]);
+}
+
+#[test]
+fn configuration_migration_requires_a_backup_plan_and_exact_hash() {
+    let digest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    assert!(matches!(
+        parse(&[
+            "hsum",
+            "config",
+            "migrate",
+            "plan",
+            "/tmp/config-plan.json",
+            "--backup-dir",
+            "/tmp/config-backup",
+        ])
+        .command,
+        Command::Config(_)
+    ));
+    assert!(matches!(
+        parse(&[
+            "hsum",
+            "config",
+            "migrate",
+            "apply",
+            "/tmp/config-plan.json",
+            "--confirm",
+            digest,
+        ])
+        .command,
+        Command::Config(_)
+    ));
+    assert_usage_error(&["hsum", "config", "migrate", "plan", "/tmp/config-plan.json"]);
+    assert_usage_error(&[
+        "hsum",
+        "config",
+        "migrate",
+        "apply",
+        "/tmp/config-plan.json",
+    ]);
 }
 
 #[test]
@@ -345,6 +805,15 @@ fn client_and_mcp_shapes_are_tag_gated_and_project_safe() {
 
 #[test]
 fn integration_shapes_require_confirmation_for_repository_and_client_mutations() {
+    let mut command = Cli::command();
+    let integration_help = command
+        .find_subcommand_mut("integration")
+        .unwrap()
+        .render_long_help()
+        .to_string();
+    assert!(!integration_help.contains("authorize-workspace"));
+    assert!(!integration_help.contains("revoke-workspace"));
+
     let parsed = parse(&[
         "hsum",
         "integration",
@@ -477,14 +946,13 @@ fn completions_are_nonempty_deterministic_and_derived_from_alpha4_command() {
         assert!(text.contains("hsum"));
         assert!(text.contains("search"));
         assert!(
-            !text.contains("semantic"),
-            "{shell} completion leaked a deferred search mode"
-        );
-        assert!(
             !text.contains("_hsum__help"),
             "{shell} completion leaked Clap's implicit help subcommand"
         );
     }
+    let bash = String::from_utf8(render_completions(CompletionShell::Bash)).unwrap();
+    assert!(bash.contains("semantic"));
+    assert!(bash.contains("hybrid"));
 }
 
 #[test]
@@ -553,23 +1021,26 @@ fn verbose_version_report_is_golden_and_tag_gated() {
         concat!(
             "hsum 0.1.0-alpha.4\n",
             "API version: hsum.api.v1\n",
-            "Readable schema versions: 1-1\n",
-            "Writable schema versions: 1-1\n",
+            "Readable schema versions: 3-4\n",
+            "Writable schema versions: 4-4\n",
             "Target: ",
             env!("HSUM_TARGET_TRIPLE"),
             "\n",
-            "Capabilities: filesystem-ingest, search-exact, search-bm25, evidence-get, \
-             mcp-stdio-read-only\n",
+            "Capabilities: filesystem-ingest, filesystem-source-registration, \
+             confirmed-index-deletion, jsonl-snapshot, multi-source-ingest, \
+             multi-project, search-exact, search-bm25, evidence-get, backup-verified, \
+             managed-backup-disposition, prune-plan-apply, forget-physical-rewrite, restore-exact-state, \
+             migrate-n-minus-one, config-migrate-n-minus-one, mcp-stdio-read-only, \
+             model-artifact-lifecycle, embedding-profile, embedding-reembed, search-semantic, search-hybrid\n",
         )
     );
 
     let rendered = render_verbose_version();
-    for deferred in ["semantic", "hybrid", "vector", "jsonl", "watch", "model"] {
-        assert!(
-            !rendered.contains(deferred),
-            "verbose version leaked deferred capability {deferred:?}"
-        );
-    }
+    let deferred = "watch";
+    assert!(
+        !rendered.contains(deferred),
+        "verbose version leaked deferred capability {deferred:?}"
+    );
 }
 
 #[test]

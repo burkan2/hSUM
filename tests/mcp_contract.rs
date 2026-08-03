@@ -16,9 +16,10 @@ use hsum::mcp::{
     MAX_MCP_SEARCH_BODY_BYTES, McpServerError, WorkspaceMcpServer, retrieval_config_fingerprint,
     serve_io, serve_workspace_io, validate_frame, validate_response_size,
 };
+use hsum::model::builtin_manifests;
 use hsum::store::{
-    DeleteConfirmations, FilesystemScope, IndexDb, OpenMode, PreparedChunk, PreparedDocument,
-    prepare_passage_literals,
+    DeleteConfirmations, EmbeddingModelPin, FilesystemScope, IndexDb, IndexEmbeddingProfile,
+    OpenMode, PreparedChunk, PreparedDocument, prepare_passage_literals,
 };
 use rmcp::ServerHandler;
 use rmcp::handler::server::wrapper::Parameters;
@@ -117,6 +118,13 @@ fn server_advertises_exactly_four_read_only_project_bound_tools() {
         "evidence_search",
         &["cursor", "explain", "limit", "mode", "query", "timeout_ms"],
     );
+    let search_schema = tools
+        .iter()
+        .find(|tool| tool.name.as_ref() == "evidence_search")
+        .unwrap();
+    let search_schema = serde_json::to_string(&search_schema.input_schema).unwrap();
+    assert!(search_schema.contains("hybrid"));
+    assert!(search_schema.contains("semantic"));
     assert_schema_properties(
         &tools,
         "evidence_get",
@@ -129,6 +137,89 @@ fn server_advertises_exactly_four_read_only_project_bound_tools() {
         assert!(!schema.contains("\"project_id\""));
         assert!(!schema.contains("\"index_id\""));
     }
+}
+
+#[test]
+fn mcp_auto_reports_install_capability_and_explicit_vector_modes_fail_typed() {
+    let directory = tempdir().unwrap();
+    harden_fixture_directory(directory.path());
+    let path = directory.path().join("semantic.sqlite");
+    let manifest = &builtin_manifests()[0];
+    let pin = EmbeddingModelPin::new(
+        manifest.id.clone(),
+        manifest.upstream_revision.clone(),
+        manifest.fingerprint().unwrap(),
+        manifest.dimension,
+    )
+    .unwrap();
+    let mut database = IndexDb::create_with_embedding_profile(
+        &path,
+        index_id(),
+        &IndexEmbeddingProfile::Pinned(pin),
+    )
+    .unwrap();
+    let scope = fixture_scope();
+    database
+        .apply_filesystem_snapshot(
+            &scope,
+            &[document(
+                b"semantic.md",
+                "semantic.md",
+                "repo://semantic.md",
+                b"semantic evidence\n",
+            )],
+            &[],
+            DeleteConfirmations::default(),
+        )
+        .unwrap();
+    drop(database);
+
+    let server = HsumMcpServer::new_with_model_cache(
+        &path,
+        scope.project_id,
+        directory.path().join("models"),
+    )
+    .unwrap();
+    let auto = server
+        .evidence_search(Parameters(EvidenceSearchInput {
+            query: "semantic evidence".to_owned(),
+            mode: Some(EvidenceSearchMode::Auto),
+            limit: Some(10),
+            cursor: None,
+            timeout_ms: Some(3_000),
+            explain: Some(true),
+        }))
+        .unwrap()
+        .0;
+    assert_eq!(auto.requested_mode, "auto");
+    assert_eq!(auto.effective_mode, "lexical");
+    assert_eq!(
+        auto.hints,
+        vec!["semantic_available_after_model_install".to_owned()]
+    );
+    assert!(auto.degraded_mode.is_empty());
+    assert_eq!(auto.examined.vector, 0);
+    assert_eq!(auto.timing_ms.query_embedding, 0);
+
+    for mode in [EvidenceSearchMode::Semantic, EvidenceSearchMode::Hybrid] {
+        let result = server.evidence_search(Parameters(EvidenceSearchInput {
+            query: "semantic evidence".to_owned(),
+            mode: Some(mode),
+            limit: Some(10),
+            cursor: None,
+            timeout_ms: Some(3_000),
+            explain: Some(false),
+        }));
+        let error = match result {
+            Ok(_) => panic!("explicit vector mode must not degrade"),
+            Err(error) => error,
+        };
+        let data = error.data.unwrap();
+        assert_eq!(data["code"], "MODEL_MISSING");
+        assert_eq!(data["subcode"], "MODEL_NOT_INSTALLED");
+        assert_eq!(data["retryable"], false);
+    }
+    assert!(!directory.path().join("models").exists());
 }
 
 #[test]
@@ -227,13 +318,13 @@ fn response_and_body_caps_are_fixed_protocol_constants() {
 }
 
 #[test]
-fn retrieval_config_fingerprint_is_frozen_for_alpha_four() {
+fn retrieval_config_fingerprint_is_frozen_for_the_beta_retriever_set() {
     // Derived from the binary version and pipeline_fingerprint() (see
     // src/mcp.rs retrieval_config_fingerprint), so the digest also moves at a
     // release or ingest-pipeline boundary, not just for retrieval config.
     assert_eq!(
         retrieval_config_fingerprint(),
-        "ae2ba062b90b8f86574eb0d335fb2a416c05e3ebe49845823a52e9cc0a546c30"
+        "b479c7021c4e9af3f9f3cf37924e1aa16677bec04534693c8de049b4edf954bd"
     );
 }
 
@@ -339,6 +430,82 @@ fn handlers_use_hardened_readers_and_keep_foreign_citations_non_disclosing() {
         HsumMcpServer::new(&fixture.path, wrong_project),
         Err(McpServerError::ProjectNotFound)
     ));
+}
+
+#[test]
+fn evidence_get_returned_citation_round_trips_across_multiple_chunks() {
+    let body = format!(
+        "# Left\n{}\n\n# Target\nCOMPOSITE_CITATION_TARGET\n{}\n\n# Right\n{}\n",
+        "left context ".repeat(180),
+        "middle context ".repeat(180),
+        "right context ".repeat(180),
+    );
+    let prepared = document(
+        b"composite.md",
+        "composite.md",
+        "repo://composite.md",
+        body.as_bytes(),
+    );
+    assert!(prepared.chunks.len() >= 3);
+    let fixture = fixture_with_documents(vec![prepared]);
+    let server = HsumMcpServer::new(&fixture.path, fixture.scope.project_id).unwrap();
+    let search_citation = server
+        .evidence_search(Parameters(search_input(
+            "COMPOSITE_CITATION_TARGET",
+            1,
+            None,
+        )))
+        .unwrap()
+        .0
+        .results
+        .remove(0)
+        .citation_uri;
+
+    let expanded = server
+        .evidence_get(Parameters(EvidenceGetInput {
+            citation_uri: search_citation.clone(),
+            max_bytes: Some(body.len()),
+            verify_source_hash: Some(false),
+        }))
+        .unwrap()
+        .0;
+    assert_eq!(expanded.requested_citation_uri, search_citation);
+    assert_ne!(expanded.returned_citation_uri, search_citation);
+    assert_eq!(expanded.content, body);
+
+    let round_trip = server
+        .evidence_get(Parameters(EvidenceGetInput {
+            citation_uri: expanded.returned_citation_uri.clone(),
+            max_bytes: Some(body.len()),
+            verify_source_hash: Some(false),
+        }))
+        .unwrap()
+        .0;
+    assert_eq!(
+        round_trip.requested_citation_uri,
+        expanded.returned_citation_uri
+    );
+    assert_eq!(
+        round_trip.returned_citation_uri,
+        expanded.returned_citation_uri
+    );
+    assert_eq!(round_trip.content, expanded.content);
+    assert_eq!(
+        round_trip.requested_line_span.start,
+        expanded.returned_line_span.start
+    );
+    assert_eq!(
+        round_trip.requested_line_span.end,
+        expanded.returned_line_span.end
+    );
+    assert_eq!(
+        round_trip.returned_line_span.start,
+        expanded.returned_line_span.start
+    );
+    assert_eq!(
+        round_trip.returned_line_span.end,
+        expanded.returned_line_span.end
+    );
 }
 
 #[test]
@@ -1595,7 +1762,7 @@ async fn workspace_servers_isolate_repositories_under_one_user_home() {
 }
 
 #[tokio::test]
-async fn approved_workspace_lazily_enrolls_only_the_exact_repository() {
+async fn approved_workspace_still_requires_explicit_activation() {
     let workspace_parent = tempdir().unwrap();
     let workspace = workspace_parent.path().join("projects");
     let repository = workspace.join("new-repository");
@@ -1613,20 +1780,37 @@ async fn approved_workspace_lazily_enrolls_only_the_exact_repository() {
         .save_atomic(&managed_paths.integration_policy_file())
         .unwrap();
 
-    let project_id = workspace_project_id(repository.clone(), managed_paths.clone()).await;
-    assert!(!project_id.is_empty());
+    let policy_before = std::fs::read(managed_paths.integration_policy_file()).unwrap();
+    assert!(!managed_paths.trust_registry_file().exists());
+    assert!(!managed_paths.data_dir().exists());
 
-    let registry = hsum::config::TrustRegistry::load(&managed_paths.trust_registry_file()).unwrap();
-    assert_eq!(registry.bindings().len(), 1);
-    assert_eq!(
-        registry.bindings()[0].canonical_root(),
-        repository.canonicalize().unwrap()
+    let response = workspace_project_response(repository.clone(), managed_paths.clone()).await;
+    assert_public_error_value(
+        &response["error"]["data"],
+        "PERMISSION_DENIED",
+        "REPOSITORY_NOT_ACTIVATED",
+        false,
     );
+    assert_eq!(
+        response["error"]["data"]["details"]["repository_root"],
+        repository
+            .canonicalize()
+            .unwrap()
+            .to_string_lossy()
+            .as_ref()
+    );
+
+    assert_eq!(
+        std::fs::read(managed_paths.integration_policy_file()).unwrap(),
+        policy_before
+    );
+    assert!(!managed_paths.trust_registry_file().exists());
+    assert!(!managed_paths.data_dir().exists());
     assert!(!repository.join(".hsum.toml").exists());
 }
 
 #[tokio::test]
-async fn integration_repository_refreshes_once_before_its_first_search() {
+async fn workspace_search_uses_the_last_explicit_generation_without_refresh() {
     let repository = tempdir().unwrap();
     std::fs::create_dir(repository.path().join(".git")).unwrap();
     let source = repository.path().join("README.md");
@@ -1691,34 +1875,45 @@ async fn integration_repository_refreshes_once_before_its_first_search() {
         &search_call(2, "SecondVersionIdentifier"),
     )
     .await;
-    let refreshed = read_frame(&mut client_read).await;
-    assert!(refreshed.get("error").is_none(), "{refreshed}");
-    assert_eq!(
-        refreshed["result"]["structuredContent"]["freshness"]["state"],
-        "refreshed"
-    );
-    assert_eq!(
-        refreshed["result"]["structuredContent"]["results"][0]["content"],
-        "SecondVersionIdentifier\n"
-    );
-
-    std::fs::write(&source, "ThirdVersionIdentifier\n").unwrap();
-    write_frame(&mut client_write, &search_call(3, "ThirdVersionIdentifier")).await;
-    let not_refreshed_twice = read_frame(&mut client_read).await;
+    let unchanged_snapshot = read_frame(&mut client_read).await;
     assert!(
-        not_refreshed_twice.get("error").is_none(),
-        "{not_refreshed_twice}"
+        unchanged_snapshot.get("error").is_none(),
+        "{unchanged_snapshot}"
     );
     assert_eq!(
-        not_refreshed_twice["result"]["structuredContent"]["freshness"]["state"],
-        "refreshed"
+        unchanged_snapshot["result"]["structuredContent"]["freshness"]["policy"],
+        "manual"
     );
     assert_eq!(
-        not_refreshed_twice["result"]["structuredContent"]["results"]
+        unchanged_snapshot["result"]["structuredContent"]["freshness"]["state"],
+        "not_managed"
+    );
+    assert_eq!(
+        unchanged_snapshot["result"]["structuredContent"]["results"]
             .as_array()
             .unwrap()
             .len(),
         0
+    );
+
+    write_frame(
+        &mut client_write,
+        &search_call(3, "InitialVersionIdentifier"),
+    )
+    .await;
+    let stored_snapshot = read_frame(&mut client_read).await;
+    assert!(stored_snapshot.get("error").is_none(), "{stored_snapshot}");
+    assert_eq!(
+        stored_snapshot["result"]["structuredContent"]["results"][0]["content"],
+        "InitialVersionIdentifier\n"
+    );
+    assert_eq!(
+        stored_snapshot["result"]["structuredContent"]["results"][0]["source_state"],
+        "changed_since_ingest"
+    );
+    assert_eq!(
+        std::fs::read_to_string(source).unwrap(),
+        "SecondVersionIdentifier\n"
     );
 
     client_write.shutdown().await.unwrap();
@@ -1731,7 +1926,7 @@ async fn integration_repository_refreshes_once_before_its_first_search() {
 }
 
 #[tokio::test]
-async fn refused_automatic_refresh_serves_the_last_good_generation() {
+async fn workspace_search_never_applies_source_deletions() {
     let repository = tempdir().unwrap();
     std::fs::create_dir(repository.path().join(".git")).unwrap();
     for (name, content) in [
@@ -1806,14 +2001,15 @@ async fn refused_automatic_refresh_serves_the_last_good_generation() {
     assert!(stale.get("error").is_none(), "{stale}");
     assert_eq!(
         stale["result"]["structuredContent"]["freshness"]["state"],
-        "stale"
+        "not_managed"
     );
-    assert!(
-        stale["result"]["structuredContent"]["freshness"]["problem"]
-            .as_str()
-            .unwrap()
-            .contains("--allow-mass-delete"),
-        "{stale}"
+    assert_eq!(
+        stale["result"]["structuredContent"]["freshness"]["policy"],
+        "manual"
+    );
+    assert_eq!(
+        stale["result"]["structuredContent"]["freshness"]["problem"],
+        Value::Null
     );
     assert_eq!(
         stale["result"]["structuredContent"]["results"][0]["content"],
@@ -1833,7 +2029,7 @@ async fn refused_automatic_refresh_serves_the_last_good_generation() {
     assert!(result.is_ok());
 }
 
-async fn workspace_project_id(current_dir: PathBuf, managed_paths: ManagedPaths) -> String {
+async fn workspace_project_response(current_dir: PathBuf, managed_paths: ManagedPaths) -> Value {
     let (server_stream, client_stream) = tokio::io::duplex(256 * 1024);
     let (server_read, server_write) = tokio::io::split(server_stream);
     let (client_read, mut client_write) = tokio::io::split(client_stream);
@@ -1873,11 +2069,6 @@ async fn workspace_project_id(current_dir: PathBuf, managed_paths: ManagedPaths)
     )
     .await;
     let project = read_frame(&mut client_read).await;
-    assert!(project.get("error").is_none(), "{project}");
-    let project_id = project["result"]["structuredContent"]["project_id"]
-        .as_str()
-        .unwrap()
-        .to_owned();
 
     client_write.shutdown().await.unwrap();
     drop(client_write);
@@ -1886,7 +2077,16 @@ async fn workspace_project_id(current_dir: PathBuf, managed_paths: ManagedPaths)
         .expect("server did not stop after stdin disconnect")
         .expect("server task panicked");
     assert!(result.is_ok());
-    project_id
+    project
+}
+
+async fn workspace_project_id(current_dir: PathBuf, managed_paths: ManagedPaths) -> String {
+    let project = workspace_project_response(current_dir, managed_paths).await;
+    assert!(project.get("error").is_none(), "{project}");
+    project["result"]["structuredContent"]["project_id"]
+        .as_str()
+        .unwrap()
+        .to_owned()
 }
 
 #[tokio::test]
@@ -2412,6 +2612,10 @@ fn tool_descriptions_say_when_to_reach_for_each_tool() {
         get.contains("at ingest"),
         "get must state that bytes are as-of-ingest"
     );
+    assert!(
+        get.contains("returned_citation_uri") && get.contains("resolves again"),
+        "get must identify its reusable expanded citation"
+    );
 
     let project = description_of("evidence_project");
     assert!(
@@ -2637,7 +2841,10 @@ fn assert_public_error_value(data: &Value, code: &str, subcode: &str, retryable:
             .as_str()
             .is_some_and(|value| !value.is_empty())
     );
-    assert!(data.get("docs_url").is_none());
+    assert_eq!(
+        data["docs_url"],
+        format!("https://hsum.dev/docs/0.1.0-alpha.4/errors/{subcode}")
+    );
     assert!(
         data["request_id"]
             .as_str()

@@ -1,0 +1,97 @@
+{
+  "schema_version": "hsum.model-portability.v1",
+  "passed": true,
+  "qualification": "development_portability_probe",
+  "platform": {
+    "os": "linux",
+    "arch": "x86_64",
+    "os_version": "Linux 6.17.0-1020-azure",
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "logical_cpus": 4
+  },
+  "checkout": {
+    "git_revision": "e74c5456c1a5c757839e207c5f0162e34c61ab41",
+    "dirty": false,
+    "hsum_version": "0.1.0-alpha.4"
+  },
+  "runtime": {
+    "backend": "FastEmbed",
+    "fastembed_version": "5.17.4",
+    "execution_provider": "CPU",
+    "network_model_loading": false
+  },
+  "model": {
+    "id": "bge-small-en-v1-5-fp32",
+    "manifest_sha256": "b01ac36f13dbf65c0ecbd96c0025d20a7442a248704d7f43a553861d93ba833f",
+    "dimension": 384,
+    "verified_bytes": 133806060,
+    "pooling": "cls"
+  },
+  "configuration": {
+    "max_length": 512,
+    "intra_threads": 4,
+    "warmups": 3,
+    "iterations": 20,
+    "fixed_input_sha256": "d356234ec5cd6a989b3871a186411604086faa4c94ffc13ef50996e4436bef7e"
+  },
+  "stages_ms": {
+    "verify": 100.967587,
+    "read_verified_bytes": 161.04132299999998,
+    "initialize": 282.38811400000003
+  },
+  "memory": {
+    "baseline_rss_bytes": 9420800,
+    "peak_rss_bytes": 322486272,
+    "peak_delta_bytes": 313065472,
+    "final_rss_bytes": 204484608,
+    "sample_interval_ms": 20
+  },
+  "workloads": [
+    {
+      "name": "interactive_query",
+      "documents_per_call": 1,
+      "latency_ms": {
+        "min": 8.847023,
+        "mean": 9.254721199999999,
+        "p50": 9.10226,
+        "p95": 10.255205,
+        "max": 10.616511000000001
+      },
+      "throughput_documents_per_second": 108.05295787840699,
+      "output_sha256": "705ac2885d98bee4e1603cd6c1aaf42b74ba30b76ee841812ae2221259018f66",
+      "deterministic": true,
+      "min_l2_norm": 1.0000004,
+      "max_l2_norm": 1.0000004
+    },
+    {
+      "name": "ingest_batch_8",
+      "documents_per_call": 8,
+      "latency_ms": {
+        "min": 70.61873200000001,
+        "mean": 71.4039845,
+        "p50": 71.219144,
+        "p95": 72.692608,
+        "max": 73.911074
+      },
+      "throughput_documents_per_second": 112.03856557892787,
+      "output_sha256": "d06cbcb58771666f500210b5be31a20a1998f091ee9fbeadaf7d85c1c56db341",
+      "deterministic": true,
+      "min_l2_norm": 0.9999998,
+      "max_l2_norm": 1.0000004
+    }
+  ],
+  "thresholds": {
+    "max_initialize_ms": 10000.0,
+    "max_interactive_p95_ms": 500.0,
+    "max_batch_p95_ms": 1500.0,
+    "max_peak_rss_delta_bytes": 1073741824
+  },
+  "checks": {
+    "correct_dimension": true,
+    "deterministic_outputs": true,
+    "initialize_within_limit": true,
+    "interactive_p95_within_limit": true,
+    "batch_p95_within_limit": true,
+    "peak_rss_delta_within_limit": true
+  }
+}

@@ -1,11 +1,16 @@
 use std::cell::Cell;
+use std::collections::BTreeMap;
 use std::path::Path;
 use std::str;
+use std::time::Duration;
 
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
+use serde::Serialize;
 use serde_json::Value;
 use serde_json_canonicalizer::to_string as to_canonical_json;
 use sha2::{Digest, Sha256};
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 use uuid::Uuid;
 
 use crate::domain::{IndexId, Sha256Digest};
@@ -14,11 +19,18 @@ use crate::ingest::{
     revision_sha256,
 };
 use crate::store::generation::prepare_passage_literals;
-use crate::store::open::{IndexDb, StoreError, configure_connection};
+use crate::store::lock::WriterLock;
+use crate::store::open::{IndexDb, OpenMode, StoreError, configure_connection};
 use crate::store::schema::{
-    APPLICATION_ID, MIGRATION_0001, SCHEMA_VERSION, chunk_kind_for_fingerprint,
-    chunker_fingerprint, pipeline_fingerprint, schema_checksum,
+    APPLICATION_ID, MIGRATIONS, SCHEMA_VERSION, chunk_kind_for_fingerprint, chunker_fingerprint,
+    migration_checksum, pipeline_fingerprint, pipeline_fingerprint_for, schema_checksum,
+    schema_checksum_through,
 };
+use crate::store::vector::{
+    IndexEmbeddingProfile, read_embedding_profile, validate_active_vector_membership,
+    validate_stored_provenance, validate_stored_vector_blob,
+};
+use crate::store::{ForgetLedger, ForgetOperationState, ReplacementEpoch};
 
 const REQUIRED_TABLES: &[&str] = &[
     "schema_migrations",
@@ -38,6 +50,15 @@ const REQUIRED_TABLES: &[&str] = &[
     "passages_fts",
     "passage_literals",
     "source_sync_errors",
+    "prune_runs",
+    "pruned_revision_namespaces",
+    "forget_runs",
+    "forgotten_documents",
+    "restore_runs",
+    "embedding_provenance",
+    "chunk_embeddings",
+    "passages_vec_a",
+    "passages_vec_b",
 ];
 
 const REQUIRED_INDEXES: &[&str] = &[
@@ -48,9 +69,9 @@ const REQUIRED_INDEXES: &[&str] = &[
     "active_passages_version_idx",
     "passage_literals_lookup_idx",
     "source_sync_errors_generation_idx",
+    "chunk_embeddings_chunk_idx",
 ];
 
-const EXPECTED_SCHEMA_OBJECTS: i64 = 44;
 const MAX_SCHEMA_OBJECT_TYPE_BYTES: i64 = 16;
 const MAX_SCHEMA_OBJECT_NAME_BYTES: i64 = 128;
 const MAX_SCHEMA_TABLE_NAME_BYTES: i64 = 128;
@@ -69,8 +90,141 @@ impl Doctor {
         policy: FingerprintPolicy,
     ) -> Result<DoctorReport, StoreError> {
         let database = IndexDb::open_read_only(path)?;
-        inspect_connection(database.connection(), true, InspectionDepth::Full, policy)
+        let report =
+            inspect_connection(database.connection(), true, InspectionDepth::Full, policy)?;
+        if std::fs::symlink_metadata(ForgetLedger::sidecar_path(path)).is_ok() {
+            let ledger = ForgetLedger::read(path, report.index_id)?;
+            validate_external_forget_ledger(database.connection(), &ledger)?;
+        }
+        if let Some(epoch) = ReplacementEpoch::read(path, report.index_id)? {
+            let stored =
+                parse_metadata_u64(&metadata_value(database.connection(), "replacement_epoch")?)
+                    .ok_or(StoreError::InvalidMetadata("replacement_epoch"))?;
+            if epoch != stored {
+                return Err(StoreError::ForgetLedgerMismatch);
+            }
+        }
+        Ok(report)
     }
+
+    /// Remove only generation rows already classified as abandoned.
+    ///
+    /// Full Doctor validation runs on both sides of the transaction. Committed
+    /// history, active heads, immutable evidence, and index epochs are never
+    /// rewritten by this repair.
+    pub fn repair_abandoned(
+        path: &Path,
+        timeout: Duration,
+    ) -> Result<DoctorRepairOutcome, StoreError> {
+        let _writer_lock = WriterLock::acquire(path, timeout)?;
+        let before = Self::run(path)?;
+        let mut database = IndexDb::open_existing_for_maintenance(path, OpenMode::ReadWrite)?;
+        let transaction = database
+            .connection_mut()
+            .transaction_with_behavior(TransactionBehavior::Immediate)?;
+        let removed = transaction.execute(
+            "DELETE FROM generations
+             WHERE state = 'abandoned'",
+            [],
+        )?;
+        transaction.commit()?;
+        drop(database);
+
+        let report = Self::run(path)?;
+        if report.index_id != before.index_id {
+            return Err(StoreError::GenerationInvariant(
+                "doctor repair changed the index identity",
+            ));
+        }
+        Ok(DoctorRepairOutcome {
+            removed_abandoned_generations: u64::try_from(removed)
+                .map_err(|_| StoreError::IntegerOverflow)?,
+            report,
+        })
+    }
+
+    /// Capture a support artifact that contains no source or evidence content.
+    pub fn support_report(path: &Path) -> Result<DoctorSupportReport, StoreError> {
+        Ok(DoctorSupportReport {
+            format: "hsum.doctor-report.v1",
+            created_at: OffsetDateTime::now_utc().format(&Rfc3339)?,
+            hsum_version: env!("CARGO_PKG_VERSION"),
+            body_free: true,
+            query_free: true,
+            diagnosis: Self::run(path)?,
+        })
+    }
+}
+
+fn validate_external_forget_ledger(
+    connection: &Connection,
+    ledger: &ForgetLedger,
+) -> Result<(), StoreError> {
+    let mut statement = connection.prepare(
+        "SELECT source_id, document_id, connector_key_sha256
+         FROM forgotten_documents
+         ORDER BY source_id, connector_key_sha256",
+    )?;
+    let database_records = statement
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, Vec<u8>>(0)?,
+                row.get::<_, Vec<u8>>(1)?,
+                row.get::<_, Vec<u8>>(2)?,
+            ))
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+
+    for (source, document, connector_hash) in &database_records {
+        let source_id = crate::domain::SourceId::from_uuid(
+            Uuid::from_slice(source).map_err(|_| StoreError::ForgetLedgerMismatch)?,
+        );
+        let document_id = crate::domain::DocumentId::from_uuid(
+            Uuid::from_slice(document).map_err(|_| StoreError::ForgetLedgerMismatch)?,
+        );
+        let connector_key_sha256 = Sha256Digest::from_bytes(
+            connector_hash
+                .as_slice()
+                .try_into()
+                .map_err(|_| StoreError::ForgetLedgerMismatch)?,
+        );
+        if !ledger.suppresses(source_id, connector_key_sha256)
+            || !ledger.suppresses_document(source_id, document_id)
+        {
+            return Err(StoreError::ForgetLedgerMismatch);
+        }
+    }
+
+    let mut latest = BTreeMap::new();
+    for record in ledger.records() {
+        latest.insert(
+            (
+                record.operation_id,
+                record.source_id,
+                record.document_id,
+                record.connector_key_sha256,
+            ),
+            record,
+        );
+    }
+    for record in latest.values() {
+        if matches!(
+            record.state,
+            ForgetOperationState::ReplacementActivated | ForgetOperationState::Committed
+        ) {
+            let present = database_records
+                .iter()
+                .any(|(source, document, connector_hash)| {
+                    source.as_slice() == record.source_id.as_uuid().as_bytes()
+                        && document.as_slice() == record.document_id.as_uuid().as_bytes()
+                        && connector_hash.as_slice() == record.connector_key_sha256.as_bytes()
+                });
+            if !present {
+                return Err(StoreError::ForgetLedgerMismatch);
+            }
+        }
+    }
+    Ok(())
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -92,7 +246,7 @@ pub(crate) enum FingerprintPolicy {
     Tolerate,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 pub struct DoctorReport {
     pub application_id: i32,
     pub schema_version: u32,
@@ -101,10 +255,11 @@ pub struct DoctorReport {
     pub pipeline_fingerprint: Sha256Digest,
     pub journal_mode: String,
     pub read_only: bool,
+    pub abandoned_generations: u64,
     pub scan: DoctorScanStats,
 }
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
 pub struct DoctorScanStats {
     pub content_blobs: u64,
     pub chunk_layouts: u64,
@@ -114,6 +269,48 @@ pub struct DoctorScanStats {
     pub original_body_bytes: u64,
     pub max_single_body_bytes: u64,
     pub max_body_rows_in_flight: u64,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct DoctorRepairOutcome {
+    pub removed_abandoned_generations: u64,
+    pub report: DoctorReport,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
+pub struct DoctorSupportReport {
+    pub format: &'static str,
+    pub created_at: String,
+    pub hsum_version: &'static str,
+    pub body_free: bool,
+    pub query_free: bool,
+    pub diagnosis: DoctorReport,
+}
+
+impl DoctorSupportReport {
+    pub const INCLUDED_FIELDS: &'static [&'static str] = &[
+        "format",
+        "created_at",
+        "hsum_version",
+        "body_free",
+        "query_free",
+        "diagnosis.application_id",
+        "diagnosis.schema_version",
+        "diagnosis.index_id",
+        "diagnosis.schema_checksum",
+        "diagnosis.pipeline_fingerprint",
+        "diagnosis.journal_mode",
+        "diagnosis.read_only",
+        "diagnosis.abandoned_generations",
+        "diagnosis.scan.content_blobs",
+        "diagnosis.scan.chunk_layouts",
+        "diagnosis.scan.chunks",
+        "diagnosis.scan.document_versions",
+        "diagnosis.scan.active_passages",
+        "diagnosis.scan.original_body_bytes",
+        "diagnosis.scan.max_single_body_bytes",
+        "diagnosis.scan.max_body_rows_in_flight",
+    ];
 }
 
 impl DoctorScanStats {
@@ -191,6 +388,100 @@ pub(crate) fn inspect_connection(
     Ok(report)
 }
 
+pub(crate) fn inspect_migration_source(
+    connection: &Connection,
+    require_read_only: bool,
+    version: u32,
+) -> Result<DoctorReport, StoreError> {
+    inspect_migration_source_with_policy(
+        connection,
+        require_read_only,
+        version,
+        FingerprintPolicy::Reject,
+    )
+}
+
+pub(crate) fn inspect_migration_source_with_policy(
+    connection: &Connection,
+    require_read_only: bool,
+    version: u32,
+    policy: FingerprintPolicy,
+) -> Result<DoctorReport, StoreError> {
+    let transaction = connection.unchecked_transaction()?;
+    let report = inspect_migration_snapshot(&transaction, require_read_only, version, policy)?;
+    transaction.rollback()?;
+    Ok(report)
+}
+
+fn inspect_migration_snapshot(
+    connection: &Connection,
+    require_read_only: bool,
+    version: u32,
+    policy: FingerprintPolicy,
+) -> Result<DoctorReport, StoreError> {
+    if version == 0 || version >= SCHEMA_VERSION {
+        return Err(StoreError::UnsupportedSchemaVersion {
+            current: SCHEMA_VERSION,
+            found: version,
+        });
+    }
+    let application_id: i32 =
+        connection.pragma_query_value(None, "application_id", |row| row.get(0))?;
+    if application_id != APPLICATION_ID {
+        return Err(StoreError::InvalidApplicationId {
+            expected: APPLICATION_ID,
+            actual: application_id,
+        });
+    }
+    let raw_schema_version: i64 =
+        connection.pragma_query_value(None, "user_version", |row| row.get(0))?;
+    if raw_schema_version != i64::from(version) {
+        return Err(StoreError::UnsupportedSchemaVersion {
+            current: SCHEMA_VERSION,
+            found: u32::try_from(raw_schema_version)
+                .map_err(|_| StoreError::InvalidSchemaVersion(raw_schema_version))?,
+        });
+    }
+
+    validate_schema_manifest_through(connection, version)?;
+    let (index_id, stored_pipeline_fingerprint) =
+        validate_metadata_through(connection, version, policy)?;
+    validate_migration_chain_through(connection, version)?;
+    let mut scan = DoctorScanStats::default();
+    let body_scan = BodyScanTracker::default();
+    validate_integrity(connection)?;
+    validate_generation_invariants(connection, stored_pipeline_fingerprint, 1, false)?;
+    validate_immutable_evidence(connection, &mut scan, &body_scan)?;
+    validate_active_indexes(connection, &mut scan)?;
+    scan.max_body_rows_in_flight = body_scan.finish();
+
+    let journal_mode: String =
+        connection.pragma_query_value(None, "journal_mode", |row| row.get(0))?;
+    if !journal_mode.eq_ignore_ascii_case("wal") {
+        return Err(StoreError::WalUnavailable(journal_mode));
+    }
+    let read_only = connection.is_readonly("main")?;
+    let query_only: bool = connection.pragma_query_value(None, "query_only", |row| row.get(0))?;
+    if require_read_only && (!read_only || !query_only) {
+        return Err(StoreError::ReadOnlyRequired);
+    }
+    if !require_read_only && (read_only || query_only) {
+        return Err(StoreError::ReadWriteRequired);
+    }
+
+    Ok(DoctorReport {
+        application_id,
+        schema_version: version,
+        index_id,
+        schema_checksum: schema_checksum_through(version),
+        pipeline_fingerprint: stored_pipeline_fingerprint,
+        journal_mode: journal_mode.to_ascii_lowercase(),
+        read_only,
+        abandoned_generations: count_abandoned_generations(connection)?,
+        scan,
+    })
+}
+
 fn inspect_snapshot(
     connection: &Connection,
     require_read_only: bool,
@@ -224,9 +515,18 @@ fn inspect_snapshot(
     if depth == InspectionDepth::Full {
         let body_scan = BodyScanTracker::default();
         validate_integrity(connection)?;
-        validate_generation_invariants(connection, stored_pipeline_fingerprint)?;
+        let history_floor_epoch = history_floor_epoch(connection)?;
+        validate_generation_invariants(
+            connection,
+            stored_pipeline_fingerprint,
+            history_floor_epoch,
+            true,
+        )?;
+        validate_generation_embedding_profile(connection)?;
         validate_immutable_evidence(connection, &mut scan, &body_scan)?;
+        validate_embedding_cache(connection)?;
         validate_active_indexes(connection, &mut scan)?;
+        validate_forget_ledger(connection)?;
         scan.max_body_rows_in_flight = body_scan.finish();
     }
 
@@ -252,8 +552,18 @@ fn inspect_snapshot(
         pipeline_fingerprint: stored_pipeline_fingerprint,
         journal_mode: journal_mode.to_ascii_lowercase(),
         read_only,
+        abandoned_generations: count_abandoned_generations(connection)?,
         scan,
     })
+}
+
+fn count_abandoned_generations(connection: &Connection) -> Result<u64, StoreError> {
+    let count: i64 = connection.query_row(
+        "SELECT COUNT(*) FROM generations WHERE state = 'abandoned'",
+        [],
+        |row| row.get(0),
+    )?;
+    u64::try_from(count).map_err(|_| StoreError::IntegerOverflow)
 }
 
 fn validate_schema_manifest(connection: &Connection) -> Result<(), StoreError> {
@@ -283,11 +593,25 @@ fn validate_schema_manifest(connection: &Connection) -> Result<(), StoreError> {
         return Err(StoreError::UnexpectedExecutableSchema);
     }
 
-    let actual = schema_manifest_fingerprint(connection)?;
+    validate_schema_manifest_through(connection, SCHEMA_VERSION)
+}
+
+fn validate_schema_manifest_through(
+    connection: &Connection,
+    version: u32,
+) -> Result<(), StoreError> {
+    let actual = schema_manifest_fingerprint(connection, version == SCHEMA_VERSION)?;
     let expected_connection = Connection::open_in_memory()?;
     configure_connection(&expected_connection)?;
-    expected_connection.execute_batch(MIGRATION_0001)?;
-    let expected = schema_manifest_fingerprint(&expected_connection)?;
+    expected_connection.pragma_update(None, "foreign_keys", false)?;
+    for (migration_version, migration) in MIGRATIONS {
+        if migration_version > version {
+            break;
+        }
+        expected_connection.execute_batch(migration)?;
+    }
+    expected_connection.pragma_update(None, "foreign_keys", true)?;
+    let expected = schema_manifest_fingerprint(&expected_connection, version == SCHEMA_VERSION)?;
     if actual != expected {
         return Err(StoreError::SchemaManifestMismatch);
     }
@@ -295,13 +619,10 @@ fn validate_schema_manifest(connection: &Connection) -> Result<(), StoreError> {
     Ok(())
 }
 
-fn schema_manifest_fingerprint(connection: &Connection) -> Result<Sha256Digest, StoreError> {
-    let object_count: i64 =
-        connection.query_row("SELECT COUNT(*) FROM sqlite_schema", [], |row| row.get(0))?;
-    if object_count != EXPECTED_SCHEMA_OBJECTS {
-        return Err(StoreError::SchemaManifestMismatch);
-    }
-
+fn schema_manifest_fingerprint(
+    connection: &Connection,
+    _require_current_count: bool,
+) -> Result<Sha256Digest, StoreError> {
     let invalid_field: bool = connection.query_row(
         "SELECT EXISTS(
              SELECT 1
@@ -365,13 +686,14 @@ fn validate_metadata(
 ) -> Result<(IndexId, Sha256Digest), StoreError> {
     let metadata_count: i64 =
         connection.query_row("SELECT COUNT(*) FROM index_meta", [], |row| row.get(0))?;
-    if metadata_count != 8 {
+    if metadata_count != 15 {
         return Err(StoreError::InvalidMetadata("key set"));
     }
 
     expect_metadata(connection, "api_version", b"hsum.api.v1")?;
-    expect_metadata(connection, "schema_version", b"1")?;
-    expect_metadata(connection, "embedding_profile", b"none")?;
+    expect_metadata(connection, "schema_version", b"4")?;
+    let embedding_profile = read_embedding_profile(connection)?;
+    expect_active_vector_slot(connection)?;
     expect_metadata(connection, "schema_checksum", schema_checksum().as_bytes()).map_err(
         |error| match error {
             StoreError::InvalidMetadata(_) => StoreError::SchemaChecksumMismatch,
@@ -381,7 +703,8 @@ fn validate_metadata(
     let raw_pipeline_fingerprint = metadata_value(connection, "pipeline_fingerprint")?;
     let stored_pipeline_fingerprint =
         digest_metadata(&raw_pipeline_fingerprint, "pipeline_fingerprint")?;
-    if policy == FingerprintPolicy::Reject && stored_pipeline_fingerprint != pipeline_fingerprint()
+    if policy == FingerprintPolicy::Reject
+        && stored_pipeline_fingerprint != pipeline_fingerprint_for(&embedding_profile)
     {
         return Err(StoreError::PipelineFingerprintMismatch);
     }
@@ -402,38 +725,130 @@ fn validate_metadata(
         return Err(StoreError::InvalidMetadata("active_generation"));
     }
 
+    let history_floor_epoch = metadata_value(connection, "history_floor_epoch")?;
+    if str::from_utf8(&history_floor_epoch)
+        .ok()
+        .and_then(|value| value.parse::<u64>().ok())
+        .is_none_or(|value| value == 0)
+    {
+        return Err(StoreError::InvalidMetadata("history_floor_epoch"));
+    }
+
+    let replacement_epoch = metadata_value(connection, "replacement_epoch")?;
+    if parse_metadata_u64(&replacement_epoch).is_none() {
+        return Err(StoreError::InvalidMetadata("replacement_epoch"));
+    }
+
     let raw_index_id = metadata_value(connection, "index_uuid")?;
     let uuid =
         Uuid::from_slice(&raw_index_id).map_err(|_| StoreError::InvalidMetadata("index_uuid"))?;
     Ok((IndexId::from_uuid(uuid), stored_pipeline_fingerprint))
 }
 
+fn validate_metadata_through(
+    connection: &Connection,
+    version: u32,
+    policy: FingerprintPolicy,
+) -> Result<(IndexId, Sha256Digest), StoreError> {
+    let metadata_count: i64 =
+        connection.query_row("SELECT COUNT(*) FROM index_meta", [], |row| row.get(0))?;
+    let expected_count = if version >= 4 {
+        15
+    } else if version >= 3 {
+        10
+    } else {
+        8
+    };
+    if metadata_count != expected_count {
+        return Err(StoreError::InvalidMetadata("key set"));
+    }
+    expect_metadata(connection, "api_version", b"hsum.api.v1")?;
+    expect_metadata(connection, "schema_version", version.to_string().as_bytes())?;
+    let expected_pipeline_fingerprint = if version >= 4 {
+        let profile = read_embedding_profile(connection)?;
+        expect_active_vector_slot(connection)?;
+        pipeline_fingerprint_for(&profile)
+    } else {
+        expect_metadata(connection, "embedding_profile", b"none")?;
+        pipeline_fingerprint()
+    };
+    expect_metadata(
+        connection,
+        "schema_checksum",
+        schema_checksum_through(version).as_bytes(),
+    )
+    .map_err(|error| match error {
+        StoreError::InvalidMetadata(_) => StoreError::SchemaChecksumMismatch,
+        other => other,
+    })?;
+    let raw_pipeline_fingerprint = metadata_value(connection, "pipeline_fingerprint")?;
+    let stored_pipeline_fingerprint =
+        digest_metadata(&raw_pipeline_fingerprint, "pipeline_fingerprint")?;
+    if policy == FingerprintPolicy::Reject
+        && stored_pipeline_fingerprint != expected_pipeline_fingerprint
+    {
+        return Err(StoreError::PipelineFingerprintMismatch);
+    }
+    let index_epoch = metadata_value(connection, "index_epoch")?;
+    parse_metadata_u64(&index_epoch).ok_or(StoreError::InvalidMetadata("index_epoch"))?;
+    let active_generation = metadata_value(connection, "active_generation")?;
+    if !active_generation.is_empty() && parse_metadata_u64(&active_generation).is_none() {
+        return Err(StoreError::InvalidMetadata("active_generation"));
+    }
+    if version >= 3 {
+        history_floor_epoch(connection)?;
+        parse_metadata_u64(&metadata_value(connection, "replacement_epoch")?)
+            .ok_or(StoreError::InvalidMetadata("replacement_epoch"))?;
+    }
+    let raw_index_id = metadata_value(connection, "index_uuid")?;
+    let uuid =
+        Uuid::from_slice(&raw_index_id).map_err(|_| StoreError::InvalidMetadata("index_uuid"))?;
+    Ok((IndexId::from_uuid(uuid), stored_pipeline_fingerprint))
+}
+
+fn expect_active_vector_slot(connection: &Connection) -> Result<(), StoreError> {
+    match metadata_value(connection, "active_vector_slot")?.as_slice() {
+        b"0" | b"1" => Ok(()),
+        _ => Err(StoreError::InvalidMetadata("active_vector_slot")),
+    }
+}
+
 fn validate_migration_chain(connection: &Connection) -> Result<(), StoreError> {
+    validate_migration_chain_through(connection, SCHEMA_VERSION)
+}
+
+fn validate_migration_chain_through(
+    connection: &Connection,
+    through_version: u32,
+) -> Result<(), StoreError> {
     let row_count: i64 =
         connection.query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| {
             row.get(0)
         })?;
-    if row_count != 1 {
+    if row_count != i64::from(through_version) {
         return Err(StoreError::MigrationChainInvalid);
     }
 
-    let row = connection.query_row(
-        "SELECT version, applied_at, checksum
-         FROM schema_migrations WHERE version = ?1",
-        [i64::from(SCHEMA_VERSION)],
-        |row| {
-            Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, Vec<u8>>(2)?,
-            ))
-        },
-    )?;
-    if row.0 != i64::from(SCHEMA_VERSION)
-        || row.1.is_empty()
-        || row.2.as_slice() != schema_checksum().as_bytes()
-    {
-        return Err(StoreError::MigrationChainInvalid);
+    for version in 1..=through_version {
+        let row = connection.query_row(
+            "SELECT version, applied_at, checksum
+             FROM schema_migrations WHERE version = ?1",
+            [i64::from(version)],
+            |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, String>(1)?,
+                    row.get::<_, Vec<u8>>(2)?,
+                ))
+            },
+        )?;
+        let expected = migration_checksum(version).ok_or(StoreError::MigrationChainInvalid)?;
+        if row.0 != i64::from(version)
+            || row.1.is_empty()
+            || row.2.as_slice() != expected.as_bytes()
+        {
+            return Err(StoreError::MigrationChainInvalid);
+        }
     }
 
     Ok(())
@@ -457,9 +872,77 @@ fn validate_integrity(connection: &Connection) -> Result<(), StoreError> {
     Ok(())
 }
 
+fn validate_forget_ledger(connection: &Connection) -> Result<(), StoreError> {
+    let live_forgotten_revision: bool = connection.query_row(
+        "SELECT EXISTS(
+             SELECT 1
+             FROM forgotten_documents AS forgotten
+             JOIN document_versions AS version
+               ON version.document_id = forgotten.document_id
+         )",
+        [],
+        |row| row.get(0),
+    )?;
+    if live_forgotten_revision {
+        return Err(StoreError::ForgetLedgerMismatch);
+    }
+
+    let run_count_mismatch: bool = connection.query_row(
+        "SELECT EXISTS(
+             SELECT 1
+             FROM forget_runs AS run
+             WHERE run.affected_revision_count != (
+                 SELECT COUNT(*)
+                 FROM forgotten_documents AS forgotten
+                 WHERE forgotten.forget_plan_hash = run.plan_hash
+             )
+         )",
+        [],
+        |row| row.get(0),
+    )?;
+    if run_count_mismatch {
+        return Err(StoreError::ForgetLedgerMismatch);
+    }
+
+    let replacement_epoch = parse_metadata_u64(&metadata_value(connection, "replacement_epoch")?)
+        .ok_or(StoreError::InvalidMetadata("replacement_epoch"))?;
+    let replacement_epoch =
+        i64::try_from(replacement_epoch).map_err(|_| StoreError::IntegerOverflow)?;
+    let future_run: bool = connection.query_row(
+        "SELECT EXISTS(
+             SELECT 1 FROM forget_runs WHERE post_replacement_epoch > ?1
+             UNION ALL
+             SELECT 1 FROM restore_runs WHERE post_replacement_epoch > ?1
+         )",
+        [replacement_epoch],
+        |row| row.get(0),
+    )?;
+    if future_run {
+        return Err(StoreError::ForgetLedgerMismatch);
+    }
+    let index_epoch = parse_metadata_u64(&metadata_value(connection, "index_epoch")?)
+        .ok_or(StoreError::InvalidMetadata("index_epoch"))?;
+    let index_epoch = i64::try_from(index_epoch).map_err(|_| StoreError::IntegerOverflow)?;
+    let future_evidence_run: bool = connection.query_row(
+        "SELECT EXISTS(
+             SELECT 1 FROM forget_runs WHERE post_index_epoch > ?1
+             UNION ALL
+             SELECT 1 FROM restore_runs WHERE post_index_epoch > ?1
+         )",
+        [index_epoch],
+        |row| row.get(0),
+    )?;
+    if future_evidence_run {
+        return Err(StoreError::ForgetLedgerMismatch);
+    }
+    Ok(())
+}
+
 fn validate_generation_invariants(
     connection: &Connection,
     stored_pipeline_fingerprint: Sha256Digest,
+    history_floor_epoch: u64,
+    vector_schema: bool,
 ) -> Result<(), StoreError> {
     let unexpected_pipeline_count: i64 = connection.query_row(
         "SELECT COUNT(*) FROM generations WHERE pipeline_fingerprint != ?1",
@@ -472,7 +955,7 @@ fn validate_generation_invariants(
         ));
     }
 
-    let replay = replay_committed_generations(connection)?;
+    let replay = replay_committed_generations(connection, history_floor_epoch, vector_schema)?;
     let raw_active_generation = metadata_value(connection, "active_generation")?;
     let active_generation = if raw_active_generation.is_empty() {
         None
@@ -497,9 +980,17 @@ fn validate_generation_invariants(
         .ok()
         .and_then(|value| value.parse::<u64>().ok())
         .ok_or(StoreError::GenerationInvariant("index epoch"))?;
-    if index_epoch != replay.committed_count {
+    let expected_epoch = if replay.committed_count == 0 {
+        0
+    } else {
+        history_floor_epoch
+            .checked_sub(1)
+            .and_then(|floor| floor.checked_add(replay.committed_count))
+            .ok_or(StoreError::IntegerOverflow)?
+    };
+    if index_epoch != expected_epoch {
         return Err(StoreError::GenerationInvariant(
-            "index epoch does not equal committed activation history",
+            "index epoch does not equal retained committed activation history",
         ));
     }
 
@@ -545,9 +1036,10 @@ fn validate_generation_invariants(
     }
 
     let mut statement = connection.prepare(
-        "SELECT d.connector_key, d.current_source_uri, dv.source_uri
+        "SELECT d.connector_key, d.current_source_uri, dv.source_uri, s.kind
          FROM document_heads AS dh
          JOIN documents AS d ON d.id = dh.document_id
+         JOIN sources AS s ON s.id = d.source_id
          JOIN document_versions AS dv ON dv.id = dh.document_version_id
          WHERE dh.state = 'active'
          ORDER BY dh.document_id",
@@ -557,14 +1049,152 @@ fn validate_generation_invariants(
         let connector_key = row.get::<_, Vec<u8>>(0)?;
         let current_source_uri = row.get::<_, String>(1)?;
         let version_source_uri = row.get::<_, String>(2)?;
-        let expected = repo_uri(&connector_key);
-        if current_source_uri != expected || version_source_uri != expected {
+        let source_kind = row.get::<_, String>(3)?;
+        let invalid = match source_kind.as_str() {
+            "filesystem" => {
+                let expected = repo_uri(&connector_key);
+                current_source_uri != expected || version_source_uri != expected
+            }
+            "jsonl" => current_source_uri != version_source_uri,
+            _ => true,
+        };
+        if invalid {
             return Err(StoreError::GenerationInvariant(
                 "active document identity does not match its connector key",
             ));
         }
     }
 
+    Ok(())
+}
+
+fn validate_generation_embedding_profile(connection: &Connection) -> Result<(), StoreError> {
+    let profile = read_embedding_profile(connection)?;
+    let invalid: bool = match profile {
+        IndexEmbeddingProfile::LexicalOnly => connection.query_row(
+            "SELECT EXISTS(
+                 SELECT 1 FROM generations
+                 WHERE embedding_model_id IS NOT NULL
+                    OR embedding_revision IS NOT NULL
+                    OR embedding_model_fingerprint IS NOT NULL
+                    OR embedding_dimension IS NOT NULL
+                    OR vector_state != 'absent'
+             )",
+            [],
+            |row| row.get(0),
+        )?,
+        IndexEmbeddingProfile::Pinned(pin) => connection.query_row(
+            "SELECT EXISTS(
+                 SELECT 1 FROM generations
+                 WHERE embedding_model_id IS NULL
+                    OR embedding_model_id != ?1
+                    OR embedding_revision IS NULL
+                    OR embedding_revision != ?2
+                    OR embedding_model_fingerprint IS NULL
+                    OR embedding_model_fingerprint != ?3
+                    OR embedding_dimension IS NULL
+                    OR embedding_dimension != ?4
+                    OR vector_state NOT IN ('absent', 'complete')
+             )",
+            params![
+                pin.model_id(),
+                pin.upstream_revision(),
+                pin.model_fingerprint().as_bytes().as_slice(),
+                i64::from(pin.dimension()),
+            ],
+            |row| row.get(0),
+        )?,
+    };
+    if invalid {
+        return Err(StoreError::GenerationInvariant(
+            "generation embedding profile",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_embedding_cache(connection: &Connection) -> Result<(), StoreError> {
+    let profile = read_embedding_profile(connection)?;
+    if profile == IndexEmbeddingProfile::LexicalOnly {
+        let unexpected: bool = connection.query_row(
+            "SELECT EXISTS(SELECT 1 FROM embedding_provenance)
+                 OR EXISTS(SELECT 1 FROM chunk_embeddings)
+                 OR EXISTS(SELECT 1 FROM passages_vec_a)
+                 OR EXISTS(SELECT 1 FROM passages_vec_b)",
+            [],
+            |row| row.get(0),
+        )?;
+        if unexpected {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "lexical-only embedding storage",
+            ));
+        }
+        return Ok(());
+    }
+    let IndexEmbeddingProfile::Pinned(pin) = profile else {
+        unreachable!("lexical-only profile returned above")
+    };
+
+    let mut provenance = BTreeMap::new();
+    let mut provenance_statement = connection.prepare(
+        "SELECT fingerprint, compatibility_fingerprint, schema_version, canonical_json
+         FROM embedding_provenance ORDER BY fingerprint",
+    )?;
+    let mut rows = provenance_statement.query([])?;
+    while let Some(row) = rows.next()? {
+        if provenance.len() >= 64 {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "embedding provenance cardinality",
+            ));
+        }
+        let raw_fingerprint = row.get::<_, Vec<u8>>(0)?;
+        let raw_compatibility = row.get::<_, Vec<u8>>(1)?;
+        let schema_version = row.get::<_, String>(2)?;
+        let canonical_json = row.get::<_, String>(3)?;
+        let record = validate_stored_provenance(
+            &canonical_json,
+            &raw_fingerprint,
+            &raw_compatibility,
+            &schema_version,
+        )?;
+        if record.model_id() != pin.model_id()
+            || record.upstream_revision() != pin.upstream_revision()
+            || record.manifest_fingerprint() != pin.model_fingerprint()
+            || record.dimension() != pin.dimension()
+        {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "embedding provenance model pin",
+            ));
+        }
+        let fingerprint = digest_from_blob(&raw_fingerprint)?;
+        if provenance.insert(fingerprint, record).is_some() {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "embedding provenance identity",
+            ));
+        }
+    }
+
+    let mut embedding_statement = connection.prepare(
+        "SELECT model_fingerprint, vector_dimension, vector_blob, provenance_fingerprint
+         FROM chunk_embeddings ORDER BY id",
+    )?;
+    let mut rows = embedding_statement.query([])?;
+    while let Some(row) = rows.next()? {
+        let model_fingerprint = digest_from_blob(&row.get::<_, Vec<u8>>(0)?)?;
+        let dimension = row.get::<_, i64>(1)?;
+        let vector_blob = row.get::<_, Vec<u8>>(2)?;
+        let provenance_fingerprint = digest_from_blob(&row.get::<_, Vec<u8>>(3)?)?;
+        if model_fingerprint != pin.model_fingerprint()
+            || dimension != i64::from(pin.dimension())
+            || !provenance.contains_key(&provenance_fingerprint)
+        {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "chunk embedding model provenance",
+            ));
+        }
+        validate_stored_vector_blob(&vector_blob)?;
+    }
+    validate_active_vector_membership(connection)?;
     Ok(())
 }
 
@@ -581,7 +1211,11 @@ struct GenerationReplay {
     committed_count: u64,
 }
 
-fn replay_committed_generations(connection: &Connection) -> Result<GenerationReplay, StoreError> {
+fn replay_committed_generations(
+    connection: &Connection,
+    history_floor_epoch: u64,
+    vector_schema: bool,
+) -> Result<GenerationReplay, StoreError> {
     let noncommitted_change_count: i64 = connection.query_row(
         "SELECT COUNT(*)
          FROM generation_changes AS gc
@@ -596,28 +1230,42 @@ fn replay_committed_generations(connection: &Connection) -> Result<GenerationRep
         ));
     }
 
-    let (latest_committed, raw_committed_count) = connection.query_row(
-        "SELECT MAX(id), COUNT(*)
+    let (earliest_committed, latest_committed, raw_committed_count) = connection.query_row(
+        "SELECT MIN(id), MAX(id), COUNT(*)
          FROM generations
          WHERE state = 'committed'",
         [],
-        |row| Ok((row.get::<_, Option<i64>>(0)?, row.get::<_, i64>(1)?)),
+        |row| {
+            Ok((
+                row.get::<_, Option<i64>>(0)?,
+                row.get::<_, Option<i64>>(1)?,
+                row.get::<_, i64>(2)?,
+            ))
+        },
     )?;
     let committed_count =
         u64::try_from(raw_committed_count).map_err(|_| StoreError::IntegerOverflow)?;
 
+    let vector_generation_clause = if vector_schema {
+        "AND g.vector_state != 'complete'"
+    } else {
+        ""
+    };
     let empty_committed_generation = connection
         .query_row(
-            "SELECT g.id
+            &format!(
+                "SELECT g.id
              FROM generations AS g
              WHERE g.state = 'committed'
+               {vector_generation_clause}
                AND NOT EXISTS (
                    SELECT 1
                    FROM generation_changes AS gc
                    WHERE gc.generation_id = g.id
                )
              ORDER BY g.id
-             LIMIT 1",
+             LIMIT 1"
+            ),
             [],
             |row| row.get::<_, i64>(0),
         )
@@ -694,7 +1342,10 @@ fn replay_committed_generations(connection: &Connection) -> Result<GenerationRep
             "active" if next_version_id.is_some() && next_version_id != prior_version_id => {}
             "tombstoned"
                 if next_version_id.is_none()
-                    && previous.is_some_and(|head| head.state == "active") => {}
+                    && (previous.is_some_and(|head| head.state == "active")
+                        || (previous.is_none()
+                            && history_floor_epoch > 1
+                            && Some(generation_id) == earliest_committed)) => {}
             "active" | "tombstoned" => {
                 return Err(StoreError::GenerationInvariant(
                     "generation change next state and version are incoherent",
@@ -928,6 +1579,7 @@ struct VersionEvidence {
     title: Option<String>,
     metadata_json: String,
     source_updated_at: Option<String>,
+    source_kind: String,
 }
 
 fn validate_document_versions(
@@ -939,10 +1591,12 @@ fn validate_document_versions(
         connection.prepare("SELECT id, original_bytes FROM content_blobs ORDER BY id")?;
     let mut body_rows = body_statement.query([])?;
     let mut version_statement = connection.prepare(
-        "SELECT content_blob_id, revision_sha256, source_uri, title,
-                metadata_json, source_updated_at
-         FROM document_versions
-         ORDER BY content_blob_id, id",
+        "SELECT dv.content_blob_id, dv.revision_sha256, dv.source_uri, dv.title,
+                dv.metadata_json, dv.source_updated_at, s.kind
+         FROM document_versions AS dv
+         JOIN documents AS d ON d.id = dv.document_id
+         JOIN sources AS s ON s.id = d.source_id
+         ORDER BY dv.content_blob_id, dv.id",
     )?;
     let mut version_rows = version_statement.query([])?;
     let mut layout_statement = connection.prepare(
@@ -1031,6 +1685,7 @@ fn next_version_evidence(
         title: row.get(3)?,
         metadata_json: row.get(4)?,
         source_updated_at: row.get(5)?,
+        source_kind: row.get(6)?,
     }))
 }
 
@@ -1081,9 +1736,17 @@ fn validate_version_evidence(
             "document version revision",
         ));
     }
-    let kind = ChunkKind::from_path(Path::new(&evidence.source_uri)).ok_or(
-        StoreError::ImmutableEvidenceMismatch("document version source kind"),
-    )?;
+    let kind = match evidence.source_kind.as_str() {
+        "filesystem" => ChunkKind::from_path(Path::new(&evidence.source_uri)).ok_or(
+            StoreError::ImmutableEvidenceMismatch("document version source kind"),
+        )?,
+        "jsonl" => ChunkKind::PlainText,
+        _ => {
+            return Err(StoreError::ImmutableEvidenceMismatch(
+                "document version source kind",
+            ));
+        }
+    };
     let kind_index = ChunkKind::ALL
         .iter()
         .position(|candidate| *candidate == kind)
@@ -1113,9 +1776,10 @@ fn validate_active_membership(
 ) -> Result<(), StoreError> {
     let mut expected_statement = connection.prepare(
         "SELECT dh.document_id, dv.id, c.id, d.source_id,
-                dv.source_uri, cl.chunker_fingerprint
+                dv.source_uri, cl.chunker_fingerprint, s.kind
          FROM document_heads AS dh
          JOIN documents AS d ON d.id = dh.document_id
+         JOIN sources AS s ON s.id = d.source_id
          JOIN document_versions AS dv ON dv.id = dh.document_version_id
          JOIN chunk_layouts AS cl ON cl.content_blob_id = dv.content_blob_id
          JOIN chunks AS c ON c.chunk_layout_id = cl.id
@@ -1149,8 +1813,12 @@ fn next_expected_membership(
 ) -> Result<Option<ActiveMembership>, StoreError> {
     while let Some(row) = rows.next()? {
         let source_uri = row.get::<_, String>(4)?;
-        let kind = ChunkKind::from_path(Path::new(&source_uri))
-            .ok_or(StoreError::ActiveIndexParity("active source kind"))?;
+        let kind = match row.get::<_, String>(6)?.as_str() {
+            "filesystem" => ChunkKind::from_path(Path::new(&source_uri))
+                .ok_or(StoreError::ActiveIndexParity("active source kind"))?,
+            "jsonl" => ChunkKind::PlainText,
+            _ => return Err(StoreError::ActiveIndexParity("active source kind")),
+        };
         if digest_from_blob(&row.get::<_, Vec<u8>>(5)?)? == chunker_fingerprint(kind) {
             return Ok(Some((
                 row.get::<_, Vec<u8>>(0)?,
@@ -1297,6 +1965,16 @@ fn metadata_value(connection: &Connection, key: &'static str) -> Result<Vec<u8>,
         )
         .optional()?
         .ok_or(StoreError::InvalidMetadata(key))
+}
+
+fn parse_metadata_u64(bytes: &[u8]) -> Option<u64> {
+    str::from_utf8(bytes).ok()?.parse().ok()
+}
+
+fn history_floor_epoch(connection: &Connection) -> Result<u64, StoreError> {
+    parse_metadata_u64(&metadata_value(connection, "history_floor_epoch")?)
+        .filter(|value| *value > 0)
+        .ok_or(StoreError::InvalidMetadata("history_floor_epoch"))
 }
 
 fn digest_metadata(bytes: &[u8], key: &'static str) -> Result<Sha256Digest, StoreError> {

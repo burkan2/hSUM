@@ -1,12 +1,11 @@
 use rusqlite::{Connection, OptionalExtension, params};
-use std::path::Path;
 use thiserror::Error;
 
 use crate::domain::{ByteSpan, Citation, LineSpan, ProjectId, Sha256Digest};
 use crate::ingest::{
     ChunkKind, DEFAULT_CHUNK_OVERLAP_BYTES, DEFAULT_CHUNK_TARGET_BYTES, HARD_MAX_FILE_BYTES,
 };
-use crate::store::{IndexDb, chunker_fingerprint};
+use crate::store::{ForgetLedger, IndexDb, chunker_fingerprint};
 
 pub const DEFAULT_GET_MAX_BYTES: usize = 16 * 1024;
 pub const HARD_GET_MAX_BYTES: usize = 64 * 1024;
@@ -47,6 +46,8 @@ pub enum GetError {
     ScopeDenied,
     #[error("cited immutable evidence was not found")]
     EvidenceNotFound,
+    #[error("cited immutable evidence was explicitly forgotten")]
+    EvidenceForgotten,
     #[error("max_bytes must be between 1 and {limit}; received {requested}")]
     InvalidBound { requested: usize, limit: usize },
     #[error(
@@ -57,19 +58,13 @@ pub enum GetError {
     Corrupt(&'static str),
     #[error("SQLite operation failed")]
     Sqlite(#[from] rusqlite::Error),
+    #[error("the validated index path changed during get")]
+    Store(#[from] crate::store::StoreError),
 }
 
 impl IndexDb {
     pub fn get_evidence(&self, request: &GetRequest) -> Result<GetResponse, GetError> {
-        if !(1..=HARD_GET_MAX_BYTES).contains(&request.max_bytes) {
-            return Err(GetError::InvalidBound {
-                requested: request.max_bytes,
-                limit: HARD_GET_MAX_BYTES,
-            });
-        }
-
-        let transaction = self.connection().unchecked_transaction()?;
-        let stored_index_id: Vec<u8> = transaction.query_row(
+        let stored_index_id: Vec<u8> = self.connection().query_row(
             "SELECT value FROM index_meta WHERE key = 'index_uuid'",
             [],
             |row| row.get(0),
@@ -77,12 +72,44 @@ impl IndexDb {
         if stored_index_id.as_slice() != request.citation.index_id.as_uuid().as_bytes() {
             return Err(GetError::ScopeDenied);
         }
+        if ForgetLedger::read(self.path(), request.citation.index_id)?
+            .suppresses_document(request.citation.source_id, request.citation.document_id)
+        {
+            return Err(GetError::EvidenceForgotten);
+        }
+        let transaction = self.connection().unchecked_transaction()?;
+        let response = get_evidence_snapshot(&transaction, request)?;
+        transaction.rollback()?;
+        self.verify_live_identity()?;
+        Ok(response)
+    }
+}
 
-        let project_id = *request.project_id.as_uuid().as_bytes();
-        let source_id = *request.citation.source_id.as_uuid().as_bytes();
-        let document_id = *request.citation.document_id.as_uuid().as_bytes();
-        let in_scope: bool = transaction.query_row(
-            "SELECT EXISTS(
+pub(crate) fn get_evidence_snapshot(
+    transaction: &Connection,
+    request: &GetRequest,
+) -> Result<GetResponse, GetError> {
+    if !(1..=HARD_GET_MAX_BYTES).contains(&request.max_bytes) {
+        return Err(GetError::InvalidBound {
+            requested: request.max_bytes,
+            limit: HARD_GET_MAX_BYTES,
+        });
+    }
+
+    let stored_index_id: Vec<u8> = transaction.query_row(
+        "SELECT value FROM index_meta WHERE key = 'index_uuid'",
+        [],
+        |row| row.get(0),
+    )?;
+    if stored_index_id.as_slice() != request.citation.index_id.as_uuid().as_bytes() {
+        return Err(GetError::ScopeDenied);
+    }
+
+    let project_id = *request.project_id.as_uuid().as_bytes();
+    let source_id = *request.citation.source_id.as_uuid().as_bytes();
+    let document_id = *request.citation.document_id.as_uuid().as_bytes();
+    let in_scope: bool = transaction.query_row(
+        "SELECT EXISTS(
                 SELECT 1
                 FROM documents AS d
                 JOIN project_sources AS ps
@@ -91,21 +118,35 @@ impl IndexDb {
                   AND d.id = ?2
                   AND d.source_id = ?3
             )",
-            params![
-                project_id.as_slice(),
-                document_id.as_slice(),
-                source_id.as_slice(),
-            ],
-            |row| row.get(0),
-        )?;
-        if !in_scope {
-            return Err(GetError::ScopeDenied);
-        }
+        params![
+            project_id.as_slice(),
+            document_id.as_slice(),
+            source_id.as_slice(),
+        ],
+        |row| row.get(0),
+    )?;
+    if !in_scope {
+        return Err(GetError::ScopeDenied);
+    }
 
-        let start = integer_from_u64(request.citation.span.start())?;
-        let end = integer_from_u64(request.citation.span.end())?;
-        let oversized_version: bool = transaction.query_row(
-            "SELECT EXISTS(
+    let forgotten: bool = transaction.query_row(
+        "SELECT EXISTS(
+             SELECT 1
+             FROM forgotten_documents
+             WHERE source_id = ?1
+               AND document_id = ?2
+         )",
+        params![source_id.as_slice(), document_id.as_slice(),],
+        |row| row.get(0),
+    )?;
+    if forgotten {
+        return Err(GetError::EvidenceForgotten);
+    }
+
+    let start = integer_from_u64(request.citation.span.start())?;
+    let end = integer_from_u64(request.citation.span.end())?;
+    let oversized_version: bool = transaction.query_row(
+        "SELECT EXISTS(
                  SELECT 1
                  FROM document_versions AS dv
                  JOIN content_blobs AS cb ON cb.id = dv.content_blob_id
@@ -131,172 +172,165 @@ impl IndexDb {
                        OR length(cb.body_sha256) != 32
                    )
              )",
+        params![
+            document_id.as_slice(),
+            request.citation.revision.as_bytes().as_slice(),
+            source_id.as_slice(),
+            MAX_GET_SOURCE_URI_BYTES,
+            MAX_GET_TITLE_BYTES,
+            MAX_GET_METADATA_BYTES,
+            MAX_GET_TIMESTAMP_BYTES,
+            i64::try_from(HARD_MAX_FILE_BYTES).expect("hard source file limit fits SQLite integer"),
+        ],
+        |row| row.get(0),
+    )?;
+    if oversized_version {
+        return Err(GetError::Corrupt(
+            "stored evidence exceeds alpha field bounds",
+        ));
+    }
+    let stored = transaction
+        .query_row(
+            "SELECT dv.source_uri, COALESCE(dv.title, ''),
+                        dv.metadata_json, dv.source_updated_at,
+                        dv.indexed_at, cb.original_bytes,
+                        cb.body_sha256, cb.id, s.kind
+                 FROM document_versions AS dv
+                 JOIN content_blobs AS cb ON cb.id = dv.content_blob_id
+                 JOIN documents AS d ON d.id = dv.document_id
+                 JOIN sources AS s ON s.id = d.source_id
+                 WHERE dv.document_id = ?1
+                   AND dv.revision_sha256 = ?2
+                   AND d.source_id = ?3",
             params![
                 document_id.as_slice(),
                 request.citation.revision.as_bytes().as_slice(),
                 source_id.as_slice(),
-                MAX_GET_SOURCE_URI_BYTES,
-                MAX_GET_TITLE_BYTES,
-                MAX_GET_METADATA_BYTES,
-                MAX_GET_TIMESTAMP_BYTES,
-                i64::try_from(HARD_MAX_FILE_BYTES)
-                    .expect("hard source file limit fits SQLite integer"),
+            ],
+            |row| {
+                Ok(StoredVersion {
+                    source_uri: row.get(0)?,
+                    title: row.get(1)?,
+                    metadata_json: row.get(2)?,
+                    source_updated_at: row.get(3)?,
+                    indexed_at: row.get(4)?,
+                    body: row.get(5)?,
+                    body_sha256: row.get(6)?,
+                    content_blob_id: row.get(7)?,
+                    source_kind: row.get(8)?,
+                })
+            },
+        )
+        .optional()?
+        .ok_or(GetError::EvidenceNotFound)?;
+
+    let chunk_kind = match stored.source_kind.as_str() {
+        "filesystem" => ChunkKind::from_path(std::path::Path::new(&stored.source_uri))
+            .ok_or(GetError::Corrupt("stored source kind is unsupported"))?,
+        "jsonl" => ChunkKind::PlainText,
+        _ => return Err(GetError::Corrupt("stored source kind is unsupported")),
+    };
+    let expected_fingerprint = chunker_fingerprint(chunk_kind);
+    let layout_id: i64 = transaction
+        .query_row(
+            "SELECT cl.id
+                 FROM chunk_layouts AS cl
+                 WHERE cl.content_blob_id = ?1
+                   AND cl.chunker_fingerprint = ?2",
+            params![
+                stored.content_blob_id,
+                expected_fingerprint.as_bytes().as_slice(),
             ],
             |row| row.get(0),
-        )?;
-        if oversized_version {
-            return Err(GetError::Corrupt(
-                "stored evidence exceeds alpha field bounds",
-            ));
-        }
-        let stored = transaction
-            .query_row(
-                "SELECT dv.source_uri, COALESCE(dv.title, ''),
-                        dv.metadata_json, dv.source_updated_at,
-                        dv.indexed_at, cb.original_bytes,
-                        cb.body_sha256, cb.id
-                 FROM document_versions AS dv
-                 JOIN content_blobs AS cb ON cb.id = dv.content_blob_id
-                 WHERE dv.document_id = ?1
-                   AND dv.revision_sha256 = ?2
-                   AND EXISTS(
-                       SELECT 1 FROM documents AS d
-                       WHERE d.id = dv.document_id
-                         AND d.source_id = ?3
-                   )",
-                params![
-                    document_id.as_slice(),
-                    request.citation.revision.as_bytes().as_slice(),
-                    source_id.as_slice(),
-                ],
-                |row| {
-                    Ok(StoredVersion {
-                        source_uri: row.get(0)?,
-                        title: row.get(1)?,
-                        metadata_json: row.get(2)?,
-                        source_updated_at: row.get(3)?,
-                        indexed_at: row.get(4)?,
-                        body: row.get(5)?,
-                        body_sha256: row.get(6)?,
-                        content_blob_id: row.get(7)?,
-                    })
-                },
-            )
-            .optional()?
-            .ok_or(GetError::EvidenceNotFound)?;
+        )
+        .optional()?
+        .ok_or(GetError::EvidenceNotFound)?;
 
-        let chunk_kind = ChunkKind::from_path(Path::new(&stored.source_uri))
-            .ok_or(GetError::Corrupt("stored source kind is unsupported"))?;
-        let expected_fingerprint = chunker_fingerprint(chunk_kind);
-        let (layout_id, cited_ordinal): (i64, i64) = transaction
-            .query_row(
-                "SELECT cl.id, c.ordinal
-                 FROM chunk_layouts AS cl
-                 JOIN chunks AS c ON c.chunk_layout_id = cl.id
-                 WHERE cl.content_blob_id = ?1
-                   AND cl.chunker_fingerprint = ?2
-                   AND c.start_byte = ?3
-                   AND c.end_byte = ?4",
-                params![
-                    stored.content_blob_id,
-                    expected_fingerprint.as_bytes().as_slice(),
-                    start,
-                    end,
-                ],
-                |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
-            )
-            .optional()?
-            .ok_or(GetError::EvidenceNotFound)?;
+    ensure_chunk_layout_cardinality(transaction, layout_id, MAX_CHUNKS_PER_LAYOUT)?;
+    if Sha256Digest::of_bytes(&stored.body) != digest_from_blob(&stored.body_sha256)? {
+        return Err(GetError::Corrupt("body hash mismatch"));
+    }
+    std::str::from_utf8(&stored.body).map_err(|_| GetError::Corrupt("stored body is not UTF-8"))?;
 
-        ensure_chunk_layout_cardinality(&transaction, layout_id, MAX_CHUNKS_PER_LAYOUT)?;
-        if Sha256Digest::of_bytes(&stored.body) != digest_from_blob(&stored.body_sha256)? {
-            return Err(GetError::Corrupt("body hash mismatch"));
-        }
-        std::str::from_utf8(&stored.body)
-            .map_err(|_| GetError::Corrupt("stored body is not UTF-8"))?;
-
-        let mut statement = transaction.prepare(
-            "SELECT ordinal, start_byte, end_byte, start_line, end_line
+    let mut statement = transaction.prepare(
+        "SELECT ordinal, start_byte, end_byte, start_line, end_line
              FROM chunks
              WHERE chunk_layout_id = ?1
              ORDER BY ordinal
              LIMIT ?2",
-        )?;
-        let chunks = statement
-            .query_map(
-                params![
-                    layout_id,
-                    i64::try_from(MAX_CHUNKS_PER_LAYOUT)
-                        .expect("chunk layout cap fits SQLite integer"),
-                ],
-                |row| {
-                    Ok(StoredChunk {
-                        ordinal: row.get(0)?,
-                        start_byte: row.get(1)?,
-                        end_byte: row.get(2)?,
-                        start_line: row.get(3)?,
-                        end_line: row.get(4)?,
-                    })
-                },
-            )?
-            .collect::<rusqlite::Result<Vec<_>>>()?;
-        let cited_index = chunks
-            .iter()
-            .position(|chunk| chunk.ordinal == cited_ordinal)
-            .ok_or(GetError::Corrupt("cited chunk ordinal is missing"))?;
+    )?;
+    let chunks = statement
+        .query_map(
+            params![
+                layout_id,
+                i64::try_from(MAX_CHUNKS_PER_LAYOUT).expect("chunk layout cap fits SQLite integer"),
+            ],
+            |row| {
+                Ok(StoredChunk {
+                    ordinal: row.get(0)?,
+                    start_byte: row.get(1)?,
+                    end_byte: row.get(2)?,
+                    start_line: row.get(3)?,
+                    end_line: row.get(4)?,
+                })
+            },
+        )?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    validate_chunk_layout(&chunks)?;
+    let (cited_left, cited_right) = resolve_cited_window(&chunks, start, end)?;
 
-        let cited_length = request
-            .citation
-            .span
-            .end()
-            .checked_sub(request.citation.span.start())
-            .and_then(|value| usize::try_from(value).ok())
-            .ok_or(GetError::Corrupt("cited span length is invalid"))?;
-        if request.max_bytes < cited_length {
-            return Err(GetError::BoundBelowPassage {
-                requested: request.max_bytes,
-                required: cited_length,
-            });
-        }
-
-        let (left, right) = expand_chunk_window(&chunks, cited_index, request.max_bytes)?;
-        let returned_start = u64_from_i64(chunks[left].start_byte)?;
-        let returned_end = u64_from_i64(chunks[right].end_byte)?;
-        let returned_span = ByteSpan::new(returned_start, returned_end)
-            .map_err(|_| GetError::Corrupt("expanded span is reversed"))?;
-        let content = returned_span
-            .slice_bytes(&stored.body)
-            .map_err(|_| GetError::Corrupt("expanded span is outside the body"))?
-            .to_vec();
-        let requested_line_span = line_span(&chunks[cited_index])?;
-        let returned_line_span = LineSpan::new(
-            u64_from_i64(chunks[left].start_line)?,
-            u64_from_i64(chunks[right].end_line)?,
-        )
-        .map_err(|_| GetError::Corrupt("expanded line span is invalid"))?;
-        let returned_citation = Citation {
-            span: returned_span,
-            ..request.citation.clone()
-        };
-
-        let response = GetResponse {
-            requested_citation: request.citation.clone(),
-            returned_citation,
-            requested_line_span,
-            returned_line_span,
-            source_uri: stored.source_uri,
-            title: stored.title,
-            metadata_json: stored.metadata_json,
-            source_updated_at: stored.source_updated_at,
-            indexed_at: stored.indexed_at,
-            content,
-            body_sha256: digest_from_blob(&stored.body_sha256)?,
-            untrusted_content: true,
-        };
-        drop(statement);
-        transaction.rollback()?;
-        Ok(response)
+    let cited_length = request
+        .citation
+        .span
+        .end()
+        .checked_sub(request.citation.span.start())
+        .and_then(|value| usize::try_from(value).ok())
+        .ok_or(GetError::Corrupt("cited span length is invalid"))?;
+    if request.max_bytes < cited_length {
+        return Err(GetError::BoundBelowPassage {
+            requested: request.max_bytes,
+            required: cited_length,
+        });
     }
+
+    let (left, right) = expand_chunk_window(&chunks, cited_left, cited_right, request.max_bytes)?;
+    let returned_start = u64_from_i64(chunks[left].start_byte)?;
+    let returned_end = u64_from_i64(chunks[right].end_byte)?;
+    let returned_span = ByteSpan::new(returned_start, returned_end)
+        .map_err(|_| GetError::Corrupt("expanded span is reversed"))?;
+    let content = returned_span
+        .slice_bytes(&stored.body)
+        .map_err(|_| GetError::Corrupt("expanded span is outside the body"))?
+        .to_vec();
+    let requested_line_span = chunk_window_line_span(
+        &chunks,
+        cited_left,
+        cited_right,
+        "cited line span is invalid",
+    )?;
+    let returned_line_span =
+        chunk_window_line_span(&chunks, left, right, "expanded line span is invalid")?;
+    let returned_citation = Citation {
+        span: returned_span,
+        ..request.citation.clone()
+    };
+
+    let response = GetResponse {
+        requested_citation: request.citation.clone(),
+        returned_citation,
+        requested_line_span,
+        returned_line_span,
+        source_uri: stored.source_uri,
+        title: stored.title,
+        metadata_json: stored.metadata_json,
+        source_updated_at: stored.source_updated_at,
+        indexed_at: stored.indexed_at,
+        content,
+        body_sha256: digest_from_blob(&stored.body_sha256)?,
+        untrusted_content: true,
+    };
+    drop(statement);
+    Ok(response)
 }
 
 fn ensure_chunk_layout_cardinality(
@@ -336,6 +370,7 @@ struct StoredVersion {
     body: Vec<u8>,
     body_sha256: Vec<u8>,
     content_blob_id: i64,
+    source_kind: String,
 }
 
 #[derive(Clone, Copy)]
@@ -349,11 +384,12 @@ struct StoredChunk {
 
 fn expand_chunk_window(
     chunks: &[StoredChunk],
-    cited_index: usize,
+    cited_left: usize,
+    cited_right: usize,
     max_bytes: usize,
 ) -> Result<(usize, usize), GetError> {
-    let mut left = cited_index;
-    let mut right = cited_index;
+    let mut left = cited_left;
+    let mut right = cited_right;
     let mut left_blocked = false;
     let mut right_blocked = false;
 
@@ -384,6 +420,70 @@ fn expand_chunk_window(
     Ok((left, right))
 }
 
+fn validate_chunk_layout(chunks: &[StoredChunk]) -> Result<(), GetError> {
+    if chunks.is_empty() {
+        return Err(GetError::Corrupt("stored chunk layout is empty"));
+    }
+
+    for (index, chunk) in chunks.iter().enumerate() {
+        let expected_ordinal = i64::try_from(index)
+            .map_err(|_| GetError::Corrupt("chunk ordinal exceeds SQLite range"))?;
+        if chunk.ordinal != expected_ordinal {
+            return Err(GetError::Corrupt(
+                "stored chunk ordinals are not contiguous",
+            ));
+        }
+        if chunk.start_byte < 0 || chunk.end_byte <= chunk.start_byte {
+            return Err(GetError::Corrupt("stored chunk byte span is invalid"));
+        }
+        LineSpan::new(
+            u64_from_i64(chunk.start_line)?,
+            u64_from_i64(chunk.end_line)?,
+        )
+        .map_err(|_| GetError::Corrupt("stored chunk line span is invalid"))?;
+
+        if let Some(previous) = index.checked_sub(1).and_then(|value| chunks.get(value)) {
+            if chunk.start_byte <= previous.start_byte || chunk.end_byte <= previous.end_byte {
+                return Err(GetError::Corrupt(
+                    "stored chunk boundaries are not strictly increasing",
+                ));
+            }
+            if chunk.start_byte > previous.end_byte {
+                return Err(GetError::Corrupt("stored chunk layout contains a gap"));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn resolve_cited_window(
+    chunks: &[StoredChunk],
+    start: i64,
+    end: i64,
+) -> Result<(usize, usize), GetError> {
+    let mut left = None;
+    let mut right = None;
+    for (index, chunk) in chunks.iter().enumerate() {
+        if chunk.start_byte == start && left.replace(index).is_some() {
+            return Err(GetError::Corrupt(
+                "stored chunk layout has an ambiguous start boundary",
+            ));
+        }
+        if chunk.end_byte == end && right.replace(index).is_some() {
+            return Err(GetError::Corrupt(
+                "stored chunk layout has an ambiguous end boundary",
+            ));
+        }
+    }
+
+    let left = left.ok_or(GetError::EvidenceNotFound)?;
+    let right = right.ok_or(GetError::EvidenceNotFound)?;
+    if left > right {
+        return Err(GetError::EvidenceNotFound);
+    }
+    Ok((left, right))
+}
+
 fn window_length(start: i64, end: i64) -> Result<usize, GetError> {
     let length = end
         .checked_sub(start)
@@ -391,12 +491,17 @@ fn window_length(start: i64, end: i64) -> Result<usize, GetError> {
     usize::try_from(length).map_err(|_| GetError::Corrupt("chunk window is too large"))
 }
 
-fn line_span(chunk: &StoredChunk) -> Result<LineSpan, GetError> {
+fn chunk_window_line_span(
+    chunks: &[StoredChunk],
+    left: usize,
+    right: usize,
+    error: &'static str,
+) -> Result<LineSpan, GetError> {
     LineSpan::new(
-        u64_from_i64(chunk.start_line)?,
-        u64_from_i64(chunk.end_line)?,
+        u64_from_i64(chunks[left].start_line)?,
+        u64_from_i64(chunks[right].end_line)?,
     )
-    .map_err(|_| GetError::Corrupt("cited line span is invalid"))
+    .map_err(|_| GetError::Corrupt(error))
 }
 
 fn digest_from_blob(bytes: &[u8]) -> Result<Sha256Digest, GetError> {
@@ -438,5 +543,28 @@ mod tests {
                 "stored chunk layout exceeds the alpha cardinality bound"
             ))
         ));
+    }
+
+    #[test]
+    fn chunk_layout_validation_requires_monotonic_contiguous_spans() {
+        let chunk = |ordinal, start_byte, end_byte| StoredChunk {
+            ordinal,
+            start_byte,
+            end_byte,
+            start_line: ordinal + 1,
+            end_line: ordinal + 1,
+        };
+
+        validate_chunk_layout(&[chunk(0, 0, 10), chunk(1, 8, 18)]).unwrap();
+        for invalid in [
+            vec![chunk(0, 0, 10), chunk(1, 0, 18)],
+            vec![chunk(0, 0, 10), chunk(1, 8, 10)],
+            vec![chunk(0, 0, 10), chunk(1, 11, 18)],
+        ] {
+            assert!(matches!(
+                validate_chunk_layout(&invalid),
+                Err(GetError::Corrupt(_))
+            ));
+        }
     }
 }

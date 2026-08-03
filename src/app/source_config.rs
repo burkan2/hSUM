@@ -11,6 +11,8 @@ use crate::ingest::{
 
 pub const FILESYSTEM_SOURCE_CONFIG_SCHEMA_VERSION: u32 = 1;
 pub const MAX_FILESYSTEM_SOURCE_CONFIG_BYTES: usize = 16 * 1024;
+pub const JSONL_SOURCE_CONFIG_SCHEMA_VERSION: u32 = 1;
+pub const MAX_JSONL_SOURCE_CONFIG_BYTES: usize = 16 * 1024;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FilesystemSourceConfig {
@@ -78,6 +80,21 @@ impl FilesystemSourceConfig {
         })
     }
 
+    /// Reads only the stable root field needed to verify immutable evidence.
+    ///
+    /// Early alpha indexes stored a minimal `{ "root": ... }` object, while
+    /// current indexes persist the complete versioned discovery policy. Both
+    /// shapes remain readable because retrieval does not depend on that policy.
+    pub(crate) fn parse_stored_root(input: &str) -> Result<PathBuf, SourceConfigError> {
+        if input.len() > MAX_FILESYSTEM_SOURCE_CONFIG_BYTES {
+            return Err(SourceConfigError::TooLarge);
+        }
+        let wire: StoredFilesystemRootWire = serde_json::from_str(input)?;
+        let root = PathBuf::from(wire.root);
+        validate_root(&root)?;
+        Ok(root)
+    }
+
     pub fn to_canonical_json(&self) -> Result<String, SourceConfigError> {
         let root = self
             .root
@@ -115,6 +132,76 @@ impl FilesystemSourceConfig {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct JsonlSourceConfig {
+    path: PathBuf,
+    index_quota_bytes: Option<u64>,
+}
+
+impl JsonlSourceConfig {
+    pub fn new(path: PathBuf) -> Result<Self, JsonlSourceConfigError> {
+        validate_root(&path).map_err(JsonlSourceConfigError::Path)?;
+        Ok(Self {
+            path,
+            index_quota_bytes: None,
+        })
+    }
+
+    pub fn with_index_quota_bytes(
+        mut self,
+        index_quota_bytes: Option<u64>,
+    ) -> Result<Self, JsonlSourceConfigError> {
+        if index_quota_bytes == Some(0) {
+            return Err(JsonlSourceConfigError::InvalidIndexQuota);
+        }
+        self.index_quota_bytes = index_quota_bytes;
+        Ok(self)
+    }
+
+    pub fn parse(input: &str) -> Result<Self, JsonlSourceConfigError> {
+        if input.len() > MAX_JSONL_SOURCE_CONFIG_BYTES {
+            return Err(JsonlSourceConfigError::TooLarge);
+        }
+        let wire: JsonlSourceConfigWire = serde_json::from_str(input)?;
+        if wire.schema_version != JSONL_SOURCE_CONFIG_SCHEMA_VERSION {
+            return Err(JsonlSourceConfigError::UnsupportedSchema {
+                found: wire.schema_version,
+            });
+        }
+        let path = PathBuf::from(wire.path);
+        validate_root(&path).map_err(JsonlSourceConfigError::Path)?;
+        if wire.index_quota_bytes == Some(0) {
+            return Err(JsonlSourceConfigError::InvalidIndexQuota);
+        }
+        Ok(Self {
+            path,
+            index_quota_bytes: wire.index_quota_bytes,
+        })
+    }
+
+    pub fn to_canonical_json(&self) -> Result<String, JsonlSourceConfigError> {
+        let path = self
+            .path
+            .to_str()
+            .ok_or(JsonlSourceConfigError::NonUtf8Path)?
+            .to_owned();
+        let wire = JsonlSourceConfigWire {
+            schema_version: JSONL_SOURCE_CONFIG_SCHEMA_VERSION,
+            path,
+            index_quota_bytes: self.index_quota_bytes,
+        };
+        to_canonical_json(&wire).map_err(JsonlSourceConfigError::Serialize)
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub const fn index_quota_bytes(&self) -> Option<u64> {
+        self.index_quota_bytes
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct FilesystemSourceConfigWire {
@@ -137,6 +224,20 @@ struct FilesystemSourceConfigWire {
     max_directory_depth: usize,
     #[serde(default = "default_max_entries_per_directory")]
     max_entries_per_directory: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    index_quota_bytes: Option<u64>,
+}
+
+#[derive(Debug, Deserialize)]
+struct StoredFilesystemRootWire {
+    root: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct JsonlSourceConfigWire {
+    schema_version: u32,
+    path: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     index_quota_bytes: Option<u64>,
 }
@@ -199,5 +300,23 @@ pub enum SourceConfigError {
     #[error("filesystem source index quota must be greater than zero")]
     InvalidIndexQuota,
     #[error("filesystem source configuration could not be serialized")]
+    Serialize(serde_json::Error),
+}
+
+#[derive(Debug, Error)]
+pub enum JsonlSourceConfigError {
+    #[error("JSONL source configuration exceeds 16 KiB")]
+    TooLarge,
+    #[error("JSONL source configuration schema {found} is unsupported")]
+    UnsupportedSchema { found: u32 },
+    #[error("JSONL source path is invalid")]
+    Path(#[source] SourceConfigError),
+    #[error("JSONL source path is not UTF-8")]
+    NonUtf8Path,
+    #[error("JSONL source configuration is invalid")]
+    Parse(#[from] serde_json::Error),
+    #[error("JSONL source index quota must be greater than zero")]
+    InvalidIndexQuota,
+    #[error("JSONL source configuration could not be serialized")]
     Serialize(serde_json::Error),
 }

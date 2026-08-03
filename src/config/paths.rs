@@ -50,6 +50,10 @@ impl ManagedPaths {
         self.config_dir.join("trusted-projects.toml")
     }
 
+    pub fn managed_backup_registry_file(&self) -> PathBuf {
+        self.data_dir.join("managed-backups.json")
+    }
+
     pub fn integration_policy_file(&self) -> PathBuf {
         self.config_dir.join("integration-policy.toml")
     }

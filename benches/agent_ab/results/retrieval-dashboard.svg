@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<rect width="1600" height="900" fill="#fbfaf5"/>
+<circle cx="1450" cy="-60" r="420" fill="#e2efff"/>
+<style>
+.eyebrow{font-family:system-ui,sans-serif;font-size:24px;font-weight:800;letter-spacing:5px;fill:#1769e0}
+.title{font-family:Georgia,serif;font-size:72px;font-weight:700;fill:#0b1730}
+.subtitle{font-family:system-ui,sans-serif;font-size:26px;font-weight:400;fill:#52627d}
+.condition{font-family:system-ui,sans-serif;font-size:20px;font-weight:800;letter-spacing:2px;fill:#0b1730}
+.primary{font-family:system-ui,sans-serif;font-size:82px;font-weight:900;letter-spacing:-4px;fill:#1769e0}
+.label{font-family:system-ui,sans-serif;font-size:22px;font-weight:700;fill:#52627d}
+.detail{font-family:system-ui,sans-serif;font-size:23px;font-weight:700;fill:#0b1730}
+.foot{font-family:ui-monospace,monospace;font-size:17px;font-weight:500;fill:#6b7890}
+</style>
+<text x="100" y="92" class="eyebrow">hSUM EVIDENCE BENCHMARK</text>
+<text x="100" y="190" class="title">Relevant evidence, ranked first</text>
+<text x="100" y="245" class="subtitle">25 frozen tasks · 3 fresh index builds · mean and range</text>
+<g>
+<rect x="100" y="310" width="448" height="410" rx="28" fill="#ffffff" stroke="#d7e2f0" stroke-width="2"/>
+<text x="134" y="368" class="condition">HSUM</text>
+<text x="134" y="510" class="primary">26.3%</text>
+<text x="134" y="558" class="label">nDCG@5</text>
+<line x1="134" x2="514" y1="610" y2="610" stroke="#e3eaf3"/>
+<text x="134" y="664" class="detail">22.9%–28.3% range · 154 ms</text>
+</g><g>
+<rect x="576" y="310" width="448" height="410" rx="28" fill="#ffffff" stroke="#d7e2f0" stroke-width="2"/>
+<text x="610" y="368" class="condition">RIPGREP</text>
+<text x="610" y="510" class="primary">22.2%</text>
+<text x="610" y="558" class="label">nDCG@5</text>
+<line x1="610" x2="990" y1="610" y2="610" stroke="#e3eaf3"/>
+<text x="610" y="664" class="detail">22.2%–22.2% range · 7 ms</text>
+</g><g>
+<rect x="1052" y="310" width="448" height="410" rx="28" fill="#ffffff" stroke="#d7e2f0" stroke-width="2"/>
+<text x="1086" y="368" class="condition">GIT-GREP</text>
+<text x="1086" y="510" class="primary">22.5%</text>
+<text x="1086" y="558" class="label">nDCG@5</text>
+<line x1="1086" x2="1466" y1="610" y2="610" stroke="#e3eaf3"/>
+<text x="1086" y="664" class="detail">22.5%–22.5% range · 16 ms</text>
+</g>
+<text x="100" y="825" class="foot">Reproduce: python3 benches/agent_ab/benchmark.py · b556e60d8eee</text>
+</svg>

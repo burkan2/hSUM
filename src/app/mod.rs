@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::io;
 use std::path::Path;
+#[cfg(test)]
 use std::time::Duration;
 
 use serde_json::json;
@@ -15,16 +16,28 @@ use crate::ingest::{
     estimate_filesystem_discovery, repo_uri, revision_sha256,
 };
 #[cfg(test)]
-use crate::store::DEFAULT_WRITER_LOCK_TIMEOUT;
 use crate::store::{
-    DeleteConfirmations, FilesystemScope, IndexDb, IngestOutcome, IngestPlan, PreparedChunk,
-    PreparedDocument, PreparedDocumentSummary, SnapshotFailure, StoragePreflight,
-    StoragePreflightError, StoreError, WriterLock, chunker_fingerprint, prepare_passage_literals,
+    DEFAULT_WRITER_LOCK_TIMEOUT, DeleteConfirmations, FilesystemScope, IngestOutcome, IngestPlan,
+    WriterLock,
+};
+use crate::store::{
+    IndexDb, PreparedChunk, PreparedDocument, PreparedDocumentSummary, SnapshotFailure,
+    StoragePreflight, StoragePreflightError, StoreError, chunker_fingerprint,
+    prepare_passage_literals,
 };
 
 mod context;
+mod evidence;
+mod index_management;
 mod init;
+mod jsonl_connector;
+mod project_ingest;
+mod project_management;
+mod search_evidence;
 mod source_config;
+mod source_management;
+mod status_evidence;
+mod stored_source;
 #[cfg(test)]
 mod tests;
 
@@ -34,13 +47,47 @@ pub use context::{
     ContextError, ContextRequest, EffectiveContext, repository_root_for_current_dir,
     resolve_context, resolve_trust_target,
 };
+pub use evidence::{
+    EvidenceSourceState, GetEvidence, GetEvidenceError, GetEvidenceFieldLimits, GetEvidenceOutcome,
+    GetEvidenceRequest, SourceHashVerification,
+};
+pub use index_management::{
+    DeleteIndexOutcome, DeleteIndexRequest, IndexManagementError, delete_index,
+};
 pub use init::{
     BroadRootReason, InitError, InitNextStep, InitOutcome, InitRequest, PointerOutcome,
     SourceEstimate, TrustOutcome, TrustRequest, TrustTarget, initialize, trust_repository,
 };
+pub use jsonl_connector::{
+    JsonlBatchIngestError, JsonlFileIngestError, JsonlIngestTarget, JsonlPrepareError,
+    MAX_JSONL_SNAPSHOT_BYTES, PreparedJsonlSnapshot, ingest_jsonl_sources_with_timeout,
+    ingest_jsonl_with_timeout, prepare_jsonl_snapshot,
+};
+pub use project_ingest::{
+    ProjectIngestError, ProjectIngestPlan, ingest_project_sources_with_timeout,
+    plan_project_sources_with_timeout,
+};
+pub use project_management::{
+    ProjectManagementError, ProjectUseOutcome, SetProjectRootRequest, create_project,
+    list_projects, resolve_project_selector, set_project_root, use_project,
+};
+pub use search_evidence::{
+    SearchEmbeddingRuntime, SearchEvidence, SearchEvidenceError, SearchEvidenceFieldLimits,
+    SearchEvidenceOutcome, SearchEvidencePage, SearchEvidenceRequest, SearchEvidenceSnapshot,
+};
 pub use source_config::{
     FILESYSTEM_SOURCE_CONFIG_SCHEMA_VERSION, FilesystemSourceConfig,
-    MAX_FILESYSTEM_SOURCE_CONFIG_BYTES, SourceConfigError,
+    JSONL_SOURCE_CONFIG_SCHEMA_VERSION, JsonlSourceConfig, JsonlSourceConfigError,
+    MAX_FILESYSTEM_SOURCE_CONFIG_BYTES, MAX_JSONL_SOURCE_CONFIG_BYTES, SourceConfigError,
+};
+pub use source_management::{
+    AddFilesystemSourceRequest, AddJsonlSourceRequest, SourceManagementError,
+    add_filesystem_source, add_jsonl_source, attach_jsonl_source, detach_jsonl_source,
+    list_sources, list_sources_in_scope, remove_jsonl_source, resolve_source_selector,
+};
+pub use status_evidence::{
+    StatusEvidence, StatusEvidenceError, StatusEvidenceFieldLimits, StatusEvidenceOutcome,
+    StatusEvidenceRequest, StatusHealthIssue,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -112,6 +159,7 @@ pub fn prepare_filesystem_snapshot(
     })
 }
 
+#[cfg(test)]
 pub(crate) fn prepare_filesystem_spool(
     root: &Path,
     discovery_options: &DiscoveryOptions,
@@ -279,6 +327,7 @@ pub(crate) fn ingest_filesystem(
     )
 }
 
+#[cfg(test)]
 pub(crate) fn plan_filesystem_ingest_with_timeout(
     database: &IndexDb,
     scope: &FilesystemScope,
@@ -328,11 +377,13 @@ pub(crate) fn ingest_filesystem_with_timeout(
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[cfg(test)]
 pub(crate) struct FilesystemIngestPolicy {
     pub lock_timeout: Duration,
     pub index_quota_bytes: Option<u64>,
 }
 
+#[cfg(test)]
 pub(crate) fn ingest_filesystem_with_policy(
     database: &mut IndexDb,
     scope: &FilesystemScope,
@@ -414,6 +465,7 @@ pub(crate) fn ingest_filesystem_with_policy(
     Ok(outcome)
 }
 
+#[cfg(test)]
 fn validate_filesystem_authority(
     scope: &FilesystemScope,
     root: &Path,

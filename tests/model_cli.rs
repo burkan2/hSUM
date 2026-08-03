@@ -1,0 +1,200 @@
+use std::fs;
+use std::path::Path;
+use std::process::{Command, Output};
+
+use serde_json::{Value, json};
+use tempfile::tempdir;
+
+const MODEL_ID: &str = "bge-small-en-v1-5-fp32";
+
+fn run(home: &Path, current_dir: &Path, arguments: &[&str], offline: bool) -> Output {
+    let mut command = Command::new(env!("CARGO_BIN_EXE_hsum"));
+    command
+        .args(arguments)
+        .current_dir(current_dir)
+        .env("HSUM_HOME", home)
+        .env_remove("HSUM_INDEX")
+        .env_remove("HSUM_PROJECT");
+    if offline {
+        command.env("HSUM_OFFLINE", "1");
+    } else {
+        command.env_remove("HSUM_OFFLINE");
+    }
+    command.output().unwrap()
+}
+
+fn stderr(output: &Output) -> String {
+    String::from_utf8_lossy(&output.stderr).into_owned()
+}
+
+#[test]
+fn list_is_local_and_reports_the_exact_embedded_profile() {
+    let home = tempdir().unwrap();
+    let working = tempdir().unwrap();
+    let listed = run(
+        home.path(),
+        working.path(),
+        &["model", "list", "--json"],
+        true,
+    );
+    assert!(listed.status.success(), "{}", stderr(&listed));
+    let output: Value = serde_json::from_slice(&listed.stdout).unwrap();
+    assert_eq!(output["schema_version"], "hsum.model-list.v1");
+    assert_eq!(output["selected_index"], Value::Null);
+    assert_eq!(output["models"].as_array().unwrap().len(), 1);
+    assert_eq!(output["models"][0]["id"], MODEL_ID);
+    assert_eq!(output["models"][0]["state"], "missing");
+    assert_eq!(output["models"][0]["dimension"], 384);
+    assert_eq!(output["models"][0]["license_id"], "MIT");
+    assert_eq!(output["models"][0]["expected_bytes"], 133_806_060);
+    assert_eq!(
+        output["models"][0]["manifest_sha256"]
+            .as_str()
+            .unwrap()
+            .len(),
+        64
+    );
+    assert!(!home.path().join("cache/models").exists());
+}
+
+#[test]
+fn offline_install_fails_before_creating_a_partial_artifact() {
+    let home = tempdir().unwrap();
+    let working = tempdir().unwrap();
+    let installed = run(
+        home.path(),
+        working.path(),
+        &["model", "install", "embedding", MODEL_ID, "--json"],
+        true,
+    );
+    assert_eq!(installed.status.code(), Some(3), "{}", stderr(&installed));
+    let error: Value = serde_json::from_slice(&installed.stderr).unwrap();
+    assert_eq!(error["code"], "MODEL_MISSING");
+    assert_eq!(error["subcode"], "MODEL_NOT_INSTALLED");
+    assert!(
+        error["details"]["reason"]
+            .as_str()
+            .unwrap()
+            .contains("HSUM_OFFLINE=1")
+    );
+    assert!(!home.path().join("cache/models").exists());
+}
+
+#[test]
+fn airgapped_import_rejects_manifest_dimension_drift_before_copying() {
+    let home = tempdir().unwrap();
+    let working = tempdir().unwrap();
+    let artifact = working.path().join("artifact");
+    fs::create_dir(&artifact).unwrap();
+    let mut receipt: Value =
+        serde_json::from_str(include_str!("../assets/models/bge-small-en-v1.5-fp32.json")).unwrap();
+    receipt["dimension"] = json!(768);
+    fs::write(
+        artifact.join("hsum-model.json"),
+        serde_json::to_vec(&receipt).unwrap(),
+    )
+    .unwrap();
+
+    let imported = run(
+        home.path(),
+        working.path(),
+        &["model", "import", "artifact", "--json"],
+        true,
+    );
+    assert_eq!(imported.status.code(), Some(3), "{}", stderr(&imported));
+    let error: Value = serde_json::from_slice(&imported.stderr).unwrap();
+    assert_eq!(error["code"], "MODEL_INCOMPATIBLE");
+    assert_eq!(error["subcode"], "MODEL_DIMENSION");
+    assert!(!home.path().join("cache/models").exists());
+}
+
+#[test]
+fn init_pins_without_downloading_and_reembed_requires_the_exact_artifact() {
+    let home = tempdir().unwrap();
+    let working = tempdir().unwrap();
+    fs::write(working.path().join("notes.md"), b"semantic evidence\n").unwrap();
+    let initialized = run(
+        home.path(),
+        working.path(),
+        &[
+            "init",
+            ".",
+            "--index",
+            "semantic",
+            "--project",
+            "default",
+            "--embedding-model",
+            MODEL_ID,
+            "--no-ingest",
+        ],
+        true,
+    );
+    assert!(initialized.status.success(), "{}", stderr(&initialized));
+    assert!(
+        String::from_utf8_lossy(&initialized.stdout)
+            .contains("Embedding profile: bge-small-en-v1-5-fp32")
+    );
+    assert!(!home.path().join("cache/models").exists());
+
+    let auto = run(
+        home.path(),
+        working.path(),
+        &["search", "semantic evidence", "--json"],
+        true,
+    );
+    assert!(auto.status.success(), "{}", stderr(&auto));
+    let auto: Value = serde_json::from_slice(&auto.stdout).unwrap();
+    assert_eq!(auto["requested_mode"], "auto");
+    assert_eq!(auto["effective_mode"], "lexical");
+    assert_eq!(
+        auto["hints"],
+        json!(["semantic_available_after_model_install"])
+    );
+    assert_eq!(auto["degraded_mode"], json!([]));
+    assert_eq!(auto["examined"]["vector"], 0);
+    assert_eq!(auto["timing_ms"]["query_embedding"], 0);
+
+    for mode in ["semantic", "hybrid"] {
+        let explicit = run(
+            home.path(),
+            working.path(),
+            &["search", "semantic evidence", "--mode", mode, "--json"],
+            true,
+        );
+        assert_eq!(explicit.status.code(), Some(3), "{}", stderr(&explicit));
+        let error: Value = serde_json::from_slice(&explicit.stderr).unwrap();
+        assert_eq!(error["code"], "MODEL_MISSING");
+        assert_eq!(error["subcode"], "MODEL_NOT_INSTALLED");
+        assert_eq!(error["retryable"], false);
+    }
+
+    let listed = run(
+        home.path(),
+        working.path(),
+        &["model", "list", "--json"],
+        true,
+    );
+    assert!(listed.status.success(), "{}", stderr(&listed));
+    let output: Value = serde_json::from_slice(&listed.stdout).unwrap();
+    assert_eq!(output["selected_index"], "semantic");
+    assert_eq!(output["selected_index_state"], "configured_uninstalled");
+    assert_eq!(output["models"][0]["state"], "missing");
+    assert_eq!(output["models"][0]["pinned_by_selected_index"], true);
+    assert_eq!(
+        output["models"][0]["pinned_by_indexes"],
+        json!(["semantic"])
+    );
+
+    let reembed = run(home.path(), working.path(), &["ingest", "--reembed"], true);
+    assert_eq!(reembed.status.code(), Some(3), "{}", stderr(&reembed));
+    assert!(stderr(&reembed).contains("MODEL_NOT_INSTALLED"));
+
+    let changed_pin = run(
+        home.path(),
+        working.path(),
+        &["init", ".", "--no-ingest"],
+        true,
+    );
+    assert_eq!(changed_pin.status.code(), Some(3));
+    assert!(stderr(&changed_pin).contains("MODEL_FINGERPRINT"));
+}
