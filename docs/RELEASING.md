@@ -86,8 +86,10 @@ crates.io:
    directory and requires byte-for-byte equality with the candidate.
 3. `scripts/release-smoke.sh` creates a fresh Git repository and isolated
    `HSUM_HOME`, then validates init, search, immutable get, context, doctor,
-   generated MCP client configuration, a real MCP initialize/tools-list
-   exchange, and the documented all-source-failure exit.
+   generated MCP client configuration, and the documented all-source-failure
+   exit. Its generic MCP client performs a real initialize/tools-list exchange,
+   then calls search, get, status, and project and verifies the returned
+   citation against the exact indexed bytes.
 4. `scripts/installer-smoke.sh`, invoked by the no-network wrapper in CI,
    renders the pinned installer, serves the
    candidate archive and checksum through a fake `curl`, installs into an
@@ -101,6 +103,15 @@ crates.io:
    published alpha.1 executable, creates an index with it, then proves the
    candidate rejects stale evidence, rebuilds safely, and invalidates the old
    citation.
+
+The manually dispatchable `Clean-machine candidate trials` workflow adds the
+stable-candidate trial protocol without treating a source checkout as the
+artifact under test. Native build jobs freeze a candidate and its checksum;
+separate fresh Linux x86_64 and macOS arm64 jobs download that binary without
+building, verify its identity, and run `scripts/clean-machine-trials.sh` exactly
+five times. Each trial receives a new repository and `HSUM_HOME`, and the
+workflow uploads the per-trial logs plus a machine-readable report before a
+fan-in job checks both target dispositions.
 
 Before tagging, inspect the completed CI runs and run the same commands on the
 candidate checkout locally:

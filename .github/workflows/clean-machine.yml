@@ -1,0 +1,169 @@
+name: Clean-machine candidate trials
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/clean-machine.yml
+      - Cargo.lock
+      - Cargo.toml
+      - migrations/**
+      - scripts/clean-machine-trials.sh
+      - scripts/release-smoke.sh
+      - src/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clean-machine-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: '0'
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }} candidate
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            expected_arch: arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Confirm the native builder architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the locked release candidate
+        shell: bash
+        run: cargo +1.91.0 build --locked --release --bin hsum
+
+      - name: Freeze the candidate and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir candidate
+          cp target/release/hsum candidate/hsum
+          chmod 755 candidate/hsum
+          (
+            cd candidate
+            shasum -a 256 hsum > hsum.sha256
+          )
+          file candidate/hsum > candidate/file.txt
+          candidate/hsum --version --verbose > candidate/version.txt
+          printf '%s\n' "$GITHUB_SHA" > candidate/commit-sha.txt
+
+      - name: Upload the frozen candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: clean-machine-candidate-${{ matrix.target }}
+          path: candidate
+          if-no-files-found: error
+          compression-level: 0
+
+  trials:
+    name: Trial ${{ matrix.target }} candidate on a fresh runner
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            expected_arch: arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Confirm the fresh trial runner architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Download the prebuilt candidate
+        uses: actions/download-artifact@v8
+        with:
+          name: clean-machine-candidate-${{ matrix.target }}
+          path: candidate
+
+      - name: Verify candidate identity without rebuilding
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat candidate/commit-sha.txt)" = "$GITHUB_SHA"
+          chmod 755 candidate/hsum
+          (
+            cd candidate
+            shasum -a 256 -c hsum.sha256
+          )
+          test "$(find target -type f -name hsum -print -quit 2>/dev/null || true)" = ""
+
+      - name: Run the frozen five-trial CLI and MCP protocol
+        env:
+          HSUM_OFFLINE: '1'
+          HSUM_CANDIDATE_COMMIT_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          bash scripts/clean-machine-trials.sh \
+            "$PWD/candidate/hsum" \
+            "$RUNNER_TEMP/clean-machine-evidence"
+
+      - name: Upload immutable trial evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: clean-machine-evidence-${{ matrix.target }}
+          path: ${{ runner.temp }}/clean-machine-evidence
+          if-no-files-found: error
+          compression-level: 9
+
+  compare:
+    name: Compare both clean-machine targets
+    needs: trials
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all native evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: clean-machine-evidence-*
+          path: evidence
+
+      - name: Require five passing trials on each supported target
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import pathlib
+
+          reports = [
+              json.loads(path.read_text(encoding="utf-8"))
+              for path in sorted(pathlib.Path("evidence").glob("*/report.json"))
+          ]
+          assert len(reports) == 2
+          assert {report["platform"]["machine"] for report in reports} == {"x86_64", "arm64"}
+          assert len({report["candidate"]["commit_sha"] for report in reports}) == 1
+          for report in reports:
+              assert report["schema_version"] == "hsum.clean-machine-trials.v1"
+              assert report["passed"] is True
+              assert report["protocol"]["trial_count"] == 5
+              assert len(report["trials"]) == 5
+              assert all(trial["passed"] is True for trial in report["trials"])
+          PY

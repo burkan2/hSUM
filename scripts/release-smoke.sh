@@ -107,6 +107,53 @@ assert {tool["name"] for tool in tools} == {
     "evidence_status",
 }
 
+def call(request_id, name, arguments):
+    send({
+        "jsonrpc": "2.0",
+        "id": request_id,
+        "method": "tools/call",
+        "params": {"name": name, "arguments": arguments},
+    })
+    response = receive()
+    assert response["id"] == request_id, response
+    assert "error" not in response, response
+    return response["result"]["structuredContent"]
+
+search = call(3, "evidence_search", {
+    "query": "AlphaIdentifier",
+    "mode": "lexical",
+    "limit": 5,
+    "timeout_ms": 3_000,
+    "explain": True,
+})
+assert search["schema_version"] == "hsum.api.v1"
+assert search["effective_mode"] == "lexical"
+assert search["results"]
+assert search["results"][0]["untrusted_content"] is True
+citation = search["results"][0]["citation_uri"]
+
+get = call(4, "evidence_get", {
+    "citation_uri": citation,
+    "verify_source_hash": True,
+})
+assert get["schema_version"] == "hsum.api.v1"
+assert get["requested_citation_uri"] == citation
+assert get["source_hash_verification"] == "unchanged", get
+assert get["untrusted_content"] is True
+assert "AlphaIdentifier" in get["content"]
+
+status = call(5, "evidence_status", {})
+assert status["schema_version"] == "hsum.api.v1"
+assert status["read_only"] is True
+assert status["query_only"] is True
+assert status["document_count"] >= 2
+assert status["passage_count"] >= 2
+
+project = call(6, "evidence_project", {})
+assert project["schema_version"] == "hsum.api.v1"
+assert project["sources"]
+assert project["indexed_extensions"]
+
 process.stdin.close()
 assert process.wait(timeout=5) == 0
 assert process.stderr.read() == ""

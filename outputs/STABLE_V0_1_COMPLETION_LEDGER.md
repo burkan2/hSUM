@@ -3,7 +3,9 @@
 **Snapshot:** 2026-08-22 after the B1-05 through B1-13 native product gate,
 generation crash and multi-process cancellation/replacement qualification,
 same-index lexical determinism qualification, source-package qualification,
-100k scale harness groundwork, and the generated local reference gate
+100k/one-million scale harness groundwork, bounded parser fuzz smoke,
+client/clean-machine qualification groundwork, and the generated local
+reference gate
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
@@ -73,10 +75,10 @@ supported without hiding a missing later gate.
 | Q-02 | Multi-process reader/writer and cancellation-versus-timeout qualification | Native target evidence passing | yes | yes | yes | yes | yes | no | Exact commit `e415dba` passes the complete local gate and both CI targets in run `32564056058`; real installed-model workers prove queued timeout, explicit cancellation without late responses, and recovery on both targets in run `32564056061`, while a separate-process vector reader proves bounded replacement refusal, retry, and stale-inode citation rejection |
 | Q-03 | Same-target and cross-target deterministic ordering | Native target evidence passing | yes | yes | yes | yes | yes | no | Stable lexical qualification run `32565388856` reuses index `0891488d…` for five fresh CLI and five fresh MCP processes on each supported target; every ordered citation, duplicate set, degradation flag, and explanation matches, with `2.22e-16` maximum backend-score delta; independent-build UUID variance remains diagnosed, and hybrid remains beta under EVAL-06 |
 | Q-04 | 100,000-chunk performance and component latency evidence | Focused tests passing | yes | yes | no | no | yes | no | `benches/retrieval_scale/` freezes the exact 100k corpus, 25-query/750-observation protocol, cold/warm separation, stage timings including body materialization, RSS/storage/throughput evidence, SLOs, and CV gate; Apple M2 and Linux native executions remain open |
-| Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Not started | no | no | no | no | no | no | Required report-only release evidence |
-| Q-06 | Security, privacy, supply-chain, and recovery reviews | Implemented | yes | yes | no | no | partial | no | Alpha evidence exists; stable semantic/distribution review remains |
-| Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Not started | no | no | no | no | no | no | Exact client versions and accepted evidence required |
-| Q-08 | Clean-machine CLI and MCP DX trials on both targets | Implemented | yes | yes | no | no | partial | no | Alpha paths exist; five-trial stable protocol remains open |
+| Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Focused tests passing | yes | yes | no | no | yes | no | Frozen corpus/probe manifest, deadline-reporting harness, cancel storm, exact-SHA workflow, and 13 harness regressions pass; native run `32569278903` remains in progress |
+| Q-06 | Security, privacy, supply-chain, and recovery reviews | Focused tests passing | yes | yes | no | no | partial | no | Locked dependency policy passes; six bounded parser fuzz targets pass Linux smoke run `32569324813`; sustained campaigns and independent semantic/distribution/recovery review remain open |
+| Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Focused tests passing | yes | yes | no | no | partial | no | Checksum-pinned protocol and generic search/get round trip pass; exact Codex `0.149.0-alpha.4.1` is usage-limited until 2026-08-29 and Claude Code `2.1.212` requires OAuth refresh before live tool-event acceptance |
+| Q-08 | Clean-machine CLI and MCP DX trials on both targets | Focused tests passing | yes | yes | no | no | yes | no | Generic MCP now proves search/get/status/project, and five fresh macOS CLI/MCP trials pass locally; separate native builder/consumer workflow evidence remains open |
 | Q-09 | Generated CLI, MCP, config, and error references plus link checks | Native target evidence passing | yes | yes | yes | yes | partial | no | Eight implementation-derived pages, four generator tests, byte-drift/local-link/runtime-URL mapping gate, and canonical deployed URL base pass on both targets in run `32549550396`; remote audit passes 65/77 alpha.4 pages and reports 12 undeployed subcodes |
 | Q-10 | Executable stable quickstart and compatibility-policy verification | Implemented | yes | yes | no | no | partial | no | Must run against the stable candidate artifact |
 | DIST-01 | crates.io source distribution and locked install smoke | Native target evidence passing | yes | yes | yes | yes | yes | no | Explicit Cargo allowlist plus `scripts/package-smoke.sh` prove the locked archive boundary and extracted install on both targets in run `32546275484`; no crate has been published |
