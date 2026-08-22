@@ -105,6 +105,20 @@ class RetrievalStressHarnessTests(unittest.TestCase):
         with self.assertRaises(HARNESS.StressError):
             HARNESS.validate_search_packet(manifest["queries"][0], over_budget)
 
+    def test_probe_query_uses_the_cli_maximum_timeout(self):
+        manifest = HARNESS.load_manifest()
+        packet = search_packet("lexical", ["exact", "lexical"])
+
+        with mock.patch.object(HARNESS, "run_json", return_value=packet) as run_json:
+            HARNESS.probe_query(
+                Path("hsum"), Path("workspace"), Path("home"), manifest["queries"][0]
+            )
+
+        arguments = run_json.call_args.args[0]
+        timeout_index = arguments.index("--timeout-ms")
+        self.assertEqual(HARNESS.QUERY_TIMEOUT_MS, 10_000)
+        self.assertEqual(arguments[timeout_index + 1], "10000")
+
     def test_first_knee_is_strictly_more_than_double_the_preceding_median(self):
         def sample(source_count: int, p50: float) -> dict:
             return {

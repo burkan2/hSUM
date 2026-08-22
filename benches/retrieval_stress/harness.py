@@ -32,6 +32,7 @@ SCHEMA_VERSION = "hsum.retrieval-stress-report.v1"
 INDEX_NAME = "retrieval-stress-1m"
 PROJECT_NAME = "default"
 CANDIDATE_BUDGET_PER_RETRIEVER = 500
+QUERY_TIMEOUT_MS = 10_000
 BODY_FILLER = (
     " StressPostingLiteral stress::punctuation|quoted[slot]=>value"
     " duplicate bounded evidence archive "
@@ -340,7 +341,7 @@ def probe_query(
             "--limit",
             "10",
             "--timeout-ms",
-            "60000",
+            str(QUERY_TIMEOUT_MS),
             "--json",
         ],
         cwd=root,
