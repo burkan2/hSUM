@@ -32,6 +32,7 @@ repository="$trial_root/repository"
 export HSUM_HOME="$trial_root/hsum-home"
 mkdir -p "$repository/src"
 git init --quiet "$repository"
+trial_started=$(date +%s)
 
 cat > "$repository/README.md" <<'EOF'
 # Release smoke fixture
@@ -55,6 +56,7 @@ printf 'first_init_seconds=%s\n' "$((init_finished - init_started))"
 "$binary" --no-color --no-progress search AlphaIdentifier --json > "$trial_root/search.json"
 
 citation=$(python3 -c 'import json, sys; print(json.load(sys.stdin)["results"][0]["citation_uri"])' < "$trial_root/search.json")
+cli_citation_finished=$(date +%s)
 "$binary" --no-color --no-progress get "$citation" --verify-source-hash --json > "$trial_root/get.json"
 "$binary" --no-color --no-progress context --json > "$trial_root/context.json"
 "$binary" --no-color --no-progress doctor > "$trial_root/doctor.txt"
@@ -158,6 +160,7 @@ process.stdin.close()
 assert process.wait(timeout=5) == 0
 assert process.stderr.read() == ""
 PY
+mcp_round_trip_finished=$(date +%s)
 
 printf '\377\376' > README.md
 printf '\377\376' > src/lib.rs
@@ -189,4 +192,6 @@ assert "uploads no corpus data or telemetry" in (root / "client-warning.txt").re
 PY
 
 test ! -e .hsum.toml
+printf 'first_cli_citation_seconds=%s\n' "$((cli_citation_finished - trial_started))"
+printf 'mcp_round_trip_seconds=%s\n' "$((mcp_round_trip_finished - trial_started))"
 echo "release smoke passed"

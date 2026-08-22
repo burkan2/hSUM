@@ -164,6 +164,9 @@ jobs:
               assert report["schema_version"] == "hsum.clean-machine-trials.v1"
               assert report["passed"] is True
               assert report["protocol"]["trial_count"] == 5
+              assert report["protocol"]["network"] == "disabled"
               assert len(report["trials"]) == 5
               assert all(trial["passed"] is True for trial in report["trials"])
+              assert report["summary"]["first_cli_citation_seconds"]["target_passed"] is True
+              assert report["summary"]["mcp_round_trip_seconds"]["target_passed"] is True
           PY

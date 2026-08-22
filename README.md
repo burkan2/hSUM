@@ -177,6 +177,10 @@ whatever the file looks like later.
 hSUM speaks MCP over stdio only. Codex uses one user-wide registration whose
 server derives an exact trusted repository from each task's working directory:
 
+Privacy boundary: hSUM uploads no corpus data or telemetry. A cloud-backed
+client may forward returned passages to its own model provider under that
+client's policy. Review that policy before running the first client command.
+
 ```bash
 "$HSUM" integration install codex --activate . --confirm
 "$HSUM" integration status codex
@@ -277,24 +281,33 @@ remain subject to the release gates in
 
 | Capability | Status | Current boundary |
 |---|---|---|
-| Local filesystem ingest | Available | Register roots explicitly; one active filesystem authority per project; registration and root replacement do not ingest implicitly |
-| Named projects | Available in the current checkout; unreleased | Create, list, persistently select, and replace the filesystem root |
-| Markdown, text, and source code | Available | Lowercase `.md`, `.markdown`, `.txt`, `.rs`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.java`, `.kt`, `.kts`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.hh`, `.cxx`, `.rb`, `.cs`, `.swift`, `.php`, `.scala`, `.sh`, `.bash`, and `.sql` |
-| Exact and BM25 search | Available | Explicit `lexical` is the stable retrieval control; `auto` is lexical on an index without a complete vector generation |
-| Immutable citations and historical `get` | Available | Evidence remains resolvable while its immutable version remains in this alpha index |
-| Atomic generations | Available | Explicit mixed-source ingest; no watcher or daemon |
-| Status and Doctor | Full diagnosis available; bounded repair/report in the current checkout, unreleased | Repair removes abandoned generation rows only; support reports are body-free and query-free |
-| Guarded maintenance | Available in the current checkout; unreleased | Verified backup, index/config migration plan/apply, prune, durable forget, and exact-state restore ceremonies |
-| Managed backup disposition | Available in the current checkout; unreleased | Inventory every hSUM-created index backup; forget requires an explicit keep-or-purge choice |
-| Confirmed index deletion | Available in the current checkout; unreleased | Exact logical name plus `--confirm`; clears configured authority, fences readers/writers, and removes only the named managed index directory |
-| Pinned model artifacts | Available in the current checkout; unreleased | Explicit HTTPS install or air-gapped import; exact manifest, revision, file-list, byte-size, SHA-256, dimension, and license verification |
-| MCP stdio | Available | One global Codex registration; every server process pins one exact trusted project scope |
-| JSONL snapshot sources | Available in the current checkout; unreleased | Add, list, attach, detach, ingest, and globally remove snapshots |
-| Live connectors | Unsupported | Planned after snapshot-source lifecycle work |
-| Semantic and hybrid vector retrieval | Beta in the current checkout; unreleased | Requires an explicitly pinned model, verified local artifact, and complete `ingest --reembed`; hybrid failed two held-out promotion gates and is not the stable default claim |
-| Reranking | Unsupported | Evaluation-gated post-v0.1 experiment; no reranker is part of semantic or hybrid retrieval |
-| HTTP server or web UI | Unsupported | MCP stdio is the only transport |
-| Prebuilt installation | Available | Checksum-verifying no-`sudo` installer and archives for macOS arm64 and Linux x86_64; no crates.io package |
+| Local filesystem ingest | available | Register roots explicitly; one active filesystem authority per project; registration and root replacement do not ingest implicitly |
+| Named projects | available | Current checkout, unreleased: create, list, persistently select, and replace the filesystem root |
+| Markdown, text, and source code | available | Lowercase `.md`, `.markdown`, `.txt`, `.rs`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.java`, `.kt`, `.kts`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.hh`, `.cxx`, `.rb`, `.cs`, `.swift`, `.php`, `.scala`, `.sh`, `.bash`, and `.sql` |
+| Exact and BM25 search | available | Explicit `lexical` is the stable retrieval control; `auto` is lexical on an index without a complete vector generation |
+| Immutable citations and historical `get` | available | Evidence remains resolvable while its immutable version remains in this alpha index |
+| Atomic generations | available | Explicit mixed-source ingest; no watcher or daemon |
+| Status and Doctor | available | Full diagnosis is released; bounded repair/report is in the current checkout and unreleased |
+| Guarded maintenance | available | Current checkout, unreleased: verified backup, index/config migration plan/apply, prune, durable forget, and exact-state restore ceremonies |
+| Managed backup disposition | available | Current checkout, unreleased: inventory every hSUM-created index backup; forget requires an explicit keep-or-purge choice |
+| Confirmed index deletion | available | Current checkout, unreleased: exact logical name plus `--confirm`; removes only the named managed index directory |
+| Pinned model artifacts | available | Current checkout, unreleased: explicit HTTPS install or air-gapped import with exact artifact verification |
+| MCP stdio | available | One global Codex registration; every server process pins one exact trusted project scope |
+| JSONL snapshot sources | available | Current checkout, unreleased: add, list, attach, detach, ingest, and globally remove snapshots |
+| Codex MCP client | beta | `codex-cli 0.149.0-alpha.4.1` attempted 2026-08-22; live tool-event acceptance is blocked by the client's usage limit |
+| Claude Code MCP client | beta | Claude Code `2.1.212` attempted 2026-08-22; live tool-event acceptance requires an OAuth refresh |
+| Claude Desktop MCP client | planned | Binding-pinned configuration exists; pinned live-client qualification remains open |
+| Generic MCP harness | available | MCP `2025-11-25` search/get citation round trip passed 2026-08-22 |
+| macOS arm64 | available | Supported prebuilt target; stable-candidate signing, notarization, and native trial evidence remain open |
+| Linux x86_64 | available | Supported prebuilt target; stable-candidate native trial evidence remains open |
+| Other platforms | unsupported | No stable-v0.1 support claim outside the two native targets |
+| Offline query path | available | Init, ingest, lexical search, get, and MCP require no network; model installation is the explicit exception |
+| Watch mode | unsupported | Explicit ingest is the stable-v0.1 update boundary |
+| Live connectors | unsupported | Post-v0.1; JSONL snapshots are the supported external-data boundary |
+| Semantic and hybrid vector retrieval | beta | Current checkout, unreleased: hybrid failed two held-out promotion gates and is not the stable default claim |
+| Reranking | unsupported | Evaluation-gated post-v0.1 experiment; no reranker is part of semantic or hybrid retrieval |
+| HTTP server or web UI | unsupported | MCP stdio is the only transport |
+| Prebuilt installation | available | Checksum-verifying no-`sudo` installer and archives for macOS arm64 and Linux x86_64; no crates.io package |
 
 ### Pinned model artifacts in the current checkout
 

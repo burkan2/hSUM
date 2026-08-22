@@ -65,14 +65,31 @@ for trial in range(1, 6):
         for line in log.splitlines()
         if line.startswith("first_init_seconds=")
     )
+    first_cli_citation = next(
+        int(line.removeprefix("first_cli_citation_seconds="))
+        for line in log.splitlines()
+        if line.startswith("first_cli_citation_seconds=")
+    )
+    mcp_round_trip = next(
+        int(line.removeprefix("mcp_round_trip_seconds="))
+        for line in log.splitlines()
+        if line.startswith("mcp_round_trip_seconds=")
+    )
     trials.append({
         "trial": trial,
         "passed": log.splitlines()[-1] == "release smoke passed",
         "first_init_seconds": first_init,
+        "first_cli_citation_seconds": first_cli_citation,
+        "mcp_round_trip_seconds": mcp_round_trip,
         "total_seconds": int(
             (root / f"trial-{trial}.duration-seconds").read_text(encoding="utf-8")
         ),
     })
+
+def median(values):
+    ordered = sorted(values)
+    midpoint = len(ordered) // 2
+    return ordered[midpoint]
 
 report = {
     "schema_version": "hsum.clean-machine-trials.v1",
@@ -83,6 +100,7 @@ report = {
         "fresh_hsum_home_per_trial": True,
         "cli_citation_round_trip": True,
         "mcp_search_get_status_project_round_trip": True,
+        "network": "disabled" if os.environ.get("HSUM_OFFLINE") == "1" else "caller-controlled",
     },
     "candidate": {
         "version": os.environ["HSUM_TRIAL_VERSION"],
@@ -98,8 +116,31 @@ report = {
         "run_attempt": os.environ["HSUM_TRIAL_RUN_ATTEMPT"],
     },
     "trials": trials,
+    "summary": {
+        "first_cli_citation_seconds": {
+            "median": median([trial["first_cli_citation_seconds"] for trial in trials]),
+            "worst": max(trial["first_cli_citation_seconds"] for trial in trials),
+            "target_maximum": 120,
+            "target_passed": max(
+                trial["first_cli_citation_seconds"] for trial in trials
+            ) < 120,
+        },
+        "mcp_round_trip_seconds": {
+            "median": median([trial["mcp_round_trip_seconds"] for trial in trials]),
+            "worst": max(trial["mcp_round_trip_seconds"] for trial in trials),
+            "target_maximum": 300,
+            "target_passed": max(trial["mcp_round_trip_seconds"] for trial in trials) < 300,
+        },
+        "total_seconds": {
+            "median": median([trial["total_seconds"] for trial in trials]),
+            "worst": max(trial["total_seconds"] for trial in trials),
+        },
+        "failure_reasons": [],
+    },
 }
 assert report["passed"] is True
+assert report["summary"]["first_cli_citation_seconds"]["target_passed"] is True
+assert report["summary"]["mcp_round_trip_seconds"]["target_passed"] is True
 (root / "report.json").write_text(
     json.dumps(report, sort_keys=True, separators=(",", ":")) + "\n",
     encoding="utf-8",

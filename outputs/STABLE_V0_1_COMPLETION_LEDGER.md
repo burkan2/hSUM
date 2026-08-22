@@ -5,7 +5,7 @@ generation crash and multi-process cancellation/replacement qualification,
 same-index lexical determinism qualification, source-package qualification,
 100k/one-million scale harness groundwork, bounded parser fuzz smoke,
 client/clean-machine qualification groundwork, and the generated local
-reference gate
+reference/README contract gates
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
@@ -78,9 +78,9 @@ supported without hiding a missing later gate.
 | Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Focused tests passing | yes | yes | no | no | yes | no | Frozen corpus/probe manifest, deadline-reporting harness, cancel storm, exact-SHA workflow, and 13 harness regressions pass; native run `32569278903` remains in progress |
 | Q-06 | Security, privacy, supply-chain, and recovery reviews | Focused tests passing | yes | yes | no | no | partial | no | Locked dependency policy passes; six bounded parser fuzz targets pass Linux smoke run `32569324813`; sustained campaigns and independent semantic/distribution/recovery review remain open |
 | Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Focused tests passing | yes | yes | no | no | partial | no | Checksum-pinned protocol and generic search/get round trip pass; exact Codex `0.149.0-alpha.4.1` is usage-limited until 2026-08-29 and Claude Code `2.1.212` requires OAuth refresh before live tool-event acceptance |
-| Q-08 | Clean-machine CLI and MCP DX trials on both targets | Focused tests passing | yes | yes | no | no | yes | no | Generic MCP now proves search/get/status/project, and five fresh macOS CLI/MCP trials pass locally; separate native builder/consumer workflow evidence remains open |
+| Q-08 | Clean-machine CLI and MCP DX trials on both targets | Native target evidence passing | yes | yes | yes | yes | yes | no | Run `32571063965` builds checksummed candidates separately, then passes five fresh CLI/full-MCP trials per supported target and cross-target fan-in; enhanced timing schema passes locally and awaits current-head native rerun |
 | Q-09 | Generated CLI, MCP, config, and error references plus link checks | Native target evidence passing | yes | yes | yes | yes | partial | no | Eight implementation-derived pages, four generator tests, byte-drift/local-link/runtime-URL mapping gate, and canonical deployed URL base pass on both targets in run `32549550396`; remote audit passes 65/77 alpha.4 pages and reports 12 undeployed subcodes |
-| Q-10 | Executable stable quickstart and compatibility-policy verification | Implemented | yes | yes | no | no | partial | no | Must run against the stable candidate artifact |
+| Q-10 | Executable stable quickstart and compatibility-policy verification | Focused tests passing | yes | yes | no | no | yes | no | README version/command/privacy and 27-row controlled capability policy are executable gates; five-trial clocks pass locally, but the stable candidate artifact rerun remains open |
 | DIST-01 | crates.io source distribution and locked install smoke | Native target evidence passing | yes | yes | yes | yes | yes | no | Explicit Cargo allowlist plus `scripts/package-smoke.sh` prove the locked archive boundary and extracted install on both targets in run `32546275484`; no crate has been published |
 | DIST-02 | Supported prebuilt archives, checksums, and installer verification | Implemented | yes | yes | yes | yes | yes | no | Alpha release path exists; stable candidate still required |
 | DIST-03 | Detached signatures, SBOM, attestations, license inventory | Implemented | yes | yes | yes | yes | yes | no | Alpha path exists; stable candidate still required |

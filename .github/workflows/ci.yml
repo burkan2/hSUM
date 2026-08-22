@@ -48,11 +48,13 @@ jobs:
         shell: bash
         run: rustup toolchain install 1.91.0 --profile minimal --component clippy,rustfmt
 
-      - name: Validate the frozen cross-client dogfood protocol
+      - name: Validate the frozen client and README contracts
         shell: bash
         run: |
           python3 benches/client_dogfood/harness.py validate
           python3 -W error benches/client_dogfood/test_harness.py
+          python3 scripts/verify_readme_contract.py
+          python3 -W error scripts/test_verify_readme_contract.py
 
       - name: Run the contributor gate
         shell: bash

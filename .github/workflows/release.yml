@@ -85,7 +85,10 @@ jobs:
 
       - name: Run all release checks
         shell: bash
-        run: cargo +1.91.0 xtask check
+        run: |
+          cargo +1.91.0 xtask check
+          python3 scripts/verify_readme_contract.py
+          python3 -W error scripts/test_verify_readme_contract.py
 
       - name: Build and exercise the candidate binary
         shell: bash

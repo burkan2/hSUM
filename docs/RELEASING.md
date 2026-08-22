@@ -104,14 +104,22 @@ crates.io:
    candidate rejects stale evidence, rebuilds safely, and invalidates the old
    citation.
 
+`scripts/verify_readme_contract.py` separately freezes the developer-facing
+contract: the agent prompt must match the Cargo version, search/get commands
+must remain executable, the privacy boundary must precede client setup, and
+every capability status must use only `available`, `beta`, `planned`, or
+`unsupported`. It also prevents hybrid or HTTP transport from being promoted
+without changing the reviewed contract and its regression tests.
+
 The manually dispatchable `Clean-machine candidate trials` workflow adds the
 stable-candidate trial protocol without treating a source checkout as the
 artifact under test. Native build jobs freeze a candidate and its checksum;
 separate fresh Linux x86_64 and macOS arm64 jobs download that binary without
 building, verify its identity, and run `scripts/clean-machine-trials.sh` exactly
 five times. Each trial receives a new repository and `HSUM_HOME`, and the
-workflow uploads the per-trial logs plus a machine-readable report before a
-fan-in job checks both target dispositions.
+workflow uploads the per-trial logs plus a machine-readable report containing
+median/worst time-to-first-CLI-citation and MCP-round-trip measurements before
+a fan-in job checks both target dispositions and the two-/five-minute targets.
 
 Before tagging, inspect the completed CI runs and run the same commands on the
 candidate checkout locally:
