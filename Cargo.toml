@@ -33,6 +33,11 @@ include = [
     "/NOTICE",
 ]
 
+[workspace]
+members = ["fuzz"]
+default-members = ["."]
+resolver = "3"
+
 [features]
 default = []
 model-portability = []

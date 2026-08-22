@@ -34,7 +34,7 @@ rollback drills.
 | Filesystem containment | Unix traversal opens every component relative to an already-open descriptor with `NOFOLLOW`, rejects changed identities, skips symlinks and special files, bounds bytes/depth/files, and rechecks the opened file before and after reading. Filesystem ingest tests cover intermediate/final/root/ancestor symlinks and replacement races. |
 | Secret-path and untrusted-content policy | Common secret-bearing paths remain default-denied; sensitive admission requires both an explicit include and the internal allowance. Returned evidence is always marked untrusted. Hardlinks and external filesystem snapshots remain documented limits rather than claimed erasure guarantees. |
 | Project and citation isolation | MCP is bound to one selected project, opens retrieval state read-only/query-only, rejects project overrides, and returns non-disclosing failures for citations outside the binding. Shared CLI/MCP protocol fixtures cover Search/Get/Status parity and immutable citation resolution. |
-| Untrusted parsers | CLI/query, JSONL, MCP framing, citations, cursors, configuration, and trust inputs have explicit length/cardinality/depth/unknown-field limits and focused/property coverage. Dedicated long-running fuzz targets remain a follow-up before final independent review. |
+| Untrusted parsers | CLI/query, JSONL, MCP framing, citations, cursors, configuration, and trust inputs have explicit length/cardinality/depth/unknown-field limits and focused/property coverage. Six dedicated libFuzzer targets cover citation, query, cursor, JSONL, MCP-frame, and chunk boundaries; bounded CI smoke catches regressions, while long-running and independent campaigns remain open. |
 | SQL and command construction | User values use SQLite parameters and the owned query compiler. Dynamic SQL identifiers are closed internal vector-slot/table names. External client commands use argument arrays rather than a shell. |
 | Model supply chain | Model installation is the only runtime network path. It is HTTPS-only with TLS 1.2 minimum, bounded redirects/timeouts/retries/bytes, a pinned upstream revision, exact per-file lengths and SHA-256 values, private staging, and offline refusal through `HSUM_OFFLINE=1`. A custom CA must be a bounded regular PEM file. |
 | Local confidentiality and logs | Managed state is created with user-only permissions where supported; Doctor reports permission failures. Normal product paths do not emit indexed bodies or queries to diagnostic logs. Client configuration warns about the downstream cloud-agent boundary before emitting copyable configuration. |
@@ -56,15 +56,20 @@ rollback drills.
 - `cargo +1.91.0 xtask check`, native qualification workflows, release/no-network
   smokes, and the final release review remain the authoritative executable
   evidence; this document does not substitute for their results.
+- `cargo +nightly-2026-08-15 fuzz build` compiles all six parser targets. The
+  scheduled `Parser fuzz smoke` workflow runs each seeded corpus for 15 seconds
+  with a 64 KiB input bound, five-second per-input timeout, and 2 GiB RSS limit.
+  Those short runs are regression evidence, not an exhaustive fuzz claim.
 
 ## Residual risk register
 
 1. **Accepted maintenance risk — transitive `paste 1.0.15`.** Monitor
    `fastembed`/`tokenizers`; replace only through a new pinned inference-stack
    qualification, not an unreviewed lockfile patch.
-2. **Open parser assurance — dedicated fuzz campaigns.** Existing property and
-   boundary tests are substantial, but the planned citation/cursor/query/JSONL/
-   MCP/path fuzz corpus is not yet present.
+2. **Open parser assurance — sustained and independent fuzz campaigns.** The
+   citation/cursor/query/JSONL/MCP/chunk corpus and repeatable bounded CI smoke
+   now exist. Multi-hour sanitizer campaigns, corpus minimization, crash triage,
+   and independent review are still required before final promotion.
 3. **Open release authority — signatures and Apple notarization.** Alpha
    compromise procedures exist, but stable publication cannot proceed without
    separate signing custody and the full Apple credential path.

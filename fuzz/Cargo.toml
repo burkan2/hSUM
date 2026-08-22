@@ -1,0 +1,54 @@
+[package]
+name = "hsum-fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+hsum = { path = ".." }
+libfuzzer-sys = "=0.4.13"
+
+[[bin]]
+name = "citation_uri"
+path = "fuzz_targets/citation_uri.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "query_parser"
+path = "fuzz_targets/query_parser.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "search_cursor"
+path = "fuzz_targets/search_cursor.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "jsonl_snapshot"
+path = "fuzz_targets/jsonl_snapshot.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mcp_frame"
+path = "fuzz_targets/mcp_frame.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "chunk_bytes"
+path = "fuzz_targets/chunk_bytes.rs"
+test = false
+doc = false
+bench = false
