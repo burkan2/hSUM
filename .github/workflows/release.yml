@@ -273,7 +273,11 @@ jobs:
             install-hsum.sh \
             > SHA256SUMS
 
-      - name: Assemble and publish the prerelease from the verified tag
+      - name: Verify the complete local release asset contract
+        shell: bash
+        run: bash scripts/verify-release-assets.sh "$GITHUB_REF_NAME" dist
+
+      - name: Assemble the complete draft from the verified tag
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -285,6 +289,20 @@ jobs:
             --prerelease \
             --generate-notes \
             --title "hSUM ${GITHUB_REF_NAME}"
+
+      - name: Verify and publish the complete draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq '.isDraft')" = "true"
+          uploaded_release="$RUNNER_TEMP/uploaded-release"
+          mkdir "$uploaded_release"
+          gh release download "$GITHUB_REF_NAME" --dir "$uploaded_release"
+          bash scripts/verify-release-assets.sh \
+            "$GITHUB_REF_NAME" \
+            "$uploaded_release"
           gh release edit "$GITHUB_REF_NAME" \
             --draft=false \
             --prerelease

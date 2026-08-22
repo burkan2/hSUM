@@ -34,6 +34,7 @@ const MAX_STATUS_TIMESTAMP_BYTES: i64 = 128;
 const MAX_STATUS_SOURCES: i64 = 64;
 const MAX_DRIFT_CONNECTOR_KEY_BYTES: i64 = 4096;
 const MAX_DRIFT_TOTAL_CONNECTOR_KEY_BYTES: i64 = 4 * 1024 * 1024;
+const DRIFT_QUEUE_POLL_INTERVAL: Duration = Duration::from_millis(2);
 
 struct DriftTargetRow {
     source: Vec<u8>,
@@ -410,11 +411,8 @@ fn run_bounded_probe(
         deadline,
         response,
     };
-    match worker.try_send(job) {
-        Ok(()) => {}
-        Err(TrySendError::Full(_)) | Err(TrySendError::Disconnected(_)) => {
-            return unknown_drift_report(&targets);
-        }
+    if send_until(worker, job, deadline).is_err() {
+        return unknown_drift_report(&targets);
     }
 
     match receiver.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
@@ -422,6 +420,25 @@ fn run_bounded_probe(
         Err(mpsc::RecvTimeoutError::Timeout | mpsc::RecvTimeoutError::Disconnected) => {
             unknown_drift_report(&targets)
         }
+    }
+}
+
+fn send_until<T>(sender: &SyncSender<T>, mut value: T, deadline: Instant) -> Result<(), ()> {
+    loop {
+        if Instant::now() >= deadline {
+            return Err(());
+        }
+        match sender.try_send(value) {
+            Ok(()) => return Ok(()),
+            Err(TrySendError::Disconnected(_)) => return Err(()),
+            Err(TrySendError::Full(returned)) => value = returned,
+        }
+
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(());
+        }
+        thread::sleep(remaining.min(DRIFT_QUEUE_POLL_INTERVAL));
     }
 }
 
@@ -1605,5 +1622,29 @@ mod tests {
         assert!(started.elapsed() < Duration::from_millis(750));
         assert!(report.deadline_reached);
         assert_eq!(report.observations[0].state, DriftState::Unknown);
+    }
+
+    #[test]
+    fn queued_probe_submission_waits_for_capacity_within_its_deadline() {
+        let (sender, receiver) = mpsc::sync_channel(1);
+        sender.send(1_u8).unwrap();
+        let drainer = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(20));
+            assert_eq!(receiver.recv().unwrap(), 1);
+            assert_eq!(receiver.recv().unwrap(), 2);
+        });
+
+        assert!(send_until(&sender, 2, Instant::now() + Duration::from_millis(250)).is_ok());
+        drainer.join().unwrap();
+    }
+
+    #[test]
+    fn queued_probe_submission_stops_at_its_deadline() {
+        let (sender, _receiver) = mpsc::sync_channel(1);
+        sender.send(1_u8).unwrap();
+        let started = Instant::now();
+
+        assert!(send_until(&sender, 2, started + Duration::from_millis(20)).is_err());
+        assert!(started.elapsed() < Duration::from_millis(250));
     }
 }

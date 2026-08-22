@@ -140,11 +140,14 @@ all-target graph first; the generator then runs Cargo metadata in offline mode.
 
 4. The tag triggers `.github/workflows/release.yml`. It repeats the release
    checks, renders a version-pinned `install-hsum.sh`, creates checksums and
-   GitHub provenance attestations, assembles all assets in a draft, then
-   publishes the GitHub prerelease. While no Apple
-   credentials are configured it logs a warning and publishes a macOS archive
-   with only the linker's ad-hoc signature; when signing is enabled it also
-   Developer ID-signs and notarizes that archive.
+   GitHub provenance attestations, and validates the exact local asset set and
+   `SHA256SUMS` coverage. It then assembles all assets in a draft, downloads
+   that still-private draft into an empty runner directory, and publishes only
+   if the downloaded files match the exact asset contract and every aggregate
+   checksum. A failed verification leaves the release unpublished. While no
+   Apple credentials are configured it logs a warning and publishes a macOS
+   archive with only the linker's ad-hoc signature; when signing is enabled it
+   also Developer ID-signs and notarizes that archive.
 5. Download each archive from the GitHub Release onto a machine that did not
    build it. Verify `SHA256SUMS`, verify its GitHub attestation, review the Cargo
    license inventory, run `hsum --version --verbose`, and repeat the smoke
