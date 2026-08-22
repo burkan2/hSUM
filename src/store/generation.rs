@@ -800,6 +800,49 @@ impl IndexDb {
         )
     }
 
+    #[cfg(test)]
+    fn apply_filesystem_snapshot_with_observer<O>(
+        &mut self,
+        scope: &FilesystemScope,
+        documents: &[PreparedDocument],
+        failures: &[SnapshotFailure],
+        confirmations: DeleteConfirmations,
+        observer: O,
+    ) -> Result<IngestOutcome, StoreError>
+    where
+        O: FnMut(&'static str),
+    {
+        let writer_lock = WriterLock::acquire(self.path(), DEFAULT_WRITER_LOCK_TIMEOUT)?;
+        validate_snapshot(SourceKind::Filesystem, documents, failures, &[])?;
+        let summaries = documents
+            .iter()
+            .map(PreparedDocumentSummary::from_document)
+            .collect::<Result<Vec<_>, _>>()?;
+        let documents_by_key = documents
+            .iter()
+            .map(|document| (document.connector_key.clone(), document))
+            .collect::<BTreeMap<_, _>>();
+        self.apply_source_summaries_under_lock_with_observer(
+            &writer_lock,
+            PreparedSourceSummarySnapshot {
+                scope: scope.as_source_scope(),
+                documents: &summaries,
+                failures,
+                explicit_deletions: &[],
+            },
+            confirmations,
+            |summary| {
+                documents_by_key
+                    .get(&summary.connector_key)
+                    .map(|document| (*document).clone())
+                    .ok_or(StoreError::InvalidPreparedDocument(
+                        "prepared document summary has no body",
+                    ))
+            },
+            observer,
+        )
+    }
+
     pub fn apply_filesystem_snapshot_with_timeout(
         &mut self,
         scope: &FilesystemScope,
@@ -1765,10 +1808,31 @@ impl IndexDb {
         writer_lock: &WriterLock,
         snapshot: PreparedSourceSummarySnapshot<'_>,
         confirmations: DeleteConfirmations,
-        mut load_document: F,
+        load_document: F,
     ) -> Result<IngestOutcome, StoreError>
     where
         F: FnMut(&PreparedDocumentSummary) -> Result<PreparedDocument, StoreError>,
+    {
+        self.apply_source_summaries_under_lock_with_observer(
+            writer_lock,
+            snapshot,
+            confirmations,
+            load_document,
+            |_| {},
+        )
+    }
+
+    fn apply_source_summaries_under_lock_with_observer<F, O>(
+        &mut self,
+        writer_lock: &WriterLock,
+        snapshot: PreparedSourceSummarySnapshot<'_>,
+        confirmations: DeleteConfirmations,
+        mut load_document: F,
+        mut observe: O,
+    ) -> Result<IngestOutcome, StoreError>
+    where
+        F: FnMut(&PreparedDocumentSummary) -> Result<PreparedDocument, StoreError>,
+        O: FnMut(&'static str),
     {
         let PreparedSourceSummarySnapshot {
             scope,
@@ -1889,6 +1953,7 @@ impl IndexDb {
         }
 
         let generation_id = create_generation(&transaction, &now)?;
+        observe("generation-created");
 
         for (connector_key, document_summary) in &ready {
             let renamed_from = rename_map.get(connector_key);
@@ -1975,6 +2040,7 @@ impl IndexDb {
                 params![generation_id, document_id, prior_version_id, version_id,],
             )?;
         }
+        observe("document-changes-staged");
 
         for connector_key in absent.iter().chain(&explicit_tombstones) {
             let current = existing
@@ -2003,6 +2069,7 @@ impl IndexDb {
                 params![generation_id, current.id, current.document_version_id,],
             )?;
         }
+        observe("deletions-staged");
 
         for failure in failures {
             transaction.execute(
@@ -2028,6 +2095,7 @@ impl IndexDb {
             documents.len(),
             failures.first(),
         )?;
+        observe("source-status-staged");
         transaction.execute(
             "UPDATE generations
              SET state = 'committed', committed_at = ?1
@@ -2062,7 +2130,9 @@ impl IndexDb {
                 failed_documents: failures.len(),
             },
         )?;
+        observe("activation-staged");
         transaction.commit()?;
+        observe("transaction-committed");
         Ok(outcome)
     }
 
@@ -3191,4 +3261,212 @@ fn integer_from_u64(value: u64) -> Result<i64, StoreError> {
 
 fn usize_from_count(value: i64) -> Result<usize, StoreError> {
     usize::try_from(value).map_err(|_| StoreError::IntegerOverflow)
+}
+
+#[cfg(test)]
+mod generation_crash_tests {
+    use std::env;
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    use rusqlite::Connection;
+    use serde_json::json;
+    use tempfile::tempdir;
+
+    use super::*;
+    use crate::ingest::{SnapshotRevision, body_sha256};
+    use crate::search::{SearchMode, SearchRequest};
+    use crate::store::OpenMode;
+
+    const FAULT_ENV: &str = "HSUM_TEST_GENERATION_CHECKPOINT";
+    const INDEX_ENV: &str = "HSUM_TEST_GENERATION_INDEX";
+    const CRASH_EXIT: i32 = 87;
+    const CHECKPOINTS: [&str; 6] = [
+        "generation-created",
+        "document-changes-staged",
+        "deletions-staged",
+        "source-status-staged",
+        "activation-staged",
+        "transaction-committed",
+    ];
+
+    #[test]
+    fn process_death_at_every_generation_boundary_exposes_only_prior_or_next() {
+        for checkpoint in CHECKPOINTS {
+            let directory = tempdir().unwrap();
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::PermissionsExt;
+
+                std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700))
+                    .unwrap();
+            }
+            let index = directory.path().join("index.sqlite");
+            let scope = fixture_scope();
+            let mut database = create_database(&index);
+            database
+                .apply_filesystem_snapshot(
+                    &scope,
+                    &[
+                        document(b"keep.md", b"PriorKeepMarker\n"),
+                        document(b"delete.md", b"PriorDeleteMarker\n"),
+                    ],
+                    &[],
+                    DeleteConfirmations::default(),
+                )
+                .unwrap();
+            drop(database);
+
+            let status = Command::new(env::current_exe().unwrap())
+                .arg("--exact")
+                .arg("store::generation::generation_crash_tests::generation_fault_helper")
+                .arg("--nocapture")
+                .env(FAULT_ENV, checkpoint)
+                .env(INDEX_ENV, &index)
+                .status()
+                .unwrap();
+            assert_eq!(
+                status.code(),
+                Some(CRASH_EXIT),
+                "checkpoint {checkpoint} did not terminate inside the generation transaction"
+            );
+
+            Doctor::run(&index).unwrap();
+            let database = IndexDb::open_existing(&index, OpenMode::ReadOnly).unwrap();
+            let observed = (
+                search_count(&database, scope.project_id, "PriorKeepMarker"),
+                search_count(&database, scope.project_id, "PriorDeleteMarker"),
+                search_count(&database, scope.project_id, "NextKeepMarker"),
+                search_count(&database, scope.project_id, "NextAddedMarker"),
+            );
+            assert!(
+                observed == (1, 1, 0, 0) || observed == (0, 0, 1, 1),
+                "checkpoint {checkpoint} exposed a mixed generation: {observed:?}"
+            );
+            drop(database);
+
+            let connection = Connection::open(&index).unwrap();
+            let incomplete_generations: i64 = connection
+                .query_row(
+                    "SELECT COUNT(*) FROM generations WHERE state != 'committed'",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            assert_eq!(incomplete_generations, 0, "checkpoint {checkpoint}");
+            let epoch = test_metadata_u64(&connection, "index_epoch");
+            let active_generation = test_metadata_u64(&connection, "active_generation");
+            let expected_metadata = if observed == (1, 1, 0, 0) {
+                (1, 1)
+            } else {
+                (2, 2)
+            };
+            assert_eq!(
+                (epoch, active_generation),
+                expected_metadata,
+                "checkpoint {checkpoint} split passage and activation state"
+            );
+        }
+    }
+
+    #[test]
+    fn generation_fault_helper() {
+        let Ok(checkpoint) = env::var(FAULT_ENV) else {
+            return;
+        };
+        let index = PathBuf::from(env::var_os(INDEX_ENV).expect("generation index"));
+        let scope = fixture_scope();
+        let mut database = IndexDb::open_existing(&index, OpenMode::ReadWrite).unwrap();
+        let result = database.apply_filesystem_snapshot_with_observer(
+            &scope,
+            &[
+                document(b"keep.md", b"NextKeepMarker\n"),
+                document(b"added.md", b"NextAddedMarker\n"),
+            ],
+            &[],
+            DeleteConfirmations {
+                allow_empty_snapshot: false,
+                allow_mass_delete: true,
+            },
+            |observed| {
+                if observed == checkpoint {
+                    std::process::exit(CRASH_EXIT);
+                }
+            },
+        );
+        panic!("generation returned before checkpoint {checkpoint}: {result:?}");
+    }
+
+    fn create_database(path: &Path) -> IndexDb {
+        IndexDb::create(
+            path,
+            IndexId::from_uuid(Uuid::parse_str("018f47f0-9d9a-7a63-b4cc-8d6f2c8a44af").unwrap()),
+        )
+        .unwrap()
+    }
+
+    fn fixture_scope() -> FilesystemScope {
+        FilesystemScope {
+            source_id: SourceId::from_uuid(
+                Uuid::parse_str("018f47f0-9d9a-7a63-b4cc-8d6f2c8a4401").unwrap(),
+            ),
+            source_name: SafeSlug::new("fixture").unwrap(),
+            source_logical_uri: "file:///fixture".to_owned(),
+            source_config_json: r#"{"root":"/fixture"}"#.to_owned(),
+            project_id: ProjectId::from_uuid(
+                Uuid::parse_str("018f47f0-9d9a-7a63-b4cc-8d6f2c8a4402").unwrap(),
+            ),
+            project_name: SafeSlug::new("fixture").unwrap(),
+        }
+    }
+
+    fn document(connector_key: &[u8], body: &[u8]) -> PreparedDocument {
+        let source_uri = format!("repo://{}", std::str::from_utf8(connector_key).unwrap());
+        let title = source_uri.rsplit('/').next().unwrap();
+        let metadata = json!({});
+        let revision_sha256 = revision_sha256(&SnapshotRevision {
+            body,
+            source_uri: &source_uri,
+            title,
+            metadata: &metadata,
+            source_updated_at: None,
+        })
+        .unwrap();
+        PreparedDocument {
+            connector_key: connector_key.to_vec(),
+            source_uri: source_uri.clone(),
+            title: title.to_owned(),
+            metadata_json: "{}".to_owned(),
+            source_updated_at: None,
+            body: body.to_vec(),
+            body_sha256: body_sha256(body),
+            revision_sha256,
+            chunker_fingerprint: chunker_fingerprint(ChunkKind::Markdown),
+            chunks: vec![PreparedChunk {
+                ordinal: 0,
+                byte_span: ByteSpan::new(0, body.len() as u64).unwrap(),
+                line_span: LineSpan::new(1, 1).unwrap(),
+                body_text: std::str::from_utf8(body).unwrap().to_owned(),
+                content_sha256: body_sha256(body),
+                quote_bloom: QuoteBloom::from_content(body).into_bytes(),
+                literals: prepare_passage_literals(title, &source_uri, body),
+            }],
+        }
+    }
+
+    fn search_count(database: &IndexDb, project_id: ProjectId, query: &str) -> usize {
+        let request = SearchRequest::new(query, SearchMode::Lexical, 10, 3_000, false).unwrap();
+        database.search(project_id, &request).unwrap().results.len()
+    }
+
+    fn test_metadata_u64(connection: &Connection, key: &str) -> u64 {
+        let bytes: Vec<u8> = connection
+            .query_row(
+                "SELECT value FROM index_meta WHERE key = ?1",
+                [key],
+                |row| row.get(0),
+            )
+            .unwrap();
+        std::str::from_utf8(&bytes).unwrap().parse().unwrap()
+    }
 }
