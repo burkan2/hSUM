@@ -345,7 +345,7 @@ Optional watch mode and additional integrations are not on the critical path.
     documented model/queue conditions; explicit vector modes return typed
     failures. CLI/MCP share mode, retriever counts, component timings,
     explanations, degradation, hints, and an effective-retriever cursor
-    fingerprint. The 22-case vector suite, CLI/MCP/process parity suites, and
+    fingerprint. The 24-case vector suite, CLI/MCP/process parity suites, and
     the repository-owned `cargo xtask check` gate pass. Run `32542799076`
     exercises those public modes with the real pinned model through both the
     CLI and a generic MCP stdio client on Linux x86_64 and macOS arm64, then
@@ -364,7 +364,14 @@ Optional watch mode and additional integrations are not on the critical path.
   (lower -0.0312 versus the required -0.02) and the exact-token top-three
   gate (0.6571 versus lexical 0.7429). The required disposition is therefore
   stable lexical-first with hybrid explicitly beta; no held-out labels or
-  retrieval weights were changed.
+  retrieval weights were changed. The distinct stable same-index ordering gate
+  now passes in workflow run `32565388856`: one checkpointed lexical index is
+  restored on Linux x86_64 and macOS arm64, five fresh CLI and five fresh MCP
+  processes per target return identical ordered citations within each target,
+  and fan-in preserves citation order, duplicate sets, degradation, and
+  explanations with a maximum backend-score delta of `2.22e-16`. This does not
+  contradict the documented UUID-based variance across independently built
+  indexes and does not promote hybrid.
 
 ## P2 — External agent-task evaluation
 
