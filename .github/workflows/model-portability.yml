@@ -11,7 +11,16 @@ on:
       - benches/model_portability/inputs.json
       - examples/model-portability-compare.rs
       - examples/model-portability.rs
+      - migrations/0004_vector_storage.sql
+      - scripts/semantic-product-smoke.sh
+      - src/app/search_evidence.rs
+      - src/cli.rs
+      - src/mcp.rs
       - src/model/**
+      - src/protocol/**
+      - src/runtime.rs
+      - src/search/retrieval.rs
+      - src/store/vector.rs
 
 permissions:
   contents: read
@@ -50,6 +59,7 @@ jobs:
             echo "HSUM_HOME=$RUNNER_TEMP/hsum-model-portability"
             echo "REPORT_PATH=$RUNNER_TEMP/model-portability-${{ matrix.expected_arch }}.json"
             echo "DEPENDENCIES_PATH=$RUNNER_TEMP/model-portability-${{ matrix.expected_arch }}-dependencies.txt"
+            echo "PRODUCT_REPORT_PATH=$RUNNER_TEMP/semantic-product-${{ matrix.expected_arch }}.json"
           } >> "$GITHUB_ENV"
 
       - name: Confirm the native runner architecture
@@ -94,6 +104,15 @@ jobs:
             --output "$REPORT_PATH"
           python3 -c 'import json,os; report=json.load(open(os.environ["REPORT_PATH"], encoding="utf-8")); assert report["passed"] is True'
 
+      - name: Exercise the native semantic product path without model-network access
+        env:
+          HSUM_OFFLINE: "1"
+        shell: bash
+        run: |
+          bash scripts/semantic-product-smoke.sh \
+            "$PWD/target/release/hsum" \
+            "$PRODUCT_REPORT_PATH"
+
       - name: Upload machine-readable portability evidence
         uses: actions/upload-artifact@v7
         with:
@@ -101,6 +120,7 @@ jobs:
           path: |
             ${{ env.REPORT_PATH }}
             ${{ env.DEPENDENCIES_PATH }}
+            ${{ env.PRODUCT_REPORT_PATH }}
           if-no-files-found: error
           compression-level: 0
 
@@ -135,6 +155,54 @@ jobs:
           cargo +1.91.0 build --locked --release \
             --example model-portability-compare
 
+      - name: Compare the native semantic product contract
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+
+          reports = {}
+          for architecture in ("x86_64", "arm64"):
+              path = pathlib.Path(f"evidence/{architecture}/semantic-product-{architecture}.json")
+              raw = path.read_bytes()
+              report = json.loads(raw)
+              assert report["schema_version"] == "hsum.semantic-product-smoke.v1"
+              assert report["passed"] is True
+              assert report["offline"] is True
+              assert report["platform"]["machine"] == architecture
+              reports[architecture] = (report, hashlib.sha256(raw).hexdigest())
+
+          linux, linux_sha256 = reports["x86_64"]
+          macos, macos_sha256 = reports["arm64"]
+          assert linux["commit_sha"] == macos["commit_sha"]
+          assert linux["model"] == macos["model"]
+          assert linux["cli"] == macos["cli"]
+          assert linux["mcp"] == macos["mcp"]
+          assert linux["immutable_get_verified"] is True
+          assert macos["immutable_get_verified"] is True
+
+          output = {
+              "schema_version": "hsum.semantic-product-cross-target.v1",
+              "passed": True,
+              "commit_sha": linux["commit_sha"],
+              "model": linux["model"],
+              "cli": linux["cli"],
+              "mcp": linux["mcp"],
+              "reports": {
+                  "linux_x86_64_sha256": linux_sha256,
+                  "macos_arm64_sha256": macos_sha256,
+              },
+          }
+          destination = pathlib.Path(os.environ["RUNNER_TEMP"]) / "semantic-product-cross-target.json"
+          destination.write_text(
+              json.dumps(output, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
       - name: Compare every recorded float and deterministic ordering
         shell: bash
         run: |
@@ -147,6 +215,8 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: model-numerical-compatibility
-          path: ${{ runner.temp }}/model-numerical-compatibility.json
+          path: |
+            ${{ runner.temp }}/model-numerical-compatibility.json
+            ${{ runner.temp }}/semantic-product-cross-target.json
           if-no-files-found: error
           compression-level: 0
