@@ -165,8 +165,12 @@ whatever the file looks like later.
 > [!NOTE]
 > This is an alpha. The
 > [`v0.1.0-alpha.4` GitHub prerelease](https://github.com/burkan2/hSUM/releases/tag/v0.1.0-alpha.4)
-> provides checksummed artifacts for macOS arm64 and Linux x86_64. The crate
-> remains `publish = false`, so `cargo install` is unavailable.
+> provides checksummed artifacts for macOS arm64 and Linux x86_64. The source
+> package manifest is prepared for crates.io, but no hSUM version has been
+> published there, so `cargo install hsum` remains unavailable. A future
+> crates.io install will compile from source and may download the pinned ONNX
+> Runtime build dependency; use the prebuilt archives when that build-time
+> network path is unsuitable.
 
 ## Connect your agent
 

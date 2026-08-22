@@ -62,6 +62,12 @@ jobs:
         shell: bash
         run: bash scripts/generate-license-inventory.sh "$RUNNER_TEMP/hsum-cargo-licenses.json"
 
+      - name: Build and install the locked crates.io source package
+        shell: bash
+        env:
+          RUSTUP_TOOLCHAIN: 1.91.0
+        run: bash scripts/package-smoke.sh
+
       - name: Build the candidate binary
         shell: bash
         run: cargo +1.91.0 build --locked --release

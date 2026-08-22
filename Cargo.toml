@@ -6,12 +6,38 @@ rust-version = "1.91"
 description = "Local evidence for agents."
 authors = ["Burkan Alp Kale, ArgonGate Ltd."]
 license = "MIT OR Apache-2.0"
-publish = false
+repository = "https://github.com/burkan2/hSUM"
+homepage = "https://github.com/burkan2/hSUM"
+documentation = "https://docs.rs/hsum"
+readme = "README.md"
+keywords = ["local-first", "search", "evidence", "mcp", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+publish = ["crates-io"]
+include = [
+    "/src/**",
+    "!/src/.DS_Store",
+    "/tests/**",
+    "/examples/**",
+    "/benches/model_portability/inputs.json",
+    "/assets/models/**",
+    "/migrations/**",
+    "/build.rs",
+    "/Cargo.lock",
+    "/README.md",
+    "/CHANGELOG.md",
+    "/CONTRIBUTING.md",
+    "/SECURITY.md",
+    "/SUPPORT.md",
+    "/LICENSE-APACHE",
+    "/LICENSE-MIT",
+    "/NOTICE",
+]
 
 [features]
 default = []
 model-portability = []
 vector-portability = ["model-portability"]
+xtask = []
 
 [dependencies]
 aho-corasick = "=1.1.4"
@@ -52,6 +78,7 @@ path = "src/main.rs"
 [[bin]]
 name = "xtask"
 path = "src/bin/xtask.rs"
+required-features = ["xtask"]
 
 [[example]]
 name = "model-portability"
