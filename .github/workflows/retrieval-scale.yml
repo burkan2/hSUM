@@ -2,6 +2,9 @@ name: Retrieval scale
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/retrieval-scale.yml
 
 permissions:
   contents: read
