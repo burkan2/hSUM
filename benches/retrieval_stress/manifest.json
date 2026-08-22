@@ -1,0 +1,40 @@
+{
+  "schema_version": "hsum.retrieval-stress-manifest.v1",
+  "model_id": "bge-small-en-v1-5-fp32",
+  "source_count": 64,
+  "jsonl_source_count": 63,
+  "document_count": 100000,
+  "body_bytes": 15000,
+  "body_sha256": "ed17f94842fba0b6c138a75f9bb85d1da949f59500f7b01304b021916ff925b1",
+  "chunks_per_document": 10,
+  "expected_passages": 1000000,
+  "scale_source_points": [2, 8, 16, 32, 64],
+  "metadata_only_generations": 100,
+  "concurrent_old_readers": 4,
+  "probe_repetitions": 5,
+  "candidate_budget_per_retriever": 500,
+  "cancelled_requests": 8,
+  "knee_ratio_exclusive": 2.0,
+  "queries": [
+    {
+      "id": "maximum-posting-literal",
+      "mode": "lexical",
+      "query": "StressPostingLiteral"
+    },
+    {
+      "id": "punctuation-exact-fallback",
+      "mode": "lexical",
+      "query": "\"stress::punctuation|quoted[slot]=>value\""
+    },
+    {
+      "id": "duplicate-ordinary-lexical",
+      "mode": "lexical",
+      "query": "duplicate bounded evidence archive"
+    },
+    {
+      "id": "sixty-four-source-hybrid",
+      "mode": "hybrid",
+      "query": "find duplicated bounded stress evidence"
+    }
+  ]
+}

@@ -86,6 +86,21 @@ fn run_check() -> ExitCode {
             "python3",
             &["benches/retrieval_scale/harness.py", "validate"],
         ),
+        (
+            "retrieval stress unit tests",
+            "python3",
+            &[
+                "-m",
+                "unittest",
+                "-v",
+                "benches/retrieval_stress/test_harness.py",
+            ],
+        ),
+        (
+            "frozen retrieval stress inputs",
+            "python3",
+            &["benches/retrieval_stress/harness.py", "validate"],
+        ),
     ];
 
     for (name, program, args) in steps {
