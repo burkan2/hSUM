@@ -1,8 +1,9 @@
 # Stable v0.1 canonical completion ledger
 
 **Snapshot:** 2026-08-22 after the B1-05 through B1-13 native product gate,
-generation crash qualification, source-package qualification, 100k scale
-harness groundwork, and the generated local reference gate
+generation crash and multi-process cancellation/replacement qualification,
+source-package qualification, 100k scale harness groundwork, and the generated
+local reference gate
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
@@ -69,7 +70,7 @@ supported without hiding a missing later gate.
 | EVAL-05 | NDCG@10, MRR@10, exact top-three, and paired bootstrap gates | Complete local gate passing | yes | yes | yes | n/a | yes | no | Four-grade metrics and deterministic 10,000-resample paired bootstrap are unit-tested and persisted in the raw result |
 | EVAL-06 | Evidence-based hybrid promotion or lexical-first disposition | Documentation complete | yes | yes | yes | n/a | yes | no | `eval/results/heldout-v1-2026-08-02-macos-arm64.{json,md}` requires `stable-lexical-hybrid-beta`: semantic gain/NDCG pass; MRR lower bound and exact-token top-three gates fail |
 | Q-01 | Generation-boundary fault injection and prior-or-new recovery | Native target evidence passing | yes | yes | yes | yes | yes | no | Six process-death checkpoints prove exact prior-or-next recovery with a fresh Doctor/search process locally and in run `32543715602`; stable-candidate rerun remains open |
-| Q-02 | Multi-process reader/writer and cancellation-versus-timeout qualification | Implemented | yes | yes | no | no | partial | no | Semantic worker and vector replacement cases remain open |
+| Q-02 | Multi-process reader/writer and cancellation-versus-timeout qualification | Native target evidence passing | yes | yes | yes | yes | yes | no | Exact commit `e415dba` passes the complete local gate and both CI targets in run `32564056058`; real installed-model workers prove queued timeout, explicit cancellation without late responses, and recovery on both targets in run `32564056061`, while a separate-process vector reader proves bounded replacement refusal, retry, and stale-inode citation rejection |
 | Q-03 | Same-target and cross-target deterministic ordering | Implemented | yes | yes | no | no | partial | no | Lexical cross-build/cross-target and hybrid proofs remain open |
 | Q-04 | 100,000-chunk performance and component latency evidence | Focused tests passing | yes | yes | no | no | yes | no | `benches/retrieval_scale/` freezes the exact 100k corpus, 25-query/750-observation protocol, cold/warm separation, stage timings including body materialization, RSS/storage/throughput evidence, SLOs, and CV gate; Apple M2 and Linux native executions remain open |
 | Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Not started | no | no | no | no | no | no | Required report-only release evidence |
@@ -117,7 +118,7 @@ Mechanically checked snapshot at this revision:
 
 - Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
 - All in-scope implementation coverage: **88.9%** (48/54).
-- Full stable-program evidence: **64.9%** (205/316 applicable evidence cells).
+- Full stable-program evidence: **65.8%** (208/316 applicable evidence cells).
 - Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
   stable candidate qualification.
 

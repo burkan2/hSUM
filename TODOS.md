@@ -317,7 +317,15 @@ Optional watch mode and additional integrations are not on the critical path.
     coalescing, replacement, frame/output validation, real child termination,
     a cancel storm that leaves lexical SQLite search responsive, and a real
     offline missing-model process exchange. The serialized complete local
-    suite, formatting, and strict all-feature Clippy pass.
+    suite, formatting, and strict all-feature Clippy pass. Native workflow run
+    `32564056061` now exercises the installed-model product path on both
+    supported targets: both real private workers are paused, a queued request
+    returns the retryable `TIMEOUT/REQUEST_DEADLINE` outcome, two explicitly
+    cancelled requests produce no late responses, both workers resume, and
+    later semantic and hybrid calls succeed. Exact commit `e415dba` also passes
+    the complete two-target contributor gate in run `32564056058`, including a
+    separate-process vector reader that blocks physical replacement within its
+    bounded deadline and cannot serve the replaced database inode after retry.
   - Current-checkout hybrid checkpoint: one bounded loop adaptively combines at
     most three independently ranked exact, BM25, and filtered-vector lists at
     depth increments of 50. The frozen integer weighted reciprocal-rank formula
