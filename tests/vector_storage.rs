@@ -6,6 +6,8 @@ use hsum::domain::{
 };
 use hsum::ingest::{QuoteBloom, SnapshotRevision, body_sha256, revision_sha256};
 use hsum::model::{IndexModelState, ModelArtifactState, builtin_manifests, discover_model_pins};
+#[cfg(unix)]
+use hsum::search::{GetError, GetRequest};
 use hsum::search::{Retriever, SearchError, SearchMode, SearchRequest, SearchStopReason};
 use hsum::store::{
     DeleteConfirmations, Doctor, EMBEDDING_DIMENSION, EmbeddingCacheOutcome, EmbeddingModelPin,
@@ -15,6 +17,8 @@ use hsum::store::{
     create_backup, pipeline_fingerprint, pipeline_fingerprint_for, plan_forget, plan_prune,
     prepare_embedding_input, prepare_passage_literals, read_plan,
 };
+#[cfg(unix)]
+use hsum::store::{MaintenanceError, ReaderLease};
 use rusqlite::Connection;
 use serde_json::json;
 use tempfile::{TempDir, tempdir};
@@ -802,6 +806,190 @@ fn physical_forget_removes_vector_evidence_and_restore_recovers_it_exactly() {
     assert_eq!(count(&restored, "chunk_embeddings"), 1);
     assert_eq!(count(&restored, "embedding_provenance"), 1);
     assert_eq!(count(&restored, "passages_vec_b"), 1);
+}
+
+#[cfg(unix)]
+#[test]
+fn vector_reader_lease_holder_helper() {
+    use std::time::Instant;
+
+    if std::env::var_os("HSUM_TEST_VECTOR_READER_HELPER").is_none() {
+        return;
+    }
+
+    let index_path =
+        std::path::PathBuf::from(std::env::var_os("HSUM_TEST_INDEX_PATH").expect("index path"));
+    let ready_path =
+        std::path::PathBuf::from(std::env::var_os("HSUM_TEST_READY_PATH").expect("ready path"));
+    let release_path =
+        std::path::PathBuf::from(std::env::var_os("HSUM_TEST_RELEASE_PATH").expect("release path"));
+    let replaced_path = std::path::PathBuf::from(
+        std::env::var_os("HSUM_TEST_REPLACED_PATH").expect("replaced path"),
+    );
+    let citation = std::env::var("HSUM_TEST_CITATION")
+        .expect("citation")
+        .parse::<Citation>()
+        .expect("valid citation");
+    let request = GetRequest {
+        project_id: fixture_scope().project_id,
+        citation,
+        max_bytes: 16 * 1024,
+    };
+
+    let lease = ReaderLease::acquire(&index_path, Duration::ZERO).expect("reader lease");
+    let old_reader = IndexDb::open_existing(&index_path, OpenMode::ReadOnly).expect("old reader");
+    assert!(old_reader.has_complete_vector_membership().unwrap());
+    assert_eq!(
+        old_reader.get_evidence(&request).unwrap().content,
+        prepared_document().body
+    );
+    fs::write(&ready_path, b"ready").expect("publish readiness");
+
+    wait_for_file(&release_path, Instant::now() + Duration::from_secs(30));
+    drop(lease);
+    wait_for_file(&replaced_path, Instant::now() + Duration::from_secs(30));
+
+    assert!(old_reader.verify_live_identity().is_err());
+    assert!(matches!(
+        old_reader.get_evidence(&request),
+        Err(GetError::EvidenceForgotten | GetError::Store(_))
+    ));
+}
+
+#[cfg(unix)]
+#[test]
+fn separate_process_vector_reader_blocks_forget_and_cannot_serve_the_replaced_inode() {
+    use std::process::Command;
+    use std::time::Instant;
+
+    let directory = private_tempdir();
+    let index = directory.path().join("index.sqlite");
+    let prune_backup = directory.path().join("pre-prune.sqlite");
+    let recovery = directory.path().join("recovery.sqlite");
+    let restore_plan = directory.path().join("restore.json");
+    let ready = directory.path().join("reader-ready");
+    let release = directory.path().join("reader-release");
+    let replaced = directory.path().join("replacement-published");
+    let scope = fixture_scope();
+    let document = prepared_document();
+    let (mut database, _) = pinned_database_with_chunk(&index);
+    cache_active_inputs(&mut database);
+    database.commit_cached_reembedding().unwrap();
+    drop(database);
+    let prune = plan_prune(
+        &index,
+        OffsetDateTime::now_utc() + time::Duration::days(1),
+        1,
+        Duration::from_secs(5),
+    )
+    .unwrap();
+    apply_prune(
+        &index,
+        &prune,
+        prune.plan_hash,
+        &prune_backup,
+        Duration::from_secs(5),
+    )
+    .unwrap();
+
+    let report = Doctor::run(&index).unwrap();
+    let connection = Connection::open(&index).unwrap();
+    let raw_document_id: Vec<u8> = connection
+        .query_row("SELECT id FROM documents", [], |row| row.get(0))
+        .unwrap();
+    drop(connection);
+    let citation = Citation {
+        index_id: report.index_id,
+        source_id: scope.source_id,
+        document_id: DocumentId::from_uuid(Uuid::from_slice(&raw_document_id).unwrap()),
+        revision: document.revision_sha256,
+        span: document.chunks[0].byte_span,
+    };
+    let plan = plan_forget(
+        &index,
+        scope.project_id,
+        std::slice::from_ref(&citation),
+        Duration::from_secs(5),
+    )
+    .unwrap();
+
+    let mut child = Command::new(std::env::current_exe().unwrap())
+        .arg("--exact")
+        .arg("vector_reader_lease_holder_helper")
+        .arg("--nocapture")
+        .env("HSUM_TEST_VECTOR_READER_HELPER", "1")
+        .env("HSUM_TEST_INDEX_PATH", &index)
+        .env("HSUM_TEST_READY_PATH", &ready)
+        .env("HSUM_TEST_RELEASE_PATH", &release)
+        .env("HSUM_TEST_REPLACED_PATH", &replaced)
+        .env("HSUM_TEST_CITATION", citation.to_string())
+        .spawn()
+        .unwrap();
+    wait_for_file(&ready, Instant::now() + Duration::from_secs(30));
+
+    let blocked = apply_forget(
+        &index,
+        &plan,
+        plan.plan_hash,
+        &recovery,
+        &restore_plan,
+        Duration::from_millis(75),
+    )
+    .expect_err("the live reader must fence physical vector replacement");
+    assert!(matches!(
+        blocked,
+        MaintenanceError::Store(StoreError::ReplacementLockBusy { .. })
+    ));
+
+    fs::write(&release, b"release").unwrap();
+    apply_forget(
+        &index,
+        &plan,
+        plan.plan_hash,
+        &recovery,
+        &restore_plan,
+        Duration::from_secs(5),
+    )
+    .unwrap();
+    fs::write(&replaced, b"replaced").unwrap();
+    assert!(child.wait().unwrap().success());
+
+    Doctor::run(&index).unwrap();
+    let current = IndexDb::open_existing(&index, OpenMode::ReadOnly).unwrap();
+    assert!(matches!(
+        current.get_evidence(&GetRequest {
+            project_id: scope.project_id,
+            citation,
+            max_bytes: 16 * 1024,
+        }),
+        Err(GetError::EvidenceForgotten)
+    ));
+    drop(current);
+    let connection = Connection::open(&index).unwrap();
+    for table in [
+        "chunk_embeddings",
+        "embedding_provenance",
+        "passages_vec_a",
+        "passages_vec_b",
+    ] {
+        assert_eq!(
+            count(&connection, table),
+            0,
+            "{table} retained vector evidence"
+        );
+    }
+}
+
+#[cfg(unix)]
+fn wait_for_file(path: &std::path::Path, deadline: std::time::Instant) {
+    while !path.exists() {
+        assert!(
+            std::time::Instant::now() < deadline,
+            "timed out waiting for {}",
+            path.display()
+        );
+        std::thread::sleep(Duration::from_millis(5));
+    }
 }
 
 #[test]
