@@ -1,18 +1,31 @@
 use std::env;
 use std::process::{Command, ExitCode};
 
+#[path = "xtask/reference_docs.rs"]
+mod reference_docs;
+
 fn main() -> ExitCode {
-    let mut args = env::args().skip(1);
-    match (args.next().as_deref(), args.next()) {
-        (Some("check"), None) => run_check(),
+    let args = env::args().skip(1).collect::<Vec<_>>();
+    let args = args.iter().map(String::as_str).collect::<Vec<_>>();
+    match args.as_slice() {
+        ["check"] => run_check(),
+        ["references"] => run_references(false),
+        ["references", "--check"] => run_references(true),
+        ["references", "--check-remote"] => run_remote_references(),
         _ => {
-            eprintln!("usage: cargo xtask check");
+            eprintln!("usage: cargo xtask <check|references [--check|--check-remote]>");
             ExitCode::from(2)
         }
     }
 }
 
 fn run_check() -> ExitCode {
+    eprintln!("==> generated references");
+    if let Err(error) = reference_docs::check() {
+        eprintln!("{error}");
+        return ExitCode::FAILURE;
+    }
+
     let steps: &[(&str, &str, &[&str])] = &[
         ("fmt", "cargo", &["fmt", "--all", "--", "--check"]),
         (
@@ -79,4 +92,29 @@ fn run_check() -> ExitCode {
     }
 
     ExitCode::SUCCESS
+}
+
+fn run_references(check: bool) -> ExitCode {
+    let outcome = if check {
+        reference_docs::check()
+    } else {
+        reference_docs::write()
+    };
+    match outcome {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run_remote_references() -> ExitCode {
+    match reference_docs::check_remote() {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        }
+    }
 }

@@ -3015,7 +3015,7 @@ mod tests {
         assert_eq!(data["request_id"], request_id);
         assert_eq!(
             data["docs_url"],
-            "https://hsum.dev/docs/0.1.0-alpha.4/errors/CLIENT_CANCELLED"
+            "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/CLIENT_CANCELLED"
         );
     }
 

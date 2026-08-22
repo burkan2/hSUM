@@ -3,6 +3,12 @@ use std::fmt;
 use serde::Serialize;
 use serde_json::{Map, Value};
 
+/// Canonical production root for documentation matching this binary version.
+pub const VERSIONED_DOCS_BASE_URL: &str = concat!(
+    "https://hsum.burkankale.com/docs/",
+    env!("CARGO_PKG_VERSION")
+);
+
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ErrorCode {
@@ -913,11 +919,7 @@ impl PublicError {
             details,
             next_action: spec.fix,
             request_id: request_id.into(),
-            docs_url: format!(
-                "https://hsum.dev/docs/{}/errors/{}",
-                env!("CARGO_PKG_VERSION"),
-                subcode.as_str(),
-            ),
+            docs_url: format!("{VERSIONED_DOCS_BASE_URL}/errors/{}", subcode.as_str(),),
             cause: spec.cause,
             fix: spec.fix,
         }
@@ -960,7 +962,7 @@ mod tests {
                 "cause: the value is not a canonical hsum://v1 citation\n",
                 "fix: copy the complete citation from hsum search or evidence_search\n",
                 "learn: hsum help error CITATION_MALFORMED — ",
-                "https://hsum.dev/docs/0.1.0-alpha.4/errors/CITATION_MALFORMED — ",
+                "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/CITATION_MALFORMED — ",
                 "code: CITATION_MALFORMED ",
                 "— request: req-123"
             )
@@ -977,7 +979,7 @@ mod tests {
         assert_eq!(value["request_id"], "req-123");
         assert_eq!(
             value["docs_url"],
-            "https://hsum.dev/docs/0.1.0-alpha.4/errors/CITATION_MALFORMED"
+            "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/CITATION_MALFORMED"
         );
     }
 

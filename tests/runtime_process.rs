@@ -962,7 +962,9 @@ fn offline_error_help_is_self_contained_and_linked_from_real_failures() {
     assert_eq!(failing.status.code(), Some(2));
     let failure_text = String::from_utf8_lossy(&failing.stderr);
     assert!(failure_text.contains("learn: hsum help error QUERY_SYNTAX"));
-    assert!(failure_text.contains("https://hsum.dev/docs/0.1.0-alpha.4/errors/QUERY_SYNTAX"));
+    assert!(
+        failure_text.contains("https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/QUERY_SYNTAX")
+    );
 }
 
 /// Drives one real `hsum mcp` subprocess: initialize handshake, then the
@@ -1518,7 +1520,7 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
         cli_error["docs_url"]
             .as_str()
             .unwrap()
-            .starts_with("https://hsum.dev/docs/0.1.0-alpha.4/errors/")
+            .starts_with("https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/")
     );
     assert_eq!(cli_error["code"], "INVALID_ARGUMENT");
     assert_eq!(cli_error["subcode"], "QUERY_SYNTAX");

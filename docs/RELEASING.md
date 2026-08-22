@@ -107,6 +107,7 @@ candidate checkout locally:
 
 ```bash
 cargo +1.91.0 xtask check
+cargo +1.91.0 xtask references --check-remote
 bash scripts/package-smoke.sh
 cargo +1.91.0 build --locked --release
 RUSTUP_TOOLCHAIN=1.91.0 \
@@ -131,13 +132,18 @@ all-target graph first; the generator then runs Cargo metadata in offline mode.
 
 ## Release procedure
 
-1. Confirm `Cargo.toml`, `CHANGELOG.md`, README claims, and the static error
-   documentation describe the candidate exactly. Do not claim a platform,
-   signature, installer, or benchmark that has not been verified.
-2. Confirm the versioned public documentation URL resolves over HTTPS, that
-   `llms.txt` describes the candidate, and that one subcode URL from the static
-   error catalog returns the matching page. The offline binary intentionally
-   directs users to `hsum help error <SUBCODE>` rather than embedding web URLs.
+1. Confirm `Cargo.toml`, `CHANGELOG.md`, README claims, and the generated
+   references describe the candidate exactly. `cargo xtask check` fails if the
+   checked-in CLI, MCP, API, configuration, JSONL, data-layout, or error pages
+   differ from the implementation or contain a missing local link. Do not
+   claim a platform, signature, installer, or benchmark that has not been
+   verified.
+2. Confirm the versioned public documentation URL resolves over HTTPS and that
+   `llms.txt` describes the candidate. Run
+   `cargo +1.91.0 xtask references --check-remote`; it downloads every URL
+   emitted by the 77-subcode public error catalog, bounds each response, and
+   requires the matching subcode in the page. The binary exposes both that
+   version-pinned URL and offline `hsum help error <SUBCODE>` recovery.
 3. Create and locally verify an annotated, signed tag matching `Cargo.toml`:
 
    ```bash

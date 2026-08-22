@@ -1,6 +1,7 @@
 import importlib.util
 import sqlite3
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -236,6 +237,7 @@ for line in sys.stdin:
             binary.write_text(fake_server, encoding="utf-8")
             binary.chmod(0o755)
             session = HARNESS.McpSession(binary, root, root)
+            time.sleep(HARNESS.RSS_SAMPLE_INTERVAL_SECONDS * 2)
             fallback = next(
                 query
                 for query in HARNESS.load_queries()

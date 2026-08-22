@@ -143,8 +143,16 @@ Optional watch mode and additional integrations are not on the critical path.
   provide Developer ID signing and notarization.
 - Add parser fuzz targets for citations, MCP frames and cursors, queries,
   configuration, trust files, and raw connector keys.
-- Generate CLI, MCP schema, error-catalog, and configuration reference pages
-  from the implementation, then link-check all emitted versioned URLs.
+- [x] Generate the CLI, MCP schema, error catalog, configuration, JSONL, API,
+  and managed-layout reference pages from the implementation. The contributor
+  gate now rejects byte drift, unsafe/missing local links, and any public error
+  URL that does not map to its generated subcode entry.
+- Deploy the 12 missing alpha.4 error pages reported by
+  `cargo xtask references --check-remote`, then require that bounded 77-page
+  HTTP/content audit before release. The missing set is currently
+  `MODEL_PINNED`, `NETWORK_PERMANENT`, `REPOSITORY_NOT_ACTIVATED`, the six
+  `MAINTENANCE_*` pages, `FORGET_REQUIRES_PRUNE`, `RESTORE_STATE_MISMATCH`, and
+  `PRUNE_SELECTOR_INVALID`.
 - Add an explicit source-configuration command before exposing include,
   exclude, file-size, or sensitive-path overrides to end users. The current
   CLI intentionally persists conservative defaults.

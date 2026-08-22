@@ -2843,7 +2843,7 @@ fn assert_public_error_value(data: &Value, code: &str, subcode: &str, retryable:
     );
     assert_eq!(
         data["docs_url"],
-        format!("https://hsum.dev/docs/0.1.0-alpha.4/errors/{subcode}")
+        format!("https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/{subcode}")
     );
     assert!(
         data["request_id"]
