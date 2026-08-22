@@ -2984,6 +2984,7 @@ mod tests {
                 lexical: 0,
                 vector: 0,
                 fusion: 0,
+                body_materialization: 0,
                 total: 0,
             },
             freshness: EvidenceFreshnessOutput {

@@ -1501,6 +1501,8 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
     assert_eq!(cli_packet["hints"], json!([]));
     assert!(cli_packet["examined"].is_object());
     assert!(cli_packet["timing_ms"].is_object());
+    assert!(cli_packet["timing_ms"]["body_materialization"].is_number());
+    assert!(mcp_packet["timing_ms"]["body_materialization"].is_number());
     assert_eq!(mcp_packet["truncated"], json!(false));
     assert!(mcp_packet["body_bytes"].is_number());
     assert_eq!(

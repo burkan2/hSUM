@@ -141,6 +141,7 @@ pub struct SearchTimingOutput {
     pub lexical: u64,
     pub vector: u64,
     pub fusion: u64,
+    pub body_materialization: u64,
     pub total: u64,
 }
 
@@ -328,6 +329,7 @@ impl SearchEnvelopeData {
                 lexical: self.timing.lexical_ms,
                 vector: self.timing.vector_ms,
                 fusion: self.timing.fusion_ms,
+                body_materialization: self.timing.body_materialization_ms,
                 total: self.timing.total_ms,
             },
         }
@@ -373,6 +375,7 @@ impl SearchEnvelopeData {
                 lexical: self.timing.lexical_ms,
                 vector: self.timing.vector_ms,
                 fusion: self.timing.fusion_ms,
+                body_materialization: self.timing.body_materialization_ms,
                 total: self.timing.total_ms,
             },
             freshness,

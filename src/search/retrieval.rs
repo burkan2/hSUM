@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -231,7 +232,65 @@ pub struct SearchTiming {
     pub lexical_ms: u64,
     pub vector_ms: u64,
     pub fusion_ms: u64,
+    pub body_materialization_ms: u64,
     pub total_ms: u64,
+}
+
+thread_local! {
+    static SEARCH_MATERIALIZATION_ELAPSED: Cell<Option<Duration>> = const { Cell::new(None) };
+}
+
+struct SearchMaterializationProbe {
+    prior: Option<Duration>,
+}
+
+impl SearchMaterializationProbe {
+    fn arm() -> Self {
+        let prior =
+            SEARCH_MATERIALIZATION_ELAPSED.with(|elapsed| elapsed.replace(Some(Duration::ZERO)));
+        Self { prior }
+    }
+
+    fn elapsed(&self) -> Duration {
+        SEARCH_MATERIALIZATION_ELAPSED.with(|elapsed| elapsed.get().unwrap_or(Duration::ZERO))
+    }
+}
+
+impl Drop for SearchMaterializationProbe {
+    fn drop(&mut self) {
+        SEARCH_MATERIALIZATION_ELAPSED.with(|elapsed| {
+            let current = elapsed.replace(self.prior);
+            if let (Some(prior), Some(current)) = (self.prior, current) {
+                elapsed.set(Some(prior.saturating_add(current)));
+            }
+        });
+    }
+}
+
+struct PassageMaterializationSample {
+    started: Instant,
+}
+
+impl PassageMaterializationSample {
+    fn start() -> Self {
+        Self {
+            started: Instant::now(),
+        }
+    }
+}
+
+impl Drop for PassageMaterializationSample {
+    fn drop(&mut self) {
+        record_materialization(self.started.elapsed());
+    }
+}
+
+fn record_materialization(sample: Duration) {
+    SEARCH_MATERIALIZATION_ELAPSED.with(|elapsed| {
+        if let Some(current) = elapsed.get() {
+            elapsed.set(Some(current.saturating_add(sample)));
+        }
+    });
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -357,18 +416,20 @@ impl IndexDb {
         request: &SearchRequest,
     ) -> Result<SearchResponse, SearchError> {
         let _value_limit = SearchValueLimit::arm(self.connection())?;
+        let materialization = SearchMaterializationProbe::arm();
         let started = Instant::now();
         let deadline = started + Duration::from_millis(request.deadline_ms);
         let interrupt = DeadlineInterrupt::arm(self.connection(), deadline);
         let result = execute_search(self, project_id, request, started, deadline);
         drop(interrupt);
 
-        let result = match result {
+        let mut result = match result {
             Err(SearchError::Sqlite(error)) if is_interrupted(&error) => {
                 Err(SearchError::DeadlineExceeded)
             }
             result => result,
         }?;
+        result.timing.body_materialization_ms = millis(materialization.elapsed());
         self.verify_live_identity()?;
         Ok(result)
     }
@@ -623,6 +684,7 @@ fn execute_search(
             lexical_ms: millis(lexical_elapsed),
             vector_ms: millis(vector_elapsed),
             fusion_ms: millis(fusion_elapsed),
+            body_materialization_ms: 0,
             total_ms: millis(started.elapsed()),
         },
     })
@@ -713,6 +775,7 @@ fn execute_semantic_search(
             lexical_ms: 0,
             vector_ms: millis(vector_elapsed),
             fusion_ms: millis(fusion_elapsed),
+            body_materialization_ms: 0,
             total_ms: millis(started.elapsed()),
         },
     })
@@ -1871,6 +1934,7 @@ fn read_guarded_passage(
     row: &Row<'_>,
     offset: usize,
 ) -> rusqlite::Result<Result<Passage, SearchError>> {
+    let _sample = PassageMaterializationSample::start();
     if row.get::<_, bool>(offset)? {
         return Ok(Err(SearchError::Corrupt(
             "stored search candidate exceeds alpha field bounds",
@@ -2300,6 +2364,26 @@ fn run_injected_exact_timeout_query(connection: &Connection) -> Result<(), Searc
 mod tests {
     use super::*;
     use tempfile::tempdir;
+
+    #[test]
+    fn materialization_probe_is_nested_and_search_scoped() {
+        record_materialization(Duration::from_millis(99));
+        let outer = SearchMaterializationProbe::arm();
+        record_materialization(Duration::from_millis(2));
+        {
+            let inner = SearchMaterializationProbe::arm();
+            record_materialization(Duration::from_millis(3));
+            assert_eq!(inner.elapsed(), Duration::from_millis(3));
+        }
+        assert_eq!(outer.elapsed(), Duration::from_millis(5));
+        drop(outer);
+
+        assert_eq!(
+            SEARCH_MATERIALIZATION_ELAPSED.with(Cell::get),
+            None,
+            "a completed search must not leak timing into later work"
+        );
+    }
 
     #[test]
     fn lexical_compiler_treats_fts_operators_as_quoted_terms() {
