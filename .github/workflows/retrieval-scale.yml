@@ -1,0 +1,87 @@
+name: Retrieval scale
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retrieval-scale-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: '0'
+  MODEL_ID: bge-small-en-v1-5-fp32
+
+jobs:
+  linux-x86_64:
+    name: Linux x86_64 100k qualification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install the qualification Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Confirm the release runner
+        shell: bash
+        run: |
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = x86_64
+          sudo -n true
+          sudo -n test -w /proc/sys/vm/drop_caches
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the release candidate
+        shell: bash
+        run: cargo +1.91.0 build --locked --release --bin hsum
+
+      - name: Install the pinned model in an isolated home
+        shell: bash
+        run: |
+          mkdir -m 700 "$RUNNER_TEMP/retrieval-scale"
+          mkdir -m 700 "$RUNNER_TEMP/retrieval-scale/home"
+          HSUM_HOME="$RUNNER_TEMP/retrieval-scale/home" \
+            target/release/hsum --no-color --no-progress \
+            model install embedding "$MODEL_ID"
+
+      - name: Prepare exactly 100,000 embedded passages
+        shell: bash
+        run: |
+          python3 benches/retrieval_scale/harness.py prepare \
+            --hsum "$PWD/target/release/hsum" \
+            --corpus "$RUNNER_TEMP/retrieval-scale/corpus" \
+            --home "$RUNNER_TEMP/retrieval-scale/home" \
+            --model-id "$MODEL_ID" \
+            --output "$RUNNER_TEMP/retrieval-scale/setup-linux-x86_64.json"
+
+      - name: Run the canonical cold and warm protocol
+        shell: bash
+        run: |
+          python3 benches/retrieval_scale/harness.py run \
+            --hsum "$PWD/target/release/hsum" \
+            --corpus "$RUNNER_TEMP/retrieval-scale/corpus" \
+            --home "$RUNNER_TEMP/retrieval-scale/home" \
+            --setup-report "$RUNNER_TEMP/retrieval-scale/setup-linux-x86_64.json" \
+            --cold-cache-helper "$PWD/benches/retrieval_scale/drop-cache-linux.sh" \
+            --output "$RUNNER_TEMP/retrieval-scale/linux-x86_64-100k.json"
+
+      - name: Upload the immutable raw evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrieval-scale-linux-x86_64
+          path: |
+            ${{ runner.temp }}/retrieval-scale/setup-linux-x86_64.json
+            ${{ runner.temp }}/retrieval-scale/linux-x86_64-100k.json
+          if-no-files-found: warn
+          compression-level: 9

@@ -63,6 +63,8 @@ For example, an operator-owned macOS helper can run `sudo purge`; a Linux CI
 helper can run `sync` and write `3` to `/proc/sys/vm/drop_caches` through its
 approved privilege boundary. Authenticate or provision that privilege before
 starting the benchmark—an interactive prompt would contaminate the result.
+The tracked `drop-cache-macos.sh` and `drop-cache-linux.sh` helpers implement
+those exact noninteractive checks and are hashed into every raw report.
 
 ## Run
 
@@ -79,6 +81,8 @@ Run the canonical command on Apple M2/16 GB and the release Linux x86_64
 runner. Do not compare or merge observations across machines. Commit a reviewed
 summary and the immutable raw reports only after both native runs complete;
 mere harness availability is implementation progress, not performance evidence.
+The Linux run is intentionally manual through the **Retrieval scale** workflow;
+it uploads the setup receipt and raw report even when an SLO fails.
 
 Fast input checks and unit tests are part of `cargo xtask check`:
 
