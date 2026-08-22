@@ -62,6 +62,25 @@ Optional watch mode and additional integrations are not on the critical path.
 
 ## P0 — Before the next public release
 
+- [x] Implement the frozen 100,000-chunk retrieval qualification harness.
+  `benches/retrieval_scale/` now owns the deterministic corpus/query contract,
+  3-process warm/cold protocol, raw and summarized stage telemetry, RSS and
+  storage evidence, ingest throughput, class SLOs, and CV gate. Its fast tests
+  run in `cargo xtask check` without running the expensive benchmark.
+- [ ] Execute that harness on Apple M2/16 GB and the release Linux x86_64
+  runner, publish both immutable raw reports and a reviewed comparison, and
+  investigate any class SLO or total-p95 CV failure before release.
+- [x] Prepare the crates.io source package without publishing it. Completed
+  2026-08-22: `Cargo.toml` has an explicit source allowlist and complete package
+  metadata, the internal `xtask` binary is feature-gated out of ordinary
+  installs, and `scripts/package-smoke.sh` packages locked/offline, validates
+  the exact required/prohibited archive boundary, installs from the extracted
+  crate, and verifies the version and native target. Both supported targets
+  pass in workflow run `32546275484`. The ONNX Runtime build dependency may use
+  the documented network path during source compilation.
+- [ ] Publish to crates.io only from an authorized stable release after the
+  stable candidate, ownership, rollback, and post-publication install gates
+  pass. No current hSUM version is published there.
 - [ ] Exercise the prepared draft-first immutable-release path in a real
   tag-triggered run: attach the Cargo license inventory, include it and both
   SBOMs in `SHA256SUMS`, and publish only after every draft asset is present.

@@ -1,0 +1,33 @@
+{
+  "schema_version": "hsum.retrieval-scale-queries.v1",
+  "queries": [
+    {"id": "identifier-01", "class": "identifier", "mode": "lexical", "query": "scale_identifier_000001", "corpus_phrase": "scale_identifier_000001"},
+    {"id": "identifier-02", "class": "identifier", "mode": "lexical", "query": "scale_identifier_000002", "corpus_phrase": "scale_identifier_000002"},
+    {"id": "identifier-03", "class": "identifier", "mode": "lexical", "query": "scale_identifier_000003", "corpus_phrase": "scale_identifier_000003"},
+    {"id": "identifier-04", "class": "identifier", "mode": "lexical", "query": "scale_identifier_000004", "corpus_phrase": "scale_identifier_000004"},
+    {"id": "identifier-05", "class": "identifier", "mode": "lexical", "query": "scale_identifier_000005", "corpus_phrase": "scale_identifier_000005"},
+    {"id": "identifier-06", "class": "identifier", "mode": "lexical", "query": "scale_identifier_000006", "corpus_phrase": "scale_identifier_000006"},
+    {"id": "identifier-07", "class": "identifier", "mode": "lexical", "query": "scale_identifier_000007", "corpus_phrase": "scale_identifier_000007"},
+
+    {"id": "ordinary-01", "class": "ordinary_lexical", "mode": "lexical", "query": "durable generation recovery", "corpus_phrase": "durable generation recovery"},
+    {"id": "ordinary-02", "class": "ordinary_lexical", "mode": "lexical", "query": "immutable citation evidence", "corpus_phrase": "immutable citation evidence"},
+    {"id": "ordinary-03", "class": "ordinary_lexical", "mode": "lexical", "query": "bounded semantic worker", "corpus_phrase": "bounded semantic worker"},
+    {"id": "ordinary-04", "class": "ordinary_lexical", "mode": "lexical", "query": "source status staging", "corpus_phrase": "source status staging"},
+    {"id": "ordinary-05", "class": "ordinary_lexical", "mode": "lexical", "query": "deterministic rank fusion", "corpus_phrase": "deterministic rank fusion"},
+    {"id": "ordinary-06", "class": "ordinary_lexical", "mode": "lexical", "query": "local model artifact", "corpus_phrase": "local model artifact"},
+
+    {"id": "fallback-01", "class": "exact_fallback", "mode": "lexical", "query": "\"a+b\"", "corpus_phrase": "a+b"},
+    {"id": "fallback-02", "class": "exact_fallback", "mode": "lexical", "query": "\"x::y\"", "corpus_phrase": "x::y"},
+    {"id": "fallback-03", "class": "exact_fallback", "mode": "lexical", "query": "\"left=>right\"", "corpus_phrase": "left=>right"},
+    {"id": "fallback-04", "class": "exact_fallback", "mode": "lexical", "query": "\"raw|quote\"", "corpus_phrase": "raw|quote"},
+    {"id": "fallback-05", "class": "exact_fallback", "mode": "lexical", "query": "\"alpha@beta\"", "corpus_phrase": "alpha@beta"},
+    {"id": "fallback-06", "class": "exact_fallback", "mode": "lexical", "query": "\"path[slot]\"", "corpus_phrase": "path[slot]"},
+
+    {"id": "hybrid-01", "class": "hybrid_no_fallback", "mode": "hybrid", "query": "recover safely after interrupted indexing", "corpus_phrase": "interrupted indexing recovery restores a complete generation safely"},
+    {"id": "hybrid-02", "class": "hybrid_no_fallback", "mode": "hybrid", "query": "find evidence that remains valid after edits", "corpus_phrase": "immutable evidence remains valid after source edits"},
+    {"id": "hybrid-03", "class": "hybrid_no_fallback", "mode": "hybrid", "query": "limit background vector inference work", "corpus_phrase": "bounded workers limit background vector inference work"},
+    {"id": "hybrid-04", "class": "hybrid_no_fallback", "mode": "hybrid", "query": "combine rankings reproducibly", "corpus_phrase": "deterministic fusion combines lexical and vector rankings reproducibly"},
+    {"id": "hybrid-05", "class": "hybrid_no_fallback", "mode": "hybrid", "query": "load a verified local embedding model", "corpus_phrase": "verified local model artifacts load embedding inference offline"},
+    {"id": "hybrid-06", "class": "hybrid_no_fallback", "mode": "hybrid", "query": "retrieve an older immutable revision", "corpus_phrase": "historical immutable revisions remain retrievable by citation"}
+  ]
+}

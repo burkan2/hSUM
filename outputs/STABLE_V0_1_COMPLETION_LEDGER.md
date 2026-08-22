@@ -1,7 +1,8 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-08-22 after the B1-05 through B1-13 native product gate
-and the frozen held-out promotion decision
+**Snapshot:** 2026-08-22 after the B1-05 through B1-13 native product gate,
+generation crash qualification, source-package qualification, and 100k scale
+harness groundwork
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
@@ -67,17 +68,17 @@ supported without hiding a missing later gate.
 | EVAL-04 | Frozen external ripgrep, QMD, and lexical hSUM comparisons | Complete local gate passing | yes | yes | yes | n/a | yes | no | Report-only ripgrep 15.1.0 and QMD 2.5.3 setup/commands/models are frozen and recorded in the raw result |
 | EVAL-05 | NDCG@10, MRR@10, exact top-three, and paired bootstrap gates | Complete local gate passing | yes | yes | yes | n/a | yes | no | Four-grade metrics and deterministic 10,000-resample paired bootstrap are unit-tested and persisted in the raw result |
 | EVAL-06 | Evidence-based hybrid promotion or lexical-first disposition | Documentation complete | yes | yes | yes | n/a | yes | no | `eval/results/heldout-v1-2026-08-02-macos-arm64.{json,md}` requires `stable-lexical-hybrid-beta`: semantic gain/NDCG pass; MRR lower bound and exact-token top-three gates fail |
-| Q-01 | Generation-boundary fault injection and prior-or-new recovery | Implemented | yes | yes | no | no | partial | no | Existing coverage is substantial; remaining durable boundaries are open |
+| Q-01 | Generation-boundary fault injection and prior-or-new recovery | Native target evidence passing | yes | yes | yes | yes | yes | no | Six process-death checkpoints prove exact prior-or-next recovery with a fresh Doctor/search process locally and in run `32543715602`; stable-candidate rerun remains open |
 | Q-02 | Multi-process reader/writer and cancellation-versus-timeout qualification | Implemented | yes | yes | no | no | partial | no | Semantic worker and vector replacement cases remain open |
 | Q-03 | Same-target and cross-target deterministic ordering | Implemented | yes | yes | no | no | partial | no | Lexical cross-build/cross-target and hybrid proofs remain open |
-| Q-04 | 100,000-chunk performance and component latency evidence | Not started | no | no | no | no | no | no | Stable protocol requires 3 runs, warmups, RSS, storage, cold start |
+| Q-04 | 100,000-chunk performance and component latency evidence | Focused tests passing | yes | yes | no | no | yes | no | `benches/retrieval_scale/` freezes the exact 100k corpus, 25-query/750-observation protocol, cold/warm separation, stage timings including body materialization, RSS/storage/throughput evidence, SLOs, and CV gate; Apple M2 and Linux native executions remain open |
 | Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Not started | no | no | no | no | no | no | Required report-only release evidence |
 | Q-06 | Security, privacy, supply-chain, and recovery reviews | Implemented | yes | yes | no | no | partial | no | Alpha evidence exists; stable semantic/distribution review remains |
 | Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Not started | no | no | no | no | no | no | Exact client versions and accepted evidence required |
 | Q-08 | Clean-machine CLI and MCP DX trials on both targets | Implemented | yes | yes | no | no | partial | no | Alpha paths exist; five-trial stable protocol remains open |
 | Q-09 | Generated CLI, MCP, config, and error references plus link checks | Implemented | yes | yes | no | no | partial | no | Stable generated reference tree and link gate remain open |
 | Q-10 | Executable stable quickstart and compatibility-policy verification | Implemented | yes | yes | no | no | partial | no | Must run against the stable candidate artifact |
-| DIST-01 | crates.io source distribution and locked install smoke | Not started | no | no | no | no | partial | no | `publish = false` today |
+| DIST-01 | crates.io source distribution and locked install smoke | Native target evidence passing | yes | yes | yes | yes | yes | no | Explicit Cargo allowlist plus `scripts/package-smoke.sh` prove the locked archive boundary and extracted install on both targets in run `32546275484`; no crate has been published |
 | DIST-02 | Supported prebuilt archives, checksums, and installer verification | Implemented | yes | yes | yes | yes | yes | no | Alpha release path exists; stable candidate still required |
 | DIST-03 | Detached signatures, SBOM, attestations, license inventory | Implemented | yes | yes | yes | yes | yes | no | Alpha path exists; stable candidate still required |
 | DIST-04 | macOS Developer ID signing and notarization | Not started | no | no | no | no | partial | no | Requires stable signing/notarization authority |
@@ -115,8 +116,8 @@ never increase completion.
 Mechanically checked snapshot at this revision:
 
 - Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
-- All in-scope implementation coverage: **85.2%** (46/54).
-- Full stable-program evidence: **60.8%** (192/316 applicable evidence cells).
+- All in-scope implementation coverage: **88.9%** (48/54).
+- Full stable-program evidence: **64.2%** (203/316 applicable evidence cells).
 - Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
   stable candidate qualification.
 

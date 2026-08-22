@@ -72,23 +72,32 @@ GitHub and rotate the public key deliberately through a reviewed pull request.
 
 The `CI` workflow runs on clean GitHub-hosted Linux x86_64 and macOS arm64
 runners. On each platform it runs `cargo xtask check`, builds the release
-binary, and requires five artifact-level checks:
+binary, and requires six artifact-level checks scheduled through five workflow
+steps. The no-network workflow step invokes both the first-user and installer
+smokes, so installer validation is not a separate CI step. The first check is a
+source-package preflight only; this alpha runbook still does not publish to
+crates.io:
 
-1. `scripts/reproducible-release-build.sh` rebuilds in an isolated target
+1. `scripts/package-smoke.sh` creates the locked `.crate`, rejects missing or
+   prohibited archive paths, extracts it, installs from that exact source
+   artifact, verifies the version/target, and proves the internal `xtask`
+   executable is absent.
+2. `scripts/reproducible-release-build.sh` rebuilds in an isolated target
    directory and requires byte-for-byte equality with the candidate.
-2. `scripts/release-smoke.sh` creates a fresh Git repository and isolated
+3. `scripts/release-smoke.sh` creates a fresh Git repository and isolated
    `HSUM_HOME`, then validates init, search, immutable get, context, doctor,
    generated MCP client configuration, a real MCP initialize/tools-list
    exchange, and the documented all-source-failure exit.
-3. `scripts/installer-smoke.sh` renders the pinned installer, serves the
+4. `scripts/installer-smoke.sh`, invoked by the no-network wrapper in CI,
+   renders the pinned installer, serves the
    candidate archive and checksum through a fake `curl`, installs into an
    isolated user bin directory, registers through a fake Codex CLI, proves a
    citation round trip in two idempotent runs, and rejects a bad checksum
    before installing.
-4. `scripts/no-network-smoke.sh` repeats both first-user and installer paths
+5. `scripts/no-network-smoke.sh` repeats both first-user and installer paths
    with network syscalls denied; the installer receives its local fixture
    through the fake `curl`.
-5. `scripts/released-alpha1-upgrade-smoke.sh` downloads the checksum-pinned
+6. `scripts/released-alpha1-upgrade-smoke.sh` downloads the checksum-pinned
    published alpha.1 executable, creates an index with it, then proves the
    candidate rejects stale evidence, rebuilds safely, and invalidates the old
    citation.
@@ -98,6 +107,7 @@ candidate checkout locally:
 
 ```bash
 cargo +1.91.0 xtask check
+bash scripts/package-smoke.sh
 cargo +1.91.0 build --locked --release
 RUSTUP_TOOLCHAIN=1.91.0 \
   bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"

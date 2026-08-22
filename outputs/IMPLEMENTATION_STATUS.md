@@ -20,7 +20,7 @@ tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
 | Trust registry, pointer hint, selection precedence | Implemented | `src/config/`, `src/app/context.rs` | `tests/trust_registry.rs`, `tests/context_resolution.rs`, `tests/config_paths.rs` |
 | Bounded filesystem discovery | Implemented for Unix alpha target | `src/ingest/filesystem.rs` | `tests/filesystem_ingest.rs` |
 | Deterministic chunking and literal extraction | Implemented | `src/ingest/chunk.rs`, `src/ingest/literals.rs`, `src/ingest/quote_bloom.rs` | `tests/chunking.rs`, `tests/literals.rs`, `tests/quote_bloom.rs` |
-| Atomic generations and deletion guards | Implemented | `src/store/generation.rs`, `src/store/lock.rs` | `tests/ingest_generations.rs`, `src/app/tests.rs`, `tests/multiprocess.rs` |
+| Atomic generations and deletion guards | Native target evidence passing; unreleased | `src/store/generation.rs`, `src/store/lock.rs` | generation, reader/writer, and SQLite-full suites plus a six-checkpoint real process-death matrix proving exact prior-or-next recovery in run `32543715602` |
 | Immutable SQLite evidence store | Implemented at schema 4 | `src/store/open.rs`, `src/store/schema.rs`, migrations `0001` through `0004` | `tests/store_foundation.rs`, `tests/store_doctor.rs`, `tests/vector_storage.rs` |
 | Exact/quoted/BM25 retrieval and deterministic fusion | Implemented | `src/search/query.rs`, `src/search/retrieval.rs` | `tests/query_contract.rs`, `tests/search_contract.rs` |
 | Canonical citation and historical `get` | Implemented | `src/domain/citation.rs`, `src/search/get.rs` | `tests/get_contract.rs` |
@@ -51,11 +51,12 @@ tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
 | User config and trust-registry migration | Implemented; unreleased | schema-2 config/trust loaders and epochs in `src/app/context.rs` and `src/config/trust.rs`; hashed two-file ceremony in `src/config/migration.rs`; CLI/runtime adapters | library refusal/exact-backup/structural-plan/resume coverage in `tests/config_migration.rs`; N-1 non-mutation and complete process ceremony in `tests/config_migration_cli.rs`; CLI grammar and schema diagnosis fixtures |
 | Remaining canonical Alpha.2 management surfaces | Complete in the current checkout; unreleased | No intentionally absent Alpha.2 management surface remains | Full local gate must continue passing before semantic retrieval work begins |
 | Semantic/hybrid retrieval | Native target evidence passing through the public CLI/MCP/API boundary; unreleased and hybrid remains beta | filtered semantic KNN and deterministic weighted exact/BM25/vector reciprocal-rank fusion in `src/search/retrieval.rs`; bounded explanations and overlap dedupe; two-process/eight-queue offline inference in `src/model/worker.rs`; snapshot-bound orchestration in `src/app/search_evidence.rs`; CLI/MCP modes and shared protocol fields in `src/cli.rs`, `src/runtime.rs`, `src/mcp.rs`, and `src/protocol/` | complete local gate plus run `32542799076`: real installed model, offline re-embed, CLI auto/lexical/semantic/hybrid, immutable Get, generic MCP semantic/hybrid, exact cross-target product-contract match, 3,456-component numerical comparison, and zero ordering mismatches |
+| 100k retrieval qualification | Focused harness tests passing; native measurements open | `benches/retrieval_scale/` and search timing fields including body materialization | deterministic 100,000-chunk corpus contract, fixed 25-query order, 3 fresh processes, 5 warmups plus 30 measured passes/750 observations, cold-path separation, nearest-rank stage statistics, RSS/storage/throughput evidence, SLO/CV fail-closed report, and nine fast harness tests |
 | Held-out retrieval promotion evaluation | Complete; stable lexical-first and hybrid beta | frozen 100-query / three-corpus schema, strict standard-library harness, raw tool outputs, deterministic renderer, and lexical cross-build diagnosis in `eval/` | macOS arm64 result `eval/results/heldout-v1-2026-08-02-macos-arm64.json` binds manifest `a7771fac…`; semantic gain and NDCG non-inferiority pass, but MRR lower bound (-0.0312 < -0.02) and exact-token top-three non-regression fail, so the canonical gate forbids promotion |
 | Watcher and HTTP | Not implemented; canonical stable-v0.1 exclusions | Intentionally absent from the current command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
 | GitHub release archives | Alpha.4 published; next draft-first gate prepared but not exercised by a real tag | `.github/workflows/release.yml`, `scripts/release-smoke.sh`, `scripts/verify-release-assets.sh` | Exact asset/checksum allowlists, still-draft re-download and verification, and publish-last transition; the P0 real signed-tag run remains open |
 | Installer | Available in alpha.4 | `scripts/install.sh`, `scripts/installer-smoke.sh` | Checksum verification plus isolated/network-denied smoke |
-| crates.io package | Not available | `Cargo.toml` sets `publish = false` | Explicitly deferred; no crates.io claim |
+| crates.io source package | Native source-package gate passing; not published | explicit `Cargo.toml` allowlist and metadata, feature-gated internal `xtask`, `scripts/package-smoke.sh`, and both native CI targets | deterministic locked `.crate`, exact required/prohibited boundary, extracted install of only `hsum`, version/target verification, and run `32546275484`; publication remains an explicit release-authority gate |
 
 ## Current invariants
 
@@ -116,6 +117,28 @@ tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
 - Existing alpha.4 workspace-policy files remain parseable, but their roots are
   not consumed by MCP. Explicit `integration activate`, `init`, and `ingest`
   remain the state-changing paths.
+- The real generation transaction is exercised through six subprocess death
+  points: generation creation, document-change staging, deletion staging,
+  source-status staging, activation staging, and post-commit observation. A
+  fresh process then runs Doctor and lexical search and observes exactly the
+  prior or next document set, with matching generation/epoch state and no
+  building generation. The complete local gate and both targets in workflow
+  run `32543715602` pass this matrix.
+- The crates.io source manifest now has an explicit allowlist, keeps the
+  contributor-only `xtask` binary behind a feature, and passes a locked package
+  and extracted-install smoke on both supported targets in workflow run
+  `32546275484`. The archive excludes local agent state, CI/evaluation evidence,
+  release outputs, and heavyweight benchmarks. No crate has been published;
+  source installation may use the documented ONNX Runtime build-time network
+  path, while prebuilt archives remain the air-gapped installation route.
+- The canonical 100,000-chunk performance protocol is executable through one
+  long-lived MCP process per run, so process startup and first model load remain
+  cold measurements rather than contaminating warm samples. The harness emits
+  raw observations and nearest-rank p50/p95/worst distributions for embedding,
+  exact, exact fallback, lexical, vector, fusion, body materialization, server
+  total, and client round trip; it also records process-tree RSS, logical and
+  managed storage bytes, ingest/re-embed throughput, class SLOs, and the
+  three-run total-p95 CV. No native 100k report has been produced yet.
 - The B1-05 through B1-13 product storage/lifecycle, filtered-semantic,
   bounded semantic-worker, deterministic hybrid-fusion, overlap-dedupe,
   explanation, and public transport slice passes its 22-case vector
