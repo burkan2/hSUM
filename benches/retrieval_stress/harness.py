@@ -322,34 +322,74 @@ def validate_search_packet(query: dict[str, str], packet: dict[str, Any]) -> Non
         raise StressError(f"query {query['id']} omitted an explicit stop reason")
 
 
+def parse_terminal_json_object(output: str, context: str) -> dict[str, Any]:
+    try:
+        packet = json.loads(output)
+    except json.JSONDecodeError:
+        packet = None
+    if isinstance(packet, dict):
+        return packet
+    for line in reversed(output.splitlines()):
+        if not line.strip():
+            continue
+        try:
+            packet = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(packet, dict):
+            return packet
+    raise StressError(f"{context} omitted a JSON object")
+
+
 def probe_query(
     binary: pathlib.Path,
     root: pathlib.Path,
     home: pathlib.Path,
     query: dict[str, str],
 ) -> dict[str, Any]:
+    arguments = [
+        str(binary),
+        "--no-color",
+        "--no-progress",
+        "search",
+        query["query"],
+        "--mode",
+        query["mode"],
+        "--limit",
+        "10",
+        "--timeout-ms",
+        str(QUERY_TIMEOUT_MS),
+        "--json",
+    ]
     started = time.perf_counter()
-    packet = run_json(
-        [
-            str(binary),
-            "--no-color",
-            "--no-progress",
-            "search",
-            query["query"],
-            "--mode",
-            query["mode"],
-            "--limit",
-            "10",
-            "--timeout-ms",
-            str(QUERY_TIMEOUT_MS),
-            "--json",
-        ],
-        cwd=root,
-        home=home,
-    )
+    completed = scale.run_command(arguments, cwd=root, home=home, check=False)
     client_ms = (time.perf_counter() - started) * 1000.0
+    if completed.returncode != 0:
+        error = parse_terminal_json_object(completed.stderr, f"query {query['id']} failure")
+        if not (
+            completed.returncode == 4
+            and error.get("code") == "TIMEOUT"
+            and error.get("subcode") == "REQUEST_DEADLINE"
+            and error.get("retryable") is True
+        ):
+            raise StressError(
+                f"query {query['id']} failed unexpectedly ({completed.returncode}): {error}"
+            )
+        return {
+            "outcome": "deadline",
+            "client_round_trip_ms": client_ms,
+            "timing_ms": None,
+            "examined": None,
+            "retrievers": None,
+            "stop_reason": "deadline",
+            "result_count": 0,
+            "error": error,
+        }
+
+    packet = parse_terminal_json_object(completed.stdout, f"query {query['id']} success")
     validate_search_packet(query, packet)
     return {
+        "outcome": "success",
         "client_round_trip_ms": client_ms,
         "timing_ms": {stage: packet["timing_ms"][stage] for stage in TIMING_STAGES},
         "examined": packet["examined"],
@@ -360,17 +400,30 @@ def probe_query(
 
 
 def summarize_probes(observations: list[dict[str, Any]]) -> dict[str, Any]:
+    successful = [item for item in observations if item["outcome"] == "success"]
     return {
         "observations": observations,
+        "outcome_counts": {
+            "success": len(successful),
+            "deadline": sum(item["outcome"] == "deadline" for item in observations),
+        },
         "client_round_trip_ms": scale.distribution(
             item["client_round_trip_ms"] for item in observations
         ),
         "timing_ms": {
-            stage: scale.distribution(item["timing_ms"][stage] for item in observations)
+            stage: (
+                scale.distribution(item["timing_ms"][stage] for item in successful)
+                if successful
+                else None
+            )
             for stage in TIMING_STAGES
         },
         "max_examined": {
-            key: max(item["examined"].get(key, 0) for item in observations)
+            key: (
+                max(item["examined"].get(key, 0) for item in successful)
+                if successful
+                else None
+            )
             for key in ("exact", "exact_fallback", "lexical", "vector")
         },
     }
@@ -423,6 +476,22 @@ def first_observed_knee(
                     "ratio": ratio,
                     "rule": "current p50 is more than 2x the preceding scale point",
                 }
+    return None
+
+
+def first_observed_deadline(samples: list[dict[str, Any]]) -> dict[str, Any] | None:
+    for sample in samples:
+        for query_id, summary in sample["queries"].items():
+            for repetition, observation in enumerate(summary["observations"], start=1):
+                if observation["outcome"] == "deadline":
+                    return {
+                        "query_id": query_id,
+                        "source_count": sample["source_count"],
+                        "passages": sample["passages"],
+                        "repetition": repetition,
+                        "client_round_trip_ms": observation["client_round_trip_ms"],
+                        "error": observation["error"],
+                    }
     return None
 
 
@@ -838,6 +907,15 @@ def run_stress(args: argparse.Namespace) -> int:
             for _ in range(manifest["probe_repetitions"])
         ]
     )
+    scale_deadlines = sum(
+        summary["outcome_counts"]["deadline"]
+        for sample in scale_samples
+        for summary in sample["queries"].values()
+    )
+    final_hybrid_used_vectors = all(
+        observation["outcome"] == "success" and "vector" in observation["retrievers"]
+        for observation in final_hybrid["observations"]
+    )
     cancel_storm = run_cancel_storm(binary, root, home, manifest)
     counts = final_database_counts(database)
     if counts["sources"] != manifest["source_count"] or counts["documents"] != manifest[
@@ -878,6 +956,7 @@ def run_stress(args: argparse.Namespace) -> int:
         "first_observed_knee": first_observed_knee(
             scale_samples, manifest["knee_ratio_exclusive"]
         ),
+        "first_observed_deadline": first_observed_deadline(scale_samples),
         "metadata_only_generations": metadata,
         "reembed": reembed,
         "final_hybrid": final_hybrid,
@@ -894,10 +973,14 @@ def run_stress(args: argparse.Namespace) -> int:
                 "duplicate_body_deduplicated": True,
                 "one_hundred_metadata_only_generations": True,
                 "concurrent_old_readers_retained_prior_snapshots": True,
-                "final_hybrid_used_vectors": True,
+                "all_scale_probes_returned_evidence": scale_deadlines == 0,
+                "final_hybrid_used_vectors": final_hybrid_used_vectors,
                 "cancel_storm_recovered": True,
                 "rss_recorded": True,
             },
+            "observed_deadline_count": (
+                scale_deadlines + final_hybrid["outcome_counts"]["deadline"]
+            ),
         },
     }
     output.parent.mkdir(parents=True, exist_ok=True)

@@ -1,6 +1,7 @@
 import importlib.util
 import json
 import sqlite3
+import subprocess
 import tempfile
 import unittest
 from contextlib import closing
@@ -108,16 +109,66 @@ class RetrievalStressHarnessTests(unittest.TestCase):
     def test_probe_query_uses_the_cli_maximum_timeout(self):
         manifest = HARNESS.load_manifest()
         packet = search_packet("lexical", ["exact", "lexical"])
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=json.dumps(packet), stderr=""
+        )
 
-        with mock.patch.object(HARNESS, "run_json", return_value=packet) as run_json:
+        with mock.patch.object(
+            HARNESS.scale, "run_command", return_value=completed
+        ) as run_command:
             HARNESS.probe_query(
                 Path("hsum"), Path("workspace"), Path("home"), manifest["queries"][0]
             )
 
-        arguments = run_json.call_args.args[0]
+        arguments = run_command.call_args.args[0]
         timeout_index = arguments.index("--timeout-ms")
         self.assertEqual(HARNESS.QUERY_TIMEOUT_MS, 10_000)
         self.assertEqual(arguments[timeout_index + 1], "10000")
+        self.assertFalse(run_command.call_args.kwargs["check"])
+
+    def test_probe_query_records_only_the_structured_deadline_error(self):
+        manifest = HARNESS.load_manifest()
+        deadline = {
+            "code": "TIMEOUT",
+            "subcode": "REQUEST_DEADLINE",
+            "retryable": True,
+            "details": {"reason": "search deadline expired"},
+        }
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=4, stdout="", stderr=json.dumps(deadline)
+        )
+
+        with mock.patch.object(HARNESS.scale, "run_command", return_value=completed):
+            observation = HARNESS.probe_query(
+                Path("hsum"), Path("workspace"), Path("home"), manifest["queries"][0]
+            )
+
+        summary = HARNESS.summarize_probes([observation])
+        self.assertEqual(observation["outcome"], "deadline")
+        self.assertEqual(observation["stop_reason"], "deadline")
+        self.assertIsNone(observation["timing_ms"])
+        self.assertEqual(summary["outcome_counts"], {"success": 0, "deadline": 1})
+        self.assertTrue(all(value is None for value in summary["timing_ms"].values()))
+        self.assertTrue(all(value is None for value in summary["max_examined"].values()))
+
+    def test_probe_query_rejects_non_deadline_failures(self):
+        manifest = HARNESS.load_manifest()
+        completed = subprocess.CompletedProcess(
+            args=[],
+            returncode=4,
+            stdout="",
+            stderr=json.dumps(
+                {"code": "INDEX", "subcode": "INDEX_CORRUPT", "retryable": False}
+            ),
+        )
+
+        with (
+            mock.patch.object(HARNESS.scale, "run_command", return_value=completed),
+            self.assertRaises(HARNESS.StressError),
+        ):
+            HARNESS.probe_query(
+                Path("hsum"), Path("workspace"), Path("home"), manifest["queries"][0]
+            )
 
     def test_first_knee_is_strictly_more_than_double_the_preceding_median(self):
         def sample(source_count: int, p50: float) -> dict:
@@ -136,6 +187,27 @@ class RetrievalStressHarnessTests(unittest.TestCase):
         assert knee is not None
         self.assertEqual(knee["source_count"], 16)
         self.assertEqual(knee["ratio"], 2.05)
+
+    def test_first_deadline_preserves_the_observed_scale_boundary(self):
+        deadline = {
+            "outcome": "deadline",
+            "client_round_trip_ms": 10_005.0,
+            "error": {"code": "TIMEOUT", "subcode": "REQUEST_DEADLINE"},
+        }
+        samples = [
+            {
+                "source_count": 2,
+                "passages": 15_880,
+                "queries": {"literal": {"observations": [deadline]}},
+            }
+        ]
+
+        observed = HARNESS.first_observed_deadline(samples)
+
+        self.assertIsNotNone(observed)
+        assert observed is not None
+        self.assertEqual(observed["passages"], 15_880)
+        self.assertEqual(observed["repetition"], 1)
 
     def test_four_old_readers_retain_their_snapshot_during_final_generation(self):
         manifest = dict(HARNESS.load_manifest())
