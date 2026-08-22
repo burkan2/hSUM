@@ -57,6 +57,21 @@ fn run_check() -> ExitCode {
             &["eval/harness.py", "validate"],
         ),
         (
+            "retrieval determinism unit tests",
+            "python3",
+            &[
+                "-m",
+                "unittest",
+                "-v",
+                "benches/retrieval_determinism/test_harness.py",
+            ],
+        ),
+        (
+            "frozen retrieval determinism inputs",
+            "python3",
+            &["benches/retrieval_determinism/harness.py", "validate"],
+        ),
+        (
             "retrieval scale unit tests",
             "python3",
             &[
