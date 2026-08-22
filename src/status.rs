@@ -411,7 +411,7 @@ fn run_bounded_probe(
         deadline,
         response,
     };
-    if send_until(worker, job, deadline).is_err() {
+    if !send_until(worker, job, deadline) {
         return unknown_drift_report(&targets);
     }
 
@@ -423,20 +423,20 @@ fn run_bounded_probe(
     }
 }
 
-fn send_until<T>(sender: &SyncSender<T>, mut value: T, deadline: Instant) -> Result<(), ()> {
+fn send_until<T>(sender: &SyncSender<T>, mut value: T, deadline: Instant) -> bool {
     loop {
         if Instant::now() >= deadline {
-            return Err(());
+            return false;
         }
         match sender.try_send(value) {
-            Ok(()) => return Ok(()),
-            Err(TrySendError::Disconnected(_)) => return Err(()),
+            Ok(()) => return true,
+            Err(TrySendError::Disconnected(_)) => return false,
             Err(TrySendError::Full(returned)) => value = returned,
         }
 
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
-            return Err(());
+            return false;
         }
         thread::sleep(remaining.min(DRIFT_QUEUE_POLL_INTERVAL));
     }
@@ -1634,7 +1634,11 @@ mod tests {
             assert_eq!(receiver.recv().unwrap(), 2);
         });
 
-        assert!(send_until(&sender, 2, Instant::now() + Duration::from_millis(250)).is_ok());
+        assert!(send_until(
+            &sender,
+            2,
+            Instant::now() + Duration::from_millis(250)
+        ));
         drainer.join().unwrap();
     }
 
@@ -1644,7 +1648,7 @@ mod tests {
         sender.send(1_u8).unwrap();
         let started = Instant::now();
 
-        assert!(send_until(&sender, 2, started + Duration::from_millis(20)).is_err());
+        assert!(!send_until(&sender, 2, started + Duration::from_millis(20)));
         assert!(started.elapsed() < Duration::from_millis(250));
     }
 }
