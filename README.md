@@ -264,14 +264,19 @@ agent instructions in place. hSUM sends no corpus data to a model or service;
 check the memory system's policy for its storage, embeddings, and compression
 calls.
 
-## Available in 0.1.0-alpha.4
+## Public alpha.4 and current-checkout capabilities
+
+Rows marked "current checkout; unreleased" are not promises about the
+published `0.1.0-alpha.4` archives. They describe this source candidate and
+remain subject to the release gates in
+[`outputs/STABLE_V0_1_COMPLETION_LEDGER.md`](outputs/STABLE_V0_1_COMPLETION_LEDGER.md).
 
 | Capability | Status | Current boundary |
 |---|---|---|
 | Local filesystem ingest | Available | Register roots explicitly; one active filesystem authority per project; registration and root replacement do not ingest implicitly |
 | Named projects | Available in the current checkout; unreleased | Create, list, persistently select, and replace the filesystem root |
 | Markdown, text, and source code | Available | Lowercase `.md`, `.markdown`, `.txt`, `.rs`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.java`, `.kt`, `.kts`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.hh`, `.cxx`, `.rb`, `.cs`, `.swift`, `.php`, `.scala`, `.sh`, `.bash`, and `.sql` |
-| Exact and BM25 search | Available | `auto` and `lexical` are equivalent; there are no embeddings or vectors |
+| Exact and BM25 search | Available | Explicit `lexical` is the stable retrieval control; `auto` is lexical on an index without a complete vector generation |
 | Immutable citations and historical `get` | Available | Evidence remains resolvable while its immutable version remains in this alpha index |
 | Atomic generations | Available | Explicit mixed-source ingest; no watcher or daemon |
 | Status and Doctor | Full diagnosis available; bounded repair/report in the current checkout, unreleased | Repair removes abandoned generation rows only; support reports are body-free and query-free |
@@ -282,15 +287,16 @@ calls.
 | MCP stdio | Available | One global Codex registration; every server process pins one exact trusted project scope |
 | JSONL snapshot sources | Available in the current checkout; unreleased | Add, list, attach, detach, ingest, and globally remove snapshots |
 | Live connectors | Unsupported | Planned after snapshot-source lifecycle work |
-| Semantic search, vectors, and reranking | Unsupported | Artifact management does not activate inference or add semantic/hybrid search modes |
+| Semantic and hybrid vector retrieval | Beta in the current checkout; unreleased | Requires an explicitly pinned model, verified local artifact, and complete `ingest --reembed`; hybrid failed two held-out promotion gates and is not the stable default claim |
+| Reranking | Unsupported | Evaluation-gated post-v0.1 experiment; no reranker is part of semantic or hybrid retrieval |
 | HTTP server or web UI | Unsupported | MCP stdio is the only transport |
 | Prebuilt installation | Available | Checksum-verifying no-`sudo` installer and archives for macOS arm64 and Linux x86_64; no crates.io package |
 
 ### Pinned model artifacts in the current checkout
 
 Model management is global and explicit. `init`, `ingest`, `search`, MCP, and
-every inspection command remain network-free. The only command allowed to
-download is:
+every inspection command remain network-free. Inventory and verification are
+local; only `model install` may download:
 
 ```bash
 hsum model list
@@ -312,17 +318,31 @@ hsum model import /media/transfer/bge-model-directory
 hsum model list --json
 ```
 
-This slice manages trusted local bytes only. It deliberately does not expose
-`init --embedding-model`, `ingest --reembed`, `search --mode semantic`, or
-`search --mode hybrid`; those remain gated on the vector and inference
-portability proof.
+The current checkout can opt one index into the pinned model and build its
+vector generation explicitly. Apart from `model install`, this path remains
+network-free:
 
-The next gated step now has an opt-in, non-product
-[FastEmbed CPU portability probe](benches/model_portability/README.md). It
-loads only re-verified cache bytes and persists no vectors. The checked-in
-Apple M2/macOS arm64 development run passes its latency, output, and RSS
-ceilings; Linux x86_64 remains unqualified until the prepared native-runner
-workflow publishes equivalent evidence.
+```bash
+hsum model install embedding bge-small-en-v1-5-fp32
+hsum init . --embedding-model bge-small-en-v1-5-fp32
+hsum ingest --reembed
+hsum search 'recovery after an interrupted generation' --mode semantic
+hsum search 'source_state' --mode hybrid --explain
+```
+
+`semantic` uses only the filtered vector retriever. `hybrid` combines exact,
+BM25, and vector candidates with the frozen deterministic weighted-RRF
+contract. The frozen held-out evaluation requires a stable lexical-first,
+hybrid-beta disposition: hybrid passed semantic-value and NDCG gates but
+failed the MRR lower-bound and exact-token top-three gates. No model-enabled
+mode is therefore promoted as the stable retrieval claim.
+
+The lower-level [FastEmbed CPU portability
+probe](benches/model_portability/README.md) and the native product smoke now
+pass on Linux x86_64 and macOS arm64. The product run initializes a real pinned
+index, re-embeds with verified cache bytes while offline, exercises all four
+CLI modes plus semantic/hybrid MCP calls, and verifies immutable `get`. This is
+native candidate evidence, not tagged-release or cross-client dogfood evidence.
 
 ### Filesystem sources in the current checkout
 
@@ -787,15 +807,20 @@ The current candidate combines three local lexical signals:
 2. conservative exact quoted spans;
 3. SQLite FTS5 BM25.
 
-The candidate lists are fused deterministically. `--explain` includes the
-signal ranks and fixed-point fusion score. `--mode auto` and
-`--mode lexical` produce the same behavior.
+The lexical candidate lists are fused deterministically. `--explain` includes
+the signal ranks and fixed-point fusion score. Explicit `--mode lexical` is the
+stable control. `--mode auto` remains lexical when the selected index has no
+complete vector generation; on an explicitly model-enabled and fully indexed
+checkout it selects the beta hybrid path. Use an explicit mode whenever an
+evaluation or automation must not change behavior with model state.
 
 ```bash
 "$HSUM" search 'generation recovery'
 "$HSUM" search '"EVIDENCE_FORGOTTEN"' --limit 20 --timeout-ms 3000 --explain
 "$HSUM" search 'source_state' --json
 "$HSUM" search 'source_state' --limit 10 --cursor '<next_cursor>' --json
+"$HSUM" search 'interrupted generation recovery' --mode semantic --json
+"$HSUM" search 'source_state' --mode hybrid --explain --json
 ```
 
 Search limits are 1–50 results, the deadline is 100–10,000 ms, and the defaults

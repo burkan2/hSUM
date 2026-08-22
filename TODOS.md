@@ -65,6 +65,12 @@ Optional watch mode and additional integrations are not on the critical path.
 - [ ] Exercise the prepared draft-first immutable-release path in a real
   tag-triggered run: attach the Cargo license inventory, include it and both
   SBOMs in `SHA256SUMS`, and publish only after every draft asset is present.
+  - Current-checkout checkpoint: `scripts/verify-release-assets.sh` rejects any
+    missing or extra release asset/checksum entry and verifies every recorded
+    byte. The release workflow now assembles the exact set as a draft,
+    re-downloads it into an empty runner directory, re-verifies it while the
+    release is still private, and only then publishes. This checkbox remains
+    open until an authorized signed tag exercises that path end to end.
 
 ## P1 — Alpha hardening and operations
 
@@ -230,8 +236,10 @@ Optional watch mode and additional integrations are not on the critical path.
     3,456 reference components plus exact model/runtime/input provenance, and
     pass the preregistered cross-architecture component, vector, cosine,
     distance, and deterministic-ordering contract. Production schema-v4 vector
-    storage now passes the complete local gate; native storage and stable
-    release qualification remain open.
+    storage now passes the complete local gate. Workflow run `32542799076`
+    additionally installs the real pinned artifact, re-embeds a product index
+    offline, exercises CLI and MCP retrieval on both targets, and compares the
+    cross-target product contract. Stable release qualification remains open.
 - Prove filtered vector scope correctness, deterministic equal-distance
   ordering, portable SQLite/vector packaging, memory bounds, cancellation, and
   air-gapped model import before exposing semantic or hybrid modes.
@@ -256,7 +264,8 @@ Optional watch mode and additional integrations are not on the critical path.
     only historical cache/provenance; physical forget removes affected vector
     evidence; guarded restore recovers it byte-for-byte. Focused suites, the
     serialized complete local test gate, formatting, and strict all-feature
-    Clippy pass. Native target proof remains open.
+    Clippy pass. The native suites and the real offline product re-embed in run
+    `32542799076` now pass on both supported targets.
   - Current-checkout filtered-retrieval checkpoint: semantic core requests now
     accept exactly one validated, finite, normalized 384-value query vector and
     refuse absent or model-incompatible active vector generations. One SQLite
@@ -302,8 +311,11 @@ Optional watch mode and additional integrations are not on the critical path.
     failures. CLI/MCP share mode, retriever counts, component timings,
     explanations, degradation, hints, and an effective-retriever cursor
     fingerprint. The 22-case vector suite, CLI/MCP/process parity suites, and
-    the repository-owned `cargo xtask check` gate pass. Native product-mode
-    evidence and stable release qualification remain open.
+    the repository-owned `cargo xtask check` gate pass. Run `32542799076`
+    exercises those public modes with the real pinned model through both the
+    CLI and a generic MCP stdio client on Linux x86_64 and macOS arm64, then
+    compares the behavior summaries in fan-in. Cross-client dogfood and stable
+    release qualification remain open.
 - [x] Build and freeze the canonical held-out evaluation: 100 queries over
   three independently structured corpora, accepted byte spans, four-point
   labels, 35 semantic/paraphrase cases, report-only ripgrep/QMD comparisons,

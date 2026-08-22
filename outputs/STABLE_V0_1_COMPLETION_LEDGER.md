@@ -1,6 +1,6 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-08-03 after the B1-05 through B1-13 complete local gate
+**Snapshot:** 2026-08-22 after the B1-05 through B1-13 native product gate
 and the frozen held-out promotion decision
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
@@ -53,15 +53,15 @@ supported without hiding a missing later gate.
 | B1-02 | Verified-byte FastEmbed CPU inference portability | Native target evidence passing | yes | yes | yes | yes | yes | no | v2 native reports from run `30731369195` |
 | B1-03 | Cross-architecture numerical compatibility and vector provenance | Native target evidence passing | yes | yes | yes | yes | yes | no | 3,456-component comparison, identical ordering, and full CI fan-in from runs `30731369195` and `30731864477` |
 | B1-04 | sqlite-vec static packaging and filtered-KNN portability spike | Native target evidence passing | yes | yes | yes | yes | yes | no | Raw failures retained; bounded storage revision passes both targets and fan-in in run `30732989326` |
-| B1-05 | Embedding schema, exact vector provenance, and index pins | Complete local gate passing | yes | yes | yes | no | no | no | Schema v4, immutable profile metadata, canonical provenance/cache, sqlite-vec A/B slots, Doctor tamper coverage |
-| B1-06 | Five-state semantic/model lifecycle | Complete local gate passing | yes | yes | yes | no | no | no | Exact pin-at-init and derived lexical/configured/installed/indexed/degraded states in model and process suites |
-| B1-07 | Atomic re-embed, unchanged-content reuse, capacity, recovery | Complete local gate passing | yes | yes | yes | no | no | no | Pre-inference cache reuse, bounded batches, capacity planning, atomic shadow-slot flip, rollback and invalidation fixtures |
-| B1-08 | Vector-aware prune, forget, backup, and restore guarantees | Complete local gate passing | yes | yes | yes | no | no | no | Exact vector preservation/reclamation/deletion/restoration in vector and maintenance suites |
-| B1-09 | Filtered semantic retrieval with project/source scope before KNN | Complete local gate passing | yes | yes | yes | no | no | no | Transaction-scoped active-slot fan-out applies each project source UUID as a sqlite-vec partition predicate before KNN; K+1/exact tie fallback, guarded materialization, compatibility refusal, focused semantic fixtures, and the complete serialized local gate pass |
-| B1-10 | Semantic cancellation, timeout, memory, offline, typed model states | Complete local gate passing | yes | yes | yes | no | no | no | Two private model processes, eight queued leader jobs, identical-query coalescing, bounded request/response frames, caller cancellation/deadline discard, overdue child kill/replacement, offline verified-cache-only inference, exact typed failure states, cancel-storm lexical-survival proof, real-process missing-model protocol proof, and the complete serialized local gate pass |
-| B1-11 | Weighted RRF across exact/BM25/vector candidates | Complete local gate passing | yes | yes | yes | no | partial | no | Frozen integer-weight, equal-rank, and three-list fixtures plus the complete contributor gate pass at `011d669` |
-| B1-12 | Hybrid overlap dedupe, stable ties, and bounded explanations | Complete local gate passing | yes | yes | yes | no | partial | no | Same-content/overlap, exact citation preservation, and bounded explanation fixtures plus the complete contributor gate pass at `011d669` |
-| B1-13 | Semantic/hybrid CLI, MCP, API, cursor, and isolation parity | Complete local gate passing | yes | yes | yes | no | partial | no | Shared public modes, typed degradation, cursor execution fingerprint, and CLI/MCP/process parity fixtures plus the complete contributor gate pass at `011d669` |
+| B1-05 | Embedding schema, exact vector provenance, and index pins | Native target evidence passing | yes | yes | yes | yes | yes | no | Schema-v4 and tamper suites on both CI targets; real verified-artifact pin and indexed state in run `32542799076` |
+| B1-06 | Five-state semantic/model lifecycle | Native target evidence passing | yes | yes | yes | yes | yes | no | State suites on both targets plus real installed/indexed product state in run `32542799076` |
+| B1-07 | Atomic re-embed, unchanged-content reuse, capacity, recovery | Native target evidence passing | yes | yes | yes | yes | yes | no | Lifecycle suites on both targets plus real offline product re-embed in run `32542799076` |
+| B1-08 | Vector-aware prune, forget, backup, and restore guarantees | Native target evidence passing | yes | yes | yes | yes | yes | no | Exact preservation/reclamation/deletion/restoration suites pass on both targets in run `32542799062` |
+| B1-09 | Filtered semantic retrieval with project/source scope before KNN | Native target evidence passing | yes | yes | yes | yes | yes | no | Scoped/tie suites pass on both targets; real CLI and MCP vector retrieval passes in run `32542799076` |
+| B1-10 | Semantic cancellation, timeout, memory, offline, typed model states | Native target evidence passing | yes | yes | yes | yes | yes | no | Worker/state suites on both targets, bounded native probe metrics, and real offline CLI/MCP inference in run `32542799076` |
+| B1-11 | Weighted RRF across exact/BM25/vector candidates | Native target evidence passing | yes | yes | yes | yes | yes | no | Frozen fusion suites on both targets plus real CLI/MCP hybrid behavior and exact fan-in comparison in run `32542799076` |
+| B1-12 | Hybrid overlap dedupe, stable ties, and bounded explanations | Native target evidence passing | yes | yes | yes | yes | yes | no | Dedupe/tie/explanation suites on both targets plus explained real hybrid product calls in run `32542799076` |
+| B1-13 | Semantic/hybrid CLI, MCP, API, cursor, and isolation parity | Native target evidence passing | yes | yes | yes | yes | yes | no | CLI/MCP/process suites on both targets plus real model CLI/MCP behavior match in run `32542799076` |
 | EVAL-02 | Stable 100-query, three-corpus, four-grade held-out set | Complete local gate passing | yes | yes | yes | n/a | yes | no | `eval/` freezes 100 tasks, three corpus blob sets, accepted byte spans, labels, query order, migrations, model, and retrieval settings |
 | EVAL-03 | At least 30 preregistered semantic/paraphrase queries | Complete local gate passing | yes | yes | yes | n/a | yes | no | 35 semantic/paraphrase tasks validate before a run begins |
 | EVAL-04 | Frozen external ripgrep, QMD, and lexical hSUM comparisons | Complete local gate passing | yes | yes | yes | n/a | yes | no | Report-only ripgrep 15.1.0 and QMD 2.5.3 setup/commands/models are frozen and recorded in the raw result |
@@ -116,7 +116,7 @@ Mechanically checked snapshot at this revision:
 
 - Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
 - All in-scope implementation coverage: **85.2%** (46/54).
-- Full stable-program evidence: **55.1%** (174/316 applicable evidence cells).
+- Full stable-program evidence: **60.8%** (192/316 applicable evidence cells).
 - Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
   stable candidate qualification.
 
