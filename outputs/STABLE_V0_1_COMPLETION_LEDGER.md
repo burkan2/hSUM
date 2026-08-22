@@ -76,7 +76,7 @@ supported without hiding a missing later gate.
 | Q-06 | Security, privacy, supply-chain, and recovery reviews | Implemented | yes | yes | no | no | partial | no | Alpha evidence exists; stable semantic/distribution review remains |
 | Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Not started | no | no | no | no | no | no | Exact client versions and accepted evidence required |
 | Q-08 | Clean-machine CLI and MCP DX trials on both targets | Implemented | yes | yes | no | no | partial | no | Alpha paths exist; five-trial stable protocol remains open |
-| Q-09 | Generated CLI, MCP, config, and error references plus link checks | Complete local gate passing | yes | yes | yes | no | partial | no | Eight implementation-derived pages, four generator tests, byte-drift/local-link/runtime-URL mapping gate, and canonical deployed URL base pass locally; remote audit passes 65/77 alpha.4 pages and reports 12 undeployed subcodes |
+| Q-09 | Generated CLI, MCP, config, and error references plus link checks | Native target evidence passing | yes | yes | yes | yes | partial | no | Eight implementation-derived pages, four generator tests, byte-drift/local-link/runtime-URL mapping gate, and canonical deployed URL base pass on both targets in run `32549550396`; remote audit passes 65/77 alpha.4 pages and reports 12 undeployed subcodes |
 | Q-10 | Executable stable quickstart and compatibility-policy verification | Implemented | yes | yes | no | no | partial | no | Must run against the stable candidate artifact |
 | DIST-01 | crates.io source distribution and locked install smoke | Native target evidence passing | yes | yes | yes | yes | yes | no | Explicit Cargo allowlist plus `scripts/package-smoke.sh` prove the locked archive boundary and extracted install on both targets in run `32546275484`; no crate has been published |
 | DIST-02 | Supported prebuilt archives, checksums, and installer verification | Implemented | yes | yes | yes | yes | yes | no | Alpha release path exists; stable candidate still required |
@@ -117,7 +117,7 @@ Mechanically checked snapshot at this revision:
 
 - Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
 - All in-scope implementation coverage: **88.9%** (48/54).
-- Full stable-program evidence: **64.6%** (204/316 applicable evidence cells).
+- Full stable-program evidence: **64.9%** (205/316 applicable evidence cells).
 - Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
   stable candidate qualification.
 
