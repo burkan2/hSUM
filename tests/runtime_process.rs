@@ -1231,7 +1231,6 @@ fn cli_cursor_pages_one_stable_window_and_round_trips_through_mcp() {
                 "name": "evidence_search",
                 "arguments": {
                     "query": "alpha",
-                    "mode": "auto",
                     "limit": 7,
                     "cursor": first_cursor,
                     "timeout_ms": 10_000,
@@ -1429,7 +1428,6 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
                     "name": "evidence_search",
                     "arguments": {
                         "query": "parity-alpha",
-                        "mode": "auto",
                         "limit": 10,
                         "timeout_ms": 10_000,
                         "explain": true
