@@ -83,7 +83,7 @@ supported without hiding a missing later gate.
 | Q-10 | Executable stable quickstart and compatibility-policy verification | Native target evidence passing | yes | yes | yes | yes | yes | no | README version/command/privacy and 27-row controlled capability policy are executable gates; exact-head clean-machine run `32655818271` passes five isolated artifact trials on each supported target, while stable signed-tag qualification remains open |
 | DIST-01 | crates.io source distribution and locked install smoke | Native target evidence passing | yes | yes | yes | yes | yes | no | Explicit Cargo allowlist plus `scripts/package-smoke.sh` prove the locked archive boundary and extracted install on both targets in run `32546275484`; no crate has been published |
 | DIST-02 | Supported prebuilt archives, checksums, and installer verification | Implemented | yes | yes | yes | yes | yes | no | Alpha path exists; the draft verifier rejects extra/missing assets, corrupt payloads, and archive sidecars not bound to their exact filenames; a stable candidate is still required |
-| DIST-03 | Detached signatures, SBOM, attestations, license inventory | Implemented | yes | yes | yes | yes | yes | no | Alpha path exists; the draft-first contract requires both per-target SBOMs and the Cargo license inventory in the aggregate manifest; a stable candidate is still required |
+| DIST-03 | Detached signatures, SBOM, attestations, license inventory | In implementation | no | no | no | no | yes | no | Alpha drafts require both per-target SBOMs and the Cargo license inventory in the aggregate manifest and receive GitHub attestations, but no detached artifact or manifest signature path exists; stable signing authority and implementation remain open |
 | DIST-04 | macOS Developer ID signing and notarization | Not started | no | no | no | no | no | no | Requires stable signing/notarization authority |
 | DIST-05 | Stable release smoke, reproducibility, rollback, and publication | Not started | no | no | no | no | no | no | Final stable candidate gate |
 | FINAL-01 | TODO/status reconciliation and intended-vs-implemented audit | Not started | no | no | no | n/a | no | no | Runs after all preceding requirements have final dispositions |
@@ -119,8 +119,8 @@ never increase completion.
 Mechanically checked snapshot at this revision:
 
 - Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
-- All in-scope implementation coverage: **92.6%** (50/54).
-- Full stable-program evidence: **70.3%** (222/316 applicable evidence cells).
+- All in-scope implementation coverage: **90.7%** (49/54).
+- Full stable-program evidence: **69.0%** (218/316 applicable evidence cells).
 - Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
   stable candidate qualification.
 

@@ -1,6 +1,6 @@
 # Original Plan Reconciliation Design
 
-**Status:** In implementation
+**Status:** Implemented
 **Date:** 2026-07-31
 **Canonical architecture:** `work/local-rust-evidence-bus-design.md`
 

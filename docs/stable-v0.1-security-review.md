@@ -24,8 +24,8 @@ dependencies, and unapproved licenses fail-closed.
 
 The stable release remains blocked on the separate distribution gates: a
 stable-capable draft workflow, detached signing authority, macOS Developer ID
-signing/notarization, clean-machine artifact trials, and final publication and
-rollback drills.
+signing/notarization, a stable-tag rerun of the now-passing clean-machine
+artifact protocol, and final publication and rollback drills.
 
 ## Reviewed boundaries
 
@@ -73,6 +73,8 @@ rollback drills.
 3. **Open release authority — signatures and Apple notarization.** Alpha
    compromise procedures exist, but stable publication cannot proceed without
    separate signing custody and the full Apple credential path.
-4. **Open external validation.** Pinned real-client dogfood, five clean-machine
-   trials per target, and the final independent security/recovery review remain
-   required before stable promotion.
+4. **Open external validation.** Exact-head run `32658212667` passes five
+   offline clean-machine CLI/MCP trials per target with independently verified
+   source/checkout/base/tree provenance. Pinned live-client dogfood, a
+   stable-tag artifact rerun, and the final independent security/recovery
+   review remain required before stable promotion.

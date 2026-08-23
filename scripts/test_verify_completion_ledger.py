@@ -25,11 +25,16 @@ class CompletionLedgerTests(unittest.TestCase):
         self.assertEqual(report["applicable_evidence_cells"], 316)
 
     def test_stale_percentage_is_rejected(self) -> None:
+        report = contract.verify(LEDGER)
+        current = contract.percentage(
+            report["earned_evidence_cells"], report["applicable_evidence_cells"]
+        )
         changed = LEDGER.replace(
-            "Full stable-program evidence: **70.3%**",
-            "Full stable-program evidence: **70.2%**",
+            f"Full stable-program evidence: **{current}**",
+            "Full stable-program evidence: **0.1%**",
         )
 
+        self.assertNotEqual(changed, LEDGER)
         with self.assertRaisesRegex(contract.LedgerError, "metric is stale"):
             contract.verify(changed)
 

@@ -1,0 +1,97 @@
+name: Cargo binstall smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: ${{ matrix.target }} fallback install
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: aarch64-apple-darwin
+            archive: cargo-binstall-aarch64-apple-darwin.zip
+            sha256: c364fd10e494b4fc0cc88a89995446364379a914930f0b0182b1151ad27690a1
+            unpack: zip
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            archive: cargo-binstall-x86_64-unknown-linux-gnu.tgz
+            sha256: 4a2621d4b8cb2a1c2433aab2746597b3a10138c33106a303600ebbe76a0e5930
+            unpack: tgz
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download the checksum-pinned cargo-binstall tool
+        shell: bash
+        env:
+          ARCHIVE: ${{ matrix.archive }}
+          EXPECTED_SHA256: ${{ matrix.sha256 }}
+          UNPACK: ${{ matrix.unpack }}
+        run: |
+          set -euo pipefail
+          tool_root="$RUNNER_TEMP/cargo-binstall"
+          mkdir "$tool_root"
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            -o "$tool_root/$ARCHIVE" \
+            "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.22.0/$ARCHIVE"
+          actual=$(shasum -a 256 "$tool_root/$ARCHIVE" | awk '{print $1}')
+          test "$actual" = "$EXPECTED_SHA256"
+          case "$UNPACK" in
+            zip) unzip -q "$tool_root/$ARCHIVE" -d "$tool_root" ;;
+            tgz) tar -xzf "$tool_root/$ARCHIVE" -C "$tool_root" ;;
+            *) echo "unsupported cargo-binstall archive: $UNPACK" >&2; exit 1 ;;
+          esac
+          chmod 755 "$tool_root/cargo-binstall"
+          test "$("$tool_root/cargo-binstall" -V)" = "1.22.0"
+
+      - name: Install hSUM only through its release metadata
+        shell: bash
+        run: |
+          bash scripts/binstall-smoke.sh \
+            "$RUNNER_TEMP/cargo-binstall/cargo-binstall" \
+            "${{ matrix.target }}" \
+            "$RUNNER_TEMP/hsum-install" \
+            "$RUNNER_TEMP/evidence/report.json"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binstall-evidence-${{ matrix.target }}
+          path: ${{ runner.temp }}/evidence/report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  verify:
+    name: Verify both fallback installs
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: binstall-evidence-*
+          path: evidence
+
+      - name: Verify target coverage and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
+          python3 scripts/verify_binstall_evidence.py \
+            --evidence-root evidence \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --tool-version 1.22.0 \
+            --package-version "$version"
