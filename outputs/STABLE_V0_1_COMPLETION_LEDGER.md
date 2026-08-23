@@ -1,11 +1,11 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-08-22 after the B1-05 through B1-13 native product gate,
+**Snapshot:** 2026-08-23 after the B1-05 through B1-13 native product gate,
 generation crash and multi-process cancellation/replacement qualification,
 same-index lexical determinism qualification, source-package qualification,
 100k/one-million scale harness groundwork, bounded parser fuzz smoke,
-client/clean-machine qualification groundwork, and the generated local
-reference/README contract gates
+client/clean-machine qualification, immutable release-asset and Cargo publish
+policy regressions, and the generated local reference/README contract gates
 **Authority:** `work/local-rust-evidence-bus-design.md`, then the reconciliation
 and explicit status contracts named in `TODOS.md`.
 
@@ -41,18 +41,18 @@ supported without hiding a missing later gate.
 | A1-05 | Exact, quoted, and active-only BM25 retrieval | Native target evidence passing | yes | yes | yes | yes | yes | no | `src/search/`, query/search suites, and alpha release evidence; stable candidate rerun remains required |
 | A1-06 | Immutable citations, historical Get, and visible source drift | Native target evidence passing | yes | yes | yes | yes | yes | no | citation/Get/drift suites and alpha release evidence; stable candidate rerun remains required |
 | A1-07 | Read-only Doctor foundation and actionable errors | Native target evidence passing | yes | yes | yes | yes | yes | no | Doctor/error suites and published alpha docs; stable candidate rerun remains required |
-| A1-08 | Project-bound read-only MCP stdio | Native target evidence passing | yes | yes | yes | yes | partial | no | Current read-only reconciliation is unreleased; PR #9 CI is green on both targets |
-| A1-09 | CLI/MCP/API Search, Get, Status parity and opaque cursors | Native target evidence passing | yes | yes | yes | yes | partial | no | protocol DTOs, cross-transport fixtures, and both PR #9 targets |
-| EVAL-01 | Frozen 25-query lexical control | Complete local gate passing | yes | yes | yes | n/a | yes | no | `benches/agent_ab/`; cross-build variance remains diagnosed but unresolved |
-| A2-01 | Strict JSONL snapshot connector and authoritative lifecycle | Native target evidence passing | yes | yes | yes | yes | partial | no | JSONL unit/process suites on both PR #9 targets |
-| A2-02 | Named projects and project-local source management | Native target evidence passing | yes | yes | yes | yes | partial | no | project and source process suites on both targets |
-| A2-03 | Explicit filesystem-source registration | Native target evidence passing | yes | yes | yes | yes | partial | no | `tests/filesystem_source_cli.rs` on both targets |
-| A2-04 | Doctor integrity, bounded repair, and body-free reports | Native target evidence passing | yes | yes | yes | yes | partial | no | Doctor and process suites on both targets |
-| A2-05 | Verified backup and managed-backup inventory | Native target evidence passing | yes | yes | yes | yes | partial | no | maintenance and managed-backup suites on both targets |
-| A2-06 | Explicit index/config migration plan and apply | Native target evidence passing | yes | yes | yes | yes | partial | no | N-1 and process migration suites on both targets |
-| A2-07 | Prune, citation invalidation, and history floor | Native target evidence passing | yes | yes | yes | yes | partial | no | maintenance suites on both targets |
-| A2-08 | Durable forget, reader fencing, and guarded restore | Native target evidence passing | yes | yes | yes | yes | partial | no | maintenance and multi-process suites on both targets |
-| A2-09 | Confirmed whole-index deletion | Native target evidence passing | yes | yes | yes | yes | partial | no | `tests/index_delete_cli.rs` on both targets |
+| A1-08 | Project-bound read-only MCP stdio | Native target evidence passing | yes | yes | yes | yes | no | no | Current read-only reconciliation is unreleased; PR #9 CI is green on both targets |
+| A1-09 | CLI/MCP/API Search, Get, Status parity and opaque cursors | Native target evidence passing | yes | yes | yes | yes | no | no | protocol DTOs, cross-transport fixtures, and both PR #9 targets |
+| EVAL-01 | Frozen 25-query lexical control | Complete local gate passing | yes | yes | yes | n/a | yes | no | `benches/agent_ab/` and `eval/LEXICAL_VARIANCE_DIAGNOSIS.md`; cross-build variance is diagnosed at the random source/document identity tie boundary, while independent-build ordering remains an explicit non-claim |
+| A2-01 | Strict JSONL snapshot connector and authoritative lifecycle | Native target evidence passing | yes | yes | yes | yes | no | no | JSONL unit/process suites on both PR #9 targets |
+| A2-02 | Named projects and project-local source management | Native target evidence passing | yes | yes | yes | yes | no | no | project and source process suites on both targets |
+| A2-03 | Explicit filesystem-source registration | Native target evidence passing | yes | yes | yes | yes | no | no | `tests/filesystem_source_cli.rs` on both targets |
+| A2-04 | Doctor integrity, bounded repair, and body-free reports | Native target evidence passing | yes | yes | yes | yes | no | no | Doctor and process suites on both targets |
+| A2-05 | Verified backup and managed-backup inventory | Native target evidence passing | yes | yes | yes | yes | no | no | maintenance and managed-backup suites on both targets |
+| A2-06 | Explicit index/config migration plan and apply | Native target evidence passing | yes | yes | yes | yes | no | no | N-1 and process migration suites on both targets |
+| A2-07 | Prune, citation invalidation, and history floor | Native target evidence passing | yes | yes | yes | yes | no | no | maintenance suites on both targets |
+| A2-08 | Durable forget, reader fencing, and guarded restore | Native target evidence passing | yes | yes | yes | yes | no | no | maintenance and multi-process suites on both targets |
+| A2-09 | Confirmed whole-index deletion | Native target evidence passing | yes | yes | yes | yes | no | no | `tests/index_delete_cli.rs` on both targets |
 | B1-01 | Pinned model manifest and explicit install/import lifecycle | Native target evidence passing | yes | yes | yes | yes | yes | no | model suites and PR #9 native CI |
 | B1-02 | Verified-byte FastEmbed CPU inference portability | Native target evidence passing | yes | yes | yes | yes | yes | no | v2 native reports from run `30731369195` |
 | B1-03 | Cross-architecture numerical compatibility and vector provenance | Native target evidence passing | yes | yes | yes | yes | yes | no | 3,456-component comparison, identical ordering, and full CI fan-in from runs `30731369195` and `30731864477` |
@@ -73,18 +73,18 @@ supported without hiding a missing later gate.
 | EVAL-06 | Evidence-based hybrid promotion or lexical-first disposition | Documentation complete | yes | yes | yes | n/a | yes | no | `eval/results/heldout-v1-2026-08-02-macos-arm64.{json,md}` requires `stable-lexical-hybrid-beta`: semantic gain/NDCG pass; MRR lower bound and exact-token top-three gates fail |
 | Q-01 | Generation-boundary fault injection and prior-or-new recovery | Native target evidence passing | yes | yes | yes | yes | yes | no | Six process-death checkpoints prove exact prior-or-next recovery with a fresh Doctor/search process locally and in run `32543715602`; stable-candidate rerun remains open |
 | Q-02 | Multi-process reader/writer and cancellation-versus-timeout qualification | Native target evidence passing | yes | yes | yes | yes | yes | no | Exact commit `e415dba` passes the complete local gate and both CI targets in run `32564056058`; real installed-model workers prove queued timeout, explicit cancellation without late responses, and recovery on both targets in run `32564056061`, while a separate-process vector reader proves bounded replacement refusal, retry, and stale-inode citation rejection |
-| Q-03 | Same-target and cross-target deterministic ordering | Native target evidence passing | yes | yes | yes | yes | yes | no | Stable lexical qualification run `32565388856` reuses index `0891488d…` for five fresh CLI and five fresh MCP processes on each supported target; every ordered citation, duplicate set, degradation flag, and explanation matches, with `2.22e-16` maximum backend-score delta; independent-build UUID variance remains diagnosed, and hybrid remains beta under EVAL-06 |
+| Q-03 | Same-target and cross-target deterministic ordering | Native target evidence passing | yes | yes | yes | yes | yes | no | Exact-head stable lexical qualification run `32655818240` reuses one frozen index for five fresh CLI and five fresh MCP processes on each supported target; every ordered citation, duplicate set, degradation flag, and explanation matches; independent-build UUID variance remains diagnosed, and hybrid remains beta under EVAL-06 |
 | Q-04 | 100,000-chunk performance and component latency evidence | Focused tests passing | yes | yes | no | no | yes | no | `benches/retrieval_scale/` freezes the exact 100k corpus, 25-query/750-observation protocol, cold/warm separation, stage timings including body materialization, RSS/storage/throughput evidence, SLOs, and CV gate; Apple M2 and Linux native executions remain open |
-| Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Focused tests passing | yes | yes | no | no | yes | no | Frozen corpus/probe manifest, deadline-reporting harness, cancel storm, exact-SHA workflow, and 13 harness regressions pass; native run `32569278903` remains in progress |
-| Q-06 | Security, privacy, supply-chain, and recovery reviews | Focused tests passing | yes | yes | no | no | partial | no | Locked dependency policy passes; six bounded parser fuzz targets pass Linux smoke run `32569324813`; sustained campaigns and independent semantic/distribution/recovery review remain open |
-| Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Focused tests passing | yes | yes | no | no | partial | no | Checksum-pinned protocol and generic search/get round trip pass; exact Codex `0.149.0-alpha.4.1` is usage-limited until 2026-08-29 and Claude Code `2.1.212` requires OAuth refresh before live tool-event acceptance |
-| Q-08 | Clean-machine CLI and MCP DX trials on both targets | Native target evidence passing | yes | yes | yes | yes | yes | no | Run `32571063965` builds checksummed candidates separately, then passes five fresh CLI/full-MCP trials per supported target and cross-target fan-in; enhanced timing schema passes locally and awaits current-head native rerun |
-| Q-09 | Generated CLI, MCP, config, and error references plus link checks | Native target evidence passing | yes | yes | yes | yes | partial | no | Eight implementation-derived pages, four generator tests, byte-drift/local-link/runtime-URL mapping gate, and canonical deployed URL base pass on both targets in run `32549550396`; remote audit passes 65/77 alpha.4 pages and reports 12 undeployed subcodes |
-| Q-10 | Executable stable quickstart and compatibility-policy verification | Focused tests passing | yes | yes | no | no | yes | no | README version/command/privacy and 27-row controlled capability policy are executable gates; five-trial clocks pass locally, but the stable candidate artifact rerun remains open |
+| Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Focused tests passing | yes | yes | no | no | yes | no | Frozen corpus/probe manifest, deadline-reporting harness, cancel storm, exact-SHA workflow, content-addressed embedding reuse bound, and 14 harness regressions pass; exact-head native run `32655824652` is in progress |
+| Q-06 | Security, privacy, supply-chain, and recovery reviews | Focused tests passing | yes | yes | no | no | no | no | Exact-head locked dependency policy run `32655818246` passes and six bounded parser fuzz targets pass Linux smoke run `32655818243`; sustained campaigns and independent semantic/distribution/recovery review remain open |
+| Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Focused tests passing | yes | yes | no | no | no | no | Checksum-pinned protocol and generic search/get round trip pass; exact Codex `0.149.0-alpha.4.1` is usage-limited until 2026-08-29 and Claude Code `2.1.212` requires OAuth refresh before live tool-event acceptance |
+| Q-08 | Clean-machine CLI and MCP DX trials on both targets | Native target evidence passing | yes | yes | yes | yes | yes | no | Exact-head run `32655818271` binds source, synthetic merge checkout, base, and tree identities, then passes five fresh CLI/full-MCP trials per supported target and independently verifies both reports before cross-target fan-in |
+| Q-09 | Generated CLI, MCP, config, and error references plus link checks | Native target evidence passing | yes | yes | yes | yes | no | no | Eight implementation-derived pages, four generator tests, byte-drift/local-link/runtime-URL mapping gate, and canonical deployed URL base pass on both targets; production remains 65/77 until mergeable `hsum-site2` PR #6 deploys the 12 missing subcodes |
+| Q-10 | Executable stable quickstart and compatibility-policy verification | Native target evidence passing | yes | yes | yes | yes | yes | no | README version/command/privacy and 27-row controlled capability policy are executable gates; exact-head clean-machine run `32655818271` passes five isolated artifact trials on each supported target, while stable signed-tag qualification remains open |
 | DIST-01 | crates.io source distribution and locked install smoke | Native target evidence passing | yes | yes | yes | yes | yes | no | Explicit Cargo allowlist plus `scripts/package-smoke.sh` prove the locked archive boundary and extracted install on both targets in run `32546275484`; no crate has been published |
-| DIST-02 | Supported prebuilt archives, checksums, and installer verification | Implemented | yes | yes | yes | yes | yes | no | Alpha release path exists; stable candidate still required |
-| DIST-03 | Detached signatures, SBOM, attestations, license inventory | Implemented | yes | yes | yes | yes | yes | no | Alpha path exists; stable candidate still required |
-| DIST-04 | macOS Developer ID signing and notarization | Not started | no | no | no | no | partial | no | Requires stable signing/notarization authority |
+| DIST-02 | Supported prebuilt archives, checksums, and installer verification | Implemented | yes | yes | yes | yes | yes | no | Alpha path exists; the draft verifier rejects extra/missing assets, corrupt payloads, and archive sidecars not bound to their exact filenames; a stable candidate is still required |
+| DIST-03 | Detached signatures, SBOM, attestations, license inventory | Implemented | yes | yes | yes | yes | yes | no | Alpha path exists; the draft-first contract requires both per-target SBOMs and the Cargo license inventory in the aggregate manifest; a stable candidate is still required |
+| DIST-04 | macOS Developer ID signing and notarization | Not started | no | no | no | no | no | no | Requires stable signing/notarization authority |
 | DIST-05 | Stable release smoke, reproducibility, rollback, and publication | Not started | no | no | no | no | no | no | Final stable candidate gate |
 | FINAL-01 | TODO/status reconciliation and intended-vs-implemented audit | Not started | no | no | no | n/a | no | no | Runs after all preceding requirements have final dispositions |
 | FINAL-02 | Complete code, security, documentation, and release review | Not started | no | no | no | n/a | no | no | Final independent review gate |
@@ -119,8 +119,8 @@ never increase completion.
 Mechanically checked snapshot at this revision:
 
 - Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
-- All in-scope implementation coverage: **88.9%** (48/54).
-- Full stable-program evidence: **66.8%** (211/316 applicable evidence cells).
+- All in-scope implementation coverage: **92.6%** (50/54).
+- Full stable-program evidence: **70.3%** (222/316 applicable evidence cells).
 - Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
   stable candidate qualification.
 

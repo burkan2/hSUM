@@ -50,8 +50,9 @@
     Colored badges are clickable and go to the relevant section or page.
     GitHub prereleases provide a checksum-verifying, no-<code>sudo</code>
     installer plus prebuilt macOS arm64 and Linux x86_64 archives.
-    Published <code>cargo install</code> and <code>cargo binstall</code> remain
-    deferred while the crate has <code>publish = false</code>.
+    The manifest permits publication only to crates.io, but no hSUM version is
+    published there yet, so <code>cargo install</code> and
+    <code>cargo binstall</code> remain unavailable.
     Alpha binaries are checksummed and carry GitHub build attestations, but
     the macOS archive is <b>not</b> Apple-signed or notarized — see
     <a href="#verifying-a-release">Verifying a release</a>.

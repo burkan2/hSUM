@@ -85,8 +85,9 @@ Optional watch mode and additional integrations are not on the critical path.
   tag-triggered run: attach the Cargo license inventory, include it and both
   SBOMs in `SHA256SUMS`, and publish only after every draft asset is present.
   - Current-checkout checkpoint: `scripts/verify-release-assets.sh` rejects any
-    missing or extra release asset/checksum entry and verifies every recorded
-    byte. The release workflow now assembles the exact set as a draft,
+    missing or extra release asset/checksum entry, binds each archive sidecar
+    to its exact filename, and verifies every recorded byte. The release
+    workflow now assembles the exact set as a draft,
     re-downloads it into an empty runner directory, re-verifies it while the
     release is still private, and only then publishes. This checkbox remains
     open until an authorized signed tag exercises that path end to end.
@@ -117,12 +118,14 @@ Optional watch mode and additional integrations are not on the critical path.
   baseline but is much slower than grep and varies materially across fresh
   builds; it is the frozen lexical control for later experiments. See
   `benches/agent_ab/README.md`.
-- Preserve the frozen gold labels while diagnosing fresh-index ranking
-  variance. Independent builds of identical corpus bytes produced materially
-  different hSUM ordering while grep quality was unchanged. Do not claim
-  cross-build deterministic ranking until the identity-dependent tie path is
-  isolated and fixed without changing the intended lexical scoring contract;
-  keep exact measurements in `benches/agent_ab/` outside the evaluated corpus.
+- [x] Preserve the frozen gold labels while diagnosing fresh-index ranking
+  variance. Completed 2026-08-22: `eval/LEXICAL_VARIANCE_DIAGNOSIS.md` traces
+  the seven affected tasks to the explicit source/document UUID tie-break
+  after equal public scoring signals. The portable same-index contract passes
+  on both targets; independent rebuilds remain an explicit non-claim and must
+  publish ranges until a separately preregistered identity/ranking revision.
+  Exact measurements remain in `benches/agent_ab/` outside the evaluated
+  corpus.
 - Make the lower-level prepared-snapshot store mutators crate-private before
   any library or plugin ABI is exposed. `IndexDb::apply_filesystem_snapshot*`,
   the prepared-document types, and the `#[doc(hidden)]` debug helpers

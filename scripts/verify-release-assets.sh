@@ -59,5 +59,25 @@ fi
 
 (
   cd "$dist_dir"
+  for archive in \
+    "hsum-$tag-aarch64-apple-darwin.zip" \
+    "hsum-$tag-x86_64-unknown-linux-gnu.tar.gz"
+  do
+    sidecar="$archive.sha256"
+    if ! awk -v expected="$archive" '
+      NR == 1 {
+        if (NF != 2 || length($1) != 64 || $1 ~ /[^0-9A-Fa-f]/ || $2 != expected) {
+          exit 1
+        }
+        next
+      }
+      { exit 1 }
+      END { if (NR != 1) exit 1 }
+    ' "$sidecar"; then
+      echo "$sidecar must contain exactly one SHA-256 for $archive" >&2
+      exit 1
+    fi
+    shasum -a 256 -c "$sidecar"
+  done
   shasum -a 256 -c SHA256SUMS
 )

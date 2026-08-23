@@ -4,6 +4,8 @@ set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/.." && pwd -P)
 cd "$repo_root"
 
+bash scripts/verify-cargo-publish-policy.sh
+
 toolchain=${RUSTUP_TOOLCHAIN:-1.91.0}
 version=$(cargo "+$toolchain" pkgid | sed -E 's/.*@([^@]+)$/\1/')
 case "$version" in
