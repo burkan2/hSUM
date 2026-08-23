@@ -55,6 +55,19 @@ class RetrievalStressHarnessTests(unittest.TestCase):
         self.assertEqual(sum(distribution), 100_000)
         self.assertEqual(max(distribution) - min(distribution), 1)
 
+    def test_source_scoped_identities_reuse_embedding_inputs_across_sources(self):
+        manifest = HARNESS.load_manifest()
+        body_json = json.dumps(HARNESS.shared_body().decode("ascii"))
+        first = json.loads(HARNESS.record_line(0, 7, body_json))
+        second = json.loads(HARNESS.record_line(1, 7, body_json))
+
+        self.assertEqual(
+            manifest["embedding_input_identity"], "source-local-document-index"
+        )
+        self.assertNotEqual(first["id"], second["id"])
+        for field in ("content", "metadata", "source_uri", "title"):
+            self.assertEqual(first[field], second[field])
+
     def test_snapshot_generation_is_streamed_and_reproducible(self):
         manifest = dict(HARNESS.load_manifest())
         manifest["document_count"] = 3

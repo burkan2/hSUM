@@ -8,6 +8,7 @@
   "body_sha256": "ed17f94842fba0b6c138a75f9bb85d1da949f59500f7b01304b021916ff925b1",
   "chunks_per_document": 10,
   "expected_passages": 1000000,
+  "embedding_input_identity": "source-local-document-index",
   "scale_source_points": [2, 8, 16, 32, 64],
   "metadata_only_generations": 100,
   "concurrent_old_readers": 4,

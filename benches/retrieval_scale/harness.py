@@ -41,6 +41,7 @@ CANONICAL_WARMUPS = 5
 CANONICAL_PASSES = 30
 RSS_SAMPLE_INTERVAL_SECONDS = 0.05
 MCP_RESPONSE_TIMEOUT_SECONDS = 30.0
+SETUP_PROBE_TIMEOUT_MS = 10_000
 QUERY_PATH = Path(__file__).with_name("queries.json")
 SETUP_REPORT_NAME = ".hsum-retrieval-scale-setup.json"
 STAGES = (
@@ -136,6 +137,22 @@ def load_queries(path: Path = QUERY_PATH) -> list[dict[str, str]]:
     if len(validated) * CANONICAL_PASSES < 750:
         raise HarnessError("canonical measured passes must contain at least 750 observations")
     return validated
+
+
+def semantic_readiness_probe_arguments(binary: Path, query: str) -> list[str]:
+    """Build the unmeasured readiness probe at the bounded product maximum."""
+    return [
+        str(binary),
+        "search",
+        query,
+        "--mode",
+        "hybrid",
+        "--limit",
+        "10",
+        "--timeout-ms",
+        str(SETUP_PROBE_TIMEOUT_MS),
+        "--json",
+    ]
 
 
 def unbroken_chunk_count(
@@ -313,16 +330,7 @@ def prepare(args: argparse.Namespace) -> int:
     run_command([str(binary), "ingest", "--reembed"], cwd=corpus, home=home)
     reembed_seconds = time.perf_counter() - reembed_started
     semantic_probe = run_json_command(
-        [
-            str(binary),
-            "search",
-            queries[-1]["query"],
-            "--mode",
-            "hybrid",
-            "--limit",
-            "10",
-            "--json",
-        ],
+        semantic_readiness_probe_arguments(binary, queries[-1]["query"]),
         cwd=corpus,
         home=home,
     )

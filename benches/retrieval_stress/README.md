@@ -10,6 +10,9 @@ must not be used to relax the separate 100k qualification thresholds.
 - 100,000 document identities and exactly 1,000,000 active passages;
 - one shared 15,000-byte body containing a maximum-frequency identifier and a
   tokenizer-incompatible quoted literal;
+- source-scoped document IDs remain unique, while every JSONL source reuses
+  the same local source-URI/title sequence so content-addressed embeddings
+  must fan out into one million active vector memberships;
 - scale observations at 2, 8, 16, 32, and 64 total project sources;
 - 100 fixed-width metadata-only generations, with the final generation
   committed while four old SQLite readers retain their prior snapshots;
@@ -20,7 +23,8 @@ must not be used to relax the separate 100k qualification thresholds.
 The report records corpus generation, ingest/re-embed throughput, process-tree
 RSS, source/passage counts, candidate growth, database/vector amplification,
 query distributions, the first observed latency knee, old-reader visibility,
-and cancellation recovery. Every retriever remains within the frozen 500-item
+embedding-cache fan-out, and cancellation recovery. Every retriever remains
+within the frozen 500-item
 candidate budget and emits an explicit stop reason. A knee is the first scale
 point where a query's median client round trip exceeds twice its immediately
 preceding value. This is a descriptive preregistration, not a support boundary.

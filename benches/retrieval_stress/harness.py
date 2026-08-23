@@ -72,6 +72,7 @@ def load_manifest() -> dict[str, Any]:
         "body_sha256",
         "chunks_per_document",
         "expected_passages",
+        "embedding_input_identity",
         "scale_source_points",
         "metadata_only_generations",
         "concurrent_old_readers",
@@ -92,6 +93,7 @@ def load_manifest() -> dict[str, Any]:
         "body_bytes": 15_000,
         "chunks_per_document": 10,
         "expected_passages": 1_000_000,
+        "embedding_input_identity": "source-local-document-index",
         "scale_source_points": [2, 8, 16, 32, 64],
         "metadata_only_generations": 100,
         "concurrent_old_readers": 4,
@@ -146,6 +148,7 @@ def corpus_fingerprint(manifest: dict[str, Any]) -> str:
         "documents": manifest["document_count"],
         "jsonl_sources": manifest["jsonl_source_count"],
         "chunks_per_document": manifest["chunks_per_document"],
+        "embedding_input_identity": manifest["embedding_input_identity"],
     }
     return hashlib.sha256(
         json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -174,8 +177,8 @@ def record_line(
     value = (
         f'{{"content":{body_json},"id":"document-{source_index:02d}-{document_index:05d}",'
         f'"metadata":{{"generation":"{metadata_generation:03d}"}},'
-        f'"source_uri":"stress://source-{source_index:02d}/document-{document_index:05d}",'
-        f'"title":"stress source {source_index:02d} document {document_index:05d}"}}\n'
+        f'"source_uri":"stress://shared/document-{document_index:05d}",'
+        f'"title":"stress shared document {document_index:05d}"}}\n'
     )
     return value.encode("utf-8")
 
@@ -206,6 +209,7 @@ def create_snapshots(
         "encoded_snapshot_bytes": total_bytes,
         "stream_sha256": digest.hexdigest(),
         "documents_per_source": distribution,
+        "embedding_input_identity": manifest["embedding_input_identity"],
     }
 
 
@@ -924,6 +928,11 @@ def run_stress(args: argparse.Namespace) -> int:
         raise StressError("final database source/document counts drifted")
     if counts["content_blobs"] != 1:
         raise StressError("duplicate-heavy corpus did not deduplicate to one content blob")
+    maximum_cached_embeddings = (
+        max(distribution) * manifest["chunks_per_document"]
+    )
+    if not 0 < counts["chunk_embeddings"] <= maximum_cached_embeddings:
+        raise StressError("cross-source embedding inputs did not reuse the vector cache")
     storage = scale.storage_metrics(database, final_status)
     managed = storage.get("managed_index_bytes")
     amplification = None
@@ -971,6 +980,7 @@ def run_stress(args: argparse.Namespace) -> int:
                 "one_million_active_passages": True,
                 "sixty_four_sources": True,
                 "duplicate_body_deduplicated": True,
+                "cross_source_embedding_inputs_reused": True,
                 "one_hundred_metadata_only_generations": True,
                 "concurrent_old_readers_retained_prior_snapshots": True,
                 "all_scale_probes_returned_evidence": scale_deadlines == 0,

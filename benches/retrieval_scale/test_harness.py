@@ -35,6 +35,28 @@ class RetrievalScaleHarnessTests(unittest.TestCase):
             HARNESS.EXPECTED_PASSAGES,
         )
 
+    def test_setup_readiness_probe_uses_the_bounded_product_maximum(self):
+        arguments = HARNESS.semantic_readiness_probe_arguments(
+            Path("/opt/hsum"), "hybrid readiness"
+        )
+
+        self.assertEqual(HARNESS.SETUP_PROBE_TIMEOUT_MS, 10_000)
+        self.assertEqual(
+            arguments,
+            [
+                "/opt/hsum",
+                "search",
+                "hybrid readiness",
+                "--mode",
+                "hybrid",
+                "--limit",
+                "10",
+                "--timeout-ms",
+                "10000",
+                "--json",
+            ],
+        )
+
     def test_nearest_rank_uses_one_based_ceiling(self):
         values = list(range(1, 31))
 
