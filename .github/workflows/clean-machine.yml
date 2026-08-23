@@ -240,6 +240,8 @@ jobs:
 
       - name: Install hSUM only through its release metadata
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           bash scripts/binstall-smoke.sh \
             "$RUNNER_TEMP/cargo-binstall/cargo-binstall" \
