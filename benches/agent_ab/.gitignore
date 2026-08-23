@@ -1,0 +1,6 @@
+__pycache__/
+*.py[cod]
+
+# Exploratory diagnostics; canonical publishable results have stable names.
+results/*smoke*.json
+results/retrieval-rerun.json

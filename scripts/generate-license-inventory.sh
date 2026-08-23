@@ -23,7 +23,8 @@ trap 'rm -f "$metadata_file"' EXIT
 toolchain=${RUSTUP_TOOLCHAIN:-1.91.0}
 (
   cd "$repository_root"
-  cargo "+$toolchain" metadata --locked --offline --format-version 1 > "$metadata_file"
+  cargo "+$toolchain" metadata --locked --offline --all-features --format-version 1 \
+    > "$metadata_file"
 )
 
 python3 - \
@@ -112,7 +113,7 @@ payload = {
     "cargo_lock_sha256": hashlib.sha256(lock_path.read_bytes()).hexdigest(),
     "scope": (
         "All workspace, runtime, build, development, and target-specific packages "
-        "returned by cargo metadata --locked --offline."
+        "returned by cargo metadata --locked --offline --all-features."
     ),
     "notice": (
         "This records package-authored Cargo license declarations. It is release "

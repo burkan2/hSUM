@@ -1,0 +1,88 @@
+name: Parser fuzz smoke
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/parser-fuzz.yml
+      - Cargo.lock
+      - Cargo.toml
+      - fuzz/**
+      - src/domain/**
+      - src/ingest/**
+      - src/mcp.rs
+      - src/protocol/**
+      - src/search/**
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/parser-fuzz.yml
+      - Cargo.lock
+      - Cargo.toml
+      - fuzz/**
+      - src/domain/**
+      - src/ingest/**
+      - src/mcp.rs
+      - src/protocol/**
+      - src/search/**
+  schedule:
+    - cron: '31 4 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parser-fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-x86_64:
+    name: Linux x86_64 parser fuzz smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install the pinned nightly toolchain
+        shell: bash
+        run: rustup toolchain install nightly-2026-08-15 --profile minimal
+
+      - name: Install the pinned cargo-fuzz frontend
+        shell: bash
+        run: cargo +nightly-2026-08-15 install cargo-fuzz --version 0.13.2 --locked
+
+      - name: Build all parser fuzz targets
+        shell: bash
+        run: cargo +nightly-2026-08-15 fuzz build
+
+      - name: Run the bounded crash-regression campaign
+        shell: bash
+        run: |
+          set -euo pipefail
+          for target in \
+            citation_uri \
+            query_parser \
+            search_cursor \
+            jsonl_snapshot \
+            mcp_frame \
+            chunk_bytes
+          do
+            cargo +nightly-2026-08-15 fuzz run "$target" -- \
+              -max_total_time=15 \
+              -max_len=65536 \
+              -timeout=5 \
+              -rss_limit_mb=2048 \
+              -print_final_stats=1
+          done
+
+      - name: Upload crash artifacts
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: parser-fuzz-crashes
+          path: fuzz/artifacts/
+          if-no-files-found: ignore
+          retention-days: 14

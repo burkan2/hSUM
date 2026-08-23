@@ -25,8 +25,9 @@ use crate::ingest::{
 };
 use crate::search::SearchRequest;
 use crate::store::{
-    DeleteConfirmations, Doctor, FilesystemScope, FingerprintPolicy, IndexDb, IngestOutcome,
-    OpenMode, StoragePreflight, StoragePreflightError, StoreError, WriterLock,
+    DeleteConfirmations, Doctor, DoctorReport, FilesystemScope, FingerprintPolicy, IndexDb,
+    IndexEmbeddingProfile, IngestOutcome, OpenMode, SCHEMA_VERSION, StoragePreflight,
+    StoragePreflightError, StoreError, WriterLock, inspect_migration_source_with_policy,
 };
 
 const TRUST_LOCK_TIMEOUT: Duration = Duration::from_secs(5);
@@ -49,6 +50,7 @@ pub struct InitRequest {
     pub allow_broad_root: bool,
     pub allow_large_source: bool,
     pub index_quota_bytes: Option<u64>,
+    pub embedding_profile: IndexEmbeddingProfile,
 }
 
 impl InitRequest {
@@ -68,6 +70,7 @@ impl InitRequest {
             allow_broad_root: false,
             allow_large_source: false,
             index_quota_bytes: None,
+            embedding_profile: IndexEmbeddingProfile::LexicalOnly,
         }
     }
 }
@@ -218,14 +221,16 @@ fn initialize_with_rebuild_observer(
                     crate::store::DEFAULT_WRITER_LOCK_TIMEOUT,
                 )?)
             };
-            let inspection = validate_trusted_database_with_policy(
+            let inspection = validate_trusted_database_for_rebuild(
                 &database_path,
                 binding.index_id(),
                 binding.project_id(),
                 binding.project_name(),
                 &canonical_root,
-                FingerprintPolicy::Tolerate,
             )?;
+            if inspection.embedding_profile != request.embedding_profile {
+                return Err(InitError::EmbeddingProfileMismatch);
+            }
             rebuild_lock = writer_lock;
             Some(RebuildSummary {
                 previous_binding_id: binding.binding_id(),
@@ -235,14 +240,16 @@ fn initialize_with_rebuild_observer(
                 active_passages: inspection.active_passages,
             })
         } else {
-            validate_trusted_database(
+            let inspection = validate_trusted_database(
                 &database_path,
                 binding.index_id(),
                 binding.project_id(),
                 binding.project_name(),
                 &canonical_root,
             )?;
-
+            if inspection.embedding_profile != request.embedding_profile {
+                return Err(InitError::EmbeddingProfileMismatch);
+            }
             let pointer = if request.dry_run {
                 pointer_plan.dry_run_outcome()
             } else {
@@ -255,7 +262,7 @@ fn initialize_with_rebuild_observer(
                 database_path,
                 index_id: binding.index_id(),
                 project_id: binding.project_id(),
-                source_id: derive_source_id(binding.index_id(), binding.project_id()),
+                source_id: inspection.filesystem_source_id,
                 binding_id: Some(binding.binding_id()),
                 rebuild: None,
                 reused: true,
@@ -370,16 +377,16 @@ fn initialize_with_rebuild_observer(
             .expect("rebuild requires the existing binding validated above");
         unregister_and_save(&trust_path, binding)?;
         observe_rebuild(RebuildCheckpoint::TrustBindingRemoved);
-        let database = IndexDb::open_existing_with_policy(
-            &database_path,
-            OpenMode::ReadWrite,
-            FingerprintPolicy::Tolerate,
-        )?;
+        let database = IndexDb::open_existing_for_maintenance(&database_path, OpenMode::ReadWrite)?;
         database.remove()?;
         observe_rebuild(RebuildCheckpoint::DatabaseRemoved);
         drop(rebuild_lock.take());
     }
-    let mut database = IndexDb::create(&database_path, index_id)?;
+    let mut database = IndexDb::create_with_embedding_profile(
+        &database_path,
+        index_id,
+        &request.embedding_profile,
+    )?;
     if request.rebuild {
         observe_rebuild(RebuildCheckpoint::ReplacementDatabaseCreated);
     }
@@ -635,6 +642,67 @@ fn validate_trusted_database_with_policy(
     fingerprint_policy: FingerprintPolicy,
 ) -> Result<TrustedIndexInspection, InitError> {
     let report = Doctor::run_with_policy(database_path, fingerprint_policy)?;
+    let database =
+        IndexDb::open_existing_with_policy(database_path, OpenMode::ReadOnly, fingerprint_policy)?;
+    validate_trusted_database_contents(
+        &database,
+        &report,
+        expected_index_id,
+        expected_project_id,
+        expected_project_name,
+        expected_root,
+    )
+}
+
+fn validate_trusted_database_for_rebuild(
+    database_path: &Path,
+    expected_index_id: IndexId,
+    expected_project_id: ProjectId,
+    expected_project_name: &SafeSlug,
+    expected_root: &Path,
+) -> Result<TrustedIndexInspection, InitError> {
+    let database = IndexDb::open_existing_for_maintenance(database_path, OpenMode::ReadOnly)?;
+    let raw_schema_version: i64 = database
+        .connection()
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .map_err(StoreError::from)?;
+    let found = u32::try_from(raw_schema_version)
+        .map_err(|_| StoreError::InvalidSchemaVersion(raw_schema_version))?;
+    if found == SCHEMA_VERSION {
+        drop(database);
+        return validate_trusted_database_with_policy(
+            database_path,
+            expected_index_id,
+            expected_project_id,
+            expected_project_name,
+            expected_root,
+            FingerprintPolicy::Tolerate,
+        );
+    }
+    let report = inspect_migration_source_with_policy(
+        database.connection(),
+        true,
+        found,
+        FingerprintPolicy::Tolerate,
+    )?;
+    validate_trusted_database_contents(
+        &database,
+        &report,
+        expected_index_id,
+        expected_project_id,
+        expected_project_name,
+        expected_root,
+    )
+}
+
+fn validate_trusted_database_contents(
+    database: &IndexDb,
+    report: &DoctorReport,
+    expected_index_id: IndexId,
+    expected_project_id: ProjectId,
+    expected_project_name: &SafeSlug,
+    expected_root: &Path,
+) -> Result<TrustedIndexInspection, InitError> {
     if report.index_id != expected_index_id {
         return Err(InitError::TrustedIndexIdentityMismatch {
             expected: expected_index_id,
@@ -642,8 +710,6 @@ fn validate_trusted_database_with_policy(
         });
     }
 
-    let database =
-        IndexDb::open_existing_with_policy(database_path, OpenMode::ReadOnly, fingerprint_policy)?;
     let connection = database.connection();
     let project_matches: bool = connection
         .query_row(
@@ -664,12 +730,21 @@ fn validate_trusted_database_with_policy(
         });
     }
 
-    let linked_sources: i64 = connection
-        .query_row(
-            "SELECT COUNT(*)
+    let linked_source_query = if report.schema_version >= 2 {
+        "SELECT COUNT(*)
          FROM project_sources AS ps
          JOIN sources AS s ON s.id = ps.source_id
-         WHERE ps.project_id = ?1",
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
+           AND ps.removed_at IS NULL AND s.removed_at IS NULL"
+    } else {
+        "SELECT COUNT(*)
+         FROM project_sources AS ps
+         JOIN sources AS s ON s.id = ps.source_id
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'"
+    };
+    let linked_sources: i64 = connection
+        .query_row(
+            linked_source_query,
             [expected_project_id.as_uuid().as_bytes().as_slice()],
             |row| row.get(0),
         )
@@ -682,41 +757,32 @@ fn validate_trusted_database_with_policy(
         });
     }
 
+    let source_query = if report.schema_version >= 2 {
+        "SELECT s.id, s.logical_uri, s.config_json
+         FROM project_sources AS ps
+         JOIN sources AS s ON s.id = ps.source_id
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
+           AND ps.removed_at IS NULL AND s.removed_at IS NULL"
+    } else {
+        "SELECT s.id, s.logical_uri, s.config_json
+         FROM project_sources AS ps
+         JOIN sources AS s ON s.id = ps.source_id
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'"
+    };
+    let (source_id_bytes, source_logical_uri, source_config_json): (Vec<u8>, String, String) =
+        connection
+            .query_row(
+                source_query,
+                [expected_project_id.as_uuid().as_bytes().as_slice()],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .map_err(StoreError::from)?;
     let expected_source_id = derive_source_id(expected_index_id, expected_project_id);
-    let source_matches: bool = connection
-        .query_row(
-            "SELECT EXISTS(
-            SELECT 1
-            FROM project_sources AS ps
-            JOIN sources AS s ON s.id = ps.source_id
-            WHERE ps.project_id = ?1 AND s.id = ?2 AND s.kind = 'filesystem'
-        )",
-            [
-                expected_project_id.as_uuid().as_bytes().as_slice(),
-                expected_source_id.as_uuid().as_bytes().as_slice(),
-            ],
-            |row| row.get(0),
-        )
-        .map_err(StoreError::from)?;
-    if !source_matches {
-        return Err(InitError::TrustedSourceIdentityMismatch {
+    let filesystem_source_id = uuid::Uuid::from_slice(&source_id_bytes)
+        .map(SourceId::from_uuid)
+        .map_err(|_| InitError::TrustedSourceIdentityMismatch {
             expected: expected_source_id,
-        });
-    }
-
-    let (source_logical_uri, source_config_json): (String, String) = connection
-        .query_row(
-            "SELECT s.logical_uri, s.config_json
-             FROM project_sources AS ps
-             JOIN sources AS s ON s.id = ps.source_id
-             WHERE ps.project_id = ?1 AND s.id = ?2",
-            [
-                expected_project_id.as_uuid().as_bytes().as_slice(),
-                expected_source_id.as_uuid().as_bytes().as_slice(),
-            ],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )
-        .map_err(StoreError::from)?;
+        })?;
     let expected_root_text = expected_root
         .to_str()
         .ok_or_else(|| InitError::NonUtf8Root {
@@ -738,8 +804,15 @@ fn validate_trusted_database_with_policy(
     let active_passages: i64 = connection
         .query_row("SELECT COUNT(*) FROM active_passages", [], |row| row.get(0))
         .map_err(StoreError::from)?;
+    let embedding_profile = if report.schema_version == SCHEMA_VERSION {
+        database.embedding_profile()?
+    } else {
+        IndexEmbeddingProfile::LexicalOnly
+    };
     Ok(TrustedIndexInspection {
         pipeline_fingerprint: report.pipeline_fingerprint,
+        embedding_profile,
+        filesystem_source_id,
         active_documents: u64::try_from(active_documents)
             .map_err(|_| StoreError::IntegerOverflow)?,
         active_passages: u64::try_from(active_passages).map_err(|_| StoreError::IntegerOverflow)?,
@@ -748,6 +821,8 @@ fn validate_trusted_database_with_policy(
 
 struct TrustedIndexInspection {
     pipeline_fingerprint: Sha256Digest,
+    embedding_profile: IndexEmbeddingProfile,
+    filesystem_source_id: SourceId,
     active_documents: u64,
     active_passages: u64,
 }
@@ -773,7 +848,7 @@ fn find_enclosing_git_root(start: &Path) -> Option<PathBuf> {
     })
 }
 
-fn enforce_safe_root(
+pub(crate) fn enforce_safe_root(
     root: &Path,
     current: &Path,
     environment_home: Option<&Path>,
@@ -1024,7 +1099,7 @@ fn unregister_and_save(
         })?;
     create_private_directory(parent)?;
     let _lock = WriterLock::acquire(path, TRUST_LOCK_TIMEOUT)?;
-    let registry = load_registry(path)?;
+    let mut registry = load_registry(path)?;
     let Some(current_binding) = registry
         .bindings()
         .iter()
@@ -1039,13 +1114,8 @@ fn unregister_and_save(
             binding_id: expected_binding.binding_id(),
         });
     }
-    let retained = registry
-        .bindings()
-        .iter()
-        .filter(|binding| binding.binding_id() != expected_binding.binding_id())
-        .cloned()
-        .collect();
-    Ok(TrustRegistry::from_bindings(retained)?.save_atomic(path)?)
+    registry.remove_binding(expected_binding.binding_id())?;
+    Ok(registry.save_atomic(path)?)
 }
 
 fn register_and_save(
@@ -1417,6 +1487,10 @@ pub enum InitError {
     ForcePointerWithoutWrite,
     #[error("--rebuild cannot be combined with --no-ingest")]
     RebuildWithoutIngest,
+    #[error(
+        "the existing index has a different immutable embedding profile; create a new named index"
+    )]
+    EmbeddingProfileMismatch,
     #[error("repository root has no existing trust binding to rebuild: {root}")]
     RebuildBindingRequired { root: PathBuf },
     #[error("trust binding changed while rebuild was preparing: {binding_id}")]
@@ -1438,7 +1512,7 @@ pub enum InitError {
         expected_id: ProjectId,
         expected_name: SafeSlug,
     },
-    #[error("alpha.4 requires exactly one source in the trusted project; found {found}")]
+    #[error("the trusted project requires exactly one active filesystem authority; found {found}")]
     AlphaSourceCardinality { found: usize },
     #[error("trusted project is not linked to its expected filesystem source {expected}")]
     TrustedSourceIdentityMismatch { expected: SourceId },

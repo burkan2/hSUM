@@ -19,6 +19,12 @@ const SOURCE_UUID: &str = "018f47f0-9d9a-7a63-b4cc-8d6f2c8a4401";
 const PROJECT_UUID: &str = "018f47f0-9d9a-7a63-b4cc-8d6f2c8a4402";
 
 #[test]
+fn library_search_defaults_keep_stable_retrieval_lexical() {
+    let request = SearchRequest::with_defaults("alpha").unwrap();
+    assert_eq!(request.mode(), SearchMode::Lexical);
+}
+
+#[test]
 fn search_request_enforces_alpha_bounds_before_touching_sqlite() {
     assert!(matches!(
         SearchRequest::new("alpha", SearchMode::Auto, 0, 3_000, false),

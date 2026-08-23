@@ -1,0 +1,7 @@
+target/release/examples/model-portability: ELF 64-bit LSB pie executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=12d3224ed5a6a85279507afe80f7f31441559536, not stripped
+	linux-vdso.so.1 (0x00007f9ccbbd5000)
+	libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f9cc9c00000)
+	libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f9ccbb95000)
+	libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f9cc9f17000)
+	libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f9cc9800000)
+	/lib64/ld-linux-x86-64.so.2 (0x00007f9ccbbd7000)

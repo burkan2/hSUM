@@ -1,12 +1,16 @@
-# hSUM `0.1.0-alpha.2` release implementation status
+# hSUM current checkout implementation status
 
-**Snapshot:** 2026-07-26
-**Scope:** Published public prerelease from protected `main` at `ef54758`
+**Snapshot:** 2026-08-23
+**Scope:** Current source checkout after the public `0.1.0-alpha.4` prerelease;
+published alpha.2 evidence is retained below as a historical release record.
 
 This matrix maps the published alpha.2 surface to implementation, test, and
 release evidence. “Implemented” means a code path and focused tests exist in
 this checkout; the sections below separately record clean-runner, signed-tag,
 artifact, and production-documentation evidence.
+
+The canonical stable-v0.1 evidence states and remaining qualification work are
+tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
 
 | Surface | Checkout status | Primary implementation | Focused evidence |
 |---|---|---|---|
@@ -16,39 +20,215 @@ artifact, and production-documentation evidence.
 | Trust registry, pointer hint, selection precedence | Implemented | `src/config/`, `src/app/context.rs` | `tests/trust_registry.rs`, `tests/context_resolution.rs`, `tests/config_paths.rs` |
 | Bounded filesystem discovery | Implemented for Unix alpha target | `src/ingest/filesystem.rs` | `tests/filesystem_ingest.rs` |
 | Deterministic chunking and literal extraction | Implemented | `src/ingest/chunk.rs`, `src/ingest/literals.rs`, `src/ingest/quote_bloom.rs` | `tests/chunking.rs`, `tests/literals.rs`, `tests/quote_bloom.rs` |
-| Atomic generations and deletion guards | Implemented | `src/store/generation.rs`, `src/store/lock.rs` | `tests/ingest_generations.rs`, `src/app/tests.rs`, `tests/multiprocess.rs` |
-| Immutable SQLite evidence store | Implemented | `src/store/open.rs`, `src/store/schema.rs`, `migrations/0001_alpha1.sql` | `tests/store_foundation.rs` |
+| Atomic generations and deletion guards | Native target evidence passing; unreleased | `src/store/generation.rs`, `src/store/lock.rs` | generation, reader/writer, and SQLite-full suites plus a six-checkpoint real process-death matrix proving exact prior-or-next recovery in run `32543715602` |
+| Immutable SQLite evidence store | Implemented at schema 4 | `src/store/open.rs`, `src/store/schema.rs`, migrations `0001` through `0004` | `tests/store_foundation.rs`, `tests/store_doctor.rs`, `tests/vector_storage.rs` |
 | Exact/quoted/BM25 retrieval and deterministic fusion | Implemented | `src/search/query.rs`, `src/search/retrieval.rs` | `tests/query_contract.rs`, `tests/search_contract.rs` |
 | Canonical citation and historical `get` | Implemented | `src/domain/citation.rs`, `src/search/get.rs` | `tests/get_contract.rs` |
-| Bounded source-drift observation | Implemented for Unix alpha target | `src/status.rs` | `tests/source_drift.rs`, `tests/runtime_process.rs` |
+| Shared read-only Search/Get/Status application use cases | Implemented | `src/app/search_evidence.rs`, `src/app/evidence.rs`, `src/app/status_evidence.rs`, adapters in `src/runtime.rs` and `src/mcp.rs` | CLI/MCP ranking, packet, cursor, bounds, cancellation, historical-citation, and Status-field parity in `tests/runtime_process.rs` and `tests/mcp_contract.rs` |
+| Shared `hsum.api.v1` protocol DTOs and cursor | Implemented for Search, Get, and Status | `src/protocol/evidence.rs`, `src/protocol/status.rs`, `src/protocol/cursor.rs`, adapters in `src/runtime.rs` and `src/mcp.rs` | Complete normalized CLI/MCP Get-object, Search-core, and Status-core equality plus CLI → MCP → CLI pagination in `tests/runtime_process.rs`; frozen cursor vector and MCP schema/transport contracts in module tests and `tests/mcp_contract.rs` |
+| Frozen lexical retrieval evaluation | Implemented as development evidence | `benches/agent_ab/tasks.json`, `tasks.schema.json`, `tasks.sha256`, `benchmark.py` | 25 balanced queries, graded document labels, deterministic validation, isolated equal-corpus snapshots, 20 harness tests, three raw index builds plus aggregate JSON/HTML/SVG; hSUM leads mean quality but is slower, and its cross-build rank variance is diagnosed at the random-identity tie boundary |
+| Bounded source-drift observation | Implemented for filesystem evidence on the Unix alpha target; JSONL evidence is explicit `snapshot_only` | `src/status.rs`, `src/app/stored_source.rs` | `tests/source_drift.rs`, `tests/runtime_process.rs`, `tests/jsonl_connector.rs` |
 | Status and actionable storage/source problems | Implemented | `src/status.rs`, `src/store/capacity.rs` | `tests/store_foundation.rs`, `tests/runtime_process.rs` |
-| Read-only full doctor | Implemented | `src/store/doctor.rs` | `tests/store_doctor.rs` |
+| Full Doctor plus bounded abandoned-row repair and body-free report | Implemented; repair/report unreleased | `src/store/doctor.rs`, Doctor CLI/runtime adapters, private canonical report writer | invariant/heap/body-free/idempotent-repair coverage in `tests/store_doctor.rs`; grammar and real-process report/non-overwrite/repair coverage in `tests/cli_contract.rs` and `tests/runtime_process.rs` |
 | Capacity, quota, locality, and durability preflight | Implemented | `src/store/capacity.rs`, `src/store/open.rs` | module tests plus init/ingest process tests |
-| Four-tool, project-bound MCP stdio | Implemented | `src/mcp.rs` | `tests/mcp_contract.rs`, `tests/runtime_process.rs` |
+| Four-tool, project-bound, read-only MCP stdio | Implemented; tool calls do not initialize or ingest | `src/mcp.rs` | `tests/mcp_contract.rs`, `tests/runtime_process.rs` |
 | Generated client snippets and local client probe | Implemented | `src/runtime.rs` | `tests/runtime_process.rs` |
 | Shared public error taxonomy | Implemented | `src/domain/error.rs`, transport mappings in `src/runtime.rs` and `src/mcp.rs` | domain, CLI, MCP, and process contract tests |
+| Generated implementation reference set | Native target evidence passing; production catalog partial | `src/bin/xtask/reference_docs.rs` renders `docs/reference/` from the Clap graph, hardened MCP router, public error catalog, schemas, bounds, capabilities, and managed paths | four deterministic generator/link tests; `cargo xtask references --check` is part of the contributor gate and passes on both targets in run `32549550396`; bounded remote audit reaches 65/77 alpha.4 error pages and reports the 12 missing routes together |
 | Completion and man generation | Implemented | `src/cli.rs` | `tests/cli_contract.rs` |
-| JSONL, vectors/models, watcher, HTTP, backup/prune/forget/restore | Not implemented | Intentionally absent from the alpha command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
-| GitHub release archives | Alpha.2 published | `.github/workflows/release.yml`, `scripts/release-smoke.sh` | Checksums, SPDX SBOM attestations, signed-tag guard, Linux/macOS release jobs |
-| crates.io package or installer | Not available | `Cargo.toml` sets `publish = false`; archive-only alpha policy | Explicitly deferred; no public install claim |
+| Strict JSONL snapshot connector core | Implemented and exposed through selected-project source commands | `src/ingest/jsonl.rs`, `src/app/jsonl_connector.rs`, source-kind-aware generation/schema/doctor/Get/status paths | parser property tests plus `tests/jsonl_connector.rs` for decoded offsets, identity, deletion guards, no-prefix failure, default carry-forward, strict abort, one-generation multi-source commit, immutable Get, `snapshot_only`, and preflight/quota reporting |
+| Selected-project JSONL source management and mixed ingest | Implemented; unreleased | `src/cli.rs`, `src/runtime.rs`, `src/app/source_management.rs`, `src/app/project_ingest.rs`, `src/store/source.rs`, `src/store/generation.rs` | CLI grammar in `tests/cli_contract.rs`; real-process add/list/idempotency/conflict/default/strict/remove/re-add lifecycle in `tests/jsonl_cli.rs` |
+| Named multi-project and filesystem-source management | Implemented; unreleased | `src/app/project_management.rs`, `src/store/project.rs`, trust-binding retargeting in `src/config/trust.rs`, CLI/runtime adapters | grammar and confirmation contracts in `tests/cli_contract.rs`; two-root create/list/use/attach/detach/set-root/isolation/history/init lifecycle in `tests/project_cli.rs`; collision-safe retargeting in `tests/trust_registry.rs` |
+| Explicit filesystem-source registration | Implemented; unreleased | `source add fs` in `src/cli.rs` and `src/runtime.rs`; validation in `src/app/source_management.rs`; transactional catalog registration/reactivation in `src/store/source.rs` | grammar in `tests/cli_contract.rs`; real-process canonicalization, metadata-only registration, exact idempotency, conflict/broad-root refusal, activation UUID reuse, no implicit ingest, and stable-UUID reactivation in `tests/filesystem_source_cli.rs` |
+| Confirmed whole-index deletion | Implemented; unreleased | `index delete NAME --confirm` in `src/cli.rs` and `src/runtime.rs`; fenced reference cleanup and quarantine removal in `src/app/index_management.rs`; identity-checked bulk trust cleanup in `src/config/trust.rs` | grammar in `tests/cli_contract.rs`; real-process missing/malformed/reader-busy refusal, byte-preserving pre-commit failures, configured-default/all-binding cleanup, other-index isolation, stale-pointer safety, name reuse, and quarantine resume in `tests/index_delete_cli.rs`; epoch/idempotency coverage in `tests/trust_registry.rs` |
+| Verified backup, prune/migration, durable forget, and guarded restore | Implemented; unreleased | `src/store/maintenance.rs`, `src/store/forget_ledger.rs`, `migrations/0003_maintenance.sql`, shared reader/exclusive replacement fences, CLI/runtime adapters | store-level explicit prune-selector/backup/stale-plan/history-floor/N-1 plus forget/copy/raw-byte/old-reader/reingest/old-backup/restore/checkpoint-resume fixtures in `tests/maintenance.rs`; real-process prune/migration/forget/restore in `tests/maintenance_cli.rs`; replacement-lock coverage in `tests/multiprocess.rs`; a separate process holding vector-backed immutable evidence blocks forget within its bounded deadline, cannot serve the replaced inode after release, and leaves Doctor-confirmed physical deletion after retry in `tests/vector_storage.rs` and native run `32564056058` |
+| Managed-backup inventory and forget disposition | Implemented; unreleased | bounded global registry in `src/store/managed_backup.rs`; lossless path encoding, pending/completed receipts, exact classification and keep/purge in `src/runtime.rs`; `backup list` plus mutually exclusive required forget flags in `src/cli.rs` | grammar in `tests/cli_contract.rs`; real-process inventory, missing-choice non-mutation, keep/purge, changed-backup preflight, untracked-copy preservation, and cleanup in `tests/managed_backup_cli.rs` |
+| Pinned local model and five-state index lifecycle | Native target evidence passing; unreleased | embedded exact BGE-small manifest and content-addressed artifact cache in `assets/models/` and `src/model/`; immutable index profile, offline pin-at-init, explicit install/import/list/verify/remove, and configured/installed/indexed/degraded state derivation in `src/cli.rs` and `src/runtime.rs` | model suites on both CI targets plus real verified-artifact install, pin, re-embed, and indexed-state evidence in run `32542799076` |
+| FastEmbed CPU portability probe | Native prerequisite and product-path evidence pass; verified inference is used by explicit product re-embed and private query workers | verified-byte adapter in `src/model/inference.rs`; fixed release-mode harness and inputs in `examples/` and `benches/model_portability/`; native matrix in `.github/workflows/model-portability.yml` | run `32542799076` passes the numerical protocol and real offline CLI/MCP product smoke on Linux x86_64 and macOS arm64; stable tagged-release evidence remains open |
+| Cross-architecture embedding numerical contract | Native target evidence passing; still an opt-in development gate | `hsum.embedding-provenance.v1` in `src/model/inference.rs`; raw-float v2 probe and preregistered comparator in `examples/`; fan-in CI job in `.github/workflows/model-portability.yml` | all 3,456 components from run `30731369195` pass: `1.00e-7` max component delta, `6.94e-7` vector L2, `2.32e-13` cosine distance, `2.89e-7` pairwise distance delta, zero ordering mismatches, compatible model/runtime/input provenance |
+| sqlite-vec portability and filtered-KNN disposition | Native target prerequisite passing; accepted backend is now used by product storage | pinned `sqlite-vec 0.1.7`, composite probe in `examples/sqlite-vec-portability.rs`, accepted bounded adapter in `docs/superpowers/specs/2026-08-02-sqlite-vec-portability-disposition.md`, native workflow | run `30732989326` passes the revised contract on Linux x86_64 at 64.54 ms p95/8.01 MB RSS growth and macOS arm64 at 46.75 ms/10.90 MB for 3,200 candidates; raw cutoff/interrupt failures, broken `0.1.10-alpha.4` package, and 674.68 ms all-source-tie knee remain retained |
+| Product embedding storage and re-embed lifecycle | Native target evidence passing; unreleased | schema-v4 immutable profile and generation pins, canonical provenance/cache, native sqlite-vec A/B membership, single-writer bounded re-embed and capacity preflight in `src/store/vector.rs`, `src/store/doctor.rs`, `src/runtime.rs`, and `migrations/0004_vector_storage.sql` | 24 storage/lifecycle/retrieval cases on both CI targets plus real offline re-embed and indexed-state evidence in run `32542799076`; the added separate-process reader/replacement case passes in run `32564056058` |
+| Vector-aware maintenance | Native target evidence passing; unreleased | vector-aware backup, prune, physical forget, guarded restore, and ordinary-ingest invalidation in `src/store/maintenance.rs`, `src/store/generation.rs`, and `src/store/vector.rs` | exact preservation/reclamation/removal/recovery fixtures in `tests/vector_storage.rs`, `tests/maintenance.rs`, and `tests/maintenance_cli.rs` on both CI targets in run `32542799062` |
+| User config and trust-registry migration | Implemented; unreleased | schema-2 config/trust loaders and epochs in `src/app/context.rs` and `src/config/trust.rs`; hashed two-file ceremony in `src/config/migration.rs`; CLI/runtime adapters | library refusal/exact-backup/structural-plan/resume coverage in `tests/config_migration.rs`; N-1 non-mutation and complete process ceremony in `tests/config_migration_cli.rs`; CLI grammar and schema diagnosis fixtures |
+| Remaining canonical Alpha.2 management surfaces | Complete in the current checkout; unreleased | No intentionally absent Alpha.2 management surface remains | Full local gate must continue passing before semantic retrieval work begins |
+| Semantic/hybrid retrieval | Native target evidence passing through the public CLI/MCP/API boundary; unreleased, omitted mode is stable lexical, and hybrid remains beta | filtered semantic KNN and deterministic weighted exact/BM25/vector reciprocal-rank fusion in `src/search/retrieval.rs`; bounded explanations and overlap dedupe; two-process/eight-queue offline inference in `src/model/worker.rs`; snapshot-bound orchestration in `src/app/search_evidence.rs`; CLI/MCP modes and shared protocol fields in `src/cli.rs`, `src/runtime.rs`, `src/mcp.rs`, and `src/protocol/` | omitted CLI, MCP, and library defaults are pinned to lexical while explicit `auto`/`hybrid`/`semantic` retain Beta.1 behavior; run `32542799076` proves all explicit modes and real model behavior across both targets, while run `32564056061` proves deadline, cancellation, late-response suppression, and subsequent semantic/hybrid recovery |
+| Stable lexical same-index determinism | Native target evidence passing; independent-build identity variance remains diagnosed and hybrid remains beta | frozen five-document/five-query corpus, checkpointed portable index, five fresh CLI and five fresh MCP processes per target, strict shared-evidence normalizer, and backend-score-only comparator in `benches/retrieval_determinism/`; native matrix and fan-in in `.github/workflows/retrieval-determinism.yml` | complete local gate plus run `32565388856`: Linux x86_64 and macOS arm64 reuse index `0891488d…`, all seven process/transport checks pass, every citation order, duplicate set, degradation flag, and explanation matches, and maximum backend-score delta is `2.22e-16` against the `1e-6` bound; `eval/LEXICAL_VARIANCE_DIAGNOSIS.md` separately records why independently built indexes are not claimed equivalent |
+| 100k retrieval qualification | Focused harness tests passing; exact-head Linux native run in progress and Apple M2 measurement open | `benches/retrieval_scale/` and search timing fields including body materialization | deterministic 100,000-chunk corpus contract, fixed 25-query order, 3 fresh processes, 5 warmups plus 30 measured passes/750 observations, cold-path separation, nearest-rank stage statistics, RSS/storage/throughput evidence, SLO/CV fail-closed report, and ten fast harness tests; run `32655822954` is preparing the exact corpus |
+| One-million-passage report-only stress qualification | Focused harness tests passing; exact-head Linux native run in progress | `benches/retrieval_stress/` and `.github/workflows/retrieval-stress.yml` | exact 1,000,000 active passage/membership invariant, 100,000 source-scoped document identities, bounded content-addressed embedding fan-out, lexical/semantic/hybrid probes, cancel storm, deadline reporting, and 14 fast harness tests; run `32655824652` is executing the frozen offline protocol |
+| Held-out retrieval promotion evaluation | Complete; stable lexical default and hybrid beta | frozen 100-query / three-corpus schema, strict standard-library harness, raw tool outputs, deterministic renderer, lexical cross-build diagnosis in `eval/`, and executable omitted-mode defaults | macOS arm64 result `eval/results/heldout-v1-2026-08-02-macos-arm64.json` binds manifest `a7771fac…`; semantic gain and NDCG non-inferiority pass, but MRR lower bound (-0.0312 < -0.02) and exact-token top-three non-regression fail, so omitted CLI/MCP/library mode is lexical and hybrid remains an explicit beta path |
+| Watcher and HTTP | Not implemented; canonical stable-v0.1 exclusions | Intentionally absent from the current command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
+| GitHub release archives | Alpha.4 published; next draft-first gate prepared but not exercised by a real tag | `.github/workflows/release.yml`, `scripts/release-smoke.sh`, `scripts/verify-release-assets.sh` | Exact asset/checksum allowlists, still-draft re-download and verification, and publish-last transition; the 2026-08-23 API audit confirms immutable releases are enabled, while the P0 real signed-tag run remains open |
+| Stable detached release signatures | Not implemented; signing identity, custody, independent fingerprint channel, and rotation authority remain open | Required by `work/local-rust-evidence-bus-design.md`; intentionally not approximated by co-hosted checksums | The configured public GPG variables match and verify the alpha.4 source tag, but the repository has no Actions secrets and neither the workflow nor published assets contain detached archive or manifest signatures |
+| Installer | Available in alpha.4 | `scripts/install.sh`, `scripts/installer-smoke.sh` | Checksum verification plus isolated/network-denied smoke |
+| crates.io source package | Native source-package and release-metadata fallback gates passing; not published | explicit `Cargo.toml` allowlist and `cargo-binstall` target metadata, feature-gated internal `xtask`, package/binstall smokes, and both native CI targets | deterministic locked `.crate` and extracted install in run `32546275484`; run `32659795028` independently verifies both target reports after installing only hSUM from real alpha.4 archives via `crate-meta-data`, with QuickInstall, compilation fallback, and telemetry disabled. Registry discovery and publication remain explicit release-authority gates |
 
 ## Current invariants
 
-- Runtime ingest and retrieval are local; the binary has no network transport.
-  MCP uses the process's stdin and stdout.
-- One alpha index is bound to exactly one project and one filesystem source.
-- MCP opens the selected database read-only and query-only and exposes no
-  mutation tool.
+- Runtime ingest and retrieval are local. The sole network path is the explicit
+  `model install embedding` command; `HSUM_OFFLINE=1` disables it too. MCP uses
+  the process's stdin and stdout.
+- Each selected context remains bound to exactly one named project and one
+  active filesystem authority, with zero or more attached JSONL snapshot
+  sources. One managed index can contain multiple bounded projects and sources;
+  binding-based selection remains exact and project-scoped.
+- MCP opens the selected database read-only and query-only, exposes no mutation
+  tool, and does not initialize or ingest as a side effect of retrieval.
 - Indexed content is untrusted and is marked as such in CLI JSON and MCP
   evidence.
 - Generations activate atomically; an all-failed scan does not advance the
   active generation or epoch.
+- Pinned indexes bind one exact model revision, artifact fingerprint,
+  dimension, input contract, and provenance schema. Explicit re-embed builds a
+  complete shadow sqlite-vec slot from canonical cached inputs before one
+  generation/epoch/slot transaction publishes it; ordinary ingest invalidates
+  active vector membership until the next complete re-embed.
+- Confirmed pruning preserves the monotonic index epoch while moving the
+  retained-history floor forward; its canonical manifest and affected revision
+  namespaces remain recorded in the index.
 - Canonical citations bind index, source, document, revision hash, and byte
   span.
+- CLI `get` and MCP `evidence_get` resolve evidence, capture the cited drift
+  target, and derive source/hash state through one read-only application
+  handler, then construct the complete wire object through one shared protocol
+  DTO. Live verification compares against the immutable cited revision,
+  including when the indexed document head has advanced.
+- CLI `search` and MCP `evidence_search` execute ranking, bounded page
+  selection, cursor snapshot validation, and live-source observation through
+  one read-only application handler, then derive response metadata, passage
+  identity, score, duplicate citations, and typed source state through one
+  protocol mapping. Compatibility projections preserve the CLI
+  combined-span/`name` diagnostics layout and MCP split-span/`retriever`
+  transport layout. For pinned indexes, query inference runs before the SQLite
+  retrieval transaction and is accepted only when a one-statement preflight
+  snapshot matches the response snapshot; concurrent generation changes retry
+  within the original deadline. Both adapters use one opaque query/snapshot-
+  and effective-retriever-bound cursor, while MCP retains final wire-size
+  trimming as a transport responsibility.
+- CLI `status` and MCP `evidence_status` read index identity, project counts,
+  source health, and shared actionable problems through one read-only
+  application handler and one SQLite snapshot, then construct health issues,
+  repair objects, and their compatibility envelopes through one protocol
+  mapping. Storage inspection happens only after that snapshot closes; the
+  adapters retain their public packet shapes.
 - Storage preflight reserves the greater of 64 MiB or 10% of managed index
   bytes in addition to the estimated write.
 
-## Published alpha.2 evidence
+## Current-checkout qualification
+
+- The public alpha.4 tag contains the original zero-touch auto-enrollment and
+  once-per-task refresh behavior. Current source restores the canonical
+  read-only MCP boundary; that change is unreleased until a later tag.
+- Existing alpha.4 workspace-policy files remain parseable, but their roots are
+  not consumed by MCP. Explicit `integration activate`, `init`, and `ingest`
+  remain the state-changing paths.
+- The real generation transaction is exercised through six subprocess death
+  points: generation creation, document-change staging, deletion staging,
+  source-status staging, activation staging, and post-commit observation. A
+  fresh process then runs Doctor and lexical search and observes exactly the
+  prior or next document set, with matching generation/epoch state and no
+  building generation. The complete local gate and both targets in workflow
+  run `32543715602` pass this matrix.
+- The crates.io source manifest now has an explicit allowlist, keeps the
+  contributor-only `xtask` binary behind a feature, and passes a locked package
+  and extracted-install smoke on both supported targets in workflow run
+  `32546275484`. The archive excludes local agent state, CI/evaluation evidence,
+  release outputs, and heavyweight benchmarks. No crate has been published;
+  source installation may use the documented ONNX Runtime build-time network
+  path, while prebuilt archives remain the air-gapped installation route. The
+  manifest also maps each supported target to its exact GitHub Release archive
+  for `cargo-binstall`, disables the unofficial QuickInstall strategy, and
+  passes the real two-target fallback protocol in run `32659795028`. The
+  checksum-pinned `cargo-binstall 1.22.0` process uses only `crate-meta-data`,
+  installs hSUM without exposing `xtask`, disables telemetry, and does not
+  compile from source. This proves the current metadata against published
+  alpha.4 assets; `cargo binstall hsum` remains unavailable until crates.io
+  publication makes that metadata discoverable.
+- The canonical 100,000-chunk performance protocol is executable through one
+  long-lived MCP process per run, so process startup and first model load remain
+  cold measurements rather than contaminating warm samples. The harness emits
+  raw observations and nearest-rank p50/p95/worst distributions for embedding,
+  exact, exact fallback, lexical, vector, fusion, body materialization, server
+  total, and client round trip; it also records process-tree RSS, logical and
+  managed storage bytes, ingest/re-embed throughput, class SLOs, and the
+  three-run total-p95 CV. Exact-head Linux run `32655822954` is in progress;
+  no report is claimed before its immutable artifact is downloaded and
+  validated, and the canonical Apple M2/16 GB execution remains open.
+- The implementation-derived reference set now contains an entry page and
+  complete CLI, MCP, API, configuration, JSONL, managed-layout, and 77-subcode
+  error pages. `cargo xtask check` compares all eight files byte for byte and
+  validates every local reference and runtime-emitted URL mapping. The runtime
+  URL authority now matches the deployed `hsum.burkankale.com` versioned docs.
+  Both clean native contributor gates pass in run `32549550396`.
+  The separate bounded remote audit currently passes 65/77 pages and reports
+  12 missing newer subcode routes; production documentation is therefore not
+  claimed complete.
+- The B1-05 through B1-13 product storage/lifecycle, filtered-semantic,
+  bounded semantic-worker, deterministic hybrid-fusion, overlap-dedupe,
+  explanation, and public transport slice passes its 24-case vector
+  integration suite, raw-adapter and frozen-fusion unit cases, seven worker
+  unit cases, a real private-worker process exchange, all 15 lexical search
+  contracts, CLI/MCP/process parity and typed model-state coverage, and the
+  repository-owned `cargo xtask check` gate. The frozen 100-query held-out
+  evaluation is complete and requires the lexical-first / hybrid-beta
+  disposition recorded in `eval/results/heldout-v1-2026-08-02-macos-arm64.md`.
+  Native product evidence now passes on both supported targets in workflow run
+  `32542799076`: a real verified model is installed, pinned, re-embedded while
+  offline, and exercised through CLI auto/lexical/semantic/hybrid, immutable
+  Get, and generic MCP semantic/hybrid calls. The fan-in binds both reports to
+  the tested pull-request merge, compares the complete behavior summary, and
+  separately compares all 3,456 recorded float components with zero ordering
+  mismatches. Run `32564056061` closes the multi-process failure qualification
+  on both targets: it pauses both real private workers, observes a retryable
+  queued-request deadline, cancels two requests without late responses, resumes
+  the workers, and proves later semantic and hybrid calls recover. Exact commit
+  `e415dba` also passes the complete contributor gate on both targets in run
+  `32564056058`, including the separate-process vector reader/replacement
+  proof. Cross-client dogfood and stable release qualification are not yet
+  claimed.
+- The frozen local retrieval benchmark is 25 author-labeled tasks on this
+  repository, not external or stable-release evidence. Across three fresh
+  indexes, hSUM leads mean graded quality but is much slower than grep, misses
+  every paraphrase and multi-evidence task, and changes ordering materially
+  across identical-corpus rebuilds. Exact scores live outside the evaluated
+  corpus in `benches/agent_ab/README.md` with the full protocol and limitations.
+  That independent-build variance is traced to randomly assigned source and
+  document identities in `eval/LEXICAL_VARIANCE_DIAGNOSIS.md`; no scoring change
+  is implied. The stable same-index contract is independently closed by run
+  `32565388856`: both native targets restore the same checkpointed index,
+  produce identical CLI and MCP evidence across five fresh processes each,
+  preserve citation order, duplicate sets, degradation, and explanations, and
+  differ by only `2.22e-16` in backend scores. This is lexical evidence only;
+  hybrid remains beta.
+
+## Local Alpha.2 JSONL source-lifecycle evidence on 2026-08-01
+
+- `cargo xtask check` passed on this checkout: formatting, Clippy with warnings
+  denied, all unit and integration tests, and doctests.
+- The JSONL integration suite passed all 11 cases covering strict whole-file
+  failure, exact decoded offsets, stable identity, explicit and absence
+  deletion guards, quota preflight, default carry-forward, strict batch abort,
+  one-generation multi-source commits, immutable Get, and `snapshot_only`
+  reporting.
+- The real-process lifecycle suite covers add/list, exact idempotency, conflict
+  refusal, mixed dry-run and ingest, default partial and strict abort behavior,
+  one shared generation, all-failed preservation, confirmed removal, active
+  retrieval exclusion, historical Get, and same-UUID reattachment.
+- The named-project process suite qualifies create/list/use, project-local
+  source attach/detach, root replacement across two repositories, active scope
+  isolation, historical Get, persistent binding retargeting, and compatible
+  init reruns. Trust tests additionally freeze collision refusal without
+  registry mutation.
+- The filesystem-source registration process suite proves canonical bounded-root
+  registration without attachment or ingest, exact idempotency and collision
+  refusal, unchanged scope/epoch/trust selection, registered-UUID reuse during
+  confirmed root activation, and same-UUID reactivation after retirement.
+- The confirmed-index-deletion process suite proves exact name targeting,
+  reader-fence refusal without mutation, malformed-config and recovery-conflict
+  refusal, configured-default and trust cleanup, other-index isolation,
+  stale-pointer non-authorization, immediate name reuse, and fixed-quarantine
+  resume after interrupted cleanup.
+
+## Published alpha.2 evidence (historical)
 
 - Annotated GPG-signed tag `v0.1.0-alpha.2` resolves to protected-branch merge
   `ef54758`; its public GitHub prerelease contains macOS arm64 and Linux x86_64
@@ -68,9 +248,10 @@ artifact, and production-documentation evidence.
   retrieval evaluation, external dogfood, or cross-client-version result is
   claimed.
 
-Run `cargo xtask check` for the checkout-wide contributor gate. Record the
-actual result separately; the presence of tests does not substitute for the
-protected clean-runner and signed-tag gates.
+Run `cargo xtask check` for the checkout-wide contributor gate, including
+generated-reference drift and local-link validation. Record the actual result
+separately; the presence of tests does not substitute for the networked
+documentation audit, protected clean-runner, or signed-tag gates.
 
 ## Local evidence actually run on 2026-07-26
 

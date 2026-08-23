@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The file changed. What did the agent see before?</title>
+<style>
+:root{--ink:#0b1730;--blue:#1769e0;--pale:#edf5ff;--gold:#f2b84b;--paper:#fbfaf5}
+*{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}
+main{min-height:100vh;padding:72px clamp(32px,7vw,120px);background:radial-gradient(circle at 85% 0,#dcecff 0,transparent 35%)}
+.eyebrow{font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--blue)}
+h1{font-family:Georgia,serif;font-size:clamp(48px,7vw,96px);line-height:.96;max-width:1100px;margin:22px 0 18px}
+.subtitle{font-size:22px;color:#41506b;margin-bottom:54px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:24px;max-width:1250px}
+.card{background:white;border:1px solid #d9e2ef;border-radius:28px;padding:34px;box-shadow:0 22px 60px #1e4f8a16}
+.condition{font-size:20px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}
+.primary{font-size:clamp(70px,9vw,128px);font-weight:900;letter-spacing:-.07em;color:var(--blue);line-height:.95;margin-top:30px}
+.label{font-size:20px;font-weight:700;color:#52627d;margin:8px 0 38px}
+.secondary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid #e4e9f1;padding-top:22px}
+.mini span{display:block;color:#6b7890;font-size:13px} .mini strong{display:block;margin-top:7px;font-size:20px}
+footer{margin-top:42px;color:#62708a;font-size:14px} code{font-family:ui-monospace,monospace}
+</style></head><body><main>
+<div class="eyebrow">hSUM evidence benchmark</div><h1>The file changed. What did the agent see before?</h1>
+<div class="subtitle">Uncommitted source · no Git history · exact stored bytes</div><section class="grid"><article class="card">
+  <div class="condition">With hSUM</div>
+  <div class="primary">3</div>
+  <div class="label">previous uncommitted value recovered</div>
+  <div class="secondary"><div class='mini'><span>Current value</span><strong>9</strong></div><div class='mini'><span>Drift state</span><strong>changed</strong></div><div class='mini'><span>Recovery</span><strong>100.0%</strong></div></div>
+</article><article class="card">
+  <div class="condition">Without hSUM</div>
+  <div class="primary">?</div>
+  <div class="label">previous uncommitted value recovered</div>
+  <div class="secondary"><div class='mini'><span>Current value</span><strong>9</strong></div><div class='mini'><span>Drift state</span><strong>unknown</strong></div><div class='mini'><span>Recovery</span><strong>0.0%</strong></div></div>
+</article></section>
+<footer>Reproducible result · <code>5599dec6a5bd</code> · 2026-07-31T10:00:16.877002+00:00</footer>
+</main></body></html>

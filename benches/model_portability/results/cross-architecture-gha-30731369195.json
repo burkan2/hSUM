@@ -1,0 +1,58 @@
+{
+  "schema_version": "hsum.model-numerical-compatibility.v1",
+  "passed": true,
+  "left": {
+    "os": "linux",
+    "arch": "x86_64"
+  },
+  "right": {
+    "os": "macos",
+    "arch": "aarch64"
+  },
+  "thresholds": {
+    "max_component_abs_delta": 0.00001,
+    "max_vector_l2_delta": 0.0002,
+    "max_cosine_distance": 1e-6,
+    "max_pairwise_distance_delta": 2e-6,
+    "require_identical_ordering": true
+  },
+  "metrics": {
+    "component_count": 3456,
+    "max_component_abs_delta": 9.999999998899778e-8,
+    "component_rms_delta": 2.747500981315784e-8,
+    "max_vector_l2_delta": 6.935520535204089e-7,
+    "max_cosine_distance": 2.320366121466577e-13,
+    "max_pairwise_distance_delta": 2.894078669490874e-7,
+    "minimum_adjacent_distance_gap": 0.0011622866639073304,
+    "ordering_mismatches": 0
+  },
+  "workloads": [
+    {
+      "name": "interactive_query",
+      "vectors": 1,
+      "dimension": 384,
+      "max_component_abs_delta": 9.000000000813912e-8,
+      "max_vector_l2_delta": 5.107638598200362e-7,
+      "max_cosine_distance": 1.290079154614432e-13
+    },
+    {
+      "name": "ingest_batch_8",
+      "vectors": 8,
+      "dimension": 384,
+      "max_component_abs_delta": 9.999999998899778e-8,
+      "max_vector_l2_delta": 6.935520535204089e-7,
+      "max_cosine_distance": 2.320366121466577e-13
+    }
+  ],
+  "checks": {
+    "source_reports_passed": true,
+    "source_protocol_compatible": true,
+    "supported_platform_pair": true,
+    "provenance_compatible": true,
+    "component_delta_within_tolerance": true,
+    "vector_l2_delta_within_tolerance": true,
+    "cosine_distance_within_tolerance": true,
+    "pairwise_distance_delta_within_tolerance": true,
+    "deterministic_ordering_identical": true
+  }
+}

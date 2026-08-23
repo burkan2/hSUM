@@ -18,6 +18,20 @@ cargo xtask check
 ```
 
 This runs formatting, Clippy with warnings denied, all tests, and doctests.
+It also regenerates the implementation-derived reference set in memory and
+fails when the checked-in pages or their local links are stale. After an
+intentional CLI, MCP, error, configuration, JSONL, API, or managed-path change,
+update that set first:
+
+```bash
+cargo xtask references
+cargo xtask references --check
+```
+
+The networked `cargo xtask references --check-remote` audit is a release and
+documentation-deployment check. It requires every versioned public error page
+to return successfully and identify its own subcode; ordinary contributor
+checks remain deterministic and offline-capable.
 
 ## Scope
 

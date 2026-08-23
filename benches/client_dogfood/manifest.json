@@ -1,0 +1,29 @@
+{
+  "schema_version": "hsum.client-dogfood-manifest.v1",
+  "protocol_id": "cross-client-citation-round-trip-v1",
+  "fixture_token": "HSUM_CLIENT_DOGFOOD_7F3A91",
+  "required_tools": [
+    "evidence_search",
+    "evidence_get"
+  ],
+  "clients": {
+    "codex": {
+      "version": "codex-cli 0.149.0-alpha.4.1",
+      "configuration": "isolated temporary home with auth reference, ephemeral CLI overrides, and read-only sandbox"
+    },
+    "claude_code": {
+      "version": "2.1.212 (Claude Code)",
+      "configuration": "strict per-run MCP JSON, temporary-project settings only, and session persistence disabled",
+      "max_budget_usd": 0.25
+    },
+    "generic_mcp": {
+      "protocol_version": "2025-11-25"
+    }
+  },
+  "acceptance": {
+    "actual_tool_events_required": true,
+    "get_result_must_contain_fixture_token": true,
+    "final_structured_answer_required": true,
+    "persistent_client_configuration_changes_allowed": false
+  }
+}

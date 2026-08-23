@@ -1,0 +1,64 @@
+{
+  "schema_version": "hsum.eval.corpora.v1",
+  "source_commit": "011d669e99935e5a0e6d8624002ebe97de4ab5c8",
+  "corpora": [
+    {
+      "id": "product-rust",
+      "description": "Frozen production Rust implementation spanning retrieval, storage, ingestion, protocol, CLI, and MCP boundaries.",
+      "structure": "production-rust-modules",
+      "files": [
+        {"path": "src/search/retrieval.rs", "sha256": "5c4bfe5a220adf4d2d6a0eb36f57cc7a44d69492cec89b84f6614cb1964a074e"},
+        {"path": "src/app/search_evidence.rs", "sha256": "0acc3c138c9d397b75b13336e186d8b03c15afb3cd8b3d35d8a780af500716dc"},
+        {"path": "src/model/worker.rs", "sha256": "8ef52066f8bf36cf78b63cb2712ae68f31abcd2e0c4eb8409476b8e11e449c63"},
+        {"path": "src/store/vector.rs", "sha256": "7b738ae11081722a00aa4187b5e5bb22c9baa8d7bbeaaa4b41843f60016aa837"},
+        {"path": "src/store/generation.rs", "sha256": "550132688bf10dfc985b74ba3f400ab01e7894c47e13a7b1536794b6e5f6bb31"},
+        {"path": "src/store/maintenance.rs", "sha256": "d1370e9dc659a76d235ced009691f7faac02116f7e32500896ba72f5425b610c"},
+        {"path": "src/store/open.rs", "sha256": "e1dd6e0ebba769434a2884300ba775144bd84d58202dea630956f3d9ce229c96"},
+        {"path": "src/domain/citation.rs", "sha256": "b8216ab4411b00f465e9f7303749be13e2cabe4a9de770ce33c8492892d7205e"},
+        {"path": "src/ingest/filesystem.rs", "sha256": "13f4ab37b2d25f948e722d92d7f52aa6652027aa97a16494b52360ba4347dd3a"},
+        {"path": "src/mcp.rs", "sha256": "ab9c0481867be674e4ebf2823a636917afdac3e1199d3630b0a485a6f14c5084"},
+        {"path": "src/runtime.rs", "sha256": "54ff55a9b4eb23ca7e866c82768b73b243a0edba9fccb021675ff98b9c236ef4"},
+        {"path": "src/protocol/evidence.rs", "sha256": "ffe957b107d9b3f2f5a85531cfbc57aa1945d79970aa803ac8b3521dc369b70b"}
+      ]
+    },
+    {
+      "id": "contract-tests",
+      "description": "Frozen executable Rust contracts covering vector lifecycle, retrieval, recovery, maintenance, process behavior, and project isolation.",
+      "structure": "integration-test-scenarios",
+      "files": [
+        {"path": "tests/vector_storage.rs", "sha256": "e4ae02d7c464f6019e4310aba6e269765880146e3aac4dfc84e1ffdabb8ad458"},
+        {"path": "tests/search_contract.rs", "sha256": "27fa99646318c413e83179e9515cd24fda353a1c3c4263ef8c75dab665f73a3a"},
+        {"path": "tests/ingest_generations.rs", "sha256": "ad70650dd2b6ed2e3f258cb8adc3cabc576fc3c7f38e9450919bd6d24756fdfd"},
+        {"path": "tests/get_contract.rs", "sha256": "488e86c18ff922ef542d0750184d7933bd6dfb51e764b1ae227def847b009857"},
+        {"path": "tests/mcp_contract.rs", "sha256": "aca6127465dc1ca2fe35adab9a6270dc1c2a02b70faae1743ec46c0c9ac102c6"},
+        {"path": "tests/runtime_process.rs", "sha256": "b6fa154b2a1371c479706ff59b3a79a797f324c515560ec9ed913dc19eb01dd2"},
+        {"path": "tests/maintenance.rs", "sha256": "8bbce11766fd6d32f5d5fe0c676d83bbb9d859a2d1e49efdef8f3b7b0e4cef7d"},
+        {"path": "tests/project_cli.rs", "sha256": "eb525232374ac2025263718e1072c7d5e576a47d8f698189b6e042c9992ee61d"},
+        {"path": "tests/filesystem_ingest.rs", "sha256": "397ff603b9080786bc8647d9862579cc09f4b711c01344a675910b12e74faf9b"},
+        {"path": "tests/model_cli.rs", "sha256": "fe7b19002dba6151ff707beaccbd1a777dc5f0a461a30738202b9a5bc144eb72"},
+        {"path": "tests/multiprocess.rs", "sha256": "b8eaa03b67ca166d5940af6de1849d150c7938424e92d59187fba0c40dd1ea2e"},
+        {"path": "tests/store_doctor.rs", "sha256": "e46e6832d402b1bcd9052efbe54fce2767a457424cf59321a511ec1caf6f4746"},
+        {"path": "examples/sqlite-vec-portability.rs", "sha256": "4700e3147fb3840bcd079410fc3f8e57d6c9aa30d06c40bc940aa7472133b590"}
+      ]
+    },
+    {
+      "id": "operator-docs",
+      "description": "Frozen Markdown product, architecture, lifecycle, benchmark, security, contribution, and release documentation.",
+      "structure": "operator-and-design-markdown",
+      "files": [
+        {"path": "docs/RELEASING.md", "sha256": "6bdbbb1995390ad70308fa0769bdd5358f07805d9139e04445f1bc2ed65fe63a"},
+        {"path": "README.md", "sha256": "45cc3e8faac9c4aaf35e28ae70e36e46469fc5b86417653bf1fa13e37bba4b4d"},
+        {"path": "TODOS.md", "sha256": "1041c4df956fc71359b336cd6e70a33698805c2842e1bca7840e38081b671bc9"},
+        {"path": "outputs/IMPLEMENTATION_STATUS.md", "sha256": "dd746e0e7b86c1f0bd1002839fe1aaa921c68103e1d0b5f752a4cd48abf58e8a"},
+        {"path": "docs/superpowers/specs/2026-07-31-original-plan-reconciliation-design.md", "sha256": "acbbf5a9a8ca16d5cdee320d5303157735ae5c2fade417cf00a5023ca893b4c7"},
+        {"path": "docs/superpowers/specs/2026-08-01-beta1-model-artifact-lifecycle.md", "sha256": "abdd3af2a17ac54fa5b977b2920f2ac58dd122fcd4962b3ebb9bfc14aba3f1c0"},
+        {"path": "docs/superpowers/specs/2026-08-02-sqlite-vec-portability-disposition.md", "sha256": "6a997edaf096bdb4a7130e324026c2069d5725890c52eccd3f0a93efb7fbb8b5"},
+        {"path": "benches/agent_ab/README.md", "sha256": "7911beab042071d3855655d42023e4d525dfc378ab2cb65401ddef93bf6d9b61"},
+        {"path": "benches/model_portability/README.md", "sha256": "065c3478c0ab462b9b1545acbfdbd54244fe3192849acdc2c77b627ab28d8180"},
+        {"path": "CHANGELOG.md", "sha256": "cf5afae0f1759d6636e903ad7238383159f31563ad4b9e2411bd2c9b5f7a28fc"},
+        {"path": "SECURITY.md", "sha256": "2dc64bbe08474a3105ca47715c0eb43e33cdaf18222c262ad1e1086e4059eb28"},
+        {"path": "CONTRIBUTING.md", "sha256": "470aa8be0139b6ad2431ba5042be58bf61d1e9fdf00ded223471c1c0cd6595c3"}
+      ]
+    }
+  ]
+}

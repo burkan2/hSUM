@@ -35,7 +35,7 @@ jobs:
             *) echo "Only alpha prereleases may use this workflow." >&2; exit 1 ;;
           esac
           test "$(git cat-file -t "$tag")" = "tag"
-          grep -qx 'publish = false' Cargo.toml
+          bash scripts/verify-cargo-publish-policy.sh
           test -n "$RELEASE_GPG_FINGERPRINT" || { echo "Missing repository variable: RELEASE_GPG_FINGERPRINT" >&2; exit 1; }
           test -n "$RELEASE_GPG_PUBLIC_KEY" || { echo "Missing repository variable: RELEASE_GPG_PUBLIC_KEY" >&2; exit 1; }
           printf '%s\n' "$RELEASE_GPG_PUBLIC_KEY" | gpg --batch --import
@@ -66,11 +66,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          # The release gate validates the same frozen evaluation blobs as CI.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Confirm the supported runner architecture
         shell: bash
         run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the evaluation Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
 
       - name: Install the pinned Rust toolchain
         shell: bash
@@ -78,7 +85,18 @@ jobs:
 
       - name: Run all release checks
         shell: bash
-        run: cargo +1.91.0 xtask check
+        run: |
+          cargo +1.91.0 xtask check
+          python3 scripts/verify_readme_contract.py
+          python3 scripts/verify_completion_ledger.py
+          python3 scripts/verify_binstall_metadata.py
+          python3 -W error scripts/test_verify_readme_contract.py
+          python3 -W error scripts/test_verify_completion_ledger.py
+          python3 -W error scripts/test_verify_binstall_metadata.py
+          python3 -W error scripts/test_verify_binstall_evidence.py
+          python3 -W error scripts/test_verify_clean_machine_evidence.py
+          python3 -W error scripts/test_verify_cargo_publish_policy.py
+          python3 -W error scripts/test_verify_release_assets.py
 
       - name: Build and exercise the candidate binary
         shell: bash
@@ -266,7 +284,11 @@ jobs:
             install-hsum.sh \
             > SHA256SUMS
 
-      - name: Assemble and publish the prerelease from the verified tag
+      - name: Verify the complete local release asset contract
+        shell: bash
+        run: bash scripts/verify-release-assets.sh "$GITHUB_REF_NAME" dist
+
+      - name: Assemble the complete draft from the verified tag
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -278,6 +300,20 @@ jobs:
             --prerelease \
             --generate-notes \
             --title "hSUM ${GITHUB_REF_NAME}"
+
+      - name: Verify and publish the complete draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh release view "$GITHUB_REF_NAME" --json isDraft --jq '.isDraft')" = "true"
+          uploaded_release="$RUNNER_TEMP/uploaded-release"
+          mkdir "$uploaded_release"
+          gh release download "$GITHUB_REF_NAME" --dir "$uploaded_release"
+          bash scripts/verify-release-assets.sh \
+            "$GITHUB_REF_NAME" \
+            "$uploaded_release"
           gh release edit "$GITHUB_REF_NAME" \
             --draft=false \
             --prerelease

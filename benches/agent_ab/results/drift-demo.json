@@ -1,0 +1,50 @@
+{
+  "benchmark": "drift-demo",
+  "conditions": {
+    "hsum": {
+      "citation_uri": "hsum://v1/68a3aa20-ac23-4ed1-8745-97f225dc623b/ff0ee34e-0e51-5020-ac7f-df8971bca721/0fa46e70-2dc8-49ee-9f08-5fd4fe98658c?rev=e7c056b2aded1bf287afda99d8c2f3a2115987e9b596f98ff0322000911520c5#bytes=0-32",
+      "current_value": 9,
+      "historical_value": 3,
+      "metrics": {
+        "current_accuracy": 1.0,
+        "drift_detection": 1.0,
+        "historical_accuracy": 1.0,
+        "latency_ms": 10.463875
+      },
+      "source_state": "changed"
+    },
+    "native": {
+      "current_value": 9,
+      "historical_value": null,
+      "metrics": {
+        "current_accuracy": 1.0,
+        "drift_detection": 0.0,
+        "historical_accuracy": 0.0,
+        "latency_ms": 0.048458
+      },
+      "source_state": "unknown"
+    }
+  },
+  "metadata": {
+    "generated_at": "2026-07-31T10:00:16.877002+00:00",
+    "git_sha": "5599dec6a5bd50fed9c18d208741d1d25c22fd36",
+    "hsum": "hsum 0.1.0-alpha.4",
+    "machine": "arm64",
+    "platform": "macOS-26.4.1-arm64-arm-64bit-Mach-O",
+    "python": "3.14.2",
+    "repository": "hSUM"
+  },
+  "protocol": {
+    "after_value": 9,
+    "before_value": 3,
+    "fixture": "uncommitted Rust source with no Git object containing the old bytes",
+    "mutation": "overwrite after hSUM ingest without a second ingest"
+  },
+  "schema_version": "hsum.benchmark.results.v1",
+  "video_transcript": [
+    "BEFORE: RETRY_LIMIT = 3 (uncommitted)",
+    "EDIT: RETRY_LIMIT = 9",
+    "WITHOUT hSUM: current = 9; previous value = unknown",
+    "WITH hSUM: previous = 3; current = 9; source = changed"
+  ]
+}

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
+<rect width="1600" height="900" fill="#fbfaf5"/>
+<circle cx="1450" cy="-60" r="420" fill="#e2efff"/>
+<style>
+.eyebrow{font:800 24px system-ui,sans-serif;letter-spacing:5px;fill:#1769e0}
+.title{font:700 60px Georgia,serif;fill:#0b1730}
+.subtitle{font:400 26px system-ui,sans-serif;fill:#52627d}
+.condition{font:800 20px system-ui,sans-serif;letter-spacing:2px;fill:#0b1730}
+.primary{font:900 108px system-ui,sans-serif;letter-spacing:-4px;fill:#1769e0}
+.label{font:700 22px system-ui,sans-serif;fill:#52627d}
+.detail{font:700 23px system-ui,sans-serif;fill:#0b1730}
+.foot{font:500 17px ui-monospace,monospace;fill:#6b7890}
+</style>
+<text x="100" y="92" class="eyebrow">hSUM EVIDENCE BENCHMARK</text>
+<text x="100" y="190" class="title">The file changed. What was there before?</text>
+<text x="100" y="245" class="subtitle">Uncommitted source · no Git history · exact stored bytes</text>
+<g>
+<rect x="100" y="310" width="686" height="410" rx="28" fill="#ffffff" stroke="#d7e2f0" stroke-width="2"/>
+<text x="134" y="368" class="condition">WITH HSUM</text>
+<text x="134" y="510" class="primary">3</text>
+<text x="134" y="558" class="label">previous value recovered</text>
+<line x1="134" x2="752" y1="610" y2="610" stroke="#e3eaf3"/>
+<text x="134" y="664" class="detail">current 9 · changed</text>
+</g><g>
+<rect x="814" y="310" width="686" height="410" rx="28" fill="#ffffff" stroke="#d7e2f0" stroke-width="2"/>
+<text x="848" y="368" class="condition">WITHOUT HSUM</text>
+<text x="848" y="510" class="primary">?</text>
+<text x="848" y="558" class="label">previous value recovered</text>
+<line x1="848" x2="1466" y1="610" y2="610" stroke="#e3eaf3"/>
+<text x="848" y="664" class="detail">current 9 · unknown</text>
+</g>
+<text x="100" y="825" class="foot">Reproduce: python3 benches/agent_ab/benchmark.py · 5599dec6a5bd</text>
+</svg>

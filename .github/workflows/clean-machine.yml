@@ -1,0 +1,285 @@
+name: Clean-machine candidate trials
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/clean-machine.yml
+      - Cargo.lock
+      - Cargo.toml
+      - migrations/**
+      - scripts/clean-machine-trials.sh
+      - scripts/release-smoke.sh
+      - scripts/verify_clean_machine_evidence.py
+      - scripts/test_verify_clean_machine_evidence.py
+      - src/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: clean-machine-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: '0'
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }} candidate
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            expected_arch: arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+
+      - name: Confirm the native builder architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the locked release candidate
+        shell: bash
+        run: cargo +1.91.0 build --locked --release --bin hsum
+
+      - name: Freeze the candidate and checksum
+        env:
+          SOURCE_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_COMMIT_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          checkout_sha=$(git rev-parse HEAD)
+          tree_sha=$(git rev-parse 'HEAD^{tree}')
+          test "$checkout_sha" = "$GITHUB_SHA"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            test "$(git rev-parse HEAD^1)" = "$BASE_COMMIT_SHA"
+            test "$(git rev-parse HEAD^2)" = "$SOURCE_COMMIT_SHA"
+          fi
+          mkdir candidate
+          cp target/release/hsum candidate/hsum
+          chmod 755 candidate/hsum
+          (
+            cd candidate
+            shasum -a 256 hsum > hsum.sha256
+          )
+          file candidate/hsum > candidate/file.txt
+          candidate/hsum --version --verbose > candidate/version.txt
+          printf '%s\n' "$checkout_sha" > candidate/checkout-commit-sha.txt
+          printf '%s\n' "$SOURCE_COMMIT_SHA" > candidate/source-commit-sha.txt
+          printf '%s\n' "$BASE_COMMIT_SHA" > candidate/base-commit-sha.txt
+          printf '%s\n' "$tree_sha" > candidate/tree-sha.txt
+
+      - name: Upload the frozen candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: clean-machine-candidate-${{ matrix.target }}
+          path: candidate
+          if-no-files-found: error
+          compression-level: 0
+
+  trials:
+    name: Trial ${{ matrix.target }} candidate on a fresh runner
+    needs: build
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            expected_arch: arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Confirm the fresh trial runner architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Download the prebuilt candidate
+        uses: actions/download-artifact@v8
+        with:
+          name: clean-machine-candidate-${{ matrix.target }}
+          path: candidate
+
+      - name: Verify candidate identity without rebuilding
+        env:
+          SOURCE_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_COMMIT_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat candidate/checkout-commit-sha.txt)" = "$GITHUB_SHA"
+          test "$(cat candidate/source-commit-sha.txt)" = "$SOURCE_COMMIT_SHA"
+          test "$(cat candidate/base-commit-sha.txt)" = "$BASE_COMMIT_SHA"
+          test "$(cat candidate/tree-sha.txt)" = "$(git rev-parse 'HEAD^{tree}')"
+          chmod 755 candidate/hsum
+          (
+            cd candidate
+            shasum -a 256 -c hsum.sha256
+          )
+          test "$(find target -type f -name hsum -print -quit 2>/dev/null || true)" = ""
+
+      - name: Run the frozen five-trial CLI and MCP protocol
+        env:
+          HSUM_OFFLINE: '1'
+          HSUM_CANDIDATE_COMMIT_SHA: ${{ github.sha }}
+          HSUM_CANDIDATE_SOURCE_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HSUM_CANDIDATE_BASE_COMMIT_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        shell: bash
+        run: |
+          HSUM_CANDIDATE_TREE_SHA=$(cat candidate/tree-sha.txt) \
+            bash scripts/clean-machine-trials.sh \
+            "$PWD/candidate/hsum" \
+            "$RUNNER_TEMP/clean-machine-evidence"
+
+      - name: Upload immutable trial evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: clean-machine-evidence-${{ matrix.target }}
+          path: ${{ runner.temp }}/clean-machine-evidence
+          if-no-files-found: error
+          compression-level: 9
+
+  compare:
+    name: Compare both clean-machine targets
+    needs: trials
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download all native evidence
+        uses: actions/download-artifact@v8
+        with:
+          pattern: clean-machine-evidence-*
+          path: evidence
+
+      - name: Require five passing trials on each supported target
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.sha }}
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
+        shell: bash
+        run: |
+          python3 scripts/test_verify_clean_machine_evidence.py
+          python3 scripts/verify_clean_machine_evidence.py \
+            --evidence-root evidence \
+            --checkout-sha "$EXPECTED_CHECKOUT_SHA" \
+            --source-sha "$EXPECTED_SOURCE_SHA" \
+            --base-sha "$EXPECTED_BASE_SHA" \
+            --tree-sha "$(git rev-parse 'HEAD^{tree}')" \
+            --run-id "$GITHUB_RUN_ID"
+
+  binstall:
+    name: ${{ matrix.target }} fallback install
+    if: github.event_name == 'workflow_dispatch'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            target: aarch64-apple-darwin
+            archive: cargo-binstall-aarch64-apple-darwin.zip
+            sha256: c364fd10e494b4fc0cc88a89995446364379a914930f0b0182b1151ad27690a1
+            unpack: zip
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+            archive: cargo-binstall-x86_64-unknown-linux-gnu.tgz
+            sha256: 4a2621d4b8cb2a1c2433aab2746597b3a10138c33106a303600ebbe76a0e5930
+            unpack: tgz
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download the checksum-pinned cargo-binstall tool
+        shell: bash
+        env:
+          ARCHIVE: ${{ matrix.archive }}
+          EXPECTED_SHA256: ${{ matrix.sha256 }}
+          UNPACK: ${{ matrix.unpack }}
+        run: |
+          set -euo pipefail
+          tool_root="$RUNNER_TEMP/cargo-binstall"
+          mkdir "$tool_root"
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            -o "$tool_root/$ARCHIVE" \
+            "https://github.com/cargo-bins/cargo-binstall/releases/download/v1.22.0/$ARCHIVE"
+          actual=$(shasum -a 256 "$tool_root/$ARCHIVE" | awk '{print $1}')
+          test "$actual" = "$EXPECTED_SHA256"
+          case "$UNPACK" in
+            zip) unzip -q "$tool_root/$ARCHIVE" -d "$tool_root" ;;
+            tgz) tar -xzf "$tool_root/$ARCHIVE" -C "$tool_root" ;;
+            *) echo "unsupported cargo-binstall archive: $UNPACK" >&2; exit 1 ;;
+          esac
+          chmod 755 "$tool_root/cargo-binstall"
+          test "$("$tool_root/cargo-binstall" -V)" = "1.22.0"
+
+      - name: Install hSUM only through its release metadata
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/binstall-smoke.sh \
+            "$RUNNER_TEMP/cargo-binstall/cargo-binstall" \
+            "${{ matrix.target }}" \
+            "$RUNNER_TEMP/hsum-install" \
+            "$RUNNER_TEMP/binstall-evidence/report.json"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: binstall-evidence-${{ matrix.target }}
+          path: ${{ runner.temp }}/binstall-evidence/report.json
+          if-no-files-found: error
+          retention-days: 30
+
+  verify-binstall:
+    name: Verify both fallback installs
+    if: github.event_name == 'workflow_dispatch'
+    needs: binstall
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: binstall-evidence-*
+          path: binstall-evidence
+
+      - name: Verify target coverage and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["package"]["version"])')
+          python3 scripts/verify_binstall_evidence.py \
+            --evidence-root binstall-evidence \
+            --source-sha "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --tool-version 1.22.0 \
+            --package-version "$version"

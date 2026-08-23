@@ -1,0 +1,353 @@
+{
+  "schema_version": "hsum.benchmark.tasks.v2",
+  "benchmark_id": "hsum-public-gold-25-v1",
+  "frozen_at": "2026-08-01",
+  "description": "Frozen public retrieval and grounded-answer tasks for the hSUM repository. Unlisted paths have grade 0; grade 1 paths provide supporting context; grade 2 paths directly and authoritatively answer the question.",
+  "protocol": {
+    "query_count": 25,
+    "class_distribution": {
+      "identifier": 5,
+      "exact-phrase": 5,
+      "concept": 5,
+      "paraphrase": 5,
+      "multi-evidence": 5
+    },
+    "cutoffs": [1, 5],
+    "primary_metric": "ndcg@5",
+    "secondary_metrics": ["hit@1", "precision@5", "recall@5", "mrr", "latency_median_ms", "payload_bytes"],
+    "corpus_scope": ["src", "tests", "docs", "outputs/IMPLEMENTATION_STATUS.md", "README.md", "CHANGELOG.md", "TODOS.md"],
+    "baseline_parameters": {
+      "runs_per_query": 5,
+      "limit": 5,
+      "context_lines": 20,
+      "retrievers": ["ripgrep", "git-grep", "hsum"],
+      "index_builds": 3
+    },
+    "relevance_unit": "deduplicated repository-relative document path",
+    "judgment_scale": {
+      "0": "not relevant",
+      "1": "supporting context",
+      "2": "direct authoritative answer"
+    }
+  },
+  "tasks": [
+    {
+      "id": "source-hash-verification-states",
+      "class": "identifier",
+      "query": "SourceHashVerification",
+      "question": "Which five source-hash verification states can hSUM return?",
+      "judgments": [
+        {"path": "src/app/evidence.rs", "grade": 2},
+        {"path": "src/protocol/evidence.rs", "grade": 1},
+        {"path": "README.md", "grade": 1}
+      ],
+      "required_patterns": ["unchanged", "changed", "missing", "blocked", "unverifiable"]
+    },
+    {
+      "id": "mcp-response-cap",
+      "class": "identifier",
+      "query": "MAX_MCP_RESPONSE_BYTES",
+      "question": "What is the maximum structured MCP response size in bytes?",
+      "judgments": [
+        {"path": "src/mcp.rs", "grade": 2},
+        {"path": "tests/mcp_contract.rs", "grade": 1}
+      ],
+      "required_patterns": ["524288|512\\s*KiB|512\\s*KB"]
+    },
+    {
+      "id": "mass-delete-guard",
+      "class": "identifier",
+      "query": "allow_mass_delete",
+      "question": "When does an ingest require mass-deletion confirmation?",
+      "judgments": [
+        {"path": "src/store/generation.rs", "grade": 2},
+        {"path": "src/cli.rs", "grade": 1},
+        {"path": "src/runtime.rs", "grade": 1},
+        {"path": "tests/ingest_generations.rs", "grade": 1}
+      ],
+      "required_patterns": ["25%|25 percent", "1,?000"]
+    },
+    {
+      "id": "historical-get",
+      "class": "identifier",
+      "query": "get_uses_the_immutable_revision_after_the_head_changes",
+      "question": "After the active head changes, which bytes does get return for an old citation?",
+      "judgments": [
+        {"path": "tests/get_contract.rs", "grade": 2},
+        {"path": "src/search/get.rs", "grade": 2},
+        {"path": "src/app/evidence.rs", "grade": 1}
+      ],
+      "required_patterns": ["old|historical|cited", "immutable|stored|revision"]
+    },
+    {
+      "id": "query-byte-limit",
+      "class": "identifier",
+      "query": "MAX_QUERY_BYTES",
+      "question": "How many UTF-8 bytes may a search query contain?",
+      "judgments": [
+        {"path": "src/search/query.rs", "grade": 2},
+        {"path": "src/mcp.rs", "grade": 1}
+      ],
+      "required_patterns": ["4096|4,?096|4\\s*KiB"]
+    },
+
+    {
+      "id": "citation-grammar",
+      "class": "exact-phrase",
+      "query": "hsum://v1",
+      "question": "Which identities and span are encoded in an hSUM citation?",
+      "judgments": [
+        {"path": "src/domain/citation.rs", "grade": 2},
+        {"path": "README.md", "grade": 1}
+      ],
+      "required_patterns": ["index", "source", "document", "revision", "byte"]
+    },
+    {
+      "id": "all-targets-fail",
+      "class": "exact-phrase",
+      "query": "FAILED: every targeted source failed",
+      "question": "What happens to the generation and index epoch when every targeted source fails?",
+      "judgments": [
+        {"path": "src/runtime.rs", "grade": 2},
+        {"path": "src/store/generation.rs", "grade": 2},
+        {"path": "README.md", "grade": 1}
+      ],
+      "required_patterns": ["no (new )?generation|does not advance|no generation", "epoch"]
+    },
+    {
+      "id": "sensitive-paths",
+      "class": "exact-phrase",
+      "query": "common credential names",
+      "question": "How does filesystem discovery treat common credential filenames?",
+      "judgments": [
+        {"path": "src/ingest/filesystem.rs", "grade": 2},
+        {"path": "README.md", "grade": 1}
+      ],
+      "required_patterns": ["sensitive", "not (be )?admitted|excluded|refused"]
+    },
+    {
+      "id": "atomic-failed-scan",
+      "class": "exact-phrase",
+      "query": "all-failed scan does not advance",
+      "question": "Which atomicity invariant applies to an all-failed scan?",
+      "judgments": [
+        {"path": "src/store/generation.rs", "grade": 2},
+        {"path": "outputs/IMPLEMENTATION_STATUS.md", "grade": 1},
+        {"path": "tests/ingest_generations.rs", "grade": 1}
+      ],
+      "required_patterns": ["generation", "epoch", "does not advance|no advance"]
+    },
+    {
+      "id": "sqlite-query-only-hardening",
+      "class": "exact-phrase",
+      "query": "PRAGMA query_only",
+      "question": "Which two SQLite connection properties must hold at the read-only evidence boundary?",
+      "judgments": [
+        {"path": "src/store/open.rs", "grade": 2},
+        {"path": "src/store/doctor.rs", "grade": 2},
+        {"path": "src/status.rs", "grade": 1}
+      ],
+      "required_patterns": ["read[- ]only", "query[-_ ]only"]
+    },
+
+    {
+      "id": "pipeline-recovery",
+      "class": "concept",
+      "query": "pipeline fingerprint mismatch",
+      "question": "What command is the supported recovery path for a pipeline fingerprint mismatch?",
+      "judgments": [
+        {"path": "src/app/init.rs", "grade": 2},
+        {"path": "tests/fingerprint_recovery.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "CHANGELOG.md", "grade": 1}
+      ],
+      "required_patterns": ["init --rebuild"]
+    },
+    {
+      "id": "retrieval-signals",
+      "class": "concept",
+      "query": "case-sensitive identifiers exact quoted spans BM25",
+      "question": "Which three lexical signals does hSUM fuse?",
+      "judgments": [
+        {"path": "src/search/retrieval.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "src/mcp.rs", "grade": 1}
+      ],
+      "required_patterns": ["identifier", "quoted|exact", "BM25|FTS5"]
+    },
+    {
+      "id": "mcp-tool-surface",
+      "class": "concept",
+      "query": "evidence_search evidence_get evidence_project evidence_status",
+      "question": "Name every read-only MCP tool exposed by hSUM.",
+      "judgments": [
+        {"path": "src/mcp.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "tests/mcp_contract.rs", "grade": 1}
+      ],
+      "required_patterns": ["evidence_search", "evidence_get", "evidence_project", "evidence_status"]
+    },
+    {
+      "id": "returned-citation-expansion",
+      "class": "concept",
+      "query": "expanded get exact returned byte window",
+      "question": "Why can get return a different citation from the one requested?",
+      "judgments": [
+        {"path": "src/search/get.rs", "grade": 2},
+        {"path": "src/protocol/evidence.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "tests/get_contract.rs", "grade": 1}
+      ],
+      "required_patterns": ["adjacent|expand", "returned.*citation", "exact.*(byte|window|span)|byte.*(window|span)"]
+    },
+    {
+      "id": "bounded-single-writer",
+      "class": "concept",
+      "query": "single writer bounded wait",
+      "question": "How does hSUM bound contention between index writers?",
+      "judgments": [
+        {"path": "src/store/lock.rs", "grade": 2},
+        {"path": "src/cli.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "tests/multiprocess.rs", "grade": 1}
+      ],
+      "required_patterns": ["writer.*lock|lock.*writer", "0.*60000|60,?000|60 seconds", "busy|timeout"]
+    },
+
+    {
+      "id": "semantic-gap",
+      "class": "paraphrase",
+      "query": "ingest deletion confirmation",
+      "question": "Which flag confirms an ingest that crosses the mass-deletion threshold?",
+      "judgments": [
+        {"path": "src/cli.rs", "grade": 2},
+        {"path": "src/store/generation.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "src/runtime.rs", "grade": 1}
+      ],
+      "required_patterns": ["allow-mass-delete"]
+    },
+    {
+      "id": "cursor-request-binding",
+      "class": "paraphrase",
+      "query": "continue search after results page without mixing requests",
+      "question": "Which request and snapshot properties make a search cursor stale or invalid?",
+      "judgments": [
+        {"path": "src/protocol/cursor.rs", "grade": 2},
+        {"path": "src/app/search_evidence.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "tests/mcp_contract.rs", "grade": 1}
+      ],
+      "required_patterns": ["query", "mode", "explain", "generation|epoch|snapshot|revision"]
+    },
+    {
+      "id": "manual-freshness-policy",
+      "class": "paraphrase",
+      "query": "why file edits do not automatically refresh evidence",
+      "question": "What does the manual freshness policy require after filesystem changes?",
+      "judgments": [
+        {"path": "src/protocol/evidence.rs", "grade": 2},
+        {"path": "src/integration/agent_policy.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "src/mcp.rs", "grade": 1}
+      ],
+      "required_patterns": ["manual", "ingest|refresh", "explicit"]
+    },
+    {
+      "id": "repository-activation-consent",
+      "class": "paraphrase",
+      "query": "approve repository before agent can inspect it",
+      "question": "What explicit action authorizes hSUM for a repository without letting MCP activate it implicitly?",
+      "judgments": [
+        {"path": "src/integration/agent_policy.rs", "grade": 2},
+        {"path": "src/runtime.rs", "grade": 2},
+        {"path": "README.md", "grade": 1},
+        {"path": "CHANGELOG.md", "grade": 1}
+      ],
+      "required_patterns": ["integration activate|activate", "confirm|consent", "MCP.*(never|does not|do not).*(activate|refresh)|explicit"]
+    },
+    {
+      "id": "immutable-evidence-live-drift",
+      "class": "paraphrase",
+      "query": "compare immutable evidence with current filesystem",
+      "question": "Can hSUM report a changed live file while still returning the originally indexed bytes?",
+      "judgments": [
+        {"path": "src/app/evidence.rs", "grade": 2},
+        {"path": "src/search/get.rs", "grade": 2},
+        {"path": "tests/source_drift.rs", "grade": 1},
+        {"path": "README.md", "grade": 1}
+      ],
+      "required_patterns": ["yes", "changed|source_state", "stored|immutable|indexed"]
+    },
+
+    {
+      "id": "search-adapter-parity",
+      "class": "multi-evidence",
+      "query": "CLI MCP same ranking pagination source state",
+      "question": "Which shared layers keep CLI search and MCP evidence_search behavior aligned?",
+      "judgments": [
+        {"path": "src/app/search_evidence.rs", "grade": 2},
+        {"path": "src/protocol/evidence.rs", "grade": 2},
+        {"path": "src/protocol/cursor.rs", "grade": 2},
+        {"path": "src/runtime.rs", "grade": 1},
+        {"path": "src/mcp.rs", "grade": 1}
+      ],
+      "required_patterns": ["SearchEvidence|shared.*(application|handler)|application.*(handler|use case)", "protocol|DTO", "cursor"]
+    },
+    {
+      "id": "get-adapter-parity",
+      "class": "multi-evidence",
+      "query": "CLI MCP same citation bytes bounds source verification",
+      "question": "Which shared layers keep CLI get and MCP evidence_get behavior aligned?",
+      "judgments": [
+        {"path": "src/app/evidence.rs", "grade": 2},
+        {"path": "src/protocol/evidence.rs", "grade": 2},
+        {"path": "src/runtime.rs", "grade": 1},
+        {"path": "src/mcp.rs", "grade": 1},
+        {"path": "tests/runtime_process.rs", "grade": 1}
+      ],
+      "required_patterns": ["GetEvidence|shared.*(application|handler)|application.*(handler|use case)", "EvidenceGetOutput|protocol|DTO", "CLI", "MCP"]
+    },
+    {
+      "id": "status-adapter-parity",
+      "class": "multi-evidence",
+      "query": "CLI MCP counts health problem codes same snapshot",
+      "question": "Which shared layers keep CLI status and MCP evidence_status behavior aligned?",
+      "judgments": [
+        {"path": "src/app/status_evidence.rs", "grade": 2},
+        {"path": "src/protocol/status.rs", "grade": 2},
+        {"path": "src/status.rs", "grade": 1},
+        {"path": "src/runtime.rs", "grade": 1},
+        {"path": "src/mcp.rs", "grade": 1}
+      ],
+      "required_patterns": ["StatusEvidence|shared.*(application|handler)|application.*(handler|use case)", "protocol|DTO", "health|problem"]
+    },
+    {
+      "id": "partial-ingest-preserves-evidence",
+      "class": "multi-evidence",
+      "query": "partial refresh failed files carry prior evidence forward atomic generation",
+      "question": "What happens to prior evidence, generation state, and exit status when only part of an authoritative refresh fails?",
+      "judgments": [
+        {"path": "src/store/generation.rs", "grade": 2},
+        {"path": "tests/ingest_generations.rs", "grade": 2},
+        {"path": "src/runtime.rs", "grade": 1},
+        {"path": "README.md", "grade": 1}
+      ],
+      "required_patterns": ["carried forward|retained|prior evidence", "generation", "partial", "exit.*6|code.*6"]
+    },
+    {
+      "id": "read-only-mcp-no-mutation",
+      "class": "multi-evidence",
+      "query": "MCP search never initializes ingests or deletes repository evidence",
+      "question": "Which boundaries ensure MCP tools cannot initialize, refresh, or delete repository evidence?",
+      "judgments": [
+        {"path": "src/mcp.rs", "grade": 2},
+        {"path": "src/store/open.rs", "grade": 2},
+        {"path": "src/integration/agent_policy.rs", "grade": 2},
+        {"path": "tests/mcp_contract.rs", "grade": 1},
+        {"path": "README.md", "grade": 1}
+      ],
+      "required_patterns": ["read[- ]only", "query[-_ ]only", "never|does not|cannot", "init|activate", "ingest|refresh|delete"]
+    }
+  ]
+}

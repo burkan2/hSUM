@@ -7,6 +7,8 @@ pub mod domain;
 pub mod ingest;
 pub mod integration;
 pub mod mcp;
+pub mod model;
+pub mod protocol;
 pub mod runtime;
 pub mod search;
 pub mod status;

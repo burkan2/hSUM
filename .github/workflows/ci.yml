@@ -30,15 +30,39 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
+          # eval/manifest.toml freezes source blobs from commit 011d669 rather
+          # than the checkout tip, so validation needs its Git object history.
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Confirm the supported runner architecture
         shell: bash
         run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
 
+      - name: Install the evaluation Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
       - name: Install the pinned Rust toolchain
         shell: bash
         run: rustup toolchain install 1.91.0 --profile minimal --component clippy,rustfmt
+
+      - name: Validate the frozen client and README contracts
+        shell: bash
+        run: |
+          python3 benches/client_dogfood/harness.py validate
+          python3 -W error benches/client_dogfood/test_harness.py
+          python3 scripts/verify_readme_contract.py
+          python3 scripts/verify_completion_ledger.py
+          python3 scripts/verify_binstall_metadata.py
+          python3 -W error scripts/test_verify_readme_contract.py
+          python3 -W error scripts/test_verify_completion_ledger.py
+          python3 -W error scripts/test_verify_binstall_metadata.py
+          python3 -W error scripts/test_verify_binstall_evidence.py
+          python3 -W error scripts/test_verify_clean_machine_evidence.py
+          python3 -W error scripts/test_verify_cargo_publish_policy.py
+          python3 -W error scripts/test_verify_release_assets.py
 
       - name: Run the contributor gate
         shell: bash
@@ -53,6 +77,12 @@ jobs:
         if: matrix.name == 'Linux x86_64'
         shell: bash
         run: bash scripts/generate-license-inventory.sh "$RUNNER_TEMP/hsum-cargo-licenses.json"
+
+      - name: Build and install the locked crates.io source package
+        shell: bash
+        env:
+          RUSTUP_TOOLCHAIN: 1.91.0
+        run: bash scripts/package-smoke.sh
 
       - name: Build the candidate binary
         shell: bash
