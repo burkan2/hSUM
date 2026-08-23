@@ -55,6 +55,7 @@ jobs:
           python3 -W error benches/client_dogfood/test_harness.py
           python3 scripts/verify_readme_contract.py
           python3 -W error scripts/test_verify_readme_contract.py
+          python3 -W error scripts/test_verify_clean_machine_evidence.py
 
       - name: Run the contributor gate
         shell: bash

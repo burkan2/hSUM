@@ -31,7 +31,10 @@ binary_sha256=$(shasum -a 256 "$binary" | awk '{print $1}')
 version=$($binary --version --verbose | head -n 1)
 platform=$(uname -s)
 architecture=$(uname -m)
-candidate_commit_sha=${HSUM_CANDIDATE_COMMIT_SHA:-${GITHUB_SHA:-unverified-local}}
+candidate_checkout_commit_sha=${HSUM_CANDIDATE_COMMIT_SHA:-${GITHUB_SHA:-unverified-local}}
+candidate_source_commit_sha=${HSUM_CANDIDATE_SOURCE_COMMIT_SHA:-$candidate_checkout_commit_sha}
+candidate_base_commit_sha=${HSUM_CANDIDATE_BASE_COMMIT_SHA:-$candidate_checkout_commit_sha}
+candidate_tree_sha=${HSUM_CANDIDATE_TREE_SHA:-unverified-local}
 
 for trial in 1 2 3 4 5; do
   log="$evidence_root/trial-$trial.log"
@@ -47,7 +50,10 @@ HSUM_TRIAL_BINARY_SHA256="$binary_sha256" \
 HSUM_TRIAL_VERSION="$version" \
 HSUM_TRIAL_PLATFORM="$platform" \
 HSUM_TRIAL_ARCHITECTURE="$architecture" \
-HSUM_TRIAL_COMMIT_SHA="$candidate_commit_sha" \
+HSUM_TRIAL_COMMIT_SHA="$candidate_checkout_commit_sha" \
+HSUM_TRIAL_SOURCE_COMMIT_SHA="$candidate_source_commit_sha" \
+HSUM_TRIAL_BASE_COMMIT_SHA="$candidate_base_commit_sha" \
+HSUM_TRIAL_TREE_SHA="$candidate_tree_sha" \
 HSUM_TRIAL_RUN_ID="${GITHUB_RUN_ID:-local}" \
 HSUM_TRIAL_RUN_ATTEMPT="${GITHUB_RUN_ATTEMPT:-local}" \
 python3 - <<'PY'
@@ -106,6 +112,10 @@ report = {
         "version": os.environ["HSUM_TRIAL_VERSION"],
         "sha256": os.environ["HSUM_TRIAL_BINARY_SHA256"],
         "commit_sha": os.environ["HSUM_TRIAL_COMMIT_SHA"],
+        "checkout_commit_sha": os.environ["HSUM_TRIAL_COMMIT_SHA"],
+        "source_commit_sha": os.environ["HSUM_TRIAL_SOURCE_COMMIT_SHA"],
+        "base_commit_sha": os.environ["HSUM_TRIAL_BASE_COMMIT_SHA"],
+        "tree_sha": os.environ["HSUM_TRIAL_TREE_SHA"],
     },
     "platform": {
         "system": os.environ["HSUM_TRIAL_PLATFORM"],

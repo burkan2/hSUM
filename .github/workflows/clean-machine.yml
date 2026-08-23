@@ -10,6 +10,8 @@ on:
       - migrations/**
       - scripts/clean-machine-trials.sh
       - scripts/release-smoke.sh
+      - scripts/verify_clean_machine_evidence.py
+      - scripts/test_verify_clean_machine_evidence.py
       - src/**
 
 permissions:
@@ -54,9 +56,19 @@ jobs:
         run: cargo +1.91.0 build --locked --release --bin hsum
 
       - name: Freeze the candidate and checksum
+        env:
+          SOURCE_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_COMMIT_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         shell: bash
         run: |
           set -euo pipefail
+          checkout_sha=$(git rev-parse HEAD)
+          tree_sha=$(git rev-parse 'HEAD^{tree}')
+          test "$checkout_sha" = "$GITHUB_SHA"
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            test "$(git rev-parse HEAD^1)" = "$BASE_COMMIT_SHA"
+            test "$(git rev-parse HEAD^2)" = "$SOURCE_COMMIT_SHA"
+          fi
           mkdir candidate
           cp target/release/hsum candidate/hsum
           chmod 755 candidate/hsum
@@ -66,7 +78,10 @@ jobs:
           )
           file candidate/hsum > candidate/file.txt
           candidate/hsum --version --verbose > candidate/version.txt
-          printf '%s\n' "$GITHUB_SHA" > candidate/commit-sha.txt
+          printf '%s\n' "$checkout_sha" > candidate/checkout-commit-sha.txt
+          printf '%s\n' "$SOURCE_COMMIT_SHA" > candidate/source-commit-sha.txt
+          printf '%s\n' "$BASE_COMMIT_SHA" > candidate/base-commit-sha.txt
+          printf '%s\n' "$tree_sha" > candidate/tree-sha.txt
 
       - name: Upload the frozen candidate
         uses: actions/upload-artifact@v7
@@ -106,10 +121,16 @@ jobs:
           path: candidate
 
       - name: Verify candidate identity without rebuilding
+        env:
+          SOURCE_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_COMMIT_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(cat candidate/commit-sha.txt)" = "$GITHUB_SHA"
+          test "$(cat candidate/checkout-commit-sha.txt)" = "$GITHUB_SHA"
+          test "$(cat candidate/source-commit-sha.txt)" = "$SOURCE_COMMIT_SHA"
+          test "$(cat candidate/base-commit-sha.txt)" = "$BASE_COMMIT_SHA"
+          test "$(cat candidate/tree-sha.txt)" = "$(git rev-parse 'HEAD^{tree}')"
           chmod 755 candidate/hsum
           (
             cd candidate
@@ -121,9 +142,12 @@ jobs:
         env:
           HSUM_OFFLINE: '1'
           HSUM_CANDIDATE_COMMIT_SHA: ${{ github.sha }}
+          HSUM_CANDIDATE_SOURCE_COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          HSUM_CANDIDATE_BASE_COMMIT_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         shell: bash
         run: |
-          bash scripts/clean-machine-trials.sh \
+          HSUM_CANDIDATE_TREE_SHA=$(cat candidate/tree-sha.txt) \
+            bash scripts/clean-machine-trials.sh \
             "$PWD/candidate/hsum" \
             "$RUNNER_TEMP/clean-machine-evidence"
 
@@ -140,6 +164,10 @@ jobs:
     needs: trials
     runs-on: ubuntu-24.04
     steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
       - name: Download all native evidence
         uses: actions/download-artifact@v8
         with:
@@ -147,26 +175,17 @@ jobs:
           path: evidence
 
       - name: Require five passing trials on each supported target
+        env:
+          EXPECTED_CHECKOUT_SHA: ${{ github.sha }}
+          EXPECTED_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          EXPECTED_BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         shell: bash
         run: |
-          python3 - <<'PY'
-          import json
-          import pathlib
-
-          reports = [
-              json.loads(path.read_text(encoding="utf-8"))
-              for path in sorted(pathlib.Path("evidence").glob("*/report.json"))
-          ]
-          assert len(reports) == 2
-          assert {report["platform"]["machine"] for report in reports} == {"x86_64", "arm64"}
-          assert len({report["candidate"]["commit_sha"] for report in reports}) == 1
-          for report in reports:
-              assert report["schema_version"] == "hsum.clean-machine-trials.v1"
-              assert report["passed"] is True
-              assert report["protocol"]["trial_count"] == 5
-              assert report["protocol"]["network"] == "disabled"
-              assert len(report["trials"]) == 5
-              assert all(trial["passed"] is True for trial in report["trials"])
-              assert report["summary"]["first_cli_citation_seconds"]["target_passed"] is True
-              assert report["summary"]["mcp_round_trip_seconds"]["target_passed"] is True
-          PY
+          python3 scripts/test_verify_clean_machine_evidence.py
+          python3 scripts/verify_clean_machine_evidence.py \
+            --evidence-root evidence \
+            --checkout-sha "$EXPECTED_CHECKOUT_SHA" \
+            --source-sha "$EXPECTED_SOURCE_SHA" \
+            --base-sha "$EXPECTED_BASE_SHA" \
+            --tree-sha "$(git rev-parse 'HEAD^{tree}')" \
+            --run-id "$GITHUB_RUN_ID"
