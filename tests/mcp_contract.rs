@@ -36,7 +36,10 @@ static HEAVY_MCP_TEST_STATE: std::sync::LazyLock<(std::sync::Mutex<bool>, std::s
 
 #[test]
 fn omitted_mcp_search_mode_keeps_stable_retrieval_lexical() {
-    assert_eq!(EvidenceSearchMode::default(), EvidenceSearchMode::Lexical);
+    assert!(matches!(
+        EvidenceSearchMode::default(),
+        EvidenceSearchMode::Lexical
+    ));
 }
 
 struct HeavyMcpTestGuard;
