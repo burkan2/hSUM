@@ -107,8 +107,11 @@ def verify(readme: str, cargo_toml: str) -> dict[str, Any]:
             raise ContractError(
                 f"{capability} must remain {expected!r}, observed {actual!r}"
             )
+    lexical_boundary = rows["Exact and BM25 search"]["boundary"]
+    if "Omitted mode defaults to stable `lexical`" not in lexical_boundary:
+        raise ContractError("omitted search mode must preserve the stable lexical default")
     hybrid_boundary = rows["Semantic and hybrid vector retrieval"]["boundary"]
-    if "not the stable default claim" not in hybrid_boundary:
+    if "explicit beta opt-in" not in hybrid_boundary:
         raise ContractError("hybrid beta row must preserve the lexical-first disposition")
     if "MCP stdio is the only transport" not in rows["HTTP server or web UI"]["boundary"]:
         raise ContractError("transport boundary no longer names MCP stdio as the only transport")

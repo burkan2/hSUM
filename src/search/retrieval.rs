@@ -135,7 +135,7 @@ impl SearchRequest {
     pub fn with_defaults(query: &str) -> Result<Self, SearchError> {
         Self::new(
             query,
-            SearchMode::Auto,
+            SearchMode::Lexical,
             DEFAULT_SEARCH_LIMIT,
             DEFAULT_SEARCH_DEADLINE_MS,
             false,

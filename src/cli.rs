@@ -499,7 +499,7 @@ pub struct IndexDeleteArgs {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, ValueEnum)]
 #[value(rename_all = "kebab-case")]
 pub enum SearchMode {
-    /// Exact identifiers and quotes plus lexical BM25.
+    /// Beta opt-in: exact and BM25 plus vectors when compatible evidence exists.
     Auto,
     /// Exact identifiers and quotes plus lexical BM25.
     Lexical,
@@ -516,8 +516,8 @@ pub struct SearchArgs {
     #[arg(value_name = "QUERY")]
     pub query: String,
 
-    /// Retrieval mode; auto adds vectors only when compatible local evidence exists.
-    #[arg(long, value_enum, default_value = "auto")]
+    /// Retrieval mode; omitted mode stays on the stable lexical path.
+    #[arg(long, value_enum, default_value = "lexical")]
     pub mode: SearchMode,
 
     /// Maximum number of returned passages.

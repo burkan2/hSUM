@@ -663,12 +663,12 @@ fn get_rejects_noncanonical_citations_at_the_argument_boundary() {
 }
 
 #[test]
-fn defaults_match_the_alpha4_contract() {
+fn defaults_keep_stable_retrieval_lexical() {
     let parsed = parse(&["hsum", "search", "needle"]);
     let Command::Search(arguments) = parsed.command else {
         panic!("expected search");
     };
-    assert_eq!(arguments.mode, SearchMode::Auto);
+    assert_eq!(arguments.mode, SearchMode::Lexical);
     assert_eq!(arguments.limit, 10);
     assert_eq!(arguments.timeout_ms, 3_000);
 

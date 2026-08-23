@@ -479,15 +479,15 @@ Arguments:
 
 Options:
       --mode <MODE>
-          Retrieval mode; auto adds vectors only when compatible local evidence exists
+          Retrieval mode; omitted mode stays on the stable lexical path
 
           Possible values:
-          - auto:     Exact identifiers and quotes plus lexical BM25
+          - auto:     Beta opt-in: exact and BM25 plus vectors when compatible evidence exists
           - lexical:  Exact identifiers and quotes plus lexical BM25
           - hybrid:   Exact, lexical, and compatible local-vector retrieval
           - semantic: Compatible local-vector retrieval only
 
-          [default: auto]
+          [default: lexical]
 
       --limit <LIMIT>
           Maximum number of returned passages

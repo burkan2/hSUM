@@ -36,6 +36,14 @@ class ReadmeContractTests(unittest.TestCase):
         with self.assertRaisesRegex(contract.ContractError, "must remain 'beta'"):
             contract.verify(changed, CARGO_TOML)
 
+    def test_omitted_mode_must_remain_stable_lexical(self) -> None:
+        changed = README.replace(
+            "Omitted mode defaults to stable `lexical`",
+            "Omitted mode defaults to `auto`",
+        )
+        with self.assertRaisesRegex(contract.ContractError, "stable lexical default"):
+            contract.verify(changed, CARGO_TOML)
+
     def test_privacy_boundary_must_precede_client_command(self) -> None:
         changed = README.replace("Privacy boundary:", "Privacy note:", 1)
         with self.assertRaisesRegex(contract.ContractError, "privacy boundary"):

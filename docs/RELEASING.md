@@ -121,6 +121,15 @@ workflow uploads the per-trial logs plus a machine-readable report containing
 median/worst time-to-first-CLI-citation and MCP-round-trip measurements before
 a fan-in job checks both target dispositions and the two-/five-minute targets.
 
+The same manual workflow also checks the prebuilt fallback contract through a
+checksum-pinned `cargo-binstall 1.22.0`. It reads the current manifest, permits
+only the `crate-meta-data` strategy, resolves the exact macOS arm64 or Linux
+x86_64 GitHub Release archive, disables telemetry, and verifies that only
+`hsum` was installed with the expected target and version. This is a metadata
+qualification against an already published prerelease, not a registry smoke:
+`cargo binstall hsum` remains unavailable until the package is published to
+crates.io and the registry exposes that metadata.
+
 Before tagging, inspect the completed CI runs and run the same commands on the
 candidate checkout locally:
 

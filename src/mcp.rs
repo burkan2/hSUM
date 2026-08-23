@@ -1112,8 +1112,8 @@ where
 #[derive(Clone, Copy, Debug, Deserialize, JsonSchema, Serialize, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum EvidenceSearchMode {
-    #[default]
     Auto,
+    #[default]
     Lexical,
     Hybrid,
     Semantic,

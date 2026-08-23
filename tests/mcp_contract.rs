@@ -34,6 +34,11 @@ const PROJECT_UUID: &str = "018f47f0-9d9a-7a63-b4cc-8d6f2c8a4402";
 static HEAVY_MCP_TEST_STATE: std::sync::LazyLock<(std::sync::Mutex<bool>, std::sync::Condvar)> =
     std::sync::LazyLock::new(|| (std::sync::Mutex::new(false), std::sync::Condvar::new()));
 
+#[test]
+fn omitted_mcp_search_mode_keeps_stable_retrieval_lexical() {
+    assert_eq!(EvidenceSearchMode::default(), EvidenceSearchMode::Lexical);
+}
+
 struct HeavyMcpTestGuard;
 
 impl Drop for HeavyMcpTestGuard {
@@ -180,6 +185,23 @@ fn mcp_auto_reports_install_capability_and_explicit_vector_modes_fail_typed() {
         directory.path().join("models"),
     )
     .unwrap();
+    let omitted = server
+        .evidence_search(Parameters(EvidenceSearchInput {
+            query: "semantic evidence".to_owned(),
+            mode: None,
+            limit: Some(10),
+            cursor: None,
+            timeout_ms: Some(3_000),
+            explain: Some(true),
+        }))
+        .unwrap()
+        .0;
+    assert_eq!(omitted.requested_mode, "lexical");
+    assert_eq!(omitted.effective_mode, "lexical");
+    assert!(omitted.hints.is_empty());
+    assert_eq!(omitted.examined.vector, 0);
+    assert_eq!(omitted.timing_ms.query_embedding, 0);
+
     let auto = server
         .evidence_search(Parameters(EvidenceSearchInput {
             query: "semantic evidence".to_owned(),

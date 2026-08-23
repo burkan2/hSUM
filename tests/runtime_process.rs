@@ -1480,7 +1480,7 @@ fn cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture() {
         normalized_mcp_search_core(mcp_packet),
         "CLI and MCP search packets must expose the same authoritative core"
     );
-    assert_eq!(cli_packet["requested_mode"], "auto");
+    assert_eq!(cli_packet["requested_mode"], "lexical");
     assert_eq!(cli_packet["effective_mode"], "lexical");
     assert!(
         cli_packet["request_id"]

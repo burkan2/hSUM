@@ -39,7 +39,7 @@ artifact protocol, and final publication and rollback drills.
 | Model supply chain | Model installation is the only runtime network path. It is HTTPS-only with TLS 1.2 minimum, bounded redirects/timeouts/retries/bytes, a pinned upstream revision, exact per-file lengths and SHA-256 values, private staging, and offline refusal through `HSUM_OFFLINE=1`. A custom CA must be a bounded regular PEM file. |
 | Local confidentiality and logs | Managed state is created with user-only permissions where supported; Doctor reports permission failures. Normal product paths do not emit indexed bodies or queries to diagnostic logs. Client configuration warns about the downstream cloud-agent boundary before emitting copyable configuration. |
 | Recovery and deletion | Atomic generation activation, crash checkpoints, separate-process reader/replacement fencing, body-free forget-ledger replay, managed-backup inventory, guarded restore, prune floors, and whole-index quarantine are covered by focused/native tests. SSD wear levelling, unmanaged copies, and external snapshots are explicitly outside the physical-erasure claim. |
-| Release supply chain | The lockfile, exact dependency versions, source-package allowlist, reproducible native build, checksums, SBOMs, attestations, license inventory, draft-first asset allowlist, signed-tag guard, and rollback smokes exist. Stable signing/notarization and a real stable tag remain open gates. |
+| Release supply chain | The lockfile, exact dependency versions, source-package allowlist, reproducible native build, checksums, SBOMs, attestations, license inventory, draft-first asset allowlist, signed-tag guard, and rollback smokes exist. Current `cargo-binstall` metadata disables QuickInstall and run `32659795028` proves direct release-archive resolution on both supported targets without compilation fallback or telemetry. Stable signing/notarization, registry publication, and a real stable tag remain open gates. |
 
 ## Repeatable audit evidence
 
@@ -53,6 +53,14 @@ artifact protocol, and final publication and rollback drills.
   the exact commit currently resolving the upstream `v2` release line.
 - The tracked source scan found no common private-key, GitHub token, OpenAI key,
   Slack token, or AWS access-key signature outside ignored build/editor state.
+- A read-only repository API audit on 2026-08-23 confirms immutable releases
+  and private vulnerability reporting are enabled. `main` requires strict,
+  up-to-date Linux x86_64 and macOS arm64 checks, enforces protection for
+  administrators, and disables force pushes and deletion. The two public
+  release-GPG variables are configured, match one canonical fingerprint, and
+  verify `v0.1.0-alpha.4`; no Actions secret is configured, so this evidence
+  establishes tag provenance but not Apple or detached-archive signing
+  readiness.
 - `cargo +1.91.0 xtask check`, native qualification workflows, release/no-network
   smokes, and the final release review remain the authoritative executable
   evidence; this document does not substitute for their results.
@@ -71,10 +79,13 @@ artifact protocol, and final publication and rollback drills.
    now exist. Multi-hour sanitizer campaigns, corpus minimization, crash triage,
    and independent review are still required before final promotion.
 3. **Open release authority — signatures and Apple notarization.** Alpha
-   compromise procedures exist, but stable publication cannot proceed without
-   separate signing custody and the full Apple credential path.
-4. **Open external validation.** Exact-head run `32658212667` passes five
+   compromise procedures and a verified source-tag key exist, but the
+   repository currently has zero Actions secrets. Stable publication cannot
+   proceed without the separately protected artifact-signing identity/custody
+   and the full Apple credential path.
+4. **Open external validation.** Exact-head run `32659795028` passes five
    offline clean-machine CLI/MCP trials per target with independently verified
-   source/checkout/base/tree provenance. Pinned live-client dogfood, a
+   source/checkout/base/tree provenance, and separately verifies the two native
+   `cargo-binstall` fallback reports. Pinned live-client dogfood, a
    stable-tag artifact rerun, and the final independent security/recovery
    review remain required before stable promotion.

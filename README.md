@@ -285,7 +285,7 @@ remain subject to the release gates in
 | Local filesystem ingest | available | Register roots explicitly; one active filesystem authority per project; registration and root replacement do not ingest implicitly |
 | Named projects | available | Current checkout, unreleased: create, list, persistently select, and replace the filesystem root |
 | Markdown, text, and source code | available | Lowercase `.md`, `.markdown`, `.txt`, `.rs`, `.py`, `.ts`, `.tsx`, `.js`, `.jsx`, `.go`, `.java`, `.kt`, `.kts`, `.c`, `.h`, `.cpp`, `.hpp`, `.cc`, `.hh`, `.cxx`, `.rb`, `.cs`, `.swift`, `.php`, `.scala`, `.sh`, `.bash`, and `.sql` |
-| Exact and BM25 search | available | Explicit `lexical` is the stable retrieval control; `auto` is lexical on an index without a complete vector generation |
+| Exact and BM25 search | available | Omitted mode defaults to stable `lexical`; explicit `auto` can select beta hybrid only on an index with a complete compatible vector generation |
 | Immutable citations and historical `get` | available | Evidence remains resolvable while its immutable version remains in this alpha index |
 | Atomic generations | available | Explicit mixed-source ingest; no watcher or daemon |
 | Status and Doctor | available | Full diagnosis is released; bounded repair/report is in the current checkout and unreleased |
@@ -305,7 +305,7 @@ remain subject to the release gates in
 | Offline query path | available | Init, ingest, lexical search, get, and MCP require no network; model installation is the explicit exception |
 | Watch mode | unsupported | Explicit ingest is the stable-v0.1 update boundary |
 | Live connectors | unsupported | Post-v0.1; JSONL snapshots are the supported external-data boundary |
-| Semantic and hybrid vector retrieval | beta | Current checkout, unreleased: hybrid failed two held-out promotion gates and is not the stable default claim |
+| Semantic and hybrid vector retrieval | beta | Current checkout, unreleased: hybrid failed two held-out promotion gates and remains an explicit beta opt-in rather than the stable default |
 | Reranking | unsupported | Evaluation-gated post-v0.1 experiment; no reranker is part of semantic or hybrid retrieval |
 | HTTP server or web UI | unsupported | MCP stdio is the only transport |
 | Prebuilt installation | available | Checksum-verifying no-`sudo` installer and archives for macOS arm64 and Linux x86_64; no crates.io package |
@@ -826,11 +826,12 @@ The current candidate combines three local lexical signals:
 3. SQLite FTS5 BM25.
 
 The lexical candidate lists are fused deterministically. `--explain` includes
-the signal ranks and fixed-point fusion score. Explicit `--mode lexical` is the
-stable control. `--mode auto` remains lexical when the selected index has no
-complete vector generation; on an explicitly model-enabled and fully indexed
-checkout it selects the beta hybrid path. Use an explicit mode whenever an
-evaluation or automation must not change behavior with model state.
+the signal ranks and fixed-point fusion score. Omitting `--mode` and explicit
+`--mode lexical` both use the stable lexical path. Explicit `--mode auto` is a
+beta opt-in: it remains lexical when the selected index has no complete vector
+generation and selects the beta hybrid path only on an explicitly
+model-enabled, fully indexed checkout. Evaluations and automation should name
+their intended mode explicitly.
 
 ```bash
 "$HSUM" search 'generation recovery'

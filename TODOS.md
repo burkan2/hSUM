@@ -76,8 +76,13 @@ Optional watch mode and additional integrations are not on the critical path.
   installs, and `scripts/package-smoke.sh` packages locked/offline, validates
   the exact required/prohibited archive boundary, installs from the extracted
   crate, and verifies the version and native target. Both supported targets
-  pass in workflow run `32546275484`. The ONNX Runtime build dependency may use
-  the documented network path during source compilation.
+  pass in workflow run `32546275484`. The current manifest also contains
+  target-specific `cargo-binstall` release-archive metadata with QuickInstall
+  disabled; workflow run `32659795028` resolves the real alpha.4 assets through
+  `crate-meta-data` on both targets, installs only hSUM, disables telemetry,
+  and proves no compilation fallback occurred. This does not replace the open
+  registry-publication gate. The ONNX Runtime build dependency may use the
+  documented network path during source compilation.
 - [ ] Publish to crates.io only from an authorized stable release after the
   stable candidate, ownership, rollback, and post-publication install gates
   pass. No current hSUM version is published there.
@@ -352,8 +357,11 @@ Optional watch mode and additional integrations are not on the critical path.
     the repository-owned `cargo xtask check` gate pass. Run `32542799076`
     exercises those public modes with the real pinned model through both the
     CLI and a generic MCP stdio client on Linux x86_64 and macOS arm64, then
-    compares the behavior summaries in fan-in. Cross-client dogfood and stable
-    release qualification remain open.
+    compares the behavior summaries in fan-in. Because the frozen promotion
+    result keeps hybrid beta, omitted CLI, MCP, and library search mode now
+    selects stable lexical; explicit `auto`, `hybrid`, and `semantic` preserve
+    the Beta.1 paths. Cross-client dogfood and stable release qualification
+    remain open.
 - [x] Build and freeze the canonical held-out evaluation: 100 queries over
   three independently structured corpora, accepted byte spans, four-point
   labels, 35 semantic/paraphrase cases, report-only ripgrep/QMD comparisons,
