@@ -136,10 +136,25 @@ fn init_pins_without_downloading_and_reembed_requires_the_exact_artifact() {
     );
     assert!(!home.path().join("cache/models").exists());
 
-    let auto = run(
+    let lexical = run(
         home.path(),
         working.path(),
         &["search", "semantic evidence", "--json"],
+        true,
+    );
+    assert!(lexical.status.success(), "{}", stderr(&lexical));
+    let lexical: Value = serde_json::from_slice(&lexical.stdout).unwrap();
+    assert_eq!(lexical["requested_mode"], "lexical");
+    assert_eq!(lexical["effective_mode"], "lexical");
+    assert_eq!(lexical["hints"], json!([]));
+    assert_eq!(lexical["degraded_mode"], json!([]));
+    assert_eq!(lexical["examined"]["vector"], 0);
+    assert_eq!(lexical["timing_ms"]["query_embedding"], 0);
+
+    let auto = run(
+        home.path(),
+        working.path(),
+        &["search", "semantic evidence", "--mode", "auto", "--json"],
         true,
     );
     assert!(auto.status.success(), "{}", stderr(&auto));
