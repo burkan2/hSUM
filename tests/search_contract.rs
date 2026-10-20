@@ -25,6 +25,70 @@ fn library_search_defaults_keep_stable_retrieval_lexical() {
 }
 
 #[test]
+fn common_term_and_phrase_searches_finish_with_deterministic_scoped_ties() {
+    let directory = tempdir().unwrap();
+    let path = directory.path().join("index.sqlite");
+    let mut database = create_database(&path);
+    let scope = fixture_scope();
+    let filler = "immutable generation citation evidence ";
+    let documents = (0..10_000)
+        .map(|index| {
+            let name = format!("document-{index:05}.md");
+            document(
+                name.as_bytes(),
+                &name,
+                &format!("repo://{name}"),
+                format!("{filler}record {index:05}\n").as_bytes(),
+            )
+        })
+        .collect();
+    let mut other_scope = scope.clone();
+    other_scope.source_id = SourceId::from_uuid(Uuid::new_v4());
+    other_scope.project_id = ProjectId::from_uuid(Uuid::new_v4());
+    other_scope.source_name = "other".parse().unwrap();
+    other_scope.project_name = "other".parse().unwrap();
+    other_scope.source_logical_uri = "file:///other".to_owned();
+    other_scope.source_config_json = r#"{"root":"/other"}"#.to_owned();
+    ingest(
+        &mut database,
+        &other_scope,
+        vec![document(
+            b"hidden.md",
+            "hidden.md",
+            "repo://hidden.md",
+            b"immutable generation citation evidence\n",
+        )],
+    );
+    ingest(&mut database, &scope, documents);
+
+    let connection = Connection::open(&path).unwrap();
+    let expected = connection
+        .prepare("SELECT id FROM documents WHERE source_id = ?1 ORDER BY id LIMIT 50")
+        .unwrap()
+        .query_map([scope.source_id.as_uuid().as_bytes().as_slice()], |row| {
+            row.get::<_, Vec<u8>>(0)
+        })
+        .unwrap()
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+
+    // A broad deadline catches repeated BM25 corpus scans without enforcing the release SLO.
+    for query in ["immutable citation evidence", "\"immutable generation\""] {
+        let response = search(&database, scope.project_id, query, SearchMode::Lexical, 50);
+        let actual = response
+            .results
+            .iter()
+            .map(|result| {
+                assert_eq!(result.source_id, scope.source_id);
+                result.document_id.as_uuid().as_bytes().to_vec()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(actual, expected, "{query}");
+        assert_eq!(response.stop_reason, SearchStopReason::LimitReached);
+    }
+}
+
+#[test]
 fn search_request_enforces_alpha_bounds_before_touching_sqlite() {
     assert!(matches!(
         SearchRequest::new("alpha", SearchMode::Auto, 0, 3_000, false),

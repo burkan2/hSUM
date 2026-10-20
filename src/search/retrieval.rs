@@ -1674,10 +1674,11 @@ fn fetch_phrase_candidates(
 ) -> Result<Vec<Passage>, SearchError> {
     let expression = format!("\"{}\"", phrase.replace('"', "\"\""));
     let passage_columns = passage_columns();
+    // Keep the FTS cursor outside rowid lookups so BM25 statistics are computed once.
     let mut statement = connection.prepare(&format!(
         "SELECT {passage_columns}, bm25(passages_fts) AS lexical_score
          FROM passages_fts
-         JOIN active_passages AS ap ON ap.id = passages_fts.rowid
+         CROSS JOIN active_passages AS ap ON ap.id = passages_fts.rowid
          {PASSAGE_JOINS}
          WHERE ps.project_id = ?1
            AND passages_fts MATCH ?2
@@ -1769,10 +1770,11 @@ fn fetch_lexical_page(
     SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow_mut().lexical_fetches += 1);
 
     let passage_columns = passage_columns();
+    // Keep the FTS cursor outside rowid lookups so BM25 statistics are computed once.
     let mut statement = connection.prepare(&format!(
         "SELECT {passage_columns}, bm25(passages_fts) AS lexical_score
          FROM passages_fts
-         JOIN active_passages AS ap ON ap.id = passages_fts.rowid
+         CROSS JOIN active_passages AS ap ON ap.id = passages_fts.rowid
          {PASSAGE_JOINS}
          WHERE ps.project_id = ?1
            AND passages_fts MATCH ?2

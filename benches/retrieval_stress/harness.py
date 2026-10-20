@@ -671,7 +671,7 @@ def run_cancel_storm(
                             "query": query,
                             "mode": mode,
                             "limit": 10,
-                            "timeout_ms": 60_000,
+                            "timeout_ms": QUERY_TIMEOUT_MS,
                             "explain": True,
                         },
                     },

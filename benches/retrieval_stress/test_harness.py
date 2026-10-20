@@ -301,6 +301,8 @@ stages = (
 )
 for line in sys.stdin:
     frame = json.loads(line)
+    if frame.get("method") == "tools/call":
+        assert frame["params"]["arguments"]["timeout_ms"] == 10_000
     if frame.get("method") == "initialize":
         response = {"jsonrpc": "2.0", "id": frame["id"], "result": {}}
     elif frame.get("method") == "tools/call" and frame["id"] >= 100:
