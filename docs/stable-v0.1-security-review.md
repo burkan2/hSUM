@@ -85,6 +85,11 @@ artifact protocol, and final publication and rollback drills.
   scheduled `Parser fuzz smoke` workflow runs each seeded corpus for 15 seconds
   with a 64 KiB input bound, five-second per-input timeout, and 2 GiB RSS limit.
   Those short runs are regression evidence, not an exhaustive fuzz claim.
+  Manual dispatch now accepts `seconds_per_target` from 1 to 1800. The shared
+  `scripts/run-parser-fuzz.sh` validates that bound, preserves crash exits,
+  and retains each parser's statistics; its tests cover limits and failure
+  propagation. Normal pull-request/scheduled runs remain 15 seconds per target.
+  A longer campaign still needs a completed report before assurance is upgraded.
 
 ## Residual risk register
 
