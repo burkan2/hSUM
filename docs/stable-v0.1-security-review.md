@@ -13,6 +13,23 @@ or clean-machine gate by itself.
 
 ## Disposition
 
+### Dependency remediation on 2026-10-21
+
+The fresh audit at `caf2f19` failed on six RustSec advisories:
+`RUSTSEC-2026-0285`, `RUSTSEC-2026-0346`, `RUSTSEC-2026-0348`,
+`RUSTSEC-2026-0349`, `RUSTSEC-2026-0382`, and `RUSTSEC-2026-0381`.
+The lockfile now selects `rustls 0.23.46`, `rustls-webpki 0.103.16`, and
+`webpki-roots 1.0.10`, plus the required `aws-lc-rs 1.18.2` and
+`aws-lc-sys 0.46.0` updates. No advisory exception was added. The complete
+local `cargo deny check` and `cargo xtask check` gates pass with this graph;
+native CI must qualify the updated candidate before release.
+
+This changes the explicit model-download/build TLS stack, not the frozen
+retrieval rules, model files, or corpus. Prior candidate performance reports
+retain their own source and binary identities.
+
+### Original source review on 2026-08-22
+
 No exploitable critical or high-severity defect was identified in the reviewed
 local product boundaries. The dependency graph has one accepted maintenance
 risk: RustSec `RUSTSEC-2024-0436` marks `paste 1.0.15` unmaintained. It is a
