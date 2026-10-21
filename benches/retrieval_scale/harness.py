@@ -139,14 +139,14 @@ def load_queries(path: Path = QUERY_PATH) -> list[dict[str, str]]:
     return validated
 
 
-def semantic_readiness_probe_arguments(binary: Path, query: str) -> list[str]:
+def readiness_probe_arguments(binary: Path, query: str, mode: str) -> list[str]:
     """Build the unmeasured readiness probe at the bounded product maximum."""
     return [
         str(binary),
         "search",
         query,
         "--mode",
-        "hybrid",
+        mode,
         "--limit",
         "10",
         "--timeout-ms",
@@ -272,6 +272,20 @@ def hsum_version(binary: Path, *, cwd: Path, home: Path) -> str:
     return output
 
 
+def validate_lexical_query_paths(
+    binary: Path, queries: list[dict[str, str]], *, corpus: Path, home: Path
+) -> None:
+    # Reject an invalid query class before spending hours on re-embedding.
+    for query in queries:
+        if query["mode"] == "lexical":
+            packet = run_json_command(
+                readiness_probe_arguments(binary, query["query"], "lexical"),
+                cwd=corpus,
+                home=home,
+            )
+            validate_search_packet(query, packet)
+
+
 def prepare(args: argparse.Namespace) -> int:
     binary = args.hsum.resolve()
     corpus = args.corpus.resolve()
@@ -326,11 +340,12 @@ def prepare(args: argparse.Namespace) -> int:
             f"prepared index must contain {EXPECTED_PASSAGES} passages, found {active_passages}"
         )
 
+    validate_lexical_query_paths(binary, queries, corpus=corpus, home=home)
     reembed_started = time.perf_counter()
     run_command([str(binary), "ingest", "--reembed"], cwd=corpus, home=home)
     reembed_seconds = time.perf_counter() - reembed_started
     semantic_probe = run_json_command(
-        semantic_readiness_probe_arguments(binary, queries[-1]["query"]),
+        readiness_probe_arguments(binary, queries[-1]["query"], "hybrid"),
         cwd=corpus,
         home=home,
     )

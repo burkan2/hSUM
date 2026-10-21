@@ -918,7 +918,7 @@ pub(crate) fn validate_active_vector_membership(
                  FROM active_passages AS ap
                  LEFT JOIN {table} AS vec ON vec.rowid = ap.id
                  WHERE vec.rowid IS NULL
-                    OR vec.source_id != lower(
+                    OR vec.source_id IS NOT lower(
                          substr(hex(ap.source_id), 1, 8) || '-' ||
                          substr(hex(ap.source_id), 9, 4) || '-' ||
                          substr(hex(ap.source_id), 13, 4) || '-' ||

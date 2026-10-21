@@ -4,6 +4,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 HARNESS_PATH = Path(__file__).with_name("harness.py")
@@ -36,8 +37,8 @@ class RetrievalScaleHarnessTests(unittest.TestCase):
         )
 
     def test_setup_readiness_probe_uses_the_bounded_product_maximum(self):
-        arguments = HARNESS.semantic_readiness_probe_arguments(
-            Path("/opt/hsum"), "hybrid readiness"
+        arguments = HARNESS.readiness_probe_arguments(
+            Path("/opt/hsum"), "hybrid readiness", "hybrid"
         )
 
         self.assertEqual(HARNESS.SETUP_PROBE_TIMEOUT_MS, 10_000)
@@ -56,6 +57,25 @@ class RetrievalScaleHarnessTests(unittest.TestCase):
                 "--json",
             ],
         )
+
+    def test_lexical_preflight_rejects_a_mislabeled_fallback_query(self):
+        query = next(
+            query for query in HARNESS.load_queries() if query["id"] == "fallback-02"
+        )
+        packet = {
+            "requested_mode": "lexical",
+            "effective_mode": "lexical",
+            "degraded_mode": [],
+            "results": [{}],
+            "retrievers": ["exact", "lexical"],
+            "timing_ms": {stage: 1 for stage in HARNESS.STAGES},
+        }
+        with mock.patch.object(HARNESS, "run_json_command", return_value=packet) as run:
+            with self.assertRaisesRegex(HARNESS.HarnessError, "fallback-02.*exact_fallback"):
+                HARNESS.validate_lexical_query_paths(
+                    Path("/opt/hsum"), [query], corpus=Path("/corpus"), home=Path("/home")
+                )
+            self.assertEqual(run.call_args.args[0][4], "lexical")
 
     def test_nearest_rank_uses_one_based_ceiling(self):
         values = list(range(1, 31))

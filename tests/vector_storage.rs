@@ -381,6 +381,64 @@ fn cached_reembedding_builds_and_atomically_flips_the_shadow_slot() {
 }
 
 #[test]
+fn vector_membership_rejects_missing_extra_and_mispartitioned_rows() {
+    for corruption in [
+        "missing",
+        "extra",
+        "replaced",
+        "wrong_source",
+        "null_source",
+    ] {
+        let directory = private_tempdir();
+        let path = directory.path().join("index.sqlite");
+        let (mut database, _) = pinned_database_with_chunk(&path);
+        cache_active_inputs(&mut database);
+        database.commit_cached_reembedding().unwrap();
+        assert!(database.has_complete_vector_membership().unwrap());
+        let connection = Connection::open(&path).unwrap();
+        let (rowid, embedding, source): (i64, Vec<u8>, String) = connection
+            .query_row(
+                "SELECT rowid, embedding, source_id FROM passages_vec_b",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap();
+        if corruption != "extra" {
+            connection
+                .execute("DELETE FROM passages_vec_b", [])
+                .unwrap();
+        }
+        if corruption != "missing" {
+            let replacement_id = if matches!(corruption, "extra" | "replaced") {
+                rowid + 1
+            } else {
+                rowid
+            };
+            let replacement_source = match corruption {
+                "wrong_source" => Some(SourceId::new_v4().to_string()),
+                "null_source" => None,
+                _ => Some(source),
+            };
+            connection
+                .execute(
+                    "INSERT INTO passages_vec_b(rowid, embedding, source_id) VALUES (?1, ?2, ?3)",
+                    rusqlite::params![replacement_id, embedding, replacement_source],
+                )
+                .unwrap();
+        }
+        assert!(
+            matches!(
+                database.has_complete_vector_membership(),
+                Err(StoreError::ImmutableEvidenceMismatch(
+                    "active vector membership"
+                ))
+            ),
+            "{corruption}"
+        );
+    }
+}
+
+#[test]
 fn semantic_search_requires_validated_complete_vectors_and_returns_guarded_evidence() {
     let directory = private_tempdir();
     let path = directory.path().join("index.sqlite");

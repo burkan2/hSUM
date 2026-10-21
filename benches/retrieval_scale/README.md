@@ -48,8 +48,28 @@ python3 benches/retrieval_scale/harness.py prepare \
 `prepare` refuses a non-empty corpus directory and never deletes an existing
 index. It generates roughly 150 MB of source text, verifies the already-staged
 model offline, initializes the real filesystem product path, checks for
-exactly 100,000 active passages, runs the real bounded re-embedding path, and
+exactly 100,000 active passages, validates all 19 lexical query paths before
+re-embedding, runs the real bounded re-embedding path, and
 writes `.hsum-retrieval-scale-setup.json` in the corpus root.
+
+### 2026-10-21 protocol correction
+
+Run [39510576430](https://github.com/burkan2/hSUM/actions/runs/39510576430)
+completed setup but failed because `fallback-02` used `"x::y"`. Colons are
+tokenizer characters, so this query correctly takes the ordinary phrase path.
+The corrected literal is `"x^y"`, which exercises exact fallback. All 19 lexical
+queries pass the real product preflight on a small corpus; the original literal
+is rejected by that same check. This is harness validation, not a scale pass.
+
+The query-manifest SHA-256 is now
+`694cb5665f947d8c54d98ba98c638408b9424b1a04fa9c8849c81c1c8f1fda5a`,
+and the corpus fingerprint is
+`635a942d1cacf9e195a7f697ba6bffb471ab850680dcb6abca1c48ea7364c45f`.
+The schema, query counts, corpus dimensions, thresholds, and measurement
+protocol remain unchanged. The earlier manifest and corpus hashes remain in
+the failed run's setup receipt and `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md`.
+New qualification requires a fresh corpus and setup receipt; do not combine
+the old setup with the corrected queries.
 
 ## Cold-cache helper
 

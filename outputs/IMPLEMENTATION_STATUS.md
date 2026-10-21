@@ -1,6 +1,6 @@
 # hSUM current checkout implementation status
 
-**Snapshot:** 2026-08-23
+**Snapshot:** 2026-10-21 (Q04/Q05 failures diagnosed; TLS advisories remediated)
 **Scope:** Current source checkout after the public `0.1.0-alpha.4` prerelease;
 published alpha.2 evidence is retained below as a historical release record.
 
@@ -11,6 +11,49 @@ artifact, and production-documentation evidence.
 
 The canonical stable-v0.1 evidence states and remaining qualification work are
 tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
+
+## Qualification follow-up on 2026-10-21
+
+The FTS-first repair at `caf2f19` passes CI and same-index determinism. Stable
+qualification remains open after the following completed runs:
+
+- Linux 100k [run 39510576430](https://github.com/burkan2/hSUM/actions/runs/39510576430)
+  completed setup, progressed past the original all-match query, and failed on
+  the mislabeled `fallback-02` fixture. The corrected `"x^y"` fixture and early
+  lexical preflight pass all 19 real-product query paths on a small corpus.
+  The new corpus/manifest hashes are recorded in `benches/retrieval_scale/README.md`.
+- Linux million-passage [run 39510579822](https://github.com/burkan2/hSUM/actions/runs/39510579822)
+  completed ingest, 100 metadata generations, and re-embedding, then failed
+  before model workers were observed. The current checkout rejects NULL source
+  partitions, installs MCP cancellation on the preflight connection, and
+  reports early stress-query errors. A faster membership scan was rejected
+  because it omitted payload checks; preflight performance remains open. The diagnosis and focused evidence are in
+  `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md`; no million-passage pass is claimed.
+- Apple M2/16 GB preparation was interrupted before vector completion. The
+  partial index is retained for diagnosis, with no setup receipt or canonical
+  latency report. Chunk lookups remain a local all-match bottleneck; see
+  `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md`.
+- Commit `67db45d` updates the affected TLS dependencies. The full local
+  contributor gate and dependency policy pass; GitHub dependency policy
+  [run 39535772624](https://github.com/burkan2/hSUM/actions/runs/39535772624)
+  also passes. The earlier failed audit remains historical evidence.
+- Codex activation is verified: generation 2 contains 221 documents and 3,753
+  passages, with all four MCP tools and a search/Get citation round trip.
+  This local integration is separate from the frozen cross-client gate.
+- Pinned live cross-client dogfood remains open. Generic MCP passes. With the
+  matching code-mode host and explicit fixture environment, Codex emits a real
+  successful search/Get round trip and final structured answer. Replaying the
+  retained events passes after fixing the harness to inspect completed tool
+  events (raw stream SHA-256 `f9f89ab8297ebd2bfde6df607df3e7550c4b98289213744655cb14f75a047a12`).
+  Claude Code still stays MCP-pending and exhausts its frozen budget; the
+  complete three-client report remains failed.
+- The installed CLI was atomically updated to the smoke-tested candidate
+  `1e770f1348321d19e5f0cf4c0a1273d8df47abac1ed44a08e55634ffff924170`.
+  A real-model smoke again pauses two workers, cancels eight requests without
+  late responses, and recovers lexical/hybrid retrieval.
+- Apple Developer/notarization and offline Minisign setup are deferred by the
+  owner until tomorrow. No stable tag or publication is authorized by these
+  engineering checks.
 
 | Surface | Checkout status | Primary implementation | Focused evidence |
 |---|---|---|---|
@@ -52,9 +95,9 @@ tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
 | User config and trust-registry migration | Implemented; unreleased | schema-2 config/trust loaders and epochs in `src/app/context.rs` and `src/config/trust.rs`; hashed two-file ceremony in `src/config/migration.rs`; CLI/runtime adapters | library refusal/exact-backup/structural-plan/resume coverage in `tests/config_migration.rs`; N-1 non-mutation and complete process ceremony in `tests/config_migration_cli.rs`; CLI grammar and schema diagnosis fixtures |
 | Remaining canonical Alpha.2 management surfaces | Complete in the current checkout; unreleased | No intentionally absent Alpha.2 management surface remains | Full local gate must continue passing before semantic retrieval work begins |
 | Semantic/hybrid retrieval | Native target evidence passing through the public CLI/MCP/API boundary; unreleased, omitted mode is stable lexical, and hybrid remains beta | filtered semantic KNN and deterministic weighted exact/BM25/vector reciprocal-rank fusion in `src/search/retrieval.rs`; bounded explanations and overlap dedupe; two-process/eight-queue offline inference in `src/model/worker.rs`; snapshot-bound orchestration in `src/app/search_evidence.rs`; CLI/MCP modes and shared protocol fields in `src/cli.rs`, `src/runtime.rs`, `src/mcp.rs`, and `src/protocol/` | omitted CLI, MCP, and library defaults are pinned to lexical while explicit `auto`/`hybrid`/`semantic` retain Beta.1 behavior; run `32542799076` proves all explicit modes and real model behavior across both targets, while run `32564056061` proves deadline, cancellation, late-response suppression, and subsequent semantic/hybrid recovery |
-| Stable lexical same-index determinism | Native target evidence passing; independent-build identity variance remains diagnosed and hybrid remains beta | frozen five-document/five-query corpus, checkpointed portable index, five fresh CLI and five fresh MCP processes per target, strict shared-evidence normalizer, and backend-score-only comparator in `benches/retrieval_determinism/`; native matrix and fan-in in `.github/workflows/retrieval-determinism.yml` | complete local gate plus run `32565388856`: Linux x86_64 and macOS arm64 reuse index `0891488d…`, all seven process/transport checks pass, every citation order, duplicate set, degradation flag, and explanation matches, and maximum backend-score delta is `2.22e-16` against the `1e-6` bound; `eval/LEXICAL_VARIANCE_DIAGNOSIS.md` separately records why independently built indexes are not claimed equivalent |
-| 100k retrieval qualification | Focused harness tests passing; exact-head Linux native run in progress and Apple M2 measurement open | `benches/retrieval_scale/` and search timing fields including body materialization | deterministic 100,000-chunk corpus contract, fixed 25-query order, 3 fresh processes, 5 warmups plus 30 measured passes/750 observations, cold-path separation, nearest-rank stage statistics, RSS/storage/throughput evidence, SLO/CV fail-closed report, and ten fast harness tests; run `32655822954` is preparing the exact corpus |
-| One-million-passage report-only stress qualification | Focused harness tests passing; exact-head Linux native run in progress | `benches/retrieval_stress/` and `.github/workflows/retrieval-stress.yml` | exact 1,000,000 active passage/membership invariant, 100,000 source-scoped document identities, bounded content-addressed embedding fan-out, lexical/semantic/hybrid probes, cancel storm, deadline reporting, and 14 fast harness tests; run `32655824652` is executing the frozen offline protocol |
+| Stable lexical same-index determinism | Native target evidence passing; independent-build identity variance remains diagnosed and hybrid remains beta | frozen five-document/five-query corpus, checkpointed portable index, five fresh CLI and five fresh MCP processes per target, strict shared-evidence normalizer, and backend-score-only comparator in `benches/retrieval_determinism/`; native matrix and fan-in in `.github/workflows/retrieval-determinism.yml` | exact-head run `32662886698` at `f857d48` reuses one frozen index across Linux x86_64 and macOS arm64; all process/transport checks pass and every citation order, duplicate set, degradation flag, and explanation matches; `eval/LEXICAL_VARIANCE_DIAGNOSIS.md` separately records why independently built indexes are not claimed equivalent |
+| 100k retrieval qualification | Join-plan regression repaired and focused tests passing locally; native Q04 reruns remain open | `src/search/retrieval.rs`, `tests/search_contract.rs`, `benches/retrieval_scale/`, and `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md` | run `32655822954` timed out before observations. The 2026-10-21 reproduction isolates SQLite 3.51.3 restarting BM25 statistics for each passage; FTS-first CROSS JOIN repairs both ordinary and phrase paths while retaining every ranking/filter/limit rule. The regression fails before and passes after the repair; reduced 10k product probes complete. No 100k SLO or native pass is claimed |
+| One-million-passage report-only stress qualification | Local repairs verified; native qualification open | `benches/retrieval_stress/` and `.github/workflows/retrieval-stress.yml` | Run `39510579822` completed setup but failed before observing workers; NULL-partition rejection, preflight cancellation registration, and 15 harness tests are recorded in `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md` |
 | Held-out retrieval promotion evaluation | Complete; stable lexical default and hybrid beta | frozen 100-query / three-corpus schema, strict standard-library harness, raw tool outputs, deterministic renderer, lexical cross-build diagnosis in `eval/`, and executable omitted-mode defaults | macOS arm64 result `eval/results/heldout-v1-2026-08-02-macos-arm64.json` binds manifest `a7771fac…`; semantic gain and NDCG non-inferiority pass, but MRR lower bound (-0.0312 < -0.02) and exact-token top-three non-regression fail, so omitted CLI/MCP/library mode is lexical and hybrid remains an explicit beta path |
 | Watcher and HTTP | Not implemented; canonical stable-v0.1 exclusions | Intentionally absent from the current command surface | Rejected-surface assertions in `tests/cli_contract.rs` |
 | GitHub release archives | Alpha.4 published; next draft-first gate prepared but not exercised by a real tag | `.github/workflows/release.yml`, `scripts/release-smoke.sh`, `scripts/verify-release-assets.sh` | Exact asset/checksum allowlists, still-draft re-download and verification, and publish-last transition; the 2026-08-23 API audit confirms immutable releases are enabled, while the P0 real signed-tag run remains open |
@@ -150,9 +193,15 @@ tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
   exact, exact fallback, lexical, vector, fusion, body materialization, server
   total, and client round trip; it also records process-tree RSS, logical and
   managed storage bytes, ingest/re-embed throughput, class SLOs, and the
-  three-run total-p95 CV. Exact-head Linux run `32655822954` is in progress;
-  no report is claimed before its immutable artifact is downloaded and
-  validated, and the canonical Apple M2/16 GB execution remains open.
+  three-run total-p95 CV. Exact-source Linux run `32655822954` completed the
+  frozen setup but failed when the all-match `ordinary-02` lexical query
+  exceeded the 10,000 ms request deadline before any observation report was
+  emitted. `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md` binds the independently
+  verified setup artifact and the 2026-10-21 local reproduction: SQLite 3.51.3
+  chose repeated rowid-driven FTS scans that recomputed BM25 statistics. Both
+  query paths now force FTS before passage lookups, preserving the frozen
+  candidate tie boundary. The focused regression and reduced product probes
+  pass; no Q04 performance pass is claimed, and native reruns remain open.
 - The implementation-derived reference set now contains an entry page and
   complete CLI, MCP, API, configuration, JSONL, managed-layout, and 77-subcode
   error pages. `cargo xtask check` compares all eight files byte for byte and
@@ -193,12 +242,12 @@ tracked explicitly in `outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
   corpus in `benches/agent_ab/README.md` with the full protocol and limitations.
   That independent-build variance is traced to randomly assigned source and
   document identities in `eval/LEXICAL_VARIANCE_DIAGNOSIS.md`; no scoring change
-  is implied. The stable same-index contract is independently closed by run
-  `32565388856`: both native targets restore the same checkpointed index,
+  is implied. The stable same-index contract is independently closed by
+  exact-head run `32662886698` at `f857d48`: both native targets restore the same
+  checkpointed index,
   produce identical CLI and MCP evidence across five fresh processes each,
-  preserve citation order, duplicate sets, degradation, and explanations, and
-  differ by only `2.22e-16` in backend scores. This is lexical evidence only;
-  hybrid remains beta.
+  and preserve citation order, duplicate sets, degradation, and explanations.
+  This is lexical evidence only; hybrid remains beta.
 
 ## Local Alpha.2 JSONL source-lifecycle evidence on 2026-08-01
 

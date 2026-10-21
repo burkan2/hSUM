@@ -67,9 +67,19 @@ Optional watch mode and additional integrations are not on the critical path.
   3-process warm/cold protocol, raw and summarized stage telemetry, RSS and
   storage evidence, ingest throughput, class SLOs, and CV gate. Its fast tests
   run in `cargo xtask check` without running the expensive benchmark.
-- [ ] Execute that harness on Apple M2/16 GB and the release Linux x86_64
-  runner, publish both immutable raw reports and a reviewed comparison, and
-  investigate any class SLO or total-p95 CV failure before release.
+- [ ] Pass that harness on Apple M2/16 GB and the release Linux x86_64 runner,
+  publish both immutable raw reports and a reviewed comparison, and investigate
+  any class SLO or total-p95 CV failure before release. Exact-source Linux run
+  `32655822954` completed the frozen 100,000-passage setup but failed when the
+  all-match `ordinary-02` BM25 query exceeded its 10,000 ms request deadline.
+  `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md` binds the verified setup artifact and
+  records the FTS-first repair that preserves the frozen identity tie boundary.
+  Linux rerun `39510576430` progressed past that query, then failed on the
+  mislabeled `"x::y"` fallback fixture. The corrected `"x^y"` fixture and
+  pre-embedding query-class check pass all 19 lexical paths on a small real
+  corpus. Apple M2 preparation was interrupted; its partial index is diagnostic
+  only and still exposes slow chunk lookups. Fresh native setup and full
+  qualification remain required under the revised corpus/manifest hashes.
 - [x] Prepare the crates.io source package without publishing it. Completed
   2026-08-22: `Cargo.toml` has an explicit source allowlist and complete package
   metadata, the internal `xtask` binary is feature-gated out of ordinary
@@ -376,13 +386,13 @@ Optional watch mode and additional integrations are not on the critical path.
   gate (0.6571 versus lexical 0.7429). The required disposition is therefore
   stable lexical-first with hybrid explicitly beta; no held-out labels or
   retrieval weights were changed. The distinct stable same-index ordering gate
-  now passes in workflow run `32565388856`: one checkpointed lexical index is
-  restored on Linux x86_64 and macOS arm64, five fresh CLI and five fresh MCP
-  processes per target return identical ordered citations within each target,
-  and fan-in preserves citation order, duplicate sets, degradation, and
-  explanations with a maximum backend-score delta of `2.22e-16`. This does not
-  contradict the documented UUID-based variance across independently built
-  indexes and does not promote hybrid.
+  now passes in exact-head workflow run `32662886698` at `f857d48`: one
+  checkpointed lexical index is restored on Linux x86_64 and macOS arm64, five
+  fresh CLI and five fresh MCP processes per target return identical ordered
+  citations within each target, and fan-in preserves citation order, duplicate
+  sets, degradation, and explanations. This does not contradict the documented
+  UUID-based variance across independently built indexes and does not promote
+  hybrid.
 
 ## P2 — External agent-task evaluation
 

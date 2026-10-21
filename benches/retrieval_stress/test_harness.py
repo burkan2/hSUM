@@ -290,6 +290,30 @@ class RetrievalStressHarnessTests(unittest.TestCase):
 
         self.assertTrue(all(count == 1 for count in counts.values()))
 
+    def test_cancel_storm_reports_search_failure_before_workers_start(self):
+        fake_server = '''#!/usr/bin/env python3
+import json, sys
+for line in sys.stdin:
+    frame = json.loads(line)
+    if frame.get("method") == "initialize":
+        response = {"jsonrpc": "2.0", "id": frame["id"], "result": {}}
+    elif frame.get("method") == "tools/call":
+        response = {"jsonrpc": "2.0", "id": frame["id"], "error": {"code": -32603, "message": "REQUEST_DEADLINE"}}
+    else:
+        continue
+    print(json.dumps(response), flush=True)
+'''
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            binary = root / "fake-hsum"
+            binary.write_text(fake_server, encoding="utf-8")
+            binary.chmod(0o755)
+            with (
+                mock.patch.object(HARNESS, "model_worker_pids", return_value=[]),
+                self.assertRaisesRegex(HARNESS.StressError, "before two.*REQUEST_DEADLINE"),
+            ):
+                HARNESS.run_cancel_storm(binary, root, root, HARNESS.load_manifest())
+
     def test_cancel_storm_suppresses_late_responses_and_recovers(self):
         fake_server = r'''#!/usr/bin/env python3
 import json

@@ -125,11 +125,15 @@ def parse_jsonl(output: str, name: str) -> list[dict[str, Any]]:
 def codex_tool_events(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     tools = []
     for event in events:
+        if event.get("type") != "item.completed":
+            continue
         item = event.get("item")
         if not isinstance(item, dict) or item.get("type") != "mcp_tool_call":
             continue
         tool = item.get("tool") or item.get("name") or item.get("tool_name")
         server = item.get("server") or item.get("server_name")
+        if server != "hsum":
+            continue
         tools.append({"server": server, "tool": tool, "event": event})
     return tools
 
@@ -368,6 +372,8 @@ def run_codex(
         "--config",
         'mcp_servers.hsum.args=["mcp"]',
         "--config",
+        'mcp_servers.hsum.env_vars=["HSUM_HOME","HSUM_OFFLINE"]',
+        "--config",
         "mcp_servers.hsum.required=true",
         "-",
     ]
@@ -426,7 +432,11 @@ def run_claude(
     schema = structured_answer_schema(token)
     config_path = root / "claude-mcp.json"
     config_path.write_text(canonical_json({
-        "mcpServers": {"hsum": {"command": str(hsum), "args": ["mcp"]}}
+        "mcpServers": {"hsum": {
+            "command": str(hsum),
+            "args": ["mcp"],
+            "env": {key: env[key] for key in ("HSUM_HOME", "HSUM_OFFLINE")},
+        }}
     }) + "\n", encoding="utf-8")
     command = [
         str(claude),
@@ -456,7 +466,8 @@ def run_claude(
     events = parse_jsonl(observation["stdout"], "Claude Code")
     answer_raw, result = claude_result(events)
     if result.get("is_error") is True:
-        raise QualificationError(f"Claude Code result error: {result.get('result')}")
+        detail = result.get("result") or result.get("errors") or result.get("subtype")
+        raise QualificationError(f"Claude Code result error: {detail}")
     require_success("Claude Code", observation)
     tools = claude_tool_events(events)
     tool_names = require_tool_round_trip("Claude Code", tools, token)
@@ -522,6 +533,8 @@ def execute(args: argparse.Namespace, manifest: dict[str, Any]) -> dict[str, Any
         env = os.environ.copy()
         env["HSUM_HOME"] = str(root / "hsum-home")
         env["HSUM_OFFLINE"] = "1"
+        env.pop("HSUM_INDEX", None)
+        env.pop("HSUM_PROJECT", None)
         init = run_process(
             [str(hsum), "--no-color", "--no-progress", "init"],
             cwd=repository,

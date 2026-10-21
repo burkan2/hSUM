@@ -17,7 +17,7 @@
     {"id": "ordinary-06", "class": "ordinary_lexical", "mode": "lexical", "query": "local model artifact", "corpus_phrase": "local model artifact"},
 
     {"id": "fallback-01", "class": "exact_fallback", "mode": "lexical", "query": "\"a+b\"", "corpus_phrase": "a+b"},
-    {"id": "fallback-02", "class": "exact_fallback", "mode": "lexical", "query": "\"x::y\"", "corpus_phrase": "x::y"},
+    {"id": "fallback-02", "class": "exact_fallback", "mode": "lexical", "query": "\"x^y\"", "corpus_phrase": "x^y"},
     {"id": "fallback-03", "class": "exact_fallback", "mode": "lexical", "query": "\"left=>right\"", "corpus_phrase": "left=>right"},
     {"id": "fallback-04", "class": "exact_fallback", "mode": "lexical", "query": "\"raw|quote\"", "corpus_phrase": "raw|quote"},
     {"id": "fallback-05", "class": "exact_fallback", "mode": "lexical", "query": "\"alpha@beta\"", "corpus_phrase": "alpha@beta"},

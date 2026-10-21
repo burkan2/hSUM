@@ -338,6 +338,10 @@ fn prepare_query_embedding(
         });
 
     let preflight = IndexDb::open_existing(&request.index_path, OpenMode::ReadOnly)?;
+    if let Some(observer) = request.connection_observer {
+        observer(preflight.connection());
+    }
+    checkpoint(request)?;
     let snapshot = read_snapshot(preflight.connection(), request.project_id)?;
     if let Some(expected) = request.expected_snapshot.as_ref()
         && expected != &snapshot
@@ -669,6 +673,38 @@ mod tests {
             connection_observer: None,
             cancelled: None,
         }
+    }
+
+    #[test]
+    fn preflight_installs_request_control_before_reading_the_snapshot() {
+        thread_local! {
+            static CANCELLED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+        }
+        fn observe(_: &Connection) {
+            CANCELLED.set(true);
+        }
+        fn is_cancelled() -> bool {
+            CANCELLED.get()
+        }
+
+        let directory = tempfile::tempdir().unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700))
+                .unwrap();
+        }
+        let path = directory.path().join("index.sqlite");
+        drop(IndexDb::create(&path, IndexId::new_v4()).unwrap());
+        let mut request = request();
+        request.index_path = path;
+        request.connection_observer = Some(observe);
+        request.cancelled = Some(is_cancelled);
+        assert!(matches!(
+            SearchEvidence::execute(&request),
+            Err(SearchEvidenceError::Cancelled)
+        ));
+        CANCELLED.set(false);
     }
 
     #[test]

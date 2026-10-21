@@ -128,3 +128,29 @@ The original 100k failure is retained. The full 25-query, three-process Q04
 protocol, optimized candidate measurements, and Linux/Apple M2 qualification
 must still run; neither the reduced probe nor the regression test proves the
 100 ms lexical SLO.
+
+## Follow-up run and remaining local bottleneck
+
+Linux run [39510576430](https://github.com/burkan2/hSUM/actions/runs/39510576430)
+at `caf2f19` completed the 100k setup and progressed past `ordinary-02`, then
+failed because `fallback-02` did not exercise exact fallback. The query
+`"x::y"` uses only tokenizer characters and correctly takes the phrase path.
+The harness now uses `"x^y"` and checks every lexical query class before
+re-embedding. `benches/retrieval_scale/README.md` records the revised manifest
+and corpus fingerprints; historical setup receipts are not reused with them.
+All 19 corrected lexical paths pass on a small real-product corpus, and that
+same preflight rejects the original `"x::y"` fixture.
+
+The Apple M2 preparation was interrupted before completing its vector
+generation. It has no setup receipt or qualified latency report. Its partial
+index is retained only for diagnosis. Native SQLite 3.51.3 probes on its
+100,000 lexical passages show an additional chunk-lookup cost: the isolated
+FTS/active-passage join is subsecond, while adding chunk row lookups takes
+several seconds. A process sample places the work in B-tree page traversal.
+Checkpointing a disposable copy, increasing the page cache, and memory mapping
+did not establish a reliable fix. These development probes have different
+cache and resource conditions from the frozen protocol and are not SLO data.
+
+Full native qualification remains open. No ranking, identity tie-break,
+candidate limit, field-validation rule, or performance threshold was changed
+to turn these failures into a pass.

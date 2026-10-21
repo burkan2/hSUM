@@ -7,6 +7,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import harness
 
@@ -15,10 +16,43 @@ TOKEN = "HSUM_CLIENT_DOGFOOD_7F3A91"
 
 
 class ClientDogfoodHarnessTests(unittest.TestCase):
+    def test_clients_pass_the_isolated_home_and_offline_mode_to_mcp(self) -> None:
+        manifest = harness.load_manifest(harness.DEFAULT_MANIFEST, harness.DEFAULT_CHECKSUM)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            auth = root / "auth"
+            auth.mkdir()
+            (auth / "auth.json").write_text("{}", encoding="utf-8")
+            env = {"HSUM_HOME": str(root / "hsum-home"), "HSUM_OFFLINE": "1"}
+            with (
+                mock.patch.dict(harness.os.environ, {"CODEX_HOME": str(auth)}),
+                mock.patch.object(harness, "run_process", side_effect=RuntimeError("captured")) as run,
+            ):
+                with self.assertRaisesRegex(RuntimeError, "captured"):
+                    harness.run_codex(Path("/codex"), Path("/hsum"), root, env, manifest, root, 30)
+                self.assertIn(
+                    'mcp_servers.hsum.env_vars=["HSUM_HOME","HSUM_OFFLINE"]',
+                    run.call_args.args[0],
+                )
+                self.assertEqual(run.call_args.kwargs["env"]["HSUM_HOME"], env["HSUM_HOME"])
+                with self.assertRaisesRegex(RuntimeError, "captured"):
+                    harness.run_claude(Path("/claude"), Path("/hsum"), root, env, manifest, root, 30)
+                config = json.loads((root / "claude-mcp.json").read_text(encoding="utf-8"))
+                self.assertEqual(config["mcpServers"]["hsum"]["env"], env)
+
     def test_codex_requires_real_ordered_tool_items_and_get_content(self) -> None:
         events = [
+            {"type": "item.started", "item": {
+                "type": "mcp_tool_call", "server": "hsum", "tool": "evidence_search"
+            }},
             {"type": "item.completed", "item": {
                 "type": "mcp_tool_call", "server": "hsum", "tool": "evidence_search"
+            }},
+            {"type": "item.started", "item": {
+                "type": "mcp_tool_call", "server": "hsum", "tool": "evidence_get", "result": None
+            }},
+            {"type": "item.completed", "item": {
+                "type": "mcp_tool_call", "server": "unrelated", "tool": "evidence_get"
             }},
             {"type": "item.completed", "item": {
                 "type": "mcp_tool_call",

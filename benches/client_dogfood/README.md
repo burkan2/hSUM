@@ -17,6 +17,14 @@ receives per-invocation TOML overrides, runs ephemerally in a read-only sandbox,
 and continues to use its existing authentication. Claude Code receives a
 temporary strict MCP JSON file, an explicit two-tool allowlist, a spend cap,
 temporary-project-only settings, and `--no-session-persistence`.
+Both MCP configurations explicitly pass the fixture's `HSUM_HOME` and offline
+mode. Codex filters inherited server environment variables, so setting these
+only on the parent client can leave the server outside the activated fixture.
+Inherited index/project overrides are also removed before initialization.
+
+The pinned Codex distribution needs its matching `codex-code-mode-host`
+executable beside the CLI binary. An agent answer without accepted tool events
+does not pass this protocol, even when it repeats the expected token.
 
 Validate the frozen protocol without calling either model:
 

@@ -719,6 +719,12 @@ def run_cancel_storm(
                             stopped.add(pid)
                         except ProcessLookupError:
                             pass
+                if len(stopped) < 2 and select.select([process.stdout], [], [], 0)[0]:
+                    response = receive(timeout=0)
+                    raise StressError(
+                        "search returned before two model workers could be paused: "
+                        + json.dumps(response, sort_keys=True)[:2000]
+                    )
                 time.sleep(0.005)
             if len(stopped) != 2:
                 raise StressError(f"expected two real model workers, found {sorted(stopped)}")
