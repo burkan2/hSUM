@@ -1,6 +1,7 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-10-21 Q04/Q05 failures diagnosed, local repairs verified, TLS advisories remediated; retained
+**Snapshot:** 2026-10-21 local Q07 protocol v2 passes, fresh lexical control recorded,
+Q04/Q05 qualification open, TLS advisories remediated; retained
 2026-08-23 evidence includes the B1-05 through B1-13 native product gate,
 generation crash and multi-process cancellation/replacement qualification,
 same-index lexical determinism qualification, source-package qualification,
@@ -79,7 +80,7 @@ supported without hiding a missing later gate.
 | Q-04 | 100,000-chunk performance and component latency evidence | Focused tests passing | yes | yes | no | no | yes | no | Run `39510576430` at `caf2f19` progressed past the repaired BM25 path, then failed on a mislabeled fallback fixture. The corrected manifest and early preflight pass 19 lexical paths on a small real corpus; native qualification needs a fresh setup. Apple M2 preparation was interrupted and chunk lookups remain slow; see `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md` |
 | Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Focused tests passing | yes | yes | no | no | yes | no | Run `39510579822` completed million-passage ingest, 100 metadata generations, and re-embedding, then failed before observing model workers. NULL-source rejection, preflight cancellation, and early error reporting pass focused checks (25 vector tests, 15 harness tests). The faster scan was rejected because it skipped payload checks; preflight performance and a full native rerun remain open. See `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md` |
 | Q-06 | Security, privacy, supply-chain, and recovery reviews | Focused tests passing | yes | yes | no | no | no | no | Commit `67db45d` remediates the six TLS advisories from run `39510521224`; full local contributor/dependency gates and fresh dependency policy run `39535772624` pass. Sustained fuzz campaigns and independent semantic/distribution/recovery review remain open |
-| Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Focused tests passing | yes | yes | no | no | no | no | Generic MCP passes. Pinned Codex now emits a successful search/Get round trip and final structured answer; retained live events pass acceptance replay after the harness was fixed to inspect completed events and forward the fixture environment. Claude Code still remains MCP-pending until its frozen budget is exhausted; the complete three-client gate remains open |
+| Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Complete local gate passing | yes | yes | yes | no | yes | no | Protocol v2 passes on macOS arm64 with generic MCP, Codex 0.149.0-alpha.4.1, and Claude Code 2.1.296 against the ba527f9 binary. Both agent streams contain successful search/Get calls and verified body/source hashes; final citations match. V1 failure is retained. See `eval/VERIFICATION_2026_10_21.md` and its raw report/receipt. Linux and stable-candidate qualification remain open |
 | Q-08 | Clean-machine CLI and MCP DX trials on both targets | Native target evidence passing | yes | yes | yes | yes | yes | no | Source-bound workflow-dispatch run `32659795028` binds checkout, source, and base to `037affd` plus tree `cd999b2`, then passes five fresh offline CLI/full-MCP trials per supported target and independently verifies both reports before cross-target fan-in; exact-head candidate trials also pass in run `32662886697` |
 | Q-09 | Generated CLI, MCP, config, and error references plus link checks | Native target evidence passing | yes | yes | yes | yes | no | no | Eight implementation-derived pages, four generator tests, byte-drift/local-link/runtime-URL mapping gate, and canonical deployed URL base pass on both targets; production remains 65/77 until mergeable `hsum-site2` PR #6 deploys the 12 missing subcodes |
 | Q-10 | Executable stable quickstart and compatibility-policy verification | Native target evidence passing | yes | yes | yes | yes | yes | no | README version/command/privacy, stable lexical omitted-mode default, and 27-row controlled capability policy are executable gates; source-bound run `32659795028` passes five isolated offline artifact trials on each supported target and exact-head candidate trials pass in run `32662886697`, while stable signed-tag qualification remains open |
@@ -122,7 +123,7 @@ Mechanically checked snapshot at this revision:
 
 - Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
 - All in-scope implementation coverage: **90.7%** (49/54).
-- Full stable-program evidence: **69.0%** (218/316 applicable evidence cells).
+- Full stable-program evidence: **69.6%** (220/316 applicable evidence cells).
 - Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
   stable candidate qualification.
 

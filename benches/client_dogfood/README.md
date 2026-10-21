@@ -12,6 +12,14 @@ Every client must call `evidence_search`, pass the returned citation to
 agent clients are accepted from their machine-readable tool event streams, not
 from their final prose alone.
 
+Protocol v2 pins Claude Code 2.1.296. The v1 manifest pinned 2.1.212, which
+remained MCP-pending until its budget was exhausted in the recorded run.
+A separate 2.1.296 diagnostic connected after retrying protocol negotiation
+and completed the real search/Get round trip. Acceptance rules, fixture,
+Codex version, and the $0.25 Claude budget are unchanged. Earlier failed
+reports retain their original protocol ID and checksum. The fresh macOS arm64
+v2 run passes all three clients; see the [report](../../eval/VERIFICATION_2026_10_21.md).
+
 The harness does not install an MCP server or edit durable client state. Codex
 receives per-invocation TOML overrides, runs ephemerally in a read-only sandbox,
 and continues to use its existing authentication. Claude Code receives a

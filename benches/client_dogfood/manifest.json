@@ -1,6 +1,6 @@
 {
   "schema_version": "hsum.client-dogfood-manifest.v1",
-  "protocol_id": "cross-client-citation-round-trip-v1",
+  "protocol_id": "cross-client-citation-round-trip-v2",
   "fixture_token": "HSUM_CLIENT_DOGFOOD_7F3A91",
   "required_tools": [
     "evidence_search",
@@ -12,7 +12,7 @@
       "configuration": "isolated temporary home with auth reference, ephemeral CLI overrides, and read-only sandbox"
     },
     "claude_code": {
-      "version": "2.1.212 (Claude Code)",
+      "version": "2.1.296 (Claude Code)",
       "configuration": "strict per-run MCP JSON, temporary-project settings only, and session persistence disabled",
       "max_budget_usd": 0.25
     },

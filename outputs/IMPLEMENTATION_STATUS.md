@@ -1,6 +1,6 @@
 # hSUM current checkout implementation status
 
-**Snapshot:** 2026-10-21 (Q04/Q05 failures diagnosed; TLS advisories remediated)
+**Snapshot:** 2026-10-21 (local cross-client gate passes; scale qualification open)
 **Scope:** Current source checkout after the public `0.1.0-alpha.4` prerelease;
 published alpha.2 evidence is retained below as a historical release record.
 
@@ -37,16 +37,24 @@ qualification remains open after the following completed runs:
   contributor gate and dependency policy pass; GitHub dependency policy
   [run 39535772624](https://github.com/burkan2/hSUM/actions/runs/39535772624)
   also passes. The earlier failed audit remains historical evidence.
-- Codex activation is verified: generation 2 contains 221 documents and 3,753
+- Codex activation is verified: generation 3 contains 222 documents and 3,771
   passages, with all four MCP tools and a search/Get citation round trip.
   This local integration is separate from the frozen cross-client gate.
-- Pinned live cross-client dogfood remains open. Generic MCP passes. With the
-  matching code-mode host and explicit fixture environment, Codex emits a real
-  successful search/Get round trip and final structured answer. Replaying the
-  retained events passes after fixing the harness to inspect completed tool
-  events (raw stream SHA-256 `f9f89ab8297ebd2bfde6df607df3e7550c4b98289213744655cb14f75a047a12`).
-  Claude Code still stays MCP-pending and exhausts its frozen budget; the
-  complete three-client report remains failed.
+- The local pinned cross-client gate now passes under protocol v2: generic
+  MCP, Codex 0.149.0-alpha.4.1, and Claude Code 2.1.296 all emit real search/Get
+  round trips. Both agents return the correct final citation; their Get body
+  hashes and unchanged-source results are verified. V1's Claude 2.1.212 failure
+  remains retained. The updated pin changes no acceptance rule or spend cap.
+  `eval/VERIFICATION_2026_10_21.md` links the unaltered report and evidence receipt;
+  Linux client and stable release qualification remain open.
+- A fresh 25-query lexical development benchmark completes on three independent
+  indexes of one 134-document / 3,096-passage snapshot. Mean hSUM NDCG@5 is
+  25.3% (24.4–26.4%), Hit@1 45.3% (40–52%), and median lookup 45.7 ms
+  (40.9–54.6 ms), versus ripgrep's 20.4%, 28%, and 6.7 ms. Multi-document
+  tasks still fail; the changed corpus and dirty source checkout prevent a
+  historical improvement or stable qualification claim. Raw results and
+  limitations are in `eval/VERIFICATION_2026_10_21.md`.
+- Corrected Linux 100k run `39638597258` remains in progress at this checkpoint.
 - The installed CLI was atomically updated to the smoke-tested candidate
   `1e770f1348321d19e5f0cf4c0a1273d8df47abac1ed44a08e55634ffff924170`.
   A real-model smoke again pauses two workers, cancels eight requests without
@@ -232,9 +240,9 @@ qualification remains open after the following completed runs:
   the workers, and proves later semantic and hybrid calls recover. Exact commit
   `e415dba` also passes the complete contributor gate on both targets in run
   `32564056058`, including the separate-process vector reader/replacement
-  proof. Cross-client dogfood and stable release qualification are not yet
-  claimed.
-- The frozen local retrieval benchmark is 25 author-labeled tasks on this
+  proof. The later local cross-client result is recorded above; stable release
+  qualification is not yet claimed.
+- The historical frozen local retrieval benchmark is 25 author-labeled tasks on this
   repository, not external or stable-release evidence. Across three fresh
   indexes, hSUM leads mean graded quality but is much slower than grep, misses
   every paraphrase and multi-evidence task, and changes ordering materially

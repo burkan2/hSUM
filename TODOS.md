@@ -370,8 +370,10 @@ Optional watch mode and additional integrations are not on the critical path.
     compares the behavior summaries in fan-in. Because the frozen promotion
     result keeps hybrid beta, omitted CLI, MCP, and library search mode now
     selects stable lexical; explicit `auto`, `hybrid`, and `semantic` preserve
-    the Beta.1 paths. Cross-client dogfood and stable release qualification
-    remain open.
+    the Beta.1 paths. The local cross-client v2 gate now passes on macOS arm64
+    with pinned Codex, Claude Code 2.1.296, and generic MCP; see
+    `eval/VERIFICATION_2026_10_21.md`. Linux client and stable release
+    qualification remain open.
 - [x] Build and freeze the canonical held-out evaluation: 100 queries over
   three independently structured corpora, accepted byte spans, four-point
   labels, 35 semantic/paraphrase cases, report-only ripgrep/QMD comparisons,
