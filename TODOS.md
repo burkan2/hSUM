@@ -24,6 +24,49 @@ Continue in this order:
 
 Optional watch mode and additional integrations are not on the critical path.
 
+## Current release execution queue — 2026-10-22
+
+The feature phases above are implemented. Continue the existing qualification
+plan in this order; the canonical denominator remains
+`outputs/STABLE_V0_1_COMPLETION_LEDGER.md`.
+
+1. **Q-04: repair measured retrieval bottlenecks.** Raw paging is repaired at
+   `95784f0`, and all seven standard CI workflows pass that commit. The next
+   identifier join-order repair passes the complete local gate and changes
+   retained-Mac diagnostic timeouts to 190 ms median; see
+   `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md`. Profile ordinary lexical latency
+   and the remaining identifier budget next. Preserve
+   project scope, byte verification, ranking, and cursor order. Each repair
+   needs a failing regression, complete local gate, and optimized before/after
+   evidence before a full native rerun.
+2. **Q-05: resolve vector preflight and prove cancellation at scale.** Keep
+   missing/extra/NULL/source-partition and vector-payload integrity checks.
+   Demonstrate two active model workers, cancellation without late responses,
+   and successful lexical/hybrid recovery on the million-passage fixture.
+3. **Q-04/Q-05: rerun both supported native targets.** Use the corrected frozen
+   corpus and one recorded candidate, retain raw failures as well as passes,
+   and require every latency/protocol/CV gate. The retained partial Mac index
+   remains diagnostic only. Do not spend another full embedding run merely
+   to reproduce an already established bottleneck.
+4. **Q-07 and evaluation: finish client and cost evidence.** Run pinned Linux
+   client dogfood and repeat both targets on the selected candidate. Before
+   making a superiority claim, freeze reviewed current labels and corrected
+   prompts, then run repeated paired trials on multiple repositories with an
+   iterative native-tool baseline. The existing 50-call pilot establishes
+   neither a cost nor a quality advantage.
+5. **Q-06, Q-09, FINAL-01/02: reconcile and review the candidate.** Review
+   security, recovery, distribution, documentation, and compatibility against
+   the final source; verify production references again. Record independent
+   review separately from the author's own checks.
+6. **DIST-03/04: finish signing and notarization.** Prepare and test the
+   verification/release path without production credentials. Configure the
+   owner's dedicated offline signing identity and Apple Developer account
+   when available; those external setup steps remain deferred.
+7. **DIST-05: qualify and publish the stable artifact.** Run reproducibility,
+   signed-archive verification, install/upgrade/rollback smoke, and the final
+   ledger audit on the actual candidate. Publication and registry release
+   follow the authorized stable-release procedure only after these pass.
+
 ## P0 — Public alpha.2 launch gates (completed or remediated)
 
 - [x] Choose and add the software license. Done 2026-07-21: dual

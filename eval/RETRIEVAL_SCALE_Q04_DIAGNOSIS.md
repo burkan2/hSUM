@@ -231,3 +231,47 @@ these observations are diagnostic, not a native qualification pass. Binary
 and source hashes, command arguments, responses, and verification details are
 in [the diagnostic report](results/exact-page-2026-10-22-macos-diagnostic.json).
 The release build and release smoke also pass.
+
+## Identifier-candidate join-order repair — 2026-10-22
+
+The next isolated query probe reproduces the remaining identifier timeout.
+The literal lookup itself uses `passage_literals_lookup_idx`, but SQLite
+places the outer project/passage joins ahead of the `ranked` CTE. It reads
+every project passage, including document/chunk lookups, before testing
+whether the passage is among the literal matches. The fully guarded query
+returns 50 rows in 13.70 seconds on the retained Apple M2 100k index.
+
+Changing only `JOIN active_passages` after `FROM ranked` to `CROSS JOIN`
+keeps ranked literal matches outside passage materialization. The isolated
+query returns the same ordered column bytes and scores in 97.38 ms. Forcing
+literal-first order inside the earlier matching CTE does not fix the outer
+join problem; that control still takes 9.95 seconds. SQLite documents
+[CROSS JOIN as explicit loop-order control](https://www.sqlite.org/optoverview.html#manual_control_of_query_plans_using_cross_join).
+
+The production repair retains every existing join predicate, bound argument,
+field/hash/Bloom check, rank component, identity tie-break, and page boundary.
+The existing real-snapshot regression now also checks identifier results and
+pagination across two selected sources while excluding removed and unrelated
+sources. It fails before the fix at 28,400 VM steps and passes below 5,000
+afterward. The complete local `cargo xtask check` passes. The previous
+raw-paging commit `95784f0` also passes all seven standard remote workflows,
+including CI run `39806626604`; that remote result does not qualify this new
+repair or close Q04.
+
+The optimized CLI now completes the previously timing-out identifier query
+in all three fresh-process runs: 139–247 ms wall time, median **190 ms**,
+with 113–213 ms server total. The previous `95784f0` binary times out at
+10 seconds in all three alternating before runs. The ordinary all-match
+control still takes 2.28–8.44 seconds server time; its bottleneck is separate
+from identifier ranking. The raw quote control completes in 166–205 ms server
+time (218 ms median wall time).
+
+All 90 successful result contents match their live source byte windows and
+content hashes. Ordered citations and scores agree within each query across
+the three repaired runs. The before binary's identifier responses time out,
+so cross-build equality comes from the isolated SQL probe. The complete raw
+[identifier diagnostic report](results/identifier-page-2026-10-22-macos-diagnostic.json)
+binds binary/source hashes, commands, query plans, responses, and summaries.
+The optimized release build and release smoke pass. These retained-index
+observations do not follow the frozen native qualification protocol and do
+not meet the identifier 100 ms target; Q04 remains open.

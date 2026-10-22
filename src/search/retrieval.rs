@@ -1607,6 +1607,7 @@ fn fetch_identifier_hint_page(
         .collect::<Vec<_>>()
         .join(", ");
     let passage_columns = passage_columns();
+    // Keep literal matches outside passage materialization instead of scanning the project.
     let sql = format!(
         "WITH atoms(literal, byte_len) AS (
              VALUES {atom_values}
@@ -1629,7 +1630,7 @@ fn fetch_identifier_hint_page(
                 ranked.matched_bytes,
                 ranked.longest_atom
          FROM ranked
-         JOIN active_passages AS ap ON ap.id = ranked.passage_id
+         CROSS JOIN active_passages AS ap ON ap.id = ranked.passage_id
          {PASSAGE_JOINS}
          WHERE ps.project_id = ?
          ORDER BY ranked.matched_atoms DESC,
@@ -1662,6 +1663,11 @@ fn fetch_identifier_hint_page(
     for row in rows {
         passages.push(row??);
     }
+    #[cfg(test)]
+    SEARCH_TEST_HOOKS.with(|hooks| {
+        hooks.borrow_mut().identifier_vm_steps =
+            statement.get_status(rusqlite::StatementStatus::VmStep);
+    });
     Ok(passages)
 }
 
@@ -2345,6 +2351,7 @@ struct SearchTestHooks {
     inject_slow_exact_query: bool,
     lexical_fetches: usize,
     raw_scan_vm_steps: i32,
+    identifier_vm_steps: i32,
 }
 
 #[cfg(test)]
@@ -2379,7 +2386,7 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
-    fn raw_exact_page_seeks_scoped_sources_without_sorting_the_whole_project() {
+    fn exact_pages_seek_scoped_candidates_without_scanning_the_whole_project() {
         use crate::ingest::{ChunkKind, SnapshotRevision, revision_sha256};
         use crate::store::{DeleteConfirmations, FilesystemScope, PreparedChunk, PreparedDocument};
 
@@ -2416,7 +2423,8 @@ mod tests {
                 .map(|number| {
                     let title = format!("document-{number}.md");
                     let source_uri = format!("repo://{title}");
-                    let body = format!("raw ^ evidence {number}\n").into_bytes();
+                    let body =
+                        format!("raw ^ evidence scale_identifier_{number:06}\n").into_bytes();
                     let digest = Sha256Digest::of_bytes(&body);
                     let literals =
                         crate::store::prepare_passage_literals(&title, &source_uri, &body);
@@ -2491,6 +2499,28 @@ mod tests {
             steps < 20_000,
             "bounded page scanned/sorted the corpus: {steps} VM steps"
         );
+        let atoms = vec!["scale_identifier_000017".to_owned()];
+        let matches =
+            fetch_identifier_hint_page(database.connection(), project_id, &atoms, 0, 50).unwrap();
+        assert_eq!(
+            matches
+                .iter()
+                .map(|passage| (passage.source_id, passage.title.as_str()))
+                .collect::<Vec<_>>(),
+            vec![
+                (SourceId::from_uuid(Uuid::from_u128(3)), "document-17.md"),
+                (SourceId::from_uuid(Uuid::from_u128(4)), "document-17.md"),
+            ]
+        );
+        let steps = SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow().identifier_vm_steps);
+        assert!(
+            steps < 5_000,
+            "identifier page scanned unrelated passages: {steps} VM steps"
+        );
+        let next =
+            fetch_identifier_hint_page(database.connection(), project_id, &atoms, 1, 1).unwrap();
+        assert_eq!(next.len(), 1);
+        assert_eq!(next[0].id, matches[1].id);
     }
 
     #[test]
