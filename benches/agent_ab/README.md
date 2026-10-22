@@ -12,6 +12,42 @@ The benchmark is dependency-free Python. Agent trials additionally require an
 authenticated Codex CLI. Results are JSON first; HTML and SVG are derived
 views.
 
+## Paired token and cost measurement
+
+`token_cost.py` runs all 25 tasks with pinned Claude Code 2.1.296 and
+`claude-opus-5-5`, using the same model and a 12,288-byte evidence cap for grep
+and hSUM. It archives the committed corpus, initializes an isolated offline
+hSUM home, precollects both evidence bundles, and disables agent tools and
+customizations. Condition order alternates between tasks. One trial per
+condition measures this development sample; it does not establish repeated-run
+variance or general product superiority.
+
+```bash
+python3 -W error benches/agent_ab/test_token_cost.py
+python3 benches/agent_ab/token_cost.py \
+  --hsum /absolute/path/to/hsum \
+  --claude /absolute/path/to/claude-2.1.296 \
+  --output-dir /absolute/new-evidence-directory
+```
+
+The output directory must not exist. Inputs and protocol are written before
+model calls; per-trial streams and results survive a partial run. The runner
+records aggregate input, cache-write, cache-read, and output tokens, without
+double-counting nested usage iterations. Cost is the client's reported API
+list cost, including cache pricing, not a bill for subscription access. Calls
+request a $0.25 budget and the run stops launching calls before its $5 threshold;
+a final in-flight API response can exceed the client's requested cap. Missing
+usage remains unknown. Model changes, forbidden tools, and client failures
+invalidate the protocol rather than producing a cheap successful result.
+
+Report answer quality and empty-bundle counts with cost. A cheap refusal after
+an empty search is not a successful answer. hSUM citations must occur in the
+supplied bundle, resolve to the stated path, match the body hash, and report an
+unchanged source. The body hash covers the full document; the returned passage
+is checked against the returned citation's byte window. Native evidence paths
+must occur in the supplied grep output. The [2026-10-21 pilot](../../eval/TOKEN_COST_2026_10_21.md)
+retains original and corrected scores and explains its prompt-format limitation.
+
 ## Reproduce
 
 From the repository root:

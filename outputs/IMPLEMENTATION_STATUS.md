@@ -85,7 +85,7 @@ qualification remains open after the following completed runs:
 | Four-tool, project-bound, read-only MCP stdio | Implemented; tool calls do not initialize or ingest | `src/mcp.rs` | `tests/mcp_contract.rs`, `tests/runtime_process.rs` |
 | Generated client snippets and local client probe | Implemented | `src/runtime.rs` | `tests/runtime_process.rs` |
 | Shared public error taxonomy | Implemented | `src/domain/error.rs`, transport mappings in `src/runtime.rs` and `src/mcp.rs` | domain, CLI, MCP, and process contract tests |
-| Generated implementation reference set | Native target evidence passing; production catalog partial | `src/bin/xtask/reference_docs.rs` renders `docs/reference/` from the Clap graph, hardened MCP router, public error catalog, schemas, bounds, capabilities, and managed paths | four deterministic generator/link tests; `cargo xtask references --check` is part of the contributor gate and passes on both targets in run `32549550396`; bounded remote audit reaches 65/77 alpha.4 error pages and reports the 12 missing routes together |
+| Generated implementation reference set | Documentation complete; stable candidate rerun open | `src/bin/xtask/reference_docs.rs` renders `docs/reference/` from the Clap graph, hardened MCP router, public error catalog, schemas, bounds, capabilities, and managed paths | four deterministic generator/link tests; `cargo xtask references --check` is part of the contributor gate and passes on both targets in run `32549550396`; PR #6 merged at `hsum-site2` commit `d0b3cce`; the 2026-10-21 production HTTP/content audit passes all 77 alpha.4 error pages |
 | Completion and man generation | Implemented | `src/cli.rs` | `tests/cli_contract.rs` |
 | Strict JSONL snapshot connector core | Implemented and exposed through selected-project source commands | `src/ingest/jsonl.rs`, `src/app/jsonl_connector.rs`, source-kind-aware generation/schema/doctor/Get/status paths | parser property tests plus `tests/jsonl_connector.rs` for decoded offsets, identity, deletion guards, no-prefix failure, default carry-forward, strict abort, one-generation multi-source commit, immutable Get, `snapshot_only`, and preflight/quota reporting |
 | Selected-project JSONL source management and mixed ingest | Implemented; unreleased | `src/cli.rs`, `src/runtime.rs`, `src/app/source_management.rs`, `src/app/project_ingest.rs`, `src/store/source.rs`, `src/store/generation.rs` | CLI grammar in `tests/cli_contract.rs`; real-process add/list/idempotency/conflict/default/strict/remove/re-add lifecycle in `tests/jsonl_cli.rs` |
@@ -216,9 +216,9 @@ qualification remains open after the following completed runs:
   validates every local reference and runtime-emitted URL mapping. The runtime
   URL authority now matches the deployed `hsum.burkankale.com` versioned docs.
   Both clean native contributor gates pass in run `32549550396`.
-  The separate bounded remote audit currently passes 65/77 pages and reports
-  12 missing newer subcode routes; production documentation is therefore not
-  claimed complete.
+  The separate bounded remote audit passes all 77 production pages after
+  `hsum-site2` PR #6 deployed on 2026-10-21; the receipt is retained in
+  `eval/results/release-docs-2026-10-21-receipt.json`.
 - The B1-05 through B1-13 product storage/lifecycle, filtered-semantic,
   bounded semantic-worker, deterministic hybrid-fusion, overlap-dedupe,
   explanation, and public transport slice passes its 24-case vector

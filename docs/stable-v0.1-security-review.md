@@ -89,7 +89,11 @@ artifact protocol, and final publication and rollback drills.
   `scripts/run-parser-fuzz.sh` validates that bound, preserves crash exits,
   and retains each parser's statistics; its tests cover limits and failure
   propagation. Normal pull-request/scheduled runs remain 15 seconds per target.
-  A longer campaign still needs a completed report before assurance is upgraded.
+  Run `39655481738` at `24285b2` completed 1800 seconds per target on Linux
+  x86_64: all six passed, with 664,006,230 total executions and no sanitizer
+  crash. The raw log hashes and final statistics are retained in
+  `eval/results/parser-fuzz-2026-10-21-linux-x86_64.json`. This is one campaign,
+  not exhaustive assurance or an independent review.
 
 ## Residual risk register
 
@@ -98,8 +102,8 @@ artifact protocol, and final publication and rollback drills.
    qualification, not an unreviewed lockfile patch.
 2. **Open parser assurance — sustained and independent fuzz campaigns.** The
    citation/cursor/query/JSONL/MCP/chunk corpus and repeatable bounded CI smoke
-   now exist. Multi-hour sanitizer campaigns, corpus minimization, crash triage,
-   and independent review are still required before final promotion.
+   now exist. One three-hour sanitizer campaign now passes; broader independent campaigns,
+   retained-corpus review, and independent review remain open before promotion.
 3. **Open release authority — signatures and Apple notarization.** Alpha
    compromise procedures and a verified source-tag key exist, but the
    repository currently has zero Actions secrets. Stable publication cannot

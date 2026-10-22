@@ -263,6 +263,18 @@ class ResultContractTests(unittest.TestCase):
         self.assertEqual(benchmark.extract_integer_constant(text, "RETRY_LIMIT"), 9)
         self.assertIsNone(benchmark.extract_integer_constant(text, "MISSING"))
 
+    def test_hsum_bundle_uses_cli_span_contract(self):
+        from unittest.mock import patch
+        packet = {"results": [{"source_uri": "repo://src/a.rs",
+            "span": {"start_byte": 3, "end_byte": 90, "start_line": 4, "end_line": 9}, "content": "evidence"}]}
+        with patch.object(benchmark, "run_process", return_value={
+            "returncode": 0, "stdout": json.dumps(packet), "elapsed_ms": 1.0
+        }):
+            collected = benchmark.collect_evidence_bundle(task={"id": "x", "query": "x"},
+                condition="hsum", repo=Path.cwd(), hsum=Path("hsum"), limit=5,
+                context_lines=20, byte_budget=4096)
+        self.assertIn("src/a.rs:4-9", collected["bundle"])
+
     def test_svg_renderer_emits_shareable_asset(self):
         result = {
             "benchmark": "drift-demo",

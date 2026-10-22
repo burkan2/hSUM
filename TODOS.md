@@ -78,8 +78,10 @@ Optional watch mode and additional integrations are not on the critical path.
   mislabeled `"x::y"` fallback fixture. The corrected `"x^y"` fixture and
   pre-embedding query-class check pass all 19 lexical paths on a small real
   corpus. Apple M2 preparation was interrupted; its partial index is diagnostic
-  only and still exposes slow chunk lookups. Fresh native setup and full
-  qualification remain required under the revised corpus/manifest hashes.
+  only and still exposes slow chunk lookups. Run `39638597258` now completes
+  all 2,250 Linux observations but fails every class SLO (identifier 3.42 s,
+  lexical 0.58 s, fallback 3.77 s, hybrid 3.99 s); CV passes at 0.149%.
+  Profile exact-candidate and vector-preflight work before another full run.
 - [x] Prepare the crates.io source package without publishing it. Completed
   2026-08-22: `Cargo.toml` has an explicit source allowlist and complete package
   metadata, the internal `xtask` binary is feature-gated out of ordinary
@@ -165,12 +167,10 @@ Optional watch mode and additional integrations are not on the critical path.
   and managed-layout reference pages from the implementation. The contributor
   gate now rejects byte drift, unsafe/missing local links, and any public error
   URL that does not map to its generated subcode entry.
-- Deploy the 12 missing alpha.4 error pages reported by
-  `cargo xtask references --check-remote`, then require that bounded 77-page
-  HTTP/content audit before release. The missing set is currently
-  `MODEL_PINNED`, `NETWORK_PERMANENT`, `REPOSITORY_NOT_ACTIVATED`, the six
-  `MAINTENANCE_*` pages, `FORGET_REQUIRES_PRUNE`, `RESTORE_STATE_MISMATCH`, and
-  `PRUNE_SELECTOR_INVALID`.
+- [x] Deploy the 12 missing alpha.4 error pages. Completed 2026-10-21:
+  `hsum-site2` PR #6 merged, Vercel deployment passed, and
+  `cargo xtask references --check-remote` passed all 77 production pages.
+  Repeat the bounded HTTP/content audit before the stable release.
 - Add an explicit source-configuration command before exposing include,
   exclude, file-size, or sensitive-path overrides to end users. The current
   CLI intentionally persists conservative defaults.

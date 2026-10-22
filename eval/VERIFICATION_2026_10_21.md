@@ -68,10 +68,21 @@ the frozen 100-query held-out disposition remains lexical-first/hybrid-beta.
 
 ## Remaining qualification
 
-- Linux 100k [run 39638597258](https://github.com/burkan2/hSUM/actions/runs/39638597258)
-  is still preparing embeddings at this checkpoint; no scale pass is claimed.
-- The Apple M2 100k and million-passage stress protocols still lack complete
-  passing reports. The retained partial/failed runs remain diagnostic evidence.
+- Follow-up reviewed 2026-10-22: Linux 100k
+  [run 39638597258](https://github.com/burkan2/hSUM/actions/runs/39638597258)
+  completes all 2,250 observations but fails every class latency SLO. Total-p95
+  CV passes at 0.149%. See [Q04 diagnosis](RETRIEVAL_SCALE_Q04_DIAGNOSIS.md).
+- The million-passage rerun fails with `REQUEST_DEADLINE` before the required
+  two-worker cancellation state; [Q05 diagnosis](RETRIEVAL_STRESS_Q05_DIAGNOSIS.md)
+  retains its actual error log. Apple M2 qualification also remains open.
+- The six-parser sustained campaign passes 1800 seconds per target with
+  664,006,230 executions; [statistics and hashes](results/parser-fuzz-2026-10-21-linux-x86_64.json)
+  bind this evidence to `24285b2`. Independent security review remains open.
+- Documentation PR #6 is merged and the live error-page audit passes 77/77;
+  [deployment receipt](results/release-docs-2026-10-21-receipt.json) retained.
+- The [token/cost pilot](TOKEN_COST_2026_10_21.md) records 50 Claude calls,
+  $1.3350958 reported usage, and corrected citation scoring. It establishes
+  neither cost nor quality superiority.
 - The complete local contributor check and seven ordinary CI workflows passed
   for the candidate source before this verification-only update.
 - Stable signing, notarization, independent review, and final release gates

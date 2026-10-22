@@ -154,3 +154,34 @@ cache and resource conditions from the frozen protocol and are not SLO data.
 Full native qualification remains open. No ranking, identity tie-break,
 candidate limit, field-validation rule, or performance threshold was changed
 to turn these failures into a pass.
+
+## Completed Linux measurement — reviewed 2026-10-22
+
+Run [39638597258](https://github.com/burkan2/hSUM/actions/runs/39638597258)
+at `ba527f9` completes the corrected setup and all **2,250 observations**:
+750 observations in each of three fresh processes. The
+[unaltered report](results/q04-39638597258-linux-x86_64-100k.json) and
+[setup receipt](results/q04-39638597258-setup-linux-x86_64.json) are retained.
+All protocol-completeness checks pass, including cold-cache methodology,
+RSS, throughput, and total-p95 CV (0.149%, below the 10% maximum).
+Every latency class fails its unchanged SLO:
+
+| Class | p95 across three runs | Required p95 |
+|---|---:|---:|
+| Identifier | 3421–3433 ms | <100 ms |
+| Ordinary lexical | 574–582 ms | <100 ms |
+| Exact fallback | 3759–3781 ms | <750 ms |
+| Hybrid without fallback | 3981–3988 ms | <500 ms |
+
+The first run's identifier time is dominated by the exact stage (3268 ms
+mean), while exact fallback spends 3524 ms there. Hybrid averages 3944 ms
+total despite 7 ms query embedding and 110 ms vector search. This implicates
+work outside those measured components, consistent with full vector preflight;
+it is not proof of a complete profile. The next repair must isolate the
+candidate-query plan and preflight cost while preserving corruption detection,
+scope checks, candidate membership, and deterministic ordering. Another long
+qualification run without a verified repair would add little evidence.
+
+Setup ingests 100,000 passages in 81.45 seconds and embeds them in 9584.19
+seconds. This is successful setup and a completed **failed performance
+qualification**, not a release pass. Apple M2 qualification remains open.
