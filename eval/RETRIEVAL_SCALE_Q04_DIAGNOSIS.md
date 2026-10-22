@@ -185,3 +185,49 @@ qualification run without a verified repair would add little evidence.
 Setup ingests 100,000 passages in 81.45 seconds and embeds them in 9584.19
 seconds. This is successful setup and a completed **failed performance
 qualification**, not a release pass. Apple M2 qualification remains open.
+
+## Exact-candidate paging repair — 2026-10-22
+
+On the retained Apple M2 100k diagnostic index, the bundled SQLite 3.51.3
+plan for `fetch_project_passages` starts with `project_sources` and sorts
+all joined rows before returning 50 passages. The fully guarded SQL query
+takes 13.18 seconds in the isolated reproduction. Adding the equivalent
+`ap.source_id IN (SELECT source_id FROM project_sources WHERE project_id = ?
+AND removed_at IS NULL)` constraint exposes the leading column of the existing
+`active_passages_source_idx`. SQLite can then seek the selected sources in
+identity order and sort only the final start-byte term within a document.
+The same probe returns identical ordered results in 9.57 ms.
+
+The production change adds only that predicate to raw candidate paging. It
+retains the existing project/head/version joins, full field bounds, body hash
+and Bloom verification, ordering, limit, offset, and query deadline. It does
+not force a scan through other projects or introduce a cache, schema migration,
+or new ranking rule. SQLite documents this
+[partial ORDER BY optimization](https://www.sqlite.org/optoverview.html#partial_order_by_via_index).
+
+The regression uses real stored snapshots with two selected sources, a removed
+source, and an unrelated project. It checks exact ordered IDs across the
+source boundary and bounds SQLite VM work independently of host timing. The
+old query fails at 40,846 VM steps; the repaired query passes the 20,000-step
+ceiling. The complete local `cargo xtask check` passes with the repair. Full
+native performance qualification is still required. This repair
+does not address hybrid vector preflight or the ordinary lexical SLO failure.
+
+The optimized CLI comparison uses three fresh-process repetitions per binary
+and query, alternating binary order on the same retained index. The raw quote
+`"a+b"` times out at 10 seconds in all three previous-build runs. With the
+repair it returns ten results in 263–331 ms wall time (median 286 ms), with
+232–253 ms server total and 57–82 ms exact-stage time. All 30 returned contents
+match their live source byte windows and content hashes; ordered citations and
+scores agree across the three repaired runs. The previous CLI times out, so
+cross-build result equality is established only by the isolated SQL probe
+and regression, not by completed CLI responses.
+
+The identifier query `scale_identifier_000001` still reaches the 10-second
+deadline in all six before/after runs. This narrows the repair to raw paging;
+identifier candidate work remains unresolved. The retained corpus predates
+the corrected frozen fixture and has incomplete embedding preparation, so
+these observations are diagnostic, not a native qualification pass. Binary
+and source hashes, command arguments, responses, and verification details are
+in [the diagnostic report](results/exact-page-2026-10-22-macos-diagnostic.json).
+The release build and release smoke also pass.

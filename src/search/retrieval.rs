@@ -1712,11 +1712,16 @@ fn fetch_project_passages(
     limit: usize,
 ) -> Result<Vec<Passage>, SearchError> {
     let passage_columns = passage_columns();
+    // Expose the leading index constraint so SQLite can page in identity order.
     let mut statement = connection.prepare(&format!(
         "SELECT {passage_columns}
          FROM active_passages AS ap
          {PASSAGE_JOINS}
          WHERE ps.project_id = ?1
+           AND ap.source_id IN (
+               SELECT source_id FROM project_sources
+               WHERE project_id = ?1 AND removed_at IS NULL
+           )
          ORDER BY ap.source_id ASC,
                   ap.document_id ASC,
                   c.start_byte ASC
@@ -1734,6 +1739,11 @@ fn fetch_project_passages(
     for row in rows {
         passages.push(row??);
     }
+    #[cfg(test)]
+    SEARCH_TEST_HOOKS.with(|hooks| {
+        hooks.borrow_mut().raw_scan_vm_steps =
+            statement.get_status(rusqlite::StatementStatus::VmStep);
+    });
     Ok(passages)
 }
 
@@ -2334,6 +2344,7 @@ fn millis(duration: Duration) -> u64 {
 struct SearchTestHooks {
     inject_slow_exact_query: bool,
     lexical_fetches: usize,
+    raw_scan_vm_steps: i32,
 }
 
 #[cfg(test)]
@@ -2366,6 +2377,121 @@ fn run_injected_exact_timeout_query(connection: &Connection) -> Result<(), Searc
 mod tests {
     use super::*;
     use tempfile::tempdir;
+
+    #[test]
+    fn raw_exact_page_seeks_scoped_sources_without_sorting_the_whole_project() {
+        use crate::ingest::{ChunkKind, SnapshotRevision, revision_sha256};
+        use crate::store::{DeleteConfirmations, FilesystemScope, PreparedChunk, PreparedDocument};
+
+        let directory = private_test_directory();
+        let mut database = IndexDb::create(
+            &directory.path().join("index.sqlite"),
+            IndexId::from_uuid(Uuid::new_v4()),
+        )
+        .unwrap();
+        let project_id = ProjectId::from_uuid(Uuid::from_u128(100));
+        let mut expected = Vec::new();
+        // Earlier unrelated and removed sources must not consume this page's work budget.
+        for (source_number, document_count) in [(1_u128, 1000), (2, 1000), (3, 30), (4, 1000)] {
+            let source_id = SourceId::from_uuid(Uuid::from_u128(source_number));
+            let scope = FilesystemScope {
+                source_id,
+                source_name: format!("source-{source_number}").parse().unwrap(),
+                source_logical_uri: format!("file:///source-{source_number}"),
+                source_config_json: format!(r#"{{"root":"/source-{source_number}"}}"#),
+                project_id: if source_number == 1 {
+                    ProjectId::from_uuid(Uuid::from_u128(200))
+                } else {
+                    project_id
+                },
+                project_name: if source_number == 1 {
+                    "other"
+                } else {
+                    "selected"
+                }
+                .parse()
+                .unwrap(),
+            };
+            let documents = (0..document_count)
+                .map(|number| {
+                    let title = format!("document-{number}.md");
+                    let source_uri = format!("repo://{title}");
+                    let body = format!("raw ^ evidence {number}\n").into_bytes();
+                    let digest = Sha256Digest::of_bytes(&body);
+                    let literals =
+                        crate::store::prepare_passage_literals(&title, &source_uri, &body);
+                    PreparedDocument {
+                        connector_key: title.as_bytes().to_vec(),
+                        revision_sha256: revision_sha256(&SnapshotRevision {
+                            body: &body,
+                            source_uri: &source_uri,
+                            title: &title,
+                            metadata: &serde_json::json!({}),
+                            source_updated_at: None,
+                        })
+                        .unwrap(),
+                        title,
+                        source_uri,
+                        metadata_json: "{}".to_owned(),
+                        source_updated_at: None,
+                        body_sha256: digest,
+                        chunker_fingerprint: crate::store::chunker_fingerprint(ChunkKind::Markdown),
+                        chunks: vec![PreparedChunk {
+                            ordinal: 0,
+                            byte_span: ByteSpan::new(0, body.len() as u64).unwrap(),
+                            line_span: LineSpan::new(1, 1).unwrap(),
+                            body_text: String::from_utf8(body.clone()).unwrap(),
+                            content_sha256: digest,
+                            quote_bloom: QuoteBloom::from_content(&body).into_bytes(),
+                            literals,
+                        }],
+                        body,
+                    }
+                })
+                .collect::<Vec<_>>();
+            database
+                .apply_filesystem_snapshot(&scope, &documents, &[], DeleteConfirmations::default())
+                .unwrap();
+            if source_number >= 3 {
+                let mut statement = database
+                    .connection()
+                    .prepare("SELECT id, document_id FROM active_passages WHERE source_id = ?1")
+                    .unwrap();
+                expected.extend(
+                    statement
+                        .query_map([source_id.as_uuid().as_bytes().as_slice()], |row| {
+                            Ok((source_id, row.get::<_, Vec<u8>>(1)?, row.get::<_, i64>(0)?))
+                        })
+                        .unwrap()
+                        .collect::<Result<Vec<_>, _>>()
+                        .unwrap(),
+                );
+            }
+            if source_number == 2 {
+                database.connection().execute(
+                    "UPDATE project_sources SET removed_at = '2026-10-22T00:00:00Z' WHERE source_id = ?1",
+                    [source_id.as_uuid().as_bytes().as_slice()],
+                ).unwrap();
+            }
+        }
+        expected.sort();
+        let passages = fetch_project_passages(database.connection(), project_id, 5, 50).unwrap();
+        assert_eq!(
+            passages
+                .iter()
+                .map(|passage| passage.id)
+                .collect::<Vec<_>>(),
+            expected[5..55]
+                .iter()
+                .map(|entry| entry.2)
+                .collect::<Vec<_>>()
+        );
+        let steps = SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow().raw_scan_vm_steps);
+        assert!(
+            steps < 20_000,
+            "bounded page scanned/sorted the corpus: {steps} VM steps"
+        );
+    }
 
     #[test]
     fn materialization_probe_is_nested_and_search_scoped() {
