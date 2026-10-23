@@ -44,7 +44,13 @@ plan in this order; the canonical denominator remains
    identifier budget, then vector preflight. Preserve
    project scope, byte verification, ranking, and cursor order. Each repair
    needs a failing regression, complete local gate, and optimized before/after
-   evidence before a full native rerun.
+   evidence before a full native rerun. Completed run `40004812595` at `1ce11d0`
+   now contains all 2,250 observations: identifier p95 129–141 ms and ordinary
+   lexical 283–286 ms fail; fallback and hybrid pass, and total-p95 CV passes
+   at 1.411687427%. Exact recomputation, cold, RSS, storage, and raw failure are
+   retained in `eval/results/retrieval-scale-40004812595-1ce11d0/REVIEW.md`.
+   The offending ordinary query uses 50 candidates; profile broad ranking and
+   the unassigned orchestration budget before another expensive 100k rerun.
 2. **Q-05: resolve vector preflight and prove cancellation at scale.** Keep
    missing/extra/NULL/source-partition and vector-payload integrity checks.
    Block-level validation now reads each referenced payload once and rejects
@@ -65,8 +71,13 @@ plan in this order; the canonical denominator remains
    the full BM25 ranking ten times. Cursor repair `3827248` preserves the
    500-candidate boundary and passes the focused red/green regression, full
    contributor gate, release smoke, paired result checks, and small real-model
-   cancellation. Native rerun `40008791029` is in progress on that exact
-   candidate; Q05 is still unqualified until its report is reviewed.
+   cancellation. Native rerun `40008791029` now passes the frozen Linux
+   report-only stress protocol on that exact candidate: 75 scale probes,
+   five final hybrid probes, no deadlines, two paused workers, eight
+   cancellations, no late responses, lexical/hybrid recovery and all recorded
+   metadata/storage/memory checks. Reviewed raw evidence is retained in
+   `eval/results/retrieval-stress-40008791029-3827248/REVIEW.md`. This does not
+   close 100k latency, Mac, or final stable-candidate qualification.
 3. **Q-04/Q-05: rerun both supported native targets.** Use the corrected frozen
    corpus and one recorded candidate, retain raw failures as well as passes,
    and require every latency/protocol/CV gate. The retained partial Mac index
@@ -74,12 +85,18 @@ plan in this order; the canonical denominator remains
    to reproduce an already established bottleneck. Fresh Linux 100k run
    `40004812595` and local M2/16 GB preparation started on `1ce11d0` with
    the corrected corpus. Mac cold-cache measurement requires local `sudo`
-   authentication. The user authenticated the guarded Terminal launcher,
-   which now waits for preparation and runs all 2,250 observations with the tracked
-   cold-cache helper, logging its exit status. Neither target has a new
-   completed qualification report. These `1ce11d0` results must remain separate
-   from repair candidate `3827248`; do not cancel the running baseline to rerun
-   it. See `eval/RETRIEVAL_QUALIFICATION_2026-10-23.md` for receipts and remaining
+   authentication. The authenticated launcher correctly refused measurement
+   after Mac preparation failed with child SIGBUS/-10 (`prepare.exit = 2`).
+   Exact failed DB/WAL/SHM and crash bytes are retained locally. A disposable
+   clone passes quick_check and has all 100,000 cached embeddings, but no
+   committed vector membership. A native probe reproduces POSIX lock loss
+   when validation closes another descriptor for SQLite's SHM inode; repair
+   that shared-store invariant with a cross-process regression before retry.
+   See `eval/MACOS_100K_SIGBUS_DIAGNOSIS.md`. Preserve all path/owner/no-follow
+   checks and correctly label cache reuse and candidate provenance. Linux has
+   a complete failed 100k report; no Mac report or two-platform comparison
+   exists. These baseline results stay separate from `3827248` stress evidence.
+   See `eval/RETRIEVAL_QUALIFICATION_2026-10-23.md` for receipts and remaining
    gates. No retrieval-quality or token-cost superiority follows from this work.
 4. **Q-07 and evaluation: finish client and cost evidence.** Run pinned Linux
    client dogfood and repeat both targets on the selected candidate. Before

@@ -361,3 +361,43 @@ This supports unchanged warm control behavior; it does not establish a
 cold-cache non-regression or native qualification pass. Both sets of raw
 observations are retained. Q04, the remaining identifier budget, and vector
 preflight qualification remain open.
+
+## Completed native protocol on `1ce11d0` — 2026-10-23
+
+[Run 40004812595](https://github.com/burkan2/hSUM/actions/runs/40004812595)
+completes the corrected frozen corpus, all three fresh processes and **2,250
+measured queries**, then exits 1 because identifier and ordinary lexical p95
+still exceed 100 ms. Exact fallback and hybrid now pass their class limits.
+The [retained review](results/retrieval-scale-40004812595-1ce11d0/REVIEW.md)
+includes the unchanged artifact ZIP, GitHub artifact digest/metadata, failed
+step log, setup/report JSON, review source, and exact recomputed results.
+
+| Warm class | Run 1 p95 | Run 2 p95 | Run 3 p95 | Strict limit | Result |
+| --- | --- | --- | --- | --- | --- |
+| Identifier | 141 ms | 137 ms | 129 ms | < 100 ms | fail |
+| Ordinary lexical | 286 ms | 284 ms | 283 ms | < 100 ms | fail |
+| Exact fallback | 147 ms | 149 ms | 161 ms | < 750 ms | pass |
+| Hybrid without fallback | 273 ms | 277 ms | 264 ms | < 500 ms | pass |
+
+Total p95s are 277/275/268 ms; population CV **1.411687427%** passes the <= 10%
+gate. All other frozen qualification flags pass. Cache eviction and separate
+cold observations are recorded for each process, with peak process-tree RSS
+545,128,448 / 556,302,336 / 536,739,840 bytes and no sampler errors. Managed
+storage is 2,002,340,264 bytes including WAL/SHM; logical live content is
+150,000,000 bytes, history zero, and active plus cached vector payload
+307,200,000 bytes. Initialization/ingest takes 32.594 s, re-embedding 4,659.190 s.
+These recorded memory/storage values do not introduce an additional SLO.
+
+The slow `ordinary-02` samples examine only 50 lexical candidates. Its first
+warm sample records 199 ms lexical and 282 ms total; `identifier-01` records
+31 ms exact, 7 ms lexical, and 122 ms total. Per-query distributions retain the
+roughly 80 ms wall-time remainder outside the non-overlapping retriever
+stages. That remainder needs profiling; these timers do not establish which
+connection-open, snapshot, or other orchestration operation caused it.
+`body_materialization` and `exact_fallback` overlap with other stage timers and
+must not be added twice. The separate adaptive-cursor repair `3827248` targets
+repeated ranking through 500 candidates in stress recovery; it does not prove
+that these 50-candidate Q04 failures are repaired. Preserve all checks and
+ranking while profiling the broad ranking and orchestration before another
+expensive 100k rerun. The Mac protocol and reviewed cross-platform comparison
+remain outstanding; no retrieval-quality or token-cost claim follows.

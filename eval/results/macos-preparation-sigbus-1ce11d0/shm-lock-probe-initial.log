@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/Users/b.k./.cache/hsum-qualification/macos-100k-failure-1ce11d0/shm-lock-probe.py", line 11, in <module>
+    assert libc.fcntl(fd,fcntl.F_GETLK,c.byref(lock))==0,c.get_errno()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 14
+Traceback (most recent call last):
+  File "/Users/b.k./.cache/hsum-qualification/macos-100k-failure-1ce11d0/shm-lock-probe.py", line 23, in <module>
+    before=observe('native connection holds WAL DMS lock');assert before['shared_lock']
+  File "/Users/b.k./.cache/hsum-qualification/macos-100k-failure-1ce11d0/shm-lock-probe.py", line 22, in observe
+    lock=json.loads(subprocess.check_output([sys.executable,__file__,str(shm)],text=True));report['observations'].append({'label':label,'shm_bytes':shm.stat().st_size,**lock});print(label,report['observations'][-1],flush=True);return lock
+                    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 472, in check_output
+    return run(*popenargs, stdout=PIPE, timeout=timeout, check=True,
+           ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+               **kwargs).stdout
+               ^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 577, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['/Library/Frameworks/Python.framework/Versions/3.14/bin/python3', '/Users/b.k./.cache/hsum-qualification/macos-100k-failure-1ce11d0/shm-lock-probe.py', '/Users/b.k./.cache/hsum-qualification/macos-100k-failure-1ce11d0/hsum-shm-lock-swz10tkk/probe.sqlite-shm']' returned non-zero exit status 1.

@@ -1,0 +1,36 @@
+{
+  "recorded_at": "2026-10-23T23:01:52.472825+00:00",
+  "candidate": "1ce11d00bf8cad949c12a9c496ab7dba3675717f",
+  "files": {
+    "prepare.exit": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+    "prepare.log": "1a57fd3e0ec38540f6b0886822340ad72b4ecf0fa23e17d419136114d0d1076e",
+    "launch.json": "8e9269bb5945735b28876518120f32ca5efdc435da07444c57e45adfe035d0f8",
+    "RUN-MACOS.md": "818a416b9a01030cedd4bb012eb218ecf359d0809bbdece7542ea40a26336df1",
+    "run-macos-qualification.command": "ec9a69792231bc301124b7110166c6be3f18e882adbf5e86b0641560393fb60a",
+    "retained-index/index.sqlite": {
+      "bytes": 1031020544,
+      "sha256": "48c920e52c2f69b2c8ea25c22726a31c646ea3604c16ca8e44e2cb5206a49e80",
+      "copied_using": "APFS clone; retained before further database reads"
+    },
+    "retained-index/index.sqlite-wal": {
+      "bytes": 813934872,
+      "sha256": "2de73a636a22682319ef709cc7c6c688e1f2be7a37d8cea70cc55ba22dc06a1d",
+      "copied_using": "APFS clone; retained before further database reads"
+    },
+    "retained-index/index.sqlite-shm": {
+      "bytes": 32768,
+      "sha256": "440f8f9fd38a4e64ed97f1fdaa9b04a6eaddbac1a70a37fa57ef8b3739d23e94",
+      "copied_using": "APFS clone; retained before further database reads"
+    }
+  },
+  "crash_report": {
+    "path": "/Users/b.k./.cache/hsum-qualification/macos-100k-failure-1ce11d0/hsum-2026-10-24-004205.ips",
+    "sha256": "db6233ad591c46eef5057c097d21684a4d5cbc901ee6f879e9656fad773c5100"
+  },
+  "absent_reports": [
+    "setup-macos-arm64.json",
+    "measurement.started",
+    "measurement.exit",
+    "macos-arm64-100k.json"
+  ]
+}

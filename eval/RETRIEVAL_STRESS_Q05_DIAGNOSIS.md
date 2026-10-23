@@ -238,3 +238,33 @@ After those checks, native rerun
 was dispatched on that exact repair candidate. It is still running at this
 checkpoint. Q05 remains **unqualified** until its complete report is reviewed.
 Author review is recorded separately; no independent source review is claimed.
+
+## Completed Linux stress qualification — reviewed 2026-10-24
+
+Native run [40008791029](https://github.com/burkan2/hSUM/actions/runs/40008791029)
+**passes the frozen report-only Linux million-passage protocol** on exact clean
+candidate `38272481bfbc9bb831ac05304135f3bdc54dda05`. The
+[retained review](results/retrieval-stress-40008791029-3827248/REVIEW.md) binds
+the GitHub ZIP digest, raw report/log/capacity, source candidate, and recomputed
+75 scale observations plus five final hybrid probes. All report checks pass,
+with no probe deadlines. The first >2x knee is the literal at eight sources /
+111,160 passages (174.475 to 597.205 ms, ratio 3.422862162).
+
+The completed same-process cancellation harness pauses two real model workers,
+cancels eight requests, suppresses late responses through clean process exit,
+and recovers lexical and hybrid search. Both recovery candidate budgets reach
+500. There is no individual worker timestamp or full MCP transcript in the
+upload; the conclusion is bound to the unchanged frozen harness completion.
+Four old readers retain generation 104 while a fresh reader sees generation
+105; 100 metadata operations complete, and re-embedding commits generation 106.
+
+Managed storage including WAL/SHM is 7,305,599,456 bytes; active/cached vector
+payload is 1,536,000,000 / 24,391,680 bytes. The cache has 15,880 shared inputs.
+Peak process-tree RSS is 3,144,593,408 bytes during initial ingestion,
+600,858,624 during re-embedding, and 654,983,168 during cancellation recovery.
+Final hybrid client p50/p95 are 6,088.520 / 6,103.379 ms. The million-passage
+suite is report-only, so this pass does not imply a 100k latency SLO pass or
+constant-memory proof. Prior raw failures remain intact. Mac 100k preparation
+separately failed with SIGBUS on baseline `1ce11d0`; see
+`eval/MACOS_100K_SIGBUS_DIAGNOSIS.md`. No cross-platform or superiority claim
+follows from the Linux stress pass.
