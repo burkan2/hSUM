@@ -1,0 +1,115 @@
+{
+  "conclusion": "",
+  "headSha": "38272481bfbc9bb831ac05304135f3bdc54dda05",
+  "jobs": [
+    {
+      "completedAt": "0001-01-01T00:00:00Z",
+      "conclusion": "",
+      "databaseId": 120603468267,
+      "name": "Linux x86_64 one-million-passage report",
+      "startedAt": "2026-10-23T19:06:42Z",
+      "status": "in_progress",
+      "steps": [
+        {
+          "completedAt": "2026-10-23T19:06:44Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-23T19:06:43Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T19:06:45Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v6",
+          "number": 2,
+          "startedAt": "2026-10-23T19:06:44Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T19:06:45Z",
+          "conclusion": "success",
+          "name": "Install the qualification Python runtime",
+          "number": 3,
+          "startedAt": "2026-10-23T19:06:45Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T19:06:45Z",
+          "conclusion": "success",
+          "name": "Confirm the native runner and record initial capacity",
+          "number": 4,
+          "startedAt": "2026-10-23T19:06:45Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T19:06:53Z",
+          "conclusion": "success",
+          "name": "Install the pinned Rust toolchain",
+          "number": 5,
+          "startedAt": "2026-10-23T19:06:45Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Build and isolate the release candidate",
+          "number": 6,
+          "startedAt": "2026-10-23T19:06:53Z",
+          "status": "in_progress"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Install and verify the pinned model outside timed stages",
+          "number": 7,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Run the frozen report-only stress protocol offline",
+          "number": 8,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Record final capacity",
+          "number": 9,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Upload immutable raw evidence and failure diagnostics",
+          "number": 10,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Post Install the qualification Python runtime",
+          "number": 19,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Post Run actions/checkout@v6",
+          "number": 20,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "url": "https://github.com/burkan2/hSUM/actions/runs/40008791029/job/120603468267"
+    }
+  ],
+  "status": "in_progress",
+  "url": "https://github.com/burkan2/hSUM/actions/runs/40008791029"
+}

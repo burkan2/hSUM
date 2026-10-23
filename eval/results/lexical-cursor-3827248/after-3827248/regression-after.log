@@ -1,0 +1,20 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 17.48s
+     Running unittests src/lib.rs (target/debug/deps/hsum-a26a0bf0f6eee433)
+
+running 12 tests
+test search::retrieval::tests::fusion_rounding_is_integer_and_matches_the_frozen_example ... ok
+test search::retrieval::tests::materialization_probe_is_nested_and_search_scoped ... ok
+test search::retrieval::tests::overlap_threshold_is_inclusive_at_one_half ... ok
+test search::retrieval::tests::lexical_compiler_treats_fts_operators_as_quoted_terms ... ok
+test search::retrieval::tests::hybrid_dedupe_and_equal_unit_ties_are_stable_and_explanations_are_bounded ... ok
+test search::retrieval::tests::deadline_guard_interrupts_a_running_sqlite_operation ... ok
+test search::retrieval::tests::lexical_ranking_uses_covered_chunk_order_before_loading_the_page ... ok
+test search::retrieval::tests::vector_knn_boundary_ties_use_exact_rowid_order ... ok
+test search::retrieval::tests::vector_knn_filters_by_source_before_applying_k ... ok
+test search::retrieval::tests::search_maps_exact_sqlite_timeout_and_skips_lexical_retrieval ... ok
+test search::retrieval::tests::duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary ... ok
+test search::retrieval::tests::exact_pages_seek_scoped_candidates_without_scanning_the_whole_project ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 132 filtered out; finished in 3.30s
+

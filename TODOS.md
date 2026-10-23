@@ -58,12 +58,29 @@ plan in this order; the canonical denominator remains
    See `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md`. These are diagnostics, not
    qualification. Demonstrate two active model workers, cancellation without
    late responses, and successful lexical/hybrid recovery on the native
-   million-passage fixture.
+   million-passage fixture. Latest run `39981593244` at `1ce11d0` reaches
+   post-cancellation lexical recovery, then fails its `mcp_tool` deadline.
+   Worker setup progressed, but there is no complete stress JSON report.
+   The recovery bottleneck is now reproduced: duplicate-heavy paging reran
+   the full BM25 ranking ten times. Cursor repair `3827248` preserves the
+   500-candidate boundary and passes the focused red/green regression, full
+   contributor gate, release smoke, paired result checks, and small real-model
+   cancellation. Native rerun `40008791029` is in progress on that exact
+   candidate; Q05 is still unqualified until its report is reviewed.
 3. **Q-04/Q-05: rerun both supported native targets.** Use the corrected frozen
    corpus and one recorded candidate, retain raw failures as well as passes,
    and require every latency/protocol/CV gate. The retained partial Mac index
    remains diagnostic only. Do not spend another full embedding run merely
-   to reproduce an already established bottleneck.
+   to reproduce an already established bottleneck. Fresh Linux 100k run
+   `40004812595` and local M2/16 GB preparation started on `1ce11d0` with
+   the corrected corpus. Mac cold-cache measurement requires local `sudo`
+   authentication. The user authenticated the guarded Terminal launcher,
+   which now waits for preparation and runs all 2,250 observations with the tracked
+   cold-cache helper, logging its exit status. Neither target has a new
+   completed qualification report. These `1ce11d0` results must remain separate
+   from repair candidate `3827248`; do not cancel the running baseline to rerun
+   it. See `eval/RETRIEVAL_QUALIFICATION_2026-10-23.md` for receipts and remaining
+   gates. No retrieval-quality or token-cost superiority follows from this work.
 4. **Q-07 and evaluation: finish client and cost evidence.** Run pinned Linux
    client dogfood and repeat both targets on the selected candidate. Before
    making a superiority claim, freeze reviewed current labels and corrected

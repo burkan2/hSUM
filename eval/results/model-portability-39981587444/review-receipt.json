@@ -1,0 +1,29 @@
+{
+  "run_url": "https://github.com/burkan2/hSUM/actions/runs/39981587444",
+  "attempt": 2,
+  "candidate_commit": "1ce11d00bf8cad949c12a9c496ab7dba3675717f",
+  "tested_pr_merge_commit": "9e9983a3e90fd082704905679295351f16986462",
+  "verified_identical_git_tree": "8a0c0ea51906c1cd4351e6725c4927b1b7c8ec05",
+  "reviewed_checks": [
+    "native reports passed",
+    "offline product path",
+    "immutable get",
+    "cross-target CLI/MCP contract equality",
+    "semantic source report hashes",
+    "numerical thresholds",
+    "identical ordering"
+  ],
+  "numerical_comparison_recomputed_locally": false,
+  "prior_failure": "Comparator build failed on an ONNX Runtime download hash mismatch. Retried the failed job without weakening checksum validation; the retry passed.",
+  "qualification_scope": "Model portability and small native product smoke only; not 100k latency or million-passage stress qualification.",
+  "files_sha256": {
+    "model-numerical-compatibility.json": "53fc5c2e7b36803c4f083a6347f9529401ba5c612a1691767e0e210b4e731ed3",
+    "model-portability-arm64/model-portability-arm64-dependencies.txt": "b6d1e751f6b005f76977fa431c016016d7393dcd85b7be768ada471c0a556b9a",
+    "model-portability-arm64/model-portability-arm64.json": "9ebbfc737de010cf4ff829766a5f74bb943bb68e8a36b8befb3e8773d5c9388e",
+    "model-portability-arm64/semantic-product-arm64.json": "2205e8875800883bfd0a9accc252672e518b1c6e5678e9fd1b4bf77a4b1b0e45",
+    "model-portability-x86_64/model-portability-x86_64-dependencies.txt": "af250778cca7a7a1534ad1124b9ec34edecbb9281aa4661022f6f876d51b7222",
+    "model-portability-x86_64/model-portability-x86_64.json": "4b0de09afcd9b9e97bda0cadde5045fbee300080d887e0184c229dbd5fa818ba",
+    "model-portability-x86_64/semantic-product-x86_64.json": "7aee514832f8afe08037f4ed4635e71940339336f072dc5d0f5c22d62537dac1",
+    "semantic-product-cross-target.json": "aa0ecd77841cff8a7a9bf3dd4b20bd884878a8b547a84587f4f715abcb8e607d"
+  }
+}

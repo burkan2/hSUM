@@ -163,3 +163,78 @@ source byte windows. The small real-model cancellation smoke again pauses two
 workers, cancels eight requests without late responses, and recovers lexical
 and hybrid search. These are local checks; independent review and native
 million-passage qualification remain open.
+
+## Post-cancellation recovery failure — 2026-10-23
+
+Run [39981593244](https://github.com/burkan2/hSUM/actions/runs/39981593244)
+at `1ce11d00bf8cad949c12a9c496ab7dba3675717f` completes million-passage
+ingestion, metadata generations, and re-embedding, then fails with
+`post-storm lexical search failed`: **TIMEOUT / REQUEST_DEADLINE**, operation
+`mcp_tool`. The [unaltered harness log](results/q05-39981593244-harness.log)
+and [runner capacity](results/q05-39981593244-runner-capacity.txt) are retained.
+No complete stress JSON report was produced.
+
+Unlike the previous worker-start failure, this location in the harness is
+reached after two real workers have been paused, eight cancellations sent,
+and the workers resumed. That ordering is inferred from the frozen harness;
+the log does not contain individual worker timestamps. It does not prove the
+complete no-late-response interval or hybrid recovery, which are checked later.
+Q05 therefore still fails. Diagnose the lexical recovery deadline before
+repeating the full million-passage workload; do not raise the frozen deadline
+or treat this failure as a completed cancellation qualification.
+
+## Recovery ranking repetition — 2026-10-23
+
+The retained `39981593244` error names the admitted `mcp_tool` deadline, not
+`blocking_admission`. Lexical requests skip query embedding and full vector
+membership preflight. In `execute_search`, content deduplication expands lexical
+candidates from 50 to 500 when fewer than the requested unique results survive.
+Each former `fetch_lexical_page` call reran the complete scoped BM25 ranking
+with a new `LIMIT 50 OFFSET n`. The stress recovery fixture reaches that cap
+with one surviving unique content, so it paid for ten full corpus rankings.
+This is a reproduced recovery-path bottleneck; the prior runner log alone
+cannot exclude additional cancellation or storage costs.
+
+Candidate **`38272481bfbc9bb831ac05304135f3bdc54dda05`** keeps one transaction-local
+500-candidate cursor and consumes it in the same 50-candidate fusion steps.
+The SQL, project/head/version filters, scores, durable ties, candidate cap,
+body/hash checks, field guards, deadlines, and final stop reasons remain.
+The cursor is dropped before transaction commit. There is no schema, model,
+dependency, persistent-cache, timeout, or qualification-threshold change.
+The stress harness now logs completed scale/metadata/re-embedding/hybrid
+observations before cancellation, so a later recovery error retains them.
+
+The [retained evidence](results/lexical-cursor-3827248/review-receipt.json)
+separates `before-1ce11d0` and `after-3827248` observations and includes probe
+sources, SQL, ordered row hashes, failed regressions, and validation logs:
+
+| Diagnostic scope | Repeated pages | One cursor |
+| --- | --- | --- |
+| Native SQLite 3.51.3, real reduced 100k index, 64 sources | 2.23–2.36 s; 47,061,271 VM steps; 20 sorts | 0.233–0.243 s; 4,801,786 VM steps; 2 sorts |
+| Synthetic million-row short-body ranking, 64 sources | 20.28–22.49 s; 439,040,420 VM steps; 10 sorts | 1.80–1.94 s; 43,909,801 VM steps; 1 sort |
+| Optimized product, reduced duplicate 100k index, fresh CLI processes | 3.48–4.82 s client time | 0.75–1.63 s client time |
+
+All 500 ordered native row hashes match in each paired SQL comparison. All
+12 reduced product observations preserve full ordered result packets,
+including duplicate citations and scores; returned content matches the
+shared source byte window and hash. These measurements ran alongside local
+preparation/build work. The short-body fixture isolates ranking; it omits
+product orchestration, real payloads, vectors, and cancellation. None of the
+three comparisons is frozen 100k latency, cold-cache, or stress qualification.
+
+The focused regression fails before repair at **20 sorts**, then passes with
+the original 500-candidate tie boundary, one result, and 499 duplicate citations.
+It also checks that a malformed field on a later page is rejected when that
+page is consumed. The complete `cargo xtask check`, optimized release build,
+and CLI/MCP release smoke pass. Eighteen paired small real-model CLI controls
+preserve ordered citations/scores/hashes and verify all 180 returned content
+windows. Small-model cancellation again pauses two workers, cancels eight
+requests, suppresses late responses, and recovers lexical/hybrid search.
+The optimized binary SHA-256 is
+`9a08baa1c98d65a2628e72b28bc3ee54cc58011ec50f0446cbd8f1a12c7bed10`.
+
+After those checks, native rerun
+[40008791029](https://github.com/burkan2/hSUM/actions/runs/40008791029)
+was dispatched on that exact repair candidate. It is still running at this
+checkpoint. Q05 remains **unqualified** until its complete report is reviewed.
+Author review is recorded separately; no independent source review is claimed.
