@@ -13,6 +13,26 @@ or clean-machine gate by itself.
 
 ## Disposition
 
+### Tokio patch on 2026-10-23
+
+Dependency-policy run [39980117034](https://github.com/burkan2/hSUM/actions/runs/39980117034)
+flags `tokio 1.53.0` under [RUSTSEC-2026-0386](https://github.com/RustSec/advisory-db/blob/main/crates/tokio/RUSTSEC-2026-0386.md).
+The exact pin and lockfile now select `tokio 1.53.3`, one of the advisory's
+patched versions. No advisory exception or other dependency update was added.
+hSUM has no direct `AsyncFd` constructor call; the dependency patch still
+requires the normal runtime, cancellation, and native candidate checks.
+Historical license inventories and performance evidence retain their original
+package and binary identities.
+
+The complete local `cargo deny --all-features check` and `cargo xtask check`
+pass, as do the optimized release build and CLI/MCP smoke. The patched binary
+preserves all 30 checked lexical/semantic/hybrid passages and again passes the
+small two-worker/eight-cancellation recovery protocol. The
+[raw runtime controls](../eval/results/tokio-1.53.3-2026-10-23-macos.json)
+bind the exact manifest, lockfile, and binary hashes. Native stress run
+`39980239248` was cancelled before qualification so the patched candidate can
+be tested instead; no result from that cancelled run is claimed.
+
 ### Dependency remediation on 2026-10-21
 
 The fresh audit at `caf2f19` failed on six RustSec advisories:
