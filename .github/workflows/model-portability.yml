@@ -11,7 +11,7 @@ on:
       - benches/model_portability/inputs.json
       - examples/model-portability-compare.rs
       - examples/model-portability.rs
-      - migrations/0004_vector_storage.sql
+      - migrations/**
       - scripts/semantic-product-smoke.sh
       - src/app/search_evidence.rs
       - src/cli.rs

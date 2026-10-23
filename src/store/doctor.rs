@@ -62,6 +62,7 @@ const REQUIRED_TABLES: &[&str] = &[
 ];
 
 const REQUIRED_INDEXES: &[&str] = &[
+    "chunks_order_idx",
     "document_versions_content_blob_idx",
     "document_heads_generation_idx",
     "generation_changes_document_idx",
@@ -450,9 +451,28 @@ fn inspect_migration_snapshot(
     let mut scan = DoctorScanStats::default();
     let body_scan = BodyScanTracker::default();
     validate_integrity(connection)?;
-    validate_generation_invariants(connection, stored_pipeline_fingerprint, 1, false)?;
+    let history_floor = if version >= 3 {
+        history_floor_epoch(connection)?
+    } else {
+        1
+    };
+    validate_generation_invariants(
+        connection,
+        stored_pipeline_fingerprint,
+        history_floor,
+        version >= 4,
+    )?;
+    if version >= 4 {
+        validate_generation_embedding_profile(connection)?;
+    }
     validate_immutable_evidence(connection, &mut scan, &body_scan)?;
+    if version >= 4 {
+        validate_embedding_cache(connection)?;
+    }
     validate_active_indexes(connection, &mut scan)?;
+    if version >= 3 {
+        validate_forget_ledger(connection)?;
+    }
     scan.max_body_rows_in_flight = body_scan.finish();
 
     let journal_mode: String =
@@ -691,7 +711,11 @@ fn validate_metadata(
     }
 
     expect_metadata(connection, "api_version", b"hsum.api.v1")?;
-    expect_metadata(connection, "schema_version", b"4")?;
+    expect_metadata(
+        connection,
+        "schema_version",
+        SCHEMA_VERSION.to_string().as_bytes(),
+    )?;
     let embedding_profile = read_embedding_profile(connection)?;
     expect_active_vector_slot(connection)?;
     expect_metadata(connection, "schema_checksum", schema_checksum().as_bytes()).map_err(

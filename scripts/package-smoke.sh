@@ -51,6 +51,7 @@ required=(
   src/main.rs
   migrations/0001_alpha1.sql
   migrations/0004_vector_storage.sql
+  migrations/0005_chunk_order.sql
   assets/models/bge-small-en-v1.5-fp32.json
   examples/model-portability.rs
   benches/model_portability/inputs.json

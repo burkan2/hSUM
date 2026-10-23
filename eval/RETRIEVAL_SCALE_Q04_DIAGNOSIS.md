@@ -275,3 +275,89 @@ binds binary/source hashes, commands, query plans, responses, and summaries.
 The optimized release build and release smoke pass. These retained-index
 observations do not follow the frozen native qualification protocol and do
 not meet the identifier 100 ms target; Q04 remains open.
+
+## Covered lexical ranking — 2026-10-22–23
+
+The all-match ordinary query still reads large chunk rows while ranking every
+matching passage. Deferring the full guarded projection alone is insufficient:
+SQLite chooses chunk rowid lookups even when a compact `(id, start_byte)` index
+exists. The bundled SQLite probe takes 11.25 seconds for the original query,
+9.21 seconds with deferred projection alone, and 9.12 seconds with an unforced
+index. Requiring the covering index and materializing the ranked page reduces
+the isolated query to 194 ms. All variants produce the same ordered 50 rows,
+including scores and every guarded column, with SHA-256
+`9da8895c9539061a0f0a51f95d15fdc47840fc9177991c8975eb3925cfdb63ec`.
+
+Alternating probes with fresh SQLite connections, run under local build load,
+take 7.50–12.82 seconds before and 0.62–1.13 seconds after. These are diagnostic
+measurements, not cold-cache or qualification observations. SQLite documents
+the [materialization fence](https://www.sqlite.org/lang_with.html#materialization_hints)
+and [covering-index plan](https://www.sqlite.org/eqp.html#table_and_index_scans).
+
+Both lexical and quoted-phrase candidate queries now share this SQL. Every
+project/head/version/chunk join remains inside the ranking stage, and the
+outer stage retains field bounds, byte/hash/Bloom validation, scores, durable
+identity tie order, and the same limit/offset. There is no rank-only top-500
+shortcut. The query-plan regression fails before the change; the real-snapshot
+regression also verifies lexical and phrase pagination across selected sources
+while excluding removed and unrelated sources.
+
+Schema 5 adds only `chunks_order_idx`. The schema-4 migration chain remains
+byte-for-byte frozen. Existing indexes require the explicit hash-confirmed
+plan/apply ceremony and verified backup. Migration inspection now validates
+schema-4 semantic generations, provenance, cached vector payloads, and active
+vector membership. Tests preserve exact semantic results through migration,
+reject corrupt plan/apply inputs before mutation, and prevent a pinned schema-4
+rebuild from silently becoming lexical-only. This is development compatibility
+work; the installed binary and active user indexes were not upgraded.
+
+The first optimized CLI trial forced the new index in every passage join.
+It preserved all 170 successful result contents, citations, and scores, and
+reduced the ordinary query from two 8.7–8.9-second responses plus a timeout to
+177–2267 ms server time. However, the identifier control regressed to
+49–581 ms, and raw quote to 57–255 ms. These observations are retained in
+[the initial trial](results/lexical-cover-2026-10-22-macos-diagnostic.json).
+That broader index requirement was rejected. The final query requires the
+covering index only inside lexical/phrase ranking; all body-loading, exact,
+and vector passage lookups retain the prior rowid join. The query-plan test
+also requires the outer page to use rowid lookups.
+
+The actual 100k schema-4 migration was exercised on a private disposable
+snapshot through `migrate plan` and hash-confirmed `migrate apply`. Both
+completed, the verified pre-migration backup was retained, and the resulting
+index passed Doctor. The recorded plan took 83.59 seconds and apply took
+80.71 seconds, including full integrity verification; those are migration
+diagnostics, not search timings. The original diagnostic index remains at
+schema 4. Historical held-out manifests still identify their original frozen
+schema-4 candidate and are not rewritten as evidence for schema 5.
+
+The final optimized build (`435de117b570d30fd063f605a9ce87b7782852f6103aa0e7908cf83f38218618`)
+passes the complete local `cargo xtask check` and CLI/MCP release smoke. The
+source-package listing includes the new migration and shared schema-4 fixture.
+The [final paired CLI report](results/lexical-cover-2026-10-23-macos-diagnostic.json)
+records three fresh-process repetitions per query/build, alternating build
+order against the original schema-4 index and its migrated schema-5 snapshot:
+
+| Query | Before server total | After server total |
+|---|---|---|
+| Ordinary all-match | 9332, 8733 ms; one 10-second deadline | 2331, 184, 2147 ms |
+| Identifier control | 281, 168, 156 ms | 828, 42, 854 ms |
+| Raw-quote control | 207, 151, 129 ms | 234, 53, 227 ms |
+
+All 170 successful returned passages match source byte windows and hashes;
+ordered citations and scores match across every successful before/after
+response. Ordinary-query median client time falls from 9055 ms among the two
+successful before runs to 2203 ms after. The timeout is retained, not excluded
+from the report. Neither the warm nor slower after observations meet the
+ordinary 100 ms target.
+
+The control timings depend strongly on the preceding broad query and cache
+state. The exact identifier query has an identical SQLite plan on both
+schemas. A separate recorded warmup followed by three paired fresh-process
+control repetitions, without intervening broad scans, yields identifier
+42/43/42 ms before and 42/41/44 ms after; raw quote yields 52/53/54 ms before
+and 51/53/56 ms after. Their ordered citations, scores, and hashes still match.
+This supports unchanged warm control behavior; it does not establish a
+cold-cache non-regression or native qualification pass. Both sets of raw
+observations are retained. Q04, the remaining identifier budget, and vector
+preflight qualification remain open.

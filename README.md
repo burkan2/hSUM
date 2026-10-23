@@ -583,6 +583,12 @@ hsum migrate apply --index INDEX /private/path/migration.json \
   --confirm <plan-hash>
 ```
 
+The current development checkout writes schema 5 and migrates schema 4 through
+this ceremony. The new index speeds lexical ranking without changing stored
+citations, generations, or embeddings. Older binaries cannot open the migrated
+index; retain the verified schema-4 backup when testing an upgrade. Search and
+MCP never migrate an index automatically.
+
 Prune and migration apply print rollback guidance naming the verified pre-change
 backup. Older-than-N-1 schemas, changed plans, incorrect confirmations,
 existing outputs, and failed verification stop before mutation.

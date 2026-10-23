@@ -929,6 +929,6 @@ fn collect_rows<T>(
 fn schema_checksum_is_a_frozen_migration_fixture() {
     assert_eq!(
         schema_checksum().to_string(),
-        "2d3e3ab56c1e1f553d0f992a8abc71c252dcba6e1a904df541b188b251b33708"
+        "1b941eb21709e7ece4c701d9bd0faae15c4023368919496cc0804dd77927456c"
     );
 }

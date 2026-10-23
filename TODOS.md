@@ -24,7 +24,7 @@ Continue in this order:
 
 Optional watch mode and additional integrations are not on the critical path.
 
-## Current release execution queue — 2026-10-22
+## Current release execution queue — 2026-10-23
 
 The feature phases above are implemented. Continue the existing qualification
 plan in this order; the canonical denominator remains
@@ -32,10 +32,15 @@ plan in this order; the canonical denominator remains
 
 1. **Q-04: repair measured retrieval bottlenecks.** Raw paging is repaired at
    `95784f0`, and all seven standard CI workflows pass that commit. The next
-   identifier join-order repair passes the complete local gate and changes
+   identifier join-order repair `b975bcc` passes all seven workflows and changes
    retained-Mac diagnostic timeouts to 190 ms median; see
-   `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md`. Profile ordinary lexical latency
-   and the remaining identifier budget next. Preserve
+   `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md`. Covered lexical ranking now passes
+   the complete local gate, release smoke, and an actual 100k schema-4-to-5
+   migration with backup. Ordinary diagnostic server time improves to
+   184–2331 ms from 8733–9332 ms plus a timeout; it still misses the 100 ms
+   target. Warm identifier/raw-quote controls are unchanged, while the mixed
+   query sequence remains cache-sensitive. Profile the remaining lexical and
+   identifier budget, then vector preflight. Preserve
    project scope, byte verification, ranking, and cursor order. Each repair
    needs a failing regression, complete local gate, and optimized before/after
    evidence before a full native rerun.

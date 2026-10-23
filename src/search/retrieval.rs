@@ -958,7 +958,8 @@ fn materialize_source_vector_candidates(
     let sql = format!(
         "SELECT {columns}
          FROM active_passages AS ap
-         {PASSAGE_JOINS}
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c ON c.id = ap.chunk_id
          JOIN sources AS s ON s.id = ap.source_id AND s.removed_at IS NULL
          WHERE ps.project_id = ?
            AND ap.source_id = ?
@@ -1631,7 +1632,8 @@ fn fetch_identifier_hint_page(
                 ranked.longest_atom
          FROM ranked
          CROSS JOIN active_passages AS ap ON ap.id = ranked.passage_id
-         {PASSAGE_JOINS}
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c ON c.id = ap.chunk_id
          WHERE ps.project_id = ?
          ORDER BY ranked.matched_atoms DESC,
                   ranked.matched_bytes DESC,
@@ -1679,21 +1681,7 @@ fn fetch_phrase_candidates(
     limit: usize,
 ) -> Result<Vec<Passage>, SearchError> {
     let expression = format!("\"{}\"", phrase.replace('"', "\"\""));
-    let passage_columns = passage_columns();
-    // Keep the FTS cursor outside rowid lookups so BM25 statistics are computed once.
-    let mut statement = connection.prepare(&format!(
-        "SELECT {passage_columns}, bm25(passages_fts) AS lexical_score
-         FROM passages_fts
-         CROSS JOIN active_passages AS ap ON ap.id = passages_fts.rowid
-         {PASSAGE_JOINS}
-         WHERE ps.project_id = ?1
-           AND passages_fts MATCH ?2
-         ORDER BY lexical_score ASC,
-                  ap.source_id ASC,
-                  ap.document_id ASC,
-                  c.start_byte ASC
-         LIMIT ?3 OFFSET ?4"
-    ))?;
+    let mut statement = connection.prepare(&lexical_page_sql())?;
     let rows = statement.query_map(
         params![
             uuid_bytes(project_id).as_slice(),
@@ -1711,6 +1699,38 @@ fn fetch_phrase_candidates(
     collect_scored_passages(rows)
 }
 
+fn lexical_page_sql() -> String {
+    let passage_columns = passage_columns();
+    // Keep the FTS cursor outside rowid lookups so BM25 statistics are computed once.
+    // Rank using covering indexes, then load guarded passage bodies only for the selected page.
+    format!(
+        "WITH ranked AS MATERIALIZED (
+             SELECT ap.id, bm25(passages_fts) AS lexical_score
+             FROM passages_fts
+             CROSS JOIN active_passages AS ap ON ap.id = passages_fts.rowid
+             {PASSAGE_SCOPE_JOINS}
+             JOIN chunks AS c INDEXED BY chunks_order_idx ON c.id = ap.chunk_id
+             WHERE ps.project_id = ?1
+               AND passages_fts MATCH ?2
+             ORDER BY lexical_score ASC,
+                      ap.source_id ASC,
+                      ap.document_id ASC,
+                      c.start_byte ASC
+             LIMIT ?3 OFFSET ?4
+         )
+         SELECT {passage_columns}, ranked.lexical_score
+         FROM ranked
+         CROSS JOIN active_passages AS ap ON ap.id = ranked.id
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c ON c.id = ap.chunk_id
+         WHERE ps.project_id = ?1
+         ORDER BY ranked.lexical_score ASC,
+                  ap.source_id ASC,
+                  ap.document_id ASC,
+                  c.start_byte ASC"
+    )
+}
+
 fn fetch_project_passages(
     connection: &Connection,
     project_id: ProjectId,
@@ -1722,7 +1742,8 @@ fn fetch_project_passages(
     let mut statement = connection.prepare(&format!(
         "SELECT {passage_columns}
          FROM active_passages AS ap
-         {PASSAGE_JOINS}
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c ON c.id = ap.chunk_id
          WHERE ps.project_id = ?1
            AND ap.source_id IN (
                SELECT source_id FROM project_sources
@@ -1785,21 +1806,7 @@ fn fetch_lexical_page(
     #[cfg(test)]
     SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow_mut().lexical_fetches += 1);
 
-    let passage_columns = passage_columns();
-    // Keep the FTS cursor outside rowid lookups so BM25 statistics are computed once.
-    let mut statement = connection.prepare(&format!(
-        "SELECT {passage_columns}, bm25(passages_fts) AS lexical_score
-         FROM passages_fts
-         CROSS JOIN active_passages AS ap ON ap.id = passages_fts.rowid
-         {PASSAGE_JOINS}
-         WHERE ps.project_id = ?1
-           AND passages_fts MATCH ?2
-         ORDER BY lexical_score ASC,
-                  ap.source_id ASC,
-                  ap.document_id ASC,
-                  c.start_byte ASC
-         LIMIT ?3 OFFSET ?4"
-    ))?;
+    let mut statement = connection.prepare(&lexical_page_sql())?;
     let mut rows = statement.query(params![
         uuid_bytes(project_id).as_slice(),
         expression,
@@ -1917,7 +1924,7 @@ fn passage_columns() -> String {
         dh.generation_id"
     )
 }
-const PASSAGE_JOINS: &str = "
+const PASSAGE_SCOPE_JOINS: &str = "
     JOIN project_sources AS ps
       ON ps.source_id = ap.source_id
      AND ps.removed_at IS NULL
@@ -1927,8 +1934,7 @@ const PASSAGE_JOINS: &str = "
      AND dh.state = 'active'
     JOIN document_versions AS dv
       ON dv.id = ap.document_version_id
-     AND dv.document_id = ap.document_id
-    JOIN chunks AS c ON c.id = ap.chunk_id";
+     AND dv.document_id = ap.document_id";
 
 #[derive(Clone)]
 struct Passage {
@@ -2386,6 +2392,46 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
+    fn lexical_ranking_uses_covered_chunk_order_before_loading_the_page() {
+        let directory = private_test_directory();
+        let database =
+            IndexDb::create(&directory.path().join("index.sqlite"), IndexId::new_v4()).unwrap();
+        let mut statement = database
+            .connection()
+            .prepare(&format!("EXPLAIN QUERY PLAN {}", lexical_page_sql()))
+            .unwrap();
+        let plan = statement
+            .query_map(
+                params![
+                    uuid_bytes(ProjectId::new_v4()).as_slice(),
+                    "evidence",
+                    50,
+                    5
+                ],
+                |row| row.get::<_, String>(3),
+            )
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        let rank_end = plan
+            .iter()
+            .position(|step| step == "SCAN ranked")
+            .expect("ranked page must be materialized before loading passage bodies");
+        assert!(
+            plan[..rank_end]
+                .iter()
+                .any(|step| step.contains("SEARCH c USING COVERING INDEX chunks_order_idx")),
+            "{plan:?}"
+        );
+        assert!(
+            plan[rank_end..]
+                .iter()
+                .any(|step| step.contains("SEARCH c USING INTEGER PRIMARY KEY")),
+            "{plan:?}"
+        );
+    }
+
+    #[test]
     fn exact_pages_seek_scoped_candidates_without_scanning_the_whole_project() {
         use crate::ingest::{ChunkKind, SnapshotRevision, revision_sha256};
         use crate::store::{DeleteConfirmations, FilesystemScope, PreparedChunk, PreparedDocument};
@@ -2521,6 +2567,35 @@ mod tests {
             fetch_identifier_hint_page(database.connection(), project_id, &atoms, 1, 1).unwrap();
         assert_eq!(next.len(), 1);
         assert_eq!(next[0].id, matches[1].id);
+
+        let lexical = fetch_lexical_page(
+            database.connection(),
+            project_id,
+            "raw AND evidence",
+            5,
+            50,
+            Instant::now() + Duration::from_secs(10),
+        )
+        .unwrap();
+        let phrase =
+            fetch_phrase_candidates(database.connection(), project_id, "raw ^ evidence", 5, 50)
+                .unwrap();
+        let expected_ids = expected[5..55]
+            .iter()
+            .map(|entry| entry.2)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            lexical
+                .candidates
+                .iter()
+                .map(|entry| entry.passage.id)
+                .collect::<Vec<_>>(),
+            expected_ids
+        );
+        assert_eq!(
+            phrase.iter().map(|entry| entry.id).collect::<Vec<_>>(),
+            expected_ids
+        );
     }
 
     #[test]

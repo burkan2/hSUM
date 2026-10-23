@@ -25,6 +25,87 @@ use tempfile::{TempDir, tempdir};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
+#[path = "support/schema4.rs"]
+mod schema4;
+
+#[test]
+fn schema_4_migration_preserves_semantic_evidence_and_rejects_corruption() {
+    for corruption in [None, Some("provenance"), Some("vector"), Some("membership")] {
+        let directory = private_tempdir();
+        let path = directory.path().join("index.sqlite");
+        let backup = directory.path().join("schema-4.sqlite");
+        let (mut database, _) = pinned_database_with_chunk(&path);
+        cache_active_inputs(&mut database);
+        database.commit_cached_reembedding().unwrap();
+        let request = SearchRequest::new("evidence", SearchMode::Semantic, 10, 3000, false)
+            .unwrap()
+            .with_query_embedding(&unit_vector(0))
+            .unwrap();
+        let before = database
+            .search(fixture_scope().project_id, &request)
+            .unwrap();
+        drop(database);
+        schema4::downgrade_to_schema_4(&path);
+        let plan = hsum::store::plan_migration(&path, "fixture", Duration::from_secs(1)).unwrap();
+        if let Some(kind) = corruption {
+            let connection = Connection::open(&path).unwrap();
+            connection
+                .execute_batch(match kind {
+                    "provenance" => "UPDATE embedding_provenance SET canonical_json = '{}'",
+                    "vector" => "UPDATE chunk_embeddings SET vector_blob = zeroblob(1536)",
+                    "membership" => "DELETE FROM passages_vec_b",
+                    _ => unreachable!(),
+                })
+                .unwrap();
+            drop(connection);
+            assert!(
+                hsum::store::plan_migration(&path, "fixture", Duration::from_secs(1)).is_err(),
+                "accepted corrupt {kind}"
+            );
+            assert!(
+                hsum::store::apply_migration(
+                    &path,
+                    "fixture",
+                    &plan,
+                    plan.plan_hash,
+                    &backup,
+                    Duration::from_secs(1),
+                )
+                .is_err(),
+                "applied corrupt {kind}"
+            );
+            assert!(!backup.exists());
+            let connection = Connection::open(&path).unwrap();
+            assert_eq!(metadata(&connection, "schema_version"), b"4");
+            continue;
+        }
+        hsum::store::apply_migration(
+            &path,
+            "fixture",
+            &plan,
+            plan.plan_hash,
+            &backup,
+            Duration::from_secs(1),
+        )
+        .unwrap();
+        Doctor::run(&path).unwrap();
+        let database = IndexDb::open_existing(&path, OpenMode::ReadOnly).unwrap();
+        assert_eq!(
+            database.embedding_profile().unwrap(),
+            IndexEmbeddingProfile::Pinned(fixture_pin())
+        );
+        assert!(database.has_complete_vector_membership().unwrap());
+        let after = database
+            .search(fixture_scope().project_id, &request)
+            .unwrap();
+        assert!(!before.results.is_empty());
+        assert_eq!(before.results, after.results);
+        let old = Connection::open(&backup).unwrap();
+        assert_eq!(metadata(&old, "schema_version"), b"4");
+        assert_eq!(count(&old, "passages_vec_b"), 1);
+    }
+}
+
 fn private_tempdir() -> TempDir {
     let directory = tempdir().unwrap();
     #[cfg(unix)]
@@ -54,7 +135,7 @@ fn fresh_lexical_index_has_empty_native_vector_storage() {
     let index_id = IndexId::new_v4();
 
     let database = IndexDb::create(&path, index_id).unwrap();
-    assert_eq!(SCHEMA_VERSION, 4);
+    assert_eq!(SCHEMA_VERSION, 5);
     assert_eq!(
         database.embedding_profile().unwrap(),
         IndexEmbeddingProfile::LexicalOnly

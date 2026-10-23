@@ -122,6 +122,10 @@ for its release tags. During alpha, only the current tagged release is supported
 
 ### Changed
 
+- Index schema 5 adds a compact chunk-order index. Existing schema-4 indexes
+  require explicit `migrate plan` / `migrate apply` with a confirmed plan hash
+  and verified backup; migration preserves citations, generations, and embeddings.
+
 - Restored the original read-only MCP contract. Tool calls no longer initialize
   approved workspaces or ingest activated repositories. Repository activation
   and generation changes now require the existing explicit local CLI commands;
@@ -159,6 +163,11 @@ for its release tags. During alpha, only the current tagged release is supported
   fresh-index ranking variance for later hardening.
 
 ### Fixed
+
+- Lexical and quoted-phrase ranking now loads passage bodies after selecting
+  the bounded page, preserving BM25 scores and durable identity tie order.
+  Schema-4 migration validates semantic generations and embedding integrity;
+  rebuilding a pinned schema-4 index refuses a lexical-only profile.
 
 - Restored the published alpha.1 recovery path across both versioned stores.
   The release smoke now migrates v1 config/trust through the hash-bound backup

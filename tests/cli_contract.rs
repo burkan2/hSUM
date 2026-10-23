@@ -1021,8 +1021,8 @@ fn verbose_version_report_is_golden_and_tag_gated() {
         concat!(
             "hsum 0.1.0-alpha.4\n",
             "API version: hsum.api.v1\n",
-            "Readable schema versions: 3-4\n",
-            "Writable schema versions: 4-4\n",
+            "Readable schema versions: 4-5\n",
+            "Writable schema versions: 5-5\n",
             "Target: ",
             env!("HSUM_TARGET_TRIPLE"),
             "\n",

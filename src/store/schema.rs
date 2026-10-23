@@ -4,17 +4,19 @@ use sha2::{Digest, Sha256};
 use std::sync::OnceLock;
 
 pub const APPLICATION_ID: i32 = i32::from_be_bytes(*b"HSUM");
-pub const SCHEMA_VERSION: u32 = 4;
+pub const SCHEMA_VERSION: u32 = 5;
 
 pub(crate) const MIGRATION_0001: &str = include_str!("../../migrations/0001_alpha1.sql");
 pub(crate) const MIGRATION_0002: &str = include_str!("../../migrations/0002_jsonl_sources.sql");
 pub(crate) const MIGRATION_0003: &str = include_str!("../../migrations/0003_maintenance.sql");
 pub(crate) const MIGRATION_0004: &str = include_str!("../../migrations/0004_vector_storage.sql");
-pub(crate) const MIGRATIONS: [(u32, &str); 4] = [
+pub(crate) const MIGRATION_0005: &str = include_str!("../../migrations/0005_chunk_order.sql");
+pub(crate) const MIGRATIONS: [(u32, &str); 5] = [
     (1, MIGRATION_0001),
     (2, MIGRATION_0002),
     (3, MIGRATION_0003),
     (4, MIGRATION_0004),
+    (5, MIGRATION_0005),
 ];
 
 const PIPELINE_DESCRIPTOR_PREFIX: &str = concat!(
@@ -140,6 +142,14 @@ mod tests {
         assert_eq!(
             schema_checksum_through(1).to_string(),
             "006c34cb6bec7b2312c36edf0cc2dd3bfdb6827bedacecf611efe6adad011e4b"
+        );
+    }
+
+    #[test]
+    fn previous_vector_schema_checksum_is_frozen() {
+        assert_eq!(
+            schema_checksum_through(4).to_string(),
+            "2d3e3ab56c1e1f553d0f992a8abc71c252dcba6e1a904df541b188b251b33708"
         );
     }
 

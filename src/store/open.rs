@@ -163,10 +163,11 @@ impl IndexDb {
         }
 
         let metadata_result = (|| -> Result<(), rusqlite::Error> {
+            let schema_version = SCHEMA_VERSION.to_string();
             let metadata: [(&str, &[u8]); 9] = [
                 ("index_uuid", index_uuid.as_slice()),
                 ("api_version", b"hsum.api.v1"),
-                ("schema_version", b"4"),
+                ("schema_version", schema_version.as_bytes()),
                 ("schema_checksum", schema_digest.as_bytes().as_slice()),
                 (
                     "pipeline_fingerprint",

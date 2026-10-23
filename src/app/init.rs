@@ -804,7 +804,7 @@ fn validate_trusted_database_contents(
     let active_passages: i64 = connection
         .query_row("SELECT COUNT(*) FROM active_passages", [], |row| row.get(0))
         .map_err(StoreError::from)?;
-    let embedding_profile = if report.schema_version == SCHEMA_VERSION {
+    let embedding_profile = if report.schema_version >= 4 {
         database.embedding_profile()?
     } else {
         IndexEmbeddingProfile::LexicalOnly
