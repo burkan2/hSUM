@@ -89,3 +89,61 @@ through a correctly bound, explicitly labeled recovery/setup receipt; never
 combine timings or binary provenance from different candidates. Full Mac cold
 measurement will still require local authentication if the prior Terminal's
 sudo ticket is no longer available. No credentials should be pasted into chat.
+
+## Product regression and repair candidate — 2026-10-24
+
+Candidate **`b6591b7405320c924dc341111006d8d87b1e0c8a`** repairs the reproduced
+validation lock invariant in shared `src/store/open.rs`. Validation descriptors
+are shared per device/inode, pinned while index connections overlap, and
+closed only when the last validation owner is gone. A process-local mutex
+serializes acquisition and the final close, preventing a new connection from
+racing an old descriptor's final close. Each live path retains at most one
+validation descriptor per sidecar. All private-user, 0600-file/0700-directory,
+single-link, no-follow, before/after inode, namespace and SQLite `HAS_MOVED`
+checks remain. Sidecar replacement while a handle is live is rejected.
+No schema, model, retriever, timeout, candidate budget or threshold changes.
+
+The new real-product regression observes record locks from a separate process.
+The old implementation fails because the DMS lock is absent immediately after
+`IndexDb::create`. The repaired test proves DMS and main-database read locks
+survive explicit identity validation, an overlapping reader, eight opens/closes
+on another thread, and closure of the first handle. It also proves the WAL
+writer lock survives validation/opening another reader during `BEGIN IMMEDIATE`,
+is released on writer close, and the remaining locks and descriptor registry
+entry are released after the final close.
+
+The complete contributor gate passes on the final recorded source, including
+all path-safety, reader/writer, corruption/recovery and 29 vector-storage tests.
+The optimized build and release smoke pass. Eighteen paired small real-model
+lexical/semantic/hybrid controls preserve ordered citations/scores/hashes and
+verify all 180 returned content windows. Small-model cancellation again pauses
+two workers, cancels eight requests without late responses and recovers both
+lexical and hybrid search. [Logs and source-bound receipts are retained](results/wal-lock-repair-b6591b7/).
+This is author review and local evidence; independent source review and Linux
+execution of the new lock regression are not yet claimed. Initial CI run
+`40039660073` stopped before Rust tests because the prior Q05 ledger update had
+not recalculated its headline percentage. The correct unchanged evidence count
+is 222/316 (70.3%); the metric and verifier tests are repaired separately.
+
+## Recovery on a separate clone
+
+A clean detached checkout and separate APFS-cloned home are at
+`/Users/b.k./.cache/hsum-qualification/2026-10-24-macos-recovery-b6591b7/`.
+The original failed home and exact raw crash snapshot were not mutated.
+On candidate `b6591b7`, the clone passes full Doctor before recovery, offline
+verification of the exact pinned model, all 19 frozen lexical query-class
+checks, and full Doctor after recovery. Re-embedding reuses **100,000 inputs**,
+caches zero new inputs and commits 100,000 memberships in generation/epoch 2,
+slot 1. Cached membership recovery takes **39.651 seconds**, with peak
+process-tree RSS **401,686,528 bytes**. It is not a fresh inference throughput
+measurement and does not reconstruct the missing original preparation receipt.
+
+The separately bound recovered setup deliberately sets fresh ingest seconds
+and throughput to `null`. The unchanged qualification harness will therefore
+leave `setup_and_ingest_throughput_recorded` false even if query gates pass.
+This prevents reuse timing from turning into a false full qualification pass.
+The recovered query run still uses the frozen three-process, 2,250-observation
+protocol, original thresholds, actual cache eviction, memory and storage checks.
+Its reports must be labeled `b6591b7` recovery and kept separate from both prior
+candidates. A new Terminal launcher is open and awaiting local sudo authentication;
+no recovered 2,250-observation report exists yet.

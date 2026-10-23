@@ -15,6 +15,8 @@ This work makes no retrieval-quality or token-cost superiority claim.
 | Native million-passage prior failure | `1ce11d00bf8cad949c12a9c496ab7dba3675717f` | [39981593244](https://github.com/burkan2/hSUM/actions/runs/39981593244) fails lexical recovery after cancellation; raw failure retained |
 | Recovery cursor repair | `38272481bfbc9bb831ac05304135f3bdc54dda05` | Focused red/green regression, complete contributor gate, optimized build/smoke, paired results, and small cancellation pass |
 | Native million-passage rerun | `38272481bfbc9bb831ac05304135f3bdc54dda05` | [40008791029](https://github.com/burkan2/hSUM/actions/runs/40008791029) passed the frozen report-only Linux protocol; [reviewed raw evidence](results/retrieval-stress-40008791029-3827248/REVIEW.md) |
+| WAL descriptor repair | `b6591b7405320c924dc341111006d8d87b1e0c8a` | Product regression fails before and passes after; final full local gate, optimized smoke, paired controls and small real-model cancellation pass |
+| Mac recovered 100k | `b6591b7405320c924dc341111006d8d87b1e0c8a` | Separate clone passes full Doctor before/after and commits complete vectors using 100,000 cached inputs. Frozen query launcher awaits local sudo; fresh ingest/inference throughput intentionally unqualified |
 | Model portability | `1ce11d00bf8cad949c12a9c496ab7dba3675717f` | [39981587444](https://github.com/burkan2/hSUM/actions/runs/39981587444), retry 2, passed. All eight retained file hashes verified; local numerical recomputation exactly reproduces the retained comparison |
 
 The [repair review receipt](results/lexical-cursor-3827248/review-receipt.json)
@@ -87,16 +89,19 @@ Preparation ran on AC power. There was no Mac measurement phase to review.
 
 ## Remaining work
 
-1. Diagnose and repair the reproduced POSIX descriptor/SQLite-lock hazard
-   before another Mac attempt; see `eval/MACOS_100K_SIGBUS_DIAGNOSIS.md`.
-   Preserve all inode/namespace/owner/no-follow validation and add a focused
-   cross-process lock regression. The failed index/WAL/SHM and crash report
-   are retained; a disposable clone has all 100,000 cached embeddings but
-   absent committed vector membership. A new candidate/recovery receipt
-   must distinguish cache reuse from original full preparation timings.
-2. Complete and review a correctly bound Mac 2,250-observation run with actual
-   cold-cache eviction. Request local sudo authentication only when needed.
-   Do not substitute a development/no-cold run or fabricate setup receipts.
+1. Descriptor repair `b6591b7` passes the final full local gate and focused
+   cross-process regression. Review the fresh native CI result separately;
+   the initial CI run failed on the previously stale ledger percentage before
+   Rust tests, and that documentation metric is now corrected and verified.
+   Full details and retained evidence are in the Mac SIGBUS diagnosis.
+2. Authenticate in the newly opened recovery Terminal and keep it open. The
+   copied index has passed full Doctor and committed complete memberships.
+   Review its 2,250-observation cold/warm report after completion, preserving
+   all failed gates. Its correctly bound recovery setup leaves fresh ingest
+   throughput null, so the unchanged harness must not mark full qualification
+   true. Keep `b6591b7` recovery measurements separate from `1ce11d0` baseline
+   and `3827248` Linux stress. Do not manufacture fresh throughput or bypass
+   the cold-cache helper.
 3. Profile the remaining Linux 100k broad ranking and orchestration cost before
    another expensive 100k rerun. Identifier and ordinary lexical limits remain
    unchanged; the report-only stress pass does not repair those failures.

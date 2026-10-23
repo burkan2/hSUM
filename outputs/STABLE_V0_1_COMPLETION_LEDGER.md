@@ -124,7 +124,7 @@ Mechanically checked snapshot at this revision:
 
 - Stable core implementation coverage (A1/A2/B1 rows): **100.0%** (31/31).
 - All in-scope implementation coverage: **90.7%** (49/54).
-- Full stable-program evidence: **69.9%** (221/316 applicable evidence cells).
+- Full stable-program evidence: **70.3%** (222/316 applicable evidence cells).
 - Release-qualified coverage: **0.0%** (0/54); the published alpha is not a
   stable candidate qualification.
 

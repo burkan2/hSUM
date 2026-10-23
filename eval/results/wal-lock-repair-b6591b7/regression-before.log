@@ -1,0 +1,24 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 13.26s
+     Running unittests src/lib.rs (target/debug/deps/hsum-a26a0bf0f6eee433)
+
+running 1 test
+test store::open::tests::validation_preserves_wal_locks_across_overlapping_connections ... FAILED
+
+failures:
+
+---- store::open::tests::validation_preserves_wal_locks_across_overlapping_connections stdout ----
+
+thread 'store::open::tests::validation_preserves_wal_locks_across_overlapping_connections' (6915171) panicked at src/store/open.rs:1413:9:
+assertion `left == right` failed: /var/folders/_1/t15r_skj51qcmkjy9bfz6z3h0000gn/T/.tmpuLonDx/index.sqlite-shm offset 128
+  left: "unlocked"
+ right: "held"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    store::open::tests::validation_preserves_wal_locks_across_overlapping_connections
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 144 filtered out; finished in 0.08s
+
+error: test failed, to rerun pass `--lib`

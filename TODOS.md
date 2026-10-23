@@ -91,9 +91,16 @@ plan in this order; the canonical denominator remains
    clone passes quick_check and has all 100,000 cached embeddings, but no
    committed vector membership. A native probe reproduces POSIX lock loss
    when validation closes another descriptor for SQLite's SHM inode; repair
-   that shared-store invariant with a cross-process regression before retry.
-   See `eval/MACOS_100K_SIGBUS_DIAGNOSIS.md`. Preserve all path/owner/no-follow
-   checks and correctly label cache reuse and candidate provenance. Linux has
+   that shared-store invariant before a large rerun. Repair `b6591b7` now passes
+   the failing-before/passing-after cross-process lock regression, full local
+   gate, optimized smoke, paired correctness and small cancellation checks.
+   A separate clone passes full Doctor before/after and commits all 100,000
+   memberships in 39.651 s using cached inference. Its query-protocol launcher
+   awaits local sudo; fresh ingest/inference throughput deliberately remains
+   unqualified in that recovery setup. Native CI must be rechecked after the
+   stale ledger headline is corrected to 222/316 (70.3%).
+   See `eval/MACOS_100K_SIGBUS_DIAGNOSIS.md`. All path/owner/no-follow checks and
+   candidate boundaries remain enforced. Linux has
    a complete failed 100k report; no Mac report or two-platform comparison
    exists. These baseline results stay separate from `3827248` stress evidence.
    See `eval/RETRIEVAL_QUALIFICATION_2026-10-23.md` for receipts and remaining

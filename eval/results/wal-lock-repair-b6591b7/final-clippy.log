@@ -1,0 +1,9 @@
+   Compiling ring v0.17.14
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+   Compiling rustls v0.23.46
+   Compiling rustls-webpki v0.103.16
+   Compiling ureq v3.3.0
+   Compiling ort-sys v2.0.0-rc.13
+    Checking ort v2.0.0-rc.13
+    Checking fastembed v5.17.4
+    Finished `dev` profile [unoptimized] target(s) in 16.93s
