@@ -1,9 +1,15 @@
 #[cfg(unix)]
+use std::collections::BTreeMap;
+#[cfg(unix)]
 use std::ffi::OsString;
 #[cfg(not(unix))]
 use std::fs::OpenOptions;
 use std::io;
+#[cfg(unix)]
+use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 use std::path::{Path, PathBuf};
+#[cfg(unix)]
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use rusqlite::config::DbConfig;
@@ -402,12 +408,12 @@ fn sync_created_index(path: &ValidatedIndexPath) -> Result<(), StoreError> {
 }
 
 #[cfg(all(unix, target_os = "macos"))]
-fn sync_file_descriptor(descriptor: &std::os::fd::OwnedFd) -> io::Result<()> {
+fn sync_file_descriptor(descriptor: &impl std::os::fd::AsFd) -> io::Result<()> {
     rustix::fs::fcntl_fullfsync(descriptor).map_err(Into::into)
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
-fn sync_file_descriptor(descriptor: &std::os::fd::OwnedFd) -> io::Result<()> {
+fn sync_file_descriptor(descriptor: &impl std::os::fd::AsFd) -> io::Result<()> {
     rustix::fs::fsync(descriptor).map_err(Into::into)
 }
 
@@ -435,10 +441,47 @@ fn sqlite_sidecar_path(path: &Path, suffix: &str) -> PathBuf {
 }
 
 #[cfg(unix)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct FileIdentity {
     device: u64,
     inode: u64,
+}
+
+#[cfg(unix)]
+fn pinned_descriptors() -> &'static Mutex<BTreeMap<FileIdentity, Arc<OwnedFd>>> {
+    static DESCRIPTORS: OnceLock<Mutex<BTreeMap<FileIdentity, Arc<OwnedFd>>>> = OnceLock::new();
+    DESCRIPTORS.get_or_init(|| Mutex::new(BTreeMap::new()))
+}
+
+// Closing any descriptor for an inode drops this process's SQLite record locks.
+// Share validation descriptors and close the last reference under the same registry lock as open.
+#[cfg(unix)]
+struct PinnedDescriptor {
+    identity: FileIdentity,
+    descriptor: Option<Arc<OwnedFd>>,
+}
+
+#[cfg(unix)]
+impl AsFd for PinnedDescriptor {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.descriptor.as_ref().expect("live descriptor").as_fd()
+    }
+}
+
+#[cfg(unix)]
+impl Drop for PinnedDescriptor {
+    fn drop(&mut self) {
+        let mut descriptors = pinned_descriptors()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        drop(self.descriptor.take());
+        if descriptors
+            .get(&self.identity)
+            .is_some_and(|descriptor| Arc::strong_count(descriptor) == 1)
+        {
+            descriptors.remove(&self.identity);
+        }
+    }
 }
 
 #[cfg(unix)]
@@ -462,6 +505,7 @@ struct ValidatedParent {
     physical_path: PathBuf,
     file_name: OsString,
     requested_path: PathBuf,
+    sidecars: std::cell::RefCell<[Option<PinnedDescriptor>; 3]>,
 }
 
 #[cfg(unix)]
@@ -533,6 +577,7 @@ impl ValidatedParent {
             physical_path,
             file_name,
             requested_path: path.to_path_buf(),
+            sidecars: std::cell::RefCell::new([None, None, None]),
         })
     }
 
@@ -567,15 +612,38 @@ impl ValidatedParent {
     fn open_validated_sidecar(
         &self,
         suffix: &str,
-    ) -> Result<Option<(std::os::fd::OwnedFd, FileIdentity)>, StoreError> {
+    ) -> Result<Option<(PinnedDescriptor, FileIdentity)>, StoreError> {
         let name = self.sidecar_name(suffix);
-        open_validated_regular_at(
+        let current = open_validated_regular_at(
             &self.descriptor,
             &name,
             &sqlite_sidecar_path(&self.requested_path, suffix),
             FileAccess::ReadOnly,
             true,
-        )
+        )?;
+        if let Some((descriptor, identity)) = current.as_ref() {
+            let slot = SQLITE_SIDECAR_SUFFIXES
+                .iter()
+                .position(|known| *known == suffix)
+                .expect("known SQLite sidecar");
+            let mut retained = self.sidecars.borrow_mut();
+            if let Some(known) = retained[slot].as_ref() {
+                if known.identity != *identity {
+                    return Err(StoreError::UnsafeIndexPath(sqlite_sidecar_path(
+                        &self.requested_path,
+                        suffix,
+                    )));
+                }
+            } else {
+                retained[slot] = Some(PinnedDescriptor {
+                    identity: *identity,
+                    descriptor: Some(Arc::clone(
+                        descriptor.descriptor.as_ref().expect("live descriptor"),
+                    )),
+                });
+            }
+        }
+        Ok(current)
     }
 
     fn validate_sidecars(&self) -> Result<[Option<FileIdentity>; 3], StoreError> {
@@ -602,7 +670,7 @@ impl ValidatedParent {
 #[cfg(unix)]
 struct ValidatedIndexPath {
     parent: ValidatedParent,
-    descriptor: std::os::fd::OwnedFd,
+    descriptor: PinnedDescriptor,
     identity: FileIdentity,
     access: FileAccess,
     path: PathBuf,
@@ -748,9 +816,12 @@ fn open_validated_regular_at(
     reported_path: &Path,
     access: FileAccess,
     optional: bool,
-) -> Result<Option<(std::os::fd::OwnedFd, FileIdentity)>, StoreError> {
+) -> Result<Option<(PinnedDescriptor, FileIdentity)>, StoreError> {
     use rustix::fs::{AtFlags, Mode, OFlags, fstat, openat, statat};
 
+    let mut descriptors = pinned_descriptors()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let before = match statat(parent, name, AtFlags::SYMLINK_NOFOLLOW) {
         Ok(metadata) => metadata,
         Err(rustix::io::Errno::NOENT) if optional => return Ok(None),
@@ -769,14 +840,29 @@ fn open_validated_regular_at(
         .union(OFlags::CLOEXEC)
         .union(OFlags::NOFOLLOW)
         .union(OFlags::NONBLOCK);
-    let descriptor = openat(parent, name, flags, Mode::empty())
-        .map_err(|error| unsafe_component_error(reported_path, error))?;
+    let identity = stat_identity(&before);
+    let descriptor = if let Some(descriptor) = descriptors.get(&identity) {
+        Arc::clone(descriptor)
+    } else {
+        Arc::new(
+            openat(parent, name, flags, Mode::empty())
+                .map_err(|error| unsafe_component_error(reported_path, error))?,
+        )
+    };
     let after = fstat(&descriptor).map_err(io::Error::from)?;
     validate_private_regular_stat(&after, reported_path)?;
     if !same_stat_identity(&before, &after) {
         return Err(StoreError::UnsafeIndexPath(reported_path.to_path_buf()));
     }
-    Ok(Some((descriptor, stat_identity(&after))))
+    descriptors
+        .entry(identity)
+        .or_insert_with(|| Arc::clone(&descriptor));
+    let pinned = PinnedDescriptor {
+        identity,
+        descriptor: Some(descriptor),
+    };
+    drop(descriptors);
+    Ok(Some((pinned, stat_identity(&after))))
 }
 
 #[cfg(unix)]
@@ -878,6 +964,9 @@ fn sqlite_main_handle_has_moved(connection: &Connection) -> Result<bool, StoreEr
 fn reserve_new_file(parent: ValidatedParent) -> Result<NewFileReservation, StoreError> {
     use rustix::fs::{AtFlags, Mode, OFlags, fstat, openat, statat};
 
+    let mut descriptors = pinned_descriptors()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let flags = OFlags::RDWR
         .union(OFlags::CREATE)
         .union(OFlags::EXCL)
@@ -905,6 +994,13 @@ fn reserve_new_file(parent: ValidatedParent) -> Result<NewFileReservation, Store
     }
     let identity = stat_identity(&held);
     let physical_path = parent.path();
+    let descriptor = Arc::new(descriptor);
+    descriptors.insert(identity, Arc::clone(&descriptor));
+    let descriptor = PinnedDescriptor {
+        identity,
+        descriptor: Some(descriptor),
+    };
+    drop(descriptors);
     Ok(NewFileReservation {
         validated: Some(ValidatedIndexPath {
             parent,
@@ -1388,6 +1484,85 @@ mod tests {
                 .unwrap();
         }
         directory
+    }
+
+    #[cfg(unix)]
+    fn assert_process_record_lock(path: &Path, start: u64, length: u64, held: bool) {
+        let output = std::process::Command::new("python3")
+            .args([
+                "-c",
+                r#"
+import fcntl, os, sys
+fd = os.open(sys.argv[1], os.O_RDWR | os.O_NOFOLLOW)
+try:
+    fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB, int(sys.argv[3]), int(sys.argv[2]))
+    print("unlocked")
+except BlockingIOError:
+    print("held")
+finally:
+    os.close(fd)
+"#,
+            ])
+            .arg(path)
+            .arg(start.to_string())
+            .arg(length.to_string())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&output.stdout).trim(),
+            if held { "held" } else { "unlocked" },
+            "{} offset {start}",
+            path.display()
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn validation_preserves_wal_locks_across_overlapping_connections() {
+        let directory = private_tempdir();
+        let path = directory.path().join("index.sqlite");
+        let first = IndexDb::create(&path, IndexId::new_v4()).unwrap();
+        let shm = sqlite_sidecar_path(&path, "-shm");
+        let identity = first.validated_path.identity;
+        // SQLite's shared DMS lock protects the lifetime of mapped WAL index pages.
+        assert_process_record_lock(&shm, 128, 1, true);
+        assert_process_record_lock(&path, 1_073_741_826, 510, true);
+        first.verify_live_identity().unwrap();
+        assert_process_record_lock(&shm, 128, 1, true);
+        assert_process_record_lock(&path, 1_073_741_826, 510, true);
+        first.connection().execute_batch("BEGIN IMMEDIATE").unwrap();
+        assert_process_record_lock(&shm, 120, 1, true);
+        let second = IndexDb::open_existing(&path, OpenMode::ReadOnly).unwrap();
+        first.verify_live_identity().unwrap();
+        assert_process_record_lock(&shm, 120, 1, true);
+        drop(first);
+        assert_process_record_lock(&shm, 120, 1, false);
+        assert_process_record_lock(&shm, 128, 1, true);
+        assert_process_record_lock(&path, 1_073_741_826, 510, true);
+        second.verify_live_identity().unwrap();
+        assert_process_record_lock(&shm, 128, 1, true);
+        let path_for_thread = path.clone();
+        std::thread::spawn(move || {
+            for _ in 0..8 {
+                let reader = IndexDb::open_existing(&path_for_thread, OpenMode::ReadOnly).unwrap();
+                reader.verify_live_identity().unwrap();
+            }
+        })
+        .join()
+        .unwrap();
+        assert_process_record_lock(&shm, 128, 1, true);
+        assert_process_record_lock(&path, 1_073_741_826, 510, true);
+        drop(second);
+        if shm.exists() {
+            assert_process_record_lock(&shm, 128, 1, false);
+        }
+        assert_process_record_lock(&path, 1_073_741_826, 510, false);
+        assert!(!pinned_descriptors().lock().unwrap().contains_key(&identity));
     }
 
     struct InspectCommittedSchema<'a> {
