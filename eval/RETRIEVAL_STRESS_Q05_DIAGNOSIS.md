@@ -68,3 +68,48 @@ latency or prove million-passage cancellation recovery. The 100k Q04 report
 also shows substantial hybrid time outside embedding and vector-search
 telemetry. Profile and repair that work without removing payload-integrity
 checks before another expensive native run.
+
+## Block-level vector validation — 2026-10-23
+
+The pinned sqlite-vec 0.1.7 implementation opens the vector blob for every
+point lookup and prepares a source-partition query for every row. Its shadow
+storage groups 1,024 vectors in a block. The repaired membership query reads
+each referenced block once, then joins its materialized type/length metadata
+to the active-passage, row-location, and source-partition tables. Cardinality,
+missing/replaced rows, missing blocks, NULL/wrong partitions, payload types,
+and offset bounds remain checked. The physical `_rowid_` is deliberate:
+sqlite-vec's declared `rowid` column is not an alias for the SQLite blob rowid.
+This query depends on the pinned backend layout and must be reviewed when
+that dependency or storage format changes.
+
+`length(substr(vectors, 1))` forces a complete payload read before recording
+its byte count. Plain `length(vectors)` would inspect only the stored length
+and is insufficient; see SQLite's [function semantics](https://www.sqlite.org/lang_corefunc.html).
+A new test breaks an overflow-page link near the end of a stored block:
+the header-only length query still succeeds, while membership validation
+fails. The corruption regression also rejects NULL, negative, noninteger,
+and out-of-range offsets, missing storage, truncated/non-BLOB payloads, and
+a changed physical rowid. The NULL-offset case fails against the old code,
+which silently interpreted that offset as zero.
+
+The [raw diagnostic report](results/vector-block-2026-10-23-macos-diagnostic.json)
+records the exact native SQL, probe source, source hashes, all timings, and
+corruption results for 100,000 synthetic normalized vectors. Original-query
+times are 911–930 ms; the production query takes 112–118 ms. It also retains
+the unsuccessful lexical cache/document-scope experiments; neither is in
+production. These in-memory probes are not the frozen retrieval protocol,
+do not qualify cold storage or concurrent million-passage requests, and do
+not close Q04 or Q05.
+
+The optimized binary
+`a3d45f6a5351d2a3d9ccc47994fe9b4aefa9407c353495c45dee0b7a76c88337`
+passes CLI/MCP release smoke and the small real-model cancellation protocol:
+two workers paused, eight requests cancelled, no late responses, and lexical
+and hybrid recovery. Eighteen paired fresh-process lexical/semantic/hybrid
+controls preserve ordered citations, scores, and hashes; every returned
+content matches its source byte window. The small fixture was explicitly
+migrated to schema 5 with a verified schema-4 backup. These controls are
+correctness evidence, not latency qualification; they ran alongside local
+contributor checks. The million-passage native rerun remains required.
+The complete local `cargo xtask check` passes, including all 28 vector-storage
+tests, strict Clippy, generated references, and frozen harness checks.

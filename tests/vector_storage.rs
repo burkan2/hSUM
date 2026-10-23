@@ -520,6 +520,98 @@ fn vector_membership_rejects_missing_extra_and_mispartitioned_rows() {
 }
 
 #[test]
+fn vector_membership_rejects_corrupt_shadow_storage() {
+    for corruption in [
+        "UPDATE passages_vec_b_rowids SET chunk_offset = NULL",
+        "UPDATE passages_vec_b_rowids SET chunk_offset = -1",
+        "UPDATE passages_vec_b_rowids SET chunk_offset = 'invalid'",
+        "UPDATE passages_vec_b_rowids SET chunk_offset = 1024",
+        "DELETE FROM passages_vec_b_chunks",
+        "DELETE FROM passages_vec_b_vector_chunks00",
+        "UPDATE passages_vec_b_vector_chunks00 SET vectors = zeroblob(1535)",
+        "UPDATE passages_vec_b_vector_chunks00 SET vectors = CAST(zeroblob(1536) AS TEXT)",
+        "UPDATE passages_vec_b_vector_chunks00 SET _rowid_ = _rowid_ + 1000",
+    ] {
+        let directory = private_tempdir();
+        let path = directory.path().join("index.sqlite");
+        let (mut database, _) = pinned_database_with_chunk(&path);
+        cache_active_inputs(&mut database);
+        database.commit_cached_reembedding().unwrap();
+        assert!(database.has_complete_vector_membership().unwrap());
+        Connection::open(&path)
+            .unwrap()
+            .execute_batch(corruption)
+            .unwrap();
+        assert!(
+            database.has_complete_vector_membership().is_err(),
+            "accepted corrupt storage: {corruption}"
+        );
+    }
+}
+
+#[test]
+fn vector_membership_reads_entire_payload_blocks() {
+    let directory = private_tempdir();
+    let path = directory.path().join("index.sqlite");
+    let (mut database, _) = pinned_database_with_chunk(&path);
+    cache_active_inputs(&mut database);
+    database.commit_cached_reembedding().unwrap();
+    drop(database);
+    let connection = Connection::open(&path).unwrap();
+    let payload_bytes: i64 = connection
+        .query_row(
+            "SELECT length(vectors) FROM passages_vec_b_vector_chunks00",
+            [],
+            |row| row.get(0),
+        )
+        .unwrap();
+    connection
+        .execute(
+            "UPDATE passages_vec_b_vector_chunks00 SET vectors = ?1",
+            [vec![0xa5_u8; usize::try_from(payload_bytes).unwrap()]],
+        )
+        .unwrap();
+    connection
+        .execute_batch("PRAGMA wal_checkpoint(TRUNCATE)")
+        .unwrap();
+    let page_size = usize::try_from(
+        connection
+            .pragma_query_value(None, "page_size", |row| row.get::<_, i64>(0))
+            .unwrap(),
+    )
+    .unwrap();
+    drop(connection);
+
+    // Break an overflow link near the block's end, beyond the first active vector.
+    let mut bytes = fs::read(&path).unwrap();
+    let overflow_page = bytes
+        .chunks_exact(page_size)
+        .enumerate()
+        .filter(|(_, page)| page[4..].iter().all(|byte| *byte == 0xa5) && page[..4] != [0, 0, 0, 0])
+        .map(|(index, _)| index)
+        .next_back()
+        .expect("fixture has overflow pages");
+    bytes[overflow_page * page_size..overflow_page * page_size + 4]
+        .copy_from_slice(&u32::MAX.to_be_bytes());
+    fs::write(&path, bytes).unwrap();
+
+    let connection = Connection::open(&path).unwrap();
+    assert_eq!(
+        connection
+            .query_row(
+                "SELECT length(vectors) FROM passages_vec_b_vector_chunks00",
+                [],
+                |row| row.get::<_, i64>(0)
+            )
+            .unwrap(),
+        payload_bytes
+    );
+    drop(connection);
+    let database = IndexDb::open_existing(&path, OpenMode::ReadOnly).unwrap();
+    assert!(database.has_complete_vector_membership().is_err());
+}
+
+#[test]
 fn semantic_search_requires_validated_complete_vectors_and_returns_guarded_evidence() {
     let directory = private_tempdir();
     let path = directory.path().join("index.sqlite");

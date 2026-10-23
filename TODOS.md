@@ -36,7 +36,8 @@ plan in this order; the canonical denominator remains
    retained-Mac diagnostic timeouts to 190 ms median; see
    `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md`. Covered lexical ranking now passes
    the complete local gate, release smoke, and an actual 100k schema-4-to-5
-   migration with backup. Ordinary diagnostic server time improves to
+   migration with backup; all seven standard workflows pass `5e4b4e0`.
+   Ordinary diagnostic server time improves to
    184–2331 ms from 8733–9332 ms plus a timeout; it still misses the 100 ms
    target. Warm identifier/raw-quote controls are unchanged, while the mixed
    query sequence remains cache-sensitive. Profile the remaining lexical and
@@ -46,6 +47,10 @@ plan in this order; the canonical denominator remains
    evidence before a full native rerun.
 2. **Q-05: resolve vector preflight and prove cancellation at scale.** Keep
    missing/extra/NULL/source-partition and vector-payload integrity checks.
+   Block-level validation now reads each referenced payload once and rejects
+   invalid offsets, including the previously accepted NULL case. Native 100k
+   synthetic SQL improves from 911–930 ms to 112–118 ms; physical overflow-page
+   corruption is still detected. See `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md`.
    Demonstrate two active model workers, cancellation without late responses,
    and successful lexical/hybrid recovery on the million-passage fixture.
 3. **Q-04/Q-05: rerun both supported native targets.** Use the corrected frozen

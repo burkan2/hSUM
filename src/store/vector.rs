@@ -911,14 +911,28 @@ pub(crate) fn validate_active_vector_membership(
             "active vector membership",
         ));
     }
+    // sqlite-vec 0.1.7 point lookups reread each block and prepare a partition query per row.
+    // substr forces payload reads; length(vectors) alone reads only the stored byte count.
+    // Use _rowid_: the shadow table's declared rowid is not its SQLite rowid alias.
     let mismatch: bool = connection.query_row(
         &format!(
-            "SELECT EXISTS(
+            "WITH payloads AS MATERIALIZED (
+                 SELECT _rowid_ AS chunk_id, typeof(vectors) AS kind,
+                        length(substr(vectors, 1)) AS bytes
+                 FROM {table}_vector_chunks00
+                 WHERE _rowid_ IN (SELECT chunk_id FROM {table}_rowids)
+             )
+             SELECT EXISTS(
                  SELECT 1
                  FROM active_passages AS ap
-                 LEFT JOIN {table} AS vec ON vec.rowid = ap.id
-                 WHERE vec.rowid IS NULL
-                    OR vec.source_id IS NOT lower(
+                 LEFT JOIN {table}_rowids AS r ON r.rowid = ap.id
+                 LEFT JOIN {table}_chunks AS ch ON ch.chunk_id = r.chunk_id
+                 LEFT JOIN payloads AS p ON p.chunk_id = r.chunk_id
+                 WHERE r.rowid IS NULL OR ch.chunk_id IS NULL OR p.chunk_id IS NULL
+                    OR p.kind != 'blob'
+                    OR typeof(r.chunk_offset) != 'integer'
+                    OR r.chunk_offset < 0 OR r.chunk_offset >= p.bytes / ?1
+                    OR ch.partition00 IS NOT lower(
                          substr(hex(ap.source_id), 1, 8) || '-' ||
                          substr(hex(ap.source_id), 9, 4) || '-' ||
                          substr(hex(ap.source_id), 13, 4) || '-' ||
@@ -927,7 +941,7 @@ pub(crate) fn validate_active_vector_membership(
                     )
              )"
         ),
-        [],
+        [i64::from(EMBEDDING_DIMENSION) * 4],
         |row| row.get(0),
     )?;
     if mismatch {
