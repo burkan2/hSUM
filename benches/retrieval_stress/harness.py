@@ -926,6 +926,14 @@ def run_stress(args: argparse.Namespace) -> int:
         observation["outcome"] == "success" and "vector" in observation["retrievers"]
         for observation in final_hybrid["observations"]
     )
+    # Retain completed probes in the workflow log even if recovery fails below.
+    print(
+        "stress observations before cancellation: "
+        + json.dumps({"scale_samples": scale_samples, "metadata_only_generations": metadata,
+                      "reembed": reembed, "final_hybrid": final_hybrid}, sort_keys=True),
+        file=sys.stderr,
+        flush=True,
+    )
     cancel_storm = run_cancel_storm(binary, root, home, manifest)
     counts = final_database_counts(database)
     if counts["sources"] != manifest["source_count"] or counts["documents"] != manifest[

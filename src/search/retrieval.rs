@@ -536,18 +536,27 @@ fn execute_search(
 
     let lexical_expression = compile_lexical_expression(request.query.original());
     let lexical_started = Instant::now();
+    let mut lexical_statement = transaction.prepare(&lexical_page_sql())?;
+    // Keep one bounded ranking cursor while fusion reveals 50 candidates at a time.
+    let mut lexical_rows = lexical_expression
+        .as_deref()
+        .map(|expression| {
+            lexical_statement
+                .query(params![
+                    uuid_bytes(project_id).as_slice(),
+                    expression,
+                    i64::try_from(MAX_CANDIDATES_PER_LIST)
+                        .map_err(|_| SearchError::Corrupt("candidate limit overflow"))?,
+                    0,
+                ])
+                .map_err(SearchError::from)
+        })
+        .transpose()?;
     let mut lexical = Vec::new();
     let mut lexical_exhausted = lexical_expression.is_none();
     let mut lexical_deadline = exact.deadline || Instant::now() >= deadline;
-    if !lexical_deadline && let Some(expression) = lexical_expression.as_deref() {
-        let page = fetch_lexical_page(
-            &transaction,
-            project_id,
-            expression,
-            0,
-            INITIAL_CANDIDATE_DEPTH,
-            deadline,
-        )?;
+    if !lexical_deadline && let Some(rows) = lexical_rows.as_mut() {
+        let page = fetch_lexical_page(rows, INITIAL_CANDIDATE_DEPTH, deadline)?;
         lexical_exhausted = page.exhausted;
         lexical_deadline = page.deadline;
         lexical.extend(page.candidates);
@@ -599,17 +608,14 @@ fn execute_search(
             && !lexical_exhausted
             && lexical.len() < MAX_CANDIDATES_PER_LIST
         {
-            let Some(expression) = lexical_expression.as_deref() else {
+            let Some(rows) = lexical_rows.as_mut() else {
                 return Err(SearchError::Corrupt(
-                    "lexical expression disappeared during paging",
+                    "lexical cursor disappeared during paging",
                 ));
             };
             let page_started = Instant::now();
             let page = fetch_lexical_page(
-                &transaction,
-                project_id,
-                expression,
-                lexical.len(),
+                rows,
                 (MAX_CANDIDATES_PER_LIST - lexical.len()).min(INITIAL_CANDIDATE_DEPTH),
                 deadline,
             )?;
@@ -645,6 +651,13 @@ fn execute_search(
         }
     }
 
+    drop(lexical_rows);
+    #[cfg(test)]
+    SEARCH_TEST_HOOKS.with(|hooks| {
+        hooks.borrow_mut().lexical_sort_operations +=
+            lexical_statement.get_status(rusqlite::StatementStatus::Sort);
+    });
+    drop(lexical_statement);
     transaction.commit()?;
     let mut retrievers = vec![Retriever::Exact];
     if exact.fallback_used {
@@ -1796,26 +1809,17 @@ struct LexicalCandidate {
 }
 
 fn fetch_lexical_page(
-    connection: &Connection,
-    project_id: ProjectId,
-    expression: &str,
-    offset: usize,
+    rows: &mut rusqlite::Rows<'_>,
     limit: usize,
     deadline: Instant,
 ) -> Result<LexicalPage, SearchError> {
     #[cfg(test)]
     SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow_mut().lexical_fetches += 1);
 
-    let mut statement = connection.prepare(&lexical_page_sql())?;
-    let mut rows = statement.query(params![
-        uuid_bytes(project_id).as_slice(),
-        expression,
-        i64::try_from(limit).map_err(|_| SearchError::Corrupt("candidate limit overflow"))?,
-        i64::try_from(offset).map_err(|_| SearchError::Corrupt("candidate offset overflow"))?,
-    ])?;
     let mut candidates = Vec::new();
     let mut deadline_reached = false;
-    while let Some(row) = rows.next()? {
+    while candidates.len() < limit {
+        let Some(row) = rows.next()? else { break };
         if Instant::now() >= deadline {
             deadline_reached = true;
             break;
@@ -2356,6 +2360,7 @@ fn millis(duration: Duration) -> u64 {
 struct SearchTestHooks {
     inject_slow_exact_query: bool,
     lexical_fetches: usize,
+    lexical_sort_operations: i32,
     raw_scan_vm_steps: i32,
     identifier_vm_steps: i32,
 }
@@ -2390,6 +2395,144 @@ fn run_injected_exact_timeout_query(connection: &Connection) -> Result<(), Searc
 mod tests {
     use super::*;
     use tempfile::tempdir;
+
+    #[test]
+    fn duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary() {
+        use crate::ingest::{ChunkKind, SnapshotRevision, revision_sha256};
+        use crate::store::{DeleteConfirmations, FilesystemScope, PreparedChunk, PreparedDocument};
+
+        let directory = private_test_directory();
+        let mut database =
+            IndexDb::create(&directory.path().join("index.sqlite"), IndexId::new_v4()).unwrap();
+        let project_id = ProjectId::new_v4();
+        let source_id = SourceId::new_v4();
+        let scope = FilesystemScope {
+            source_id,
+            source_name: "selected".parse().unwrap(),
+            source_logical_uri: "file:///selected".to_owned(),
+            source_config_json: r#"{"root":"/selected"}"#.to_owned(),
+            project_id,
+            project_name: "selected".parse().unwrap(),
+        };
+        let body = b"shared lexical evidence\n";
+        let digest = Sha256Digest::of_bytes(body);
+        let documents = (0..600)
+            .map(|number| {
+                let title = format!("document-{number}.md");
+                let source_uri = format!("repo://{title}");
+                let literals = crate::store::prepare_passage_literals(&title, &source_uri, body);
+                PreparedDocument {
+                    connector_key: title.as_bytes().to_vec(),
+                    revision_sha256: revision_sha256(&SnapshotRevision {
+                        body,
+                        source_uri: &source_uri,
+                        title: &title,
+                        metadata: &serde_json::json!({}),
+                        source_updated_at: None,
+                    })
+                    .unwrap(),
+                    title,
+                    source_uri,
+                    metadata_json: "{}".to_owned(),
+                    source_updated_at: None,
+                    body: body.to_vec(),
+                    body_sha256: digest,
+                    chunker_fingerprint: crate::store::chunker_fingerprint(ChunkKind::Markdown),
+                    chunks: vec![PreparedChunk {
+                        ordinal: 0,
+                        byte_span: ByteSpan::new(0, body.len() as u64).unwrap(),
+                        line_span: LineSpan::new(1, 1).unwrap(),
+                        body_text: String::from_utf8(body.to_vec()).unwrap(),
+                        content_sha256: digest,
+                        quote_bloom: QuoteBloom::from_content(body).into_bytes(),
+                        literals,
+                    }],
+                }
+            })
+            .collect::<Vec<_>>();
+        database
+            .apply_filesystem_snapshot(&scope, &documents, &[], DeleteConfirmations::default())
+            .unwrap();
+        SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow_mut().lexical_sort_operations = 0);
+        let response = database
+            .search(
+                project_id,
+                &SearchRequest::new(
+                    "shared lexical evidence",
+                    SearchMode::Lexical,
+                    50,
+                    10_000,
+                    true,
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        assert_eq!(response.stop_reason, SearchStopReason::WorkBudgetExhausted);
+        assert_eq!(response.examined.lexical, 500);
+        assert_eq!(response.results.len(), 1);
+        assert_eq!(response.results[0].content.as_bytes(), body);
+        assert_eq!(response.results[0].duplicate_citations.len(), 499);
+        let actual = std::iter::once(response.results[0].document_id)
+            .chain(
+                response.results[0]
+                    .duplicate_citations
+                    .iter()
+                    .map(|entry| entry.citation.document_id),
+            )
+            .collect::<Vec<_>>();
+        let expected = database
+            .connection()
+            .prepare("SELECT document_id FROM active_passages ORDER BY document_id LIMIT 500")
+            .unwrap()
+            .query_map([], |row| {
+                Ok(DocumentId::from_uuid(
+                    uuid_from_blob(&row.get::<_, Vec<u8>>(0)?).unwrap(),
+                ))
+            })
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(actual, expected);
+        let sorts = SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow().lexical_sort_operations);
+        assert!(
+            sorts <= 2,
+            "adaptive pages repeated the corpus ranking: {sorts} sorts"
+        );
+
+        database
+            .connection()
+            .execute(
+                "UPDATE document_versions SET title = ?1 WHERE document_id = ?2",
+                params![
+                    "x".repeat(MAX_SEARCH_TITLE_BYTES + 1),
+                    expected[50].as_uuid().as_bytes().as_slice()
+                ],
+            )
+            .unwrap();
+        let mut statement = database.connection().prepare(&lexical_page_sql()).unwrap();
+        let mut rows = statement
+            .query(params![
+                uuid_bytes(project_id).as_slice(),
+                "shared AND lexical AND evidence",
+                500,
+                0,
+            ])
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        assert_eq!(
+            fetch_lexical_page(&mut rows, 50, deadline)
+                .unwrap()
+                .candidates
+                .len(),
+            50
+        );
+        assert!(matches!(
+            fetch_lexical_page(&mut rows, 50, deadline),
+            Err(SearchError::Corrupt(
+                "stored search candidate exceeds alpha field bounds"
+            ))
+        ));
+    }
 
     #[test]
     fn lexical_ranking_uses_covered_chunk_order_before_loading_the_page() {
@@ -2568,15 +2711,17 @@ mod tests {
         assert_eq!(next.len(), 1);
         assert_eq!(next[0].id, matches[1].id);
 
-        let lexical = fetch_lexical_page(
-            database.connection(),
-            project_id,
-            "raw AND evidence",
-            5,
-            50,
-            Instant::now() + Duration::from_secs(10),
-        )
-        .unwrap();
+        let mut statement = database.connection().prepare(&lexical_page_sql()).unwrap();
+        let mut rows = statement
+            .query(params![
+                uuid_bytes(project_id).as_slice(),
+                "raw AND evidence",
+                50,
+                5,
+            ])
+            .unwrap();
+        let lexical =
+            fetch_lexical_page(&mut rows, 50, Instant::now() + Duration::from_secs(10)).unwrap();
         let phrase =
             fetch_phrase_candidates(database.connection(), project_id, "raw ^ evidence", 5, 50)
                 .unwrap();
