@@ -469,6 +469,8 @@ fn vector_membership_rejects_missing_extra_and_mispartitioned_rows() {
         "replaced",
         "wrong_source",
         "null_source",
+        "uppercase_source",
+        "unhyphenated_source",
     ] {
         let directory = private_tempdir();
         let path = directory.path().join("index.sqlite");
@@ -498,6 +500,8 @@ fn vector_membership_rejects_missing_extra_and_mispartitioned_rows() {
             let replacement_source = match corruption {
                 "wrong_source" => Some(SourceId::new_v4().to_string()),
                 "null_source" => None,
+                "uppercase_source" => Some(source.to_uppercase()),
+                "unhyphenated_source" => Some(source.replace('-', "")),
                 _ => Some(source),
             };
             connection
@@ -517,6 +521,54 @@ fn vector_membership_rejects_missing_extra_and_mispartitioned_rows() {
             "{corruption}"
         );
     }
+}
+
+#[test]
+fn vector_membership_checks_each_source_partition() {
+    let directory = private_tempdir();
+    let path = directory.path().join("index.sqlite");
+    let (mut database, _) = pinned_database_with_chunk(&path);
+    let mut second = fixture_scope();
+    second.source_id = SourceId::new_v4();
+    second.source_name = "second".parse().unwrap();
+    second.source_logical_uri = "file:///second".to_owned();
+    second.source_config_json = r#"{"root":"/second"}"#.to_owned();
+    database
+        .apply_filesystem_snapshot(
+            &second,
+            &[prepared_document()],
+            &[],
+            DeleteConfirmations::default(),
+        )
+        .unwrap();
+    for input in database.load_embedding_input_batch(0, 8).unwrap() {
+        let embedding = PreparedChunkEmbedding::from_input(
+            &input,
+            unit_vector(0),
+            fixture_provenance("macos", "aarch64"),
+        )
+        .unwrap();
+        database.cache_chunk_embedding(&embedding).unwrap();
+    }
+    database.commit_cached_reembedding().unwrap();
+    assert!(database.has_complete_vector_membership().unwrap());
+    let connection = Connection::open(&path).unwrap();
+    assert_eq!(count(&connection, "passages_vec_b"), 2);
+    connection
+        .execute(
+            "UPDATE passages_vec_b_chunks SET partition00 = ?1 WHERE partition00 = ?2",
+            [
+                fixture_scope().source_id.to_string(),
+                second.source_id.to_string(),
+            ],
+        )
+        .unwrap();
+    assert!(matches!(
+        database.has_complete_vector_membership(),
+        Err(StoreError::ImmutableEvidenceMismatch(
+            "active vector membership"
+        ))
+    ));
 }
 
 #[test]

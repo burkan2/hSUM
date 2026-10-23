@@ -113,3 +113,53 @@ correctness evidence, not latency qualification; they ran alongside local
 contributor checks. The million-passage native rerun remains required.
 The complete local `cargo xtask check` passes, including all 28 vector-storage
 tests, strict Clippy, generated references, and frozen harness checks.
+
+## Native rerun and source-partition work — 2026-10-23
+
+Run [39888790398](https://github.com/burkan2/hSUM/actions/runs/39888790398)
+at `bc26f399ae24547b33cac9aec877739536902a8c` completes million-passage
+setup, metadata generations, and re-embedding, but still fails cancellation
+setup. Request 8 returns **TIMEOUT / REQUEST_DEADLINE** with operation
+`blocking_admission` before the harness confirms two paused model workers.
+The [unaltered harness log](results/q05-39888790398-harness.log) and
+[runner capacity](results/q05-39888790398-runner-capacity.txt) are retained.
+No complete stress JSON report exists. The queue error establishes that the
+admitted requests did not release capacity in time; it does not identify
+which preflight stage consumed their budget or how many workers were paused.
+
+The next bounded optimization moves canonical source UUID formatting out of
+the per-passage membership loop. A materialized map uses distinct source IDs
+from the existing covering index, and the original strict partition comparison
+joins that map. It uses no persistent cache, schema migration, or new dependency.
+Block payload reads and all membership/offset checks remain. A two-source test
+rejects a block reassigned to the other valid source; malformed uppercase and
+unhyphenated partition strings remain rejected.
+
+The [raw diagnostic report](results/vector-source-2026-10-23-macos-diagnostic.json)
+contains the before/after SQL, probe source, source hashes, timings, and discarded
+lexical/identifier experiments. A counted-function assertion verifies 100,000
+UUID conversions before the change and 64 afterward. Native SQLite/sqlite-vec
+probes on 64 source partitions measure:
+
+| Synthetic fixture | Before | After |
+| --- | --- | --- |
+| 100,000 vectors, one connection | 117–127 ms | 55–58 ms |
+| 1,000,000 vectors, one connection | 1.29–1.44 s | 0.72–1.09 s |
+| 1,000,000 vectors, four concurrent connections, batch completion | 5.38–5.84 s | 2.58–2.62 s |
+
+These use shared in-memory storage on the local Mac. They do not establish
+cold-disk behavior, equivalence to independent MCP connections, or completion
+of the frozen Q05 workload. Q04/Q05 remain open. The lexical membership-list
+experiment would scan all document heads even for selective queries, and the
+identifier covered-page rewrite showed only a small warm-cache gain; neither
+was added to production.
+
+The full local `cargo xtask check` passes, including all 29 vector-storage
+tests and strict Clippy. The optimized binary
+`1ccf2ceef458c014c4791b39e44c9b88e228970671a7aa7c52427d85bb52995b`
+passes CLI/MCP release smoke. Eighteen paired CLI observations preserve ordered
+citations, scores, and hashes, with all 180 returned passages verified against
+source byte windows. The small real-model cancellation smoke again pauses two
+workers, cancels eight requests without late responses, and recovers lexical
+and hybrid search. These are local checks; independent review and native
+million-passage qualification remain open.

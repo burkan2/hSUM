@@ -914,9 +914,19 @@ pub(crate) fn validate_active_vector_membership(
     // sqlite-vec 0.1.7 point lookups reread each block and prepare a partition query per row.
     // substr forces payload reads; length(vectors) alone reads only the stored byte count.
     // Use _rowid_: the shadow table's declared rowid is not its SQLite rowid alias.
+    // Format each distinct source once instead of repeating UUID conversion per passage.
     let mismatch: bool = connection.query_row(
         &format!(
-            "WITH payloads AS MATERIALIZED (
+            "WITH source_partitions AS MATERIALIZED (
+                 SELECT source_id, lower(
+                     substr(hex(source_id), 1, 8) || '-' ||
+                     substr(hex(source_id), 9, 4) || '-' ||
+                     substr(hex(source_id), 13, 4) || '-' ||
+                     substr(hex(source_id), 17, 4) || '-' ||
+                     substr(hex(source_id), 21, 12)
+                 ) AS partition
+                 FROM (SELECT DISTINCT source_id FROM active_passages)
+             ), payloads AS MATERIALIZED (
                  SELECT _rowid_ AS chunk_id, typeof(vectors) AS kind,
                         length(substr(vectors, 1)) AS bytes
                  FROM {table}_vector_chunks00
@@ -925,6 +935,7 @@ pub(crate) fn validate_active_vector_membership(
              SELECT EXISTS(
                  SELECT 1
                  FROM active_passages AS ap
+                 LEFT JOIN source_partitions AS sp ON sp.source_id = ap.source_id
                  LEFT JOIN {table}_rowids AS r ON r.rowid = ap.id
                  LEFT JOIN {table}_chunks AS ch ON ch.chunk_id = r.chunk_id
                  LEFT JOIN payloads AS p ON p.chunk_id = r.chunk_id
@@ -932,13 +943,7 @@ pub(crate) fn validate_active_vector_membership(
                     OR p.kind != 'blob'
                     OR typeof(r.chunk_offset) != 'integer'
                     OR r.chunk_offset < 0 OR r.chunk_offset >= p.bytes / ?1
-                    OR ch.partition00 IS NOT lower(
-                         substr(hex(ap.source_id), 1, 8) || '-' ||
-                         substr(hex(ap.source_id), 9, 4) || '-' ||
-                         substr(hex(ap.source_id), 13, 4) || '-' ||
-                         substr(hex(ap.source_id), 17, 4) || '-' ||
-                         substr(hex(ap.source_id), 21, 12)
-                    )
+                    OR sp.source_id IS NULL OR ch.partition00 IS NOT sp.partition
              )"
         ),
         [i64::from(EMBEDDING_DIMENSION) * 4],

@@ -50,9 +50,15 @@ plan in this order; the canonical denominator remains
    Block-level validation now reads each referenced payload once and rejects
    invalid offsets, including the previously accepted NULL case. Native 100k
    synthetic SQL improves from 911–930 ms to 112–118 ms; physical overflow-page
-   corruption is still detected. See `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md`.
-   Demonstrate two active model workers, cancellation without late responses,
-   and successful lexical/hybrid recovery on the million-passage fixture.
+   corruption is still detected. Native run `39888790398` still fails setup
+   with a queued `blocking_admission` deadline. The next source-partition
+   optimization formats each distinct UUID once: 64-source synthetic 100k
+   validation takes 55–58 ms versus 117–127 ms; four concurrent million-vector
+   checks take 2.58–2.62 s versus 5.38–5.84 s in shared in-memory storage.
+   See `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md`. These are diagnostics, not
+   qualification. Demonstrate two active model workers, cancellation without
+   late responses, and successful lexical/hybrid recovery on the native
+   million-passage fixture.
 3. **Q-04/Q-05: rerun both supported native targets.** Use the corrected frozen
    corpus and one recorded candidate, retain raw failures as well as passes,
    and require every latency/protocol/CV gate. The retained partial Mac index
