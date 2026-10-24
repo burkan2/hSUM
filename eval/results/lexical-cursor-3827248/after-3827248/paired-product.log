@@ -1,0 +1,12 @@
+before 0 10 4.201238542009378 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 3453, 'vector': 0, 'fusion': 4, 'body_materialization': 40, 'total': 3748}
+before 0 50 3.478927666990785 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 3141, 'vector': 0, 'fusion': 4, 'body_materialization': 38, 'total': 3352}
+after 0 10 0.8680945000087377 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 389, 'vector': 0, 'fusion': 6, 'body_materialization': 46, 'total': 679}
+after 0 50 0.9423559580172878 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 442, 'vector': 0, 'fusion': 5, 'body_materialization': 48, 'total': 751}
+after 1 10 1.6282860840146895 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 596, 'vector': 0, 'fusion': 16, 'body_materialization': 56, 'total': 1450}
+after 1 50 1.046793624991551 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 465, 'vector': 0, 'fusion': 4, 'body_materialization': 43, 'total': 826}
+before 1 10 3.624433457996929 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 3257, 'vector': 0, 'fusion': 4, 'body_materialization': 45, 'total': 3501}
+before 1 50 4.819584666984156 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 4418, 'vector': 0, 'fusion': 6, 'body_materialization': 44, 'total': 4666}
+before 2 10 4.368939917010721 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 3923, 'vector': 0, 'fusion': 5, 'body_materialization': 51, 'total': 4196}
+before 2 50 4.452812833013013 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 4047, 'vector': 0, 'fusion': 5, 'body_materialization': 54, 'total': 4292}
+after 2 10 0.860269500000868 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 385, 'vector': 0, 'fusion': 5, 'body_materialization': 49, 'total': 632}
+after 2 50 0.74953729097615 {'query_embedding': 0, 'exact': 0, 'exact_fallback': 0, 'lexical': 359, 'vector': 0, 'fusion': 4, 'body_materialization': 43, 'total': 608}

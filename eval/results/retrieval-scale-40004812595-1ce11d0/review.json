@@ -1,0 +1,2075 @@
+{
+  "reviewed_at_utc": "2026-10-23T23:07:18.611531+00:00",
+  "candidate": "1ce11d00bf8cad949c12a9c496ab7dba3675717f",
+  "run_url": "https://github.com/burkan2/hSUM/actions/runs/40004812595",
+  "artifact_id": 12527469583,
+  "artifact_zip_sha256": "e8baadb08409c1083a66c2795402c484e532c8ec893d620376a07df6a736413c",
+  "recomputed_qualification": {
+    "pass": false,
+    "checks": {
+      "canonical_parameters": true,
+      "three_fresh_processes": true,
+      "at_least_750_observations_per_run": true,
+      "all_class_slos": false,
+      "total_p95_cv_at_most_10_percent": true,
+      "cold_os_cache_method_recorded": true,
+      "setup_and_ingest_throughput_recorded": true,
+      "rss_complete": true
+    },
+    "run_level_total_p95_ms": [
+      277,
+      275,
+      268
+    ],
+    "total_p95_coefficient_of_variation_percent": 1.4116874271695397,
+    "maximum_cv_percent": 10.0
+  },
+  "observations_reviewed": 2250,
+  "per_run_class_slos": [
+    {
+      "exact_fallback": {
+        "observed_p95_ms": 147,
+        "pass": true,
+        "threshold_ms_exclusive": 750
+      },
+      "hybrid_no_fallback": {
+        "observed_p95_ms": 273,
+        "pass": true,
+        "threshold_ms_exclusive": 500
+      },
+      "identifier": {
+        "observed_p95_ms": 141,
+        "pass": false,
+        "threshold_ms_exclusive": 100
+      },
+      "ordinary_lexical": {
+        "observed_p95_ms": 286,
+        "pass": false,
+        "threshold_ms_exclusive": 100
+      }
+    },
+    {
+      "exact_fallback": {
+        "observed_p95_ms": 149,
+        "pass": true,
+        "threshold_ms_exclusive": 750
+      },
+      "hybrid_no_fallback": {
+        "observed_p95_ms": 277,
+        "pass": true,
+        "threshold_ms_exclusive": 500
+      },
+      "identifier": {
+        "observed_p95_ms": 137,
+        "pass": false,
+        "threshold_ms_exclusive": 100
+      },
+      "ordinary_lexical": {
+        "observed_p95_ms": 284,
+        "pass": false,
+        "threshold_ms_exclusive": 100
+      }
+    },
+    {
+      "exact_fallback": {
+        "observed_p95_ms": 161,
+        "pass": true,
+        "threshold_ms_exclusive": 750
+      },
+      "hybrid_no_fallback": {
+        "observed_p95_ms": 264,
+        "pass": true,
+        "threshold_ms_exclusive": 500
+      },
+      "identifier": {
+        "observed_p95_ms": 129,
+        "pass": false,
+        "threshold_ms_exclusive": 100
+      },
+      "ordinary_lexical": {
+        "observed_p95_ms": 283,
+        "pass": false,
+        "threshold_ms_exclusive": 100
+      }
+    }
+  ],
+  "per_query": {
+    "identifier-01": {
+      "class": "identifier",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 31,
+          "p95": 34,
+          "worst": 35
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 7,
+          "worst": 8
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 12,
+          "p95": 12,
+          "worst": 13
+        },
+        "total": {
+          "n": 90,
+          "p50": 123,
+          "p95": 128,
+          "worst": 214
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 125.93988999924477,
+        "p95": 131.00042200039752,
+        "worst": 217.32569899995724
+      },
+      "max_examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 88,
+        "worst": 173
+      }
+    },
+    "identifier-02": {
+      "class": "identifier",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 31,
+          "p95": 37,
+          "worst": 66
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 7,
+          "worst": 15
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 12,
+          "p95": 14,
+          "worst": 17
+        },
+        "total": {
+          "n": 90,
+          "p50": 123,
+          "p95": 159,
+          "worst": 178
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 125.62659800005349,
+        "p95": 162.11015399949247,
+        "worst": 181.38358700070967
+      },
+      "max_examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 99,
+        "worst": 139
+      }
+    },
+    "identifier-03": {
+      "class": "identifier",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 31,
+          "p95": 33,
+          "worst": 37
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 7,
+          "worst": 9
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 12,
+          "p95": 12,
+          "worst": 14
+        },
+        "total": {
+          "n": 90,
+          "p50": 123,
+          "p95": 129,
+          "worst": 172
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 125.27675700039254,
+        "p95": 131.80975500017666,
+        "worst": 174.25337600070634
+      },
+      "max_examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 89,
+        "worst": 130
+      }
+    },
+    "identifier-04": {
+      "class": "identifier",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 31,
+          "p95": 34,
+          "worst": 55
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 7,
+          "worst": 11
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 12,
+          "p95": 13,
+          "worst": 15
+        },
+        "total": {
+          "n": 90,
+          "p50": 123,
+          "p95": 132,
+          "worst": 180
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 125.2692649995879,
+        "p95": 134.91929499923572,
+        "worst": 182.35694499981037
+      },
+      "max_examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 90,
+        "worst": 141
+      }
+    },
+    "identifier-05": {
+      "class": "identifier",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 31,
+          "p95": 33,
+          "worst": 40
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 7,
+          "worst": 15
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 12,
+          "p95": 12,
+          "worst": 16
+        },
+        "total": {
+          "n": 90,
+          "p50": 123,
+          "p95": 130,
+          "worst": 145
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 125.23656499979552,
+        "p95": 132.6113869999972,
+        "worst": 150.1802549992135
+      },
+      "max_examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 89,
+        "worst": 103
+      }
+    },
+    "identifier-06": {
+      "class": "identifier",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 31,
+          "p95": 37,
+          "worst": 58
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 7,
+          "worst": 10
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 12,
+          "p95": 13,
+          "worst": 18
+        },
+        "total": {
+          "n": 90,
+          "p50": 122,
+          "p95": 134,
+          "worst": 171
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 124.83019799947215,
+        "p95": 138.41093900009582,
+        "worst": 178.285252999558
+      },
+      "max_examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 96,
+        "worst": 123
+      }
+    },
+    "identifier-07": {
+      "class": "identifier",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 31,
+          "p95": 36,
+          "worst": 67
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 7,
+          "worst": 10
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 12,
+          "p95": 13,
+          "worst": 17
+        },
+        "total": {
+          "n": 90,
+          "p50": 122,
+          "p95": 156,
+          "worst": 200
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 124.98227900050551,
+        "p95": 158.51181200014253,
+        "worst": 203.34120699953928
+      },
+      "max_examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 98,
+        "worst": 126
+      }
+    },
+    "ordinary-01": {
+      "class": "ordinary_lexical",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 11,
+          "p95": 12,
+          "worst": 12
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 4
+        },
+        "total": {
+          "n": 90,
+          "p50": 95,
+          "p95": 100,
+          "worst": 130
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 97.83739100021194,
+        "p95": 102.60441700029332,
+        "worst": 132.88571599969146
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 84,
+        "p95": 88,
+        "worst": 119
+      }
+    },
+    "ordinary-02": {
+      "class": "ordinary_lexical",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 197,
+          "p95": 228,
+          "worst": 257
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 6
+        },
+        "total": {
+          "n": 90,
+          "p50": 282,
+          "p95": 316,
+          "worst": 345
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 284.29892099939025,
+        "p95": 319.00573399980203,
+        "worst": 347.5159199997506
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 84,
+        "p95": 90,
+        "worst": 113
+      }
+    },
+    "ordinary-03": {
+      "class": "ordinary_lexical",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 11,
+          "p95": 12,
+          "worst": 12
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 4
+        },
+        "total": {
+          "n": 90,
+          "p50": 95,
+          "p95": 109,
+          "worst": 135
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 98.03054700023495,
+        "p95": 111.38108100021782,
+        "worst": 137.75701699978526
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 84,
+        "p95": 97,
+        "worst": 123
+      }
+    },
+    "ordinary-04": {
+      "class": "ordinary_lexical",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 8,
+          "p95": 9,
+          "worst": 16
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 7
+        },
+        "total": {
+          "n": 90,
+          "p50": 92,
+          "p95": 103,
+          "worst": 123
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 94.6657040003629,
+        "p95": 105.99116299999878,
+        "worst": 125.62621100005344
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 84,
+        "p95": 89,
+        "worst": 115
+      }
+    },
+    "ordinary-05": {
+      "class": "ordinary_lexical",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 8,
+          "p95": 8,
+          "worst": 19
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 5
+        },
+        "total": {
+          "n": 90,
+          "p50": 92,
+          "p95": 101,
+          "worst": 123
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 94.59065200007899,
+        "p95": 103.6981460001698,
+        "worst": 128.87780900018697
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 84,
+        "p95": 92,
+        "worst": 107
+      }
+    },
+    "ordinary-06": {
+      "class": "ordinary_lexical",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 11,
+          "p95": 12,
+          "worst": 23
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 6
+        },
+        "total": {
+          "n": 90,
+          "p50": 95,
+          "p95": 99,
+          "worst": 132
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 97.44218500054558,
+        "p95": 102.0660570002292,
+        "worst": 136.7208909996407
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 84,
+        "p95": 88,
+        "worst": 109
+      }
+    },
+    "fallback-01": {
+      "class": "exact_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 51,
+          "p95": 53,
+          "worst": 80
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 51,
+          "p95": 53,
+          "worst": 80
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 8,
+          "worst": 10
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 43,
+          "p95": 45,
+          "worst": 64
+        },
+        "total": {
+          "n": 90,
+          "p50": 143,
+          "p95": 148,
+          "worst": 198
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 145.78551100021286,
+        "p95": 150.64956600053847,
+        "worst": 201.56970900006854
+      },
+      "max_examined": {
+        "exact": 2,
+        "exact_fallback": 500,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 84,
+        "p95": 87,
+        "worst": 111
+      }
+    },
+    "fallback-02": {
+      "class": "exact_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 51,
+          "p95": 53,
+          "worst": 61
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 51,
+          "p95": 53,
+          "worst": 61
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 8,
+          "worst": 11
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 43,
+          "p95": 45,
+          "worst": 54
+        },
+        "total": {
+          "n": 90,
+          "p50": 143,
+          "p95": 150,
+          "worst": 172
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 145.3059180003038,
+        "p95": 152.16712500023277,
+        "worst": 174.83885799993004
+      },
+      "max_examined": {
+        "exact": 2,
+        "exact_fallback": 500,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 87,
+        "worst": 110
+      }
+    },
+    "fallback-03": {
+      "class": "exact_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 51,
+          "p95": 54,
+          "worst": 70
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 51,
+          "p95": 53,
+          "worst": 70
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 8,
+          "worst": 17
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 44,
+          "p95": 45,
+          "worst": 55
+        },
+        "total": {
+          "n": 90,
+          "p50": 143,
+          "p95": 160,
+          "worst": 182
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 145.66261300024053,
+        "p95": 162.84817700034182,
+        "worst": 185.21757000053185
+      },
+      "max_examined": {
+        "exact": 2,
+        "exact_fallback": 500,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 90,
+        "worst": 123
+      }
+    },
+    "fallback-04": {
+      "class": "exact_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 49,
+          "p95": 51,
+          "worst": 60
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 49,
+          "p95": 51,
+          "worst": 60
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 8,
+          "worst": 16
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 43,
+          "p95": 45,
+          "worst": 50
+        },
+        "total": {
+          "n": 90,
+          "p50": 141,
+          "p95": 168,
+          "worst": 182
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 144.0866860002643,
+        "p95": 170.62129999976605,
+        "worst": 184.78369700005715
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 500,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 94,
+        "worst": 127
+      }
+    },
+    "fallback-05": {
+      "class": "exact_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 51,
+          "p95": 57,
+          "worst": 74
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 51,
+          "p95": 57,
+          "worst": 74
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 8,
+          "worst": 16
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 43,
+          "p95": 49,
+          "worst": 60
+        },
+        "total": {
+          "n": 90,
+          "p50": 143,
+          "p95": 162,
+          "worst": 182
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 145.39264800077945,
+        "p95": 164.1347009999663,
+        "worst": 184.68851800025732
+      },
+      "max_examined": {
+        "exact": 2,
+        "exact_fallback": 500,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 89,
+        "worst": 118
+      }
+    },
+    "fallback-06": {
+      "class": "exact_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact": {
+          "n": 90,
+          "p50": 51,
+          "p95": 52,
+          "worst": 53
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 51,
+          "p95": 52,
+          "worst": 53
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 7,
+          "p95": 8,
+          "worst": 8
+        },
+        "vector": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 43,
+          "p95": 44,
+          "worst": 45
+        },
+        "total": {
+          "n": 90,
+          "p50": 143,
+          "p95": 149,
+          "worst": 179
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 145.6441950003864,
+        "p95": 151.60081300018646,
+        "worst": 181.95021700012148
+      },
+      "max_examined": {
+        "exact": 2,
+        "exact_fallback": 500,
+        "lexical": 50,
+        "vector": 0
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 85,
+        "p95": 88,
+        "worst": 120
+      }
+    },
+    "hybrid-01": {
+      "class": "hybrid_no_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 4,
+          "p95": 6,
+          "worst": 17
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 1
+        },
+        "vector": {
+          "n": 90,
+          "p50": 68,
+          "p95": 72,
+          "worst": 84
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 4
+        },
+        "total": {
+          "n": 90,
+          "p50": 252,
+          "p95": 267,
+          "worst": 353
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 254.8202769994532,
+        "p95": 269.6107470001152,
+        "worst": 355.69432899956155
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 0,
+        "vector": 50
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 179,
+        "p95": 192,
+        "worst": 264
+      }
+    },
+    "hybrid-02": {
+      "class": "hybrid_no_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 5,
+          "p95": 6,
+          "worst": 9
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 1
+        },
+        "vector": {
+          "n": 90,
+          "p50": 68,
+          "p95": 70,
+          "worst": 100
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 7
+        },
+        "total": {
+          "n": 90,
+          "p50": 252,
+          "p95": 266,
+          "worst": 295
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 254.96435100012604,
+        "p95": 268.4665249998943,
+        "worst": 301.40684399975726
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 0,
+        "vector": 50
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 180,
+        "p95": 189,
+        "worst": 218
+      }
+    },
+    "hybrid-03": {
+      "class": "hybrid_no_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 4,
+          "p95": 6,
+          "worst": 7
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 11,
+          "p95": 11,
+          "worst": 12
+        },
+        "vector": {
+          "n": 90,
+          "p50": 68,
+          "p95": 72,
+          "worst": 88
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 8,
+          "p95": 8,
+          "worst": 10
+        },
+        "total": {
+          "n": 90,
+          "p50": 263,
+          "p95": 282,
+          "worst": 314
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 265.32964699981676,
+        "p95": 285.0780710004983,
+        "worst": 316.3824389994261
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 50
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 179,
+        "p95": 190,
+        "worst": 225
+      }
+    },
+    "hybrid-04": {
+      "class": "hybrid_no_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 4,
+          "p95": 6,
+          "worst": 8
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "vector": {
+          "n": 90,
+          "p50": 68,
+          "p95": 70,
+          "worst": 78
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 4
+        },
+        "total": {
+          "n": 90,
+          "p50": 252,
+          "p95": 265,
+          "worst": 301
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 254.9094089999926,
+        "p95": 267.34368199959135,
+        "worst": 303.2796170000438
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 0,
+        "vector": 50
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 179,
+        "p95": 189,
+        "worst": 226
+      }
+    },
+    "hybrid-05": {
+      "class": "hybrid_no_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 4,
+          "p95": 6,
+          "worst": 19
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 1,
+          "p95": 1,
+          "worst": 1
+        },
+        "vector": {
+          "n": 90,
+          "p50": 68,
+          "p95": 70,
+          "worst": 95
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 4
+        },
+        "total": {
+          "n": 90,
+          "p50": 253,
+          "p95": 266,
+          "worst": 306
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 255.782657999589,
+        "p95": 268.52629400036676,
+        "worst": 309.18999799996527
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 0,
+        "vector": 50
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 180,
+        "p95": 191,
+        "worst": 231
+      }
+    },
+    "hybrid-06": {
+      "class": "hybrid_no_fallback",
+      "timing_ms": {
+        "query_embedding": {
+          "n": 90,
+          "p50": 5,
+          "p95": 6,
+          "worst": 8
+        },
+        "exact": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "exact_fallback": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "lexical": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 1
+        },
+        "vector": {
+          "n": 90,
+          "p50": 68,
+          "p95": 76,
+          "worst": 100
+        },
+        "fusion": {
+          "n": 90,
+          "p50": 0,
+          "p95": 0,
+          "worst": 0
+        },
+        "body_materialization": {
+          "n": 90,
+          "p50": 4,
+          "p95": 4,
+          "worst": 4
+        },
+        "total": {
+          "n": 90,
+          "p50": 252,
+          "p95": 288,
+          "worst": 312
+        }
+      },
+      "client_round_trip_ms": {
+        "n": 90,
+        "p50": 254.30952600072487,
+        "p95": 290.6385070000397,
+        "worst": 315.3430819993446
+      },
+      "max_examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 0,
+        "vector": 50
+      },
+      "unassigned_wall_ms": {
+        "n": 90,
+        "p50": 179,
+        "p95": 190,
+        "worst": 234
+      }
+    }
+  },
+  "peak_process_tree_rss_bytes": [
+    545128448,
+    556302336,
+    536739840
+  ],
+  "cold": [
+    {
+      "cache_eviction": {
+        "elapsed_ms": 1061.6594759994769,
+        "stdout": ""
+      },
+      "first_hybrid": {
+        "client_round_trip_ms": 539.8477979997551,
+        "query_id": "hybrid-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 3,
+          "query_embedding": 296,
+          "total": 537,
+          "vector": 65
+        }
+      },
+      "first_model_load": {
+        "client_round_trip_ms": 1021.3300940004046,
+        "query_id": "hybrid-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 0,
+          "query_embedding": 519,
+          "total": 1011,
+          "vector": 101
+        }
+      },
+      "os_cache_lexical": {
+        "client_round_trip_ms": 658.8453059994208,
+        "query_id": "ordinary-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 222,
+          "query_embedding": 0,
+          "total": 305,
+          "vector": 0
+        }
+      },
+      "process_start_ms": 3.212408999388572
+    },
+    {
+      "cache_eviction": {
+        "elapsed_ms": 48.94006299946341,
+        "stdout": ""
+      },
+      "first_hybrid": {
+        "client_round_trip_ms": 609.9475979999625,
+        "query_id": "hybrid-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 3,
+          "query_embedding": 316,
+          "total": 607,
+          "vector": 96
+        }
+      },
+      "first_model_load": {
+        "client_round_trip_ms": 1056.1343559993475,
+        "query_id": "hybrid-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 0,
+          "query_embedding": 535,
+          "total": 1044,
+          "vector": 97
+        }
+      },
+      "os_cache_lexical": {
+        "client_round_trip_ms": 674.4157220000488,
+        "query_id": "ordinary-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 241,
+          "query_embedding": 0,
+          "total": 325,
+          "vector": 0
+        }
+      },
+      "process_start_ms": 3.6642079994635424
+    },
+    {
+      "cache_eviction": {
+        "elapsed_ms": 50.87668400028633,
+        "stdout": ""
+      },
+      "first_hybrid": {
+        "client_round_trip_ms": 588.1831310007328,
+        "query_id": "hybrid-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 3,
+          "query_embedding": 315,
+          "total": 585,
+          "vector": 77
+        }
+      },
+      "first_model_load": {
+        "client_round_trip_ms": 1057.82113999976,
+        "query_id": "hybrid-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 0,
+          "query_embedding": 546,
+          "total": 1045,
+          "vector": 95
+        }
+      },
+      "os_cache_lexical": {
+        "client_round_trip_ms": 683.0884149994745,
+        "query_id": "ordinary-01",
+        "timing_ms": {
+          "body_materialization": 4,
+          "exact": 0,
+          "exact_fallback": 0,
+          "fusion": 0,
+          "lexical": 238,
+          "query_embedding": 0,
+          "total": 323,
+          "vector": 0
+        }
+      },
+      "process_start_ms": 3.932347000045411
+    }
+  ],
+  "storage": {
+    "cached_vector_rows": 100000,
+    "database_files": {
+      "index.sqlite": 1188052992,
+      "index.sqlite-shm": 327680,
+      "index.sqlite-wal": 813959592
+    },
+    "definitions": {
+      "logical_active_vector_payload_bytes": "active passages multiplied by 384 float32 components",
+      "logical_cached_vector_payload_bytes": "sum of immutable chunk_embeddings.vector_blob payloads",
+      "logical_history_bytes": "distinct version content blobs not referenced by an active head",
+      "logical_live_bytes": "distinct content blobs referenced by active document heads",
+      "logical_total_vector_payload_bytes": "cached plus active logical vector payloads; excludes SQLite and sqlite-vec page overhead"
+    },
+    "logical_active_vector_payload_bytes": 153600000,
+    "logical_cached_vector_payload_bytes": 153600000,
+    "logical_history_bytes": 0,
+    "logical_live_bytes": 150000000,
+    "logical_total_vector_payload_bytes": 307200000,
+    "managed_index_bytes": 2002340264,
+    "reclaimable_bytes": 0
+  },
+  "ingest": {
+    "passages_per_second": 3068.074747651608,
+    "seconds": 32.593730018
+  },
+  "reembed": {
+    "passages_per_second": 21.46295762044439,
+    "seconds": 4659.190115752999
+  },
+  "checks": {
+    "artifact_digest_matches_github": true,
+    "source_candidate_and_clean_checkout_bound": true,
+    "binary_hash_matches_setup": true,
+    "frozen_protocol_manifest_corpus_and_helper_hashes": true,
+    "all_2250_query_order_pass_counts_and_class_paths": true,
+    "all_raw_stage_numbers_finite_and_candidate_counts_bounded": true,
+    "all_summaries_slos_and_cv_recomputed_exactly": true,
+    "cold_measurements_separate_and_eviction_recorded": true,
+    "rss_recorded_without_sampler_error": true,
+    "logical_and_physical_storage_consistent": true
+  },
+  "limits": [
+    "Performance qualification only; no retrieval-quality or token-cost superiority claim.",
+    "Executable and full index are not uploaded; binary/model/field-integrity checks are bound to the frozen harness execution rather than independently rerun from those missing inputs.",
+    "Stage timers overlap for body materialization and exact fallback; unassigned wall time is a profiling target, not an attributed cause.",
+    "Mac comparison and repair-candidate 100k qualification remain outstanding."
+  ]
+}

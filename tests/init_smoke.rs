@@ -16,6 +16,42 @@ use hsum::store::{
 use rusqlite::Connection;
 use tempfile::{TempDir, tempdir};
 
+#[path = "support/schema4.rs"]
+mod schema4;
+
+#[test]
+fn schema_4_rebuild_keeps_the_pinned_profile_and_refuses_a_lexical_downgrade() {
+    let root = tempdir().unwrap();
+    let home = tempdir().unwrap();
+    fs::write(root.path().join("notes.md"), b"pinned replacement\n").unwrap();
+    let manifest = &hsum::model::builtin_manifests()[0];
+    let pin = hsum::store::EmbeddingModelPin::new(
+        manifest.id.clone(),
+        manifest.upstream_revision.clone(),
+        manifest.fingerprint().unwrap(),
+        manifest.dimension,
+    )
+    .unwrap();
+    let mut init = request(root.path(), &home);
+    init.embedding_profile = hsum::store::IndexEmbeddingProfile::Pinned(pin);
+    let first = initialize(&init).unwrap();
+    schema4::downgrade_to_schema_4(&first.database_path);
+    let mut lexical = request(root.path(), &home);
+    lexical.rebuild = true;
+    assert!(matches!(
+        initialize(&lexical),
+        Err(InitError::EmbeddingProfileMismatch)
+    ));
+    init.rebuild = true;
+    let rebuilt = initialize(&init).unwrap();
+    let database = IndexDb::open_existing(&rebuilt.database_path, OpenMode::ReadOnly).unwrap();
+    assert_eq!(
+        database.embedding_profile().unwrap(),
+        init.embedding_profile
+    );
+    Doctor::run(&rebuilt.database_path).unwrap();
+}
+
 const RELEASED_ALPHA1_PIPELINE_FINGERPRINT: &str =
     "bb24fc64a8602c9ec0479ae687f848b7d5b029294796701966b7bbafc8a23bab";
 

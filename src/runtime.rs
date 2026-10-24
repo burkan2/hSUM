@@ -1,8 +1,8 @@
-use std::collections::BTreeSet;
 use std::env;
 use std::fmt;
 use std::fs;
 use std::io::{self, BufRead, BufReader, Read, Write};
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command as ProcessCommand, ExitCode, Stdio};
 use std::sync::mpsc::{self, RecvTimeoutError};
@@ -10,54 +10,86 @@ use std::thread;
 use std::time::{Duration, Instant};
 
 use clap::Parser;
-use rusqlite::OptionalExtension;
 use rusqlite::ffi::ErrorCode as SqliteErrorCode;
 use serde::Serialize;
 use serde_json::{Value, json};
+use time::OffsetDateTime;
+use time::format_description::well_known::Rfc3339;
 use uuid::Uuid;
 
 use crate::app::{
-    ContextError, ContextRequest, EffectiveContext, FilesystemIngestError, FilesystemIngestPolicy,
-    InitError, InitNextStep, InitOutcome, InitRequest, PointerOutcome, SourceConfigError,
-    TrustRequest, ingest_filesystem_with_policy, initialize, plan_filesystem_ingest_with_timeout,
-    resolve_context, resolve_trust_target, trust_repository,
+    AddFilesystemSourceRequest, AddJsonlSourceRequest, ContextError, ContextRequest,
+    DeleteIndexRequest, EffectiveContext, EvidenceSourceState, FilesystemIngestError, GetEvidence,
+    GetEvidenceError, GetEvidenceFieldLimits, GetEvidenceRequest, IndexManagementError, InitError,
+    InitNextStep, InitOutcome, InitRequest, PointerOutcome, ProjectIngestError, ProjectIngestPlan,
+    ProjectManagementError, SearchEmbeddingRuntime, SearchEvidence, SearchEvidenceError,
+    SearchEvidenceFieldLimits, SearchEvidencePage, SearchEvidenceRequest, SearchEvidenceSnapshot,
+    SetProjectRootRequest, SourceConfigError, SourceManagementError, StatusEvidence,
+    StatusEvidenceError, StatusEvidenceFieldLimits, StatusEvidenceRequest, TrustRequest,
+    add_filesystem_source, add_jsonl_source, attach_jsonl_source, create_project, delete_index,
+    detach_jsonl_source, ingest_project_sources_with_timeout, initialize, list_projects,
+    list_sources_in_scope, plan_project_sources_with_timeout, remove_jsonl_source, resolve_context,
+    resolve_trust_target, set_project_root, trust_repository, use_project,
 };
 use crate::cli::{
-    AgentPolicyMode, Cli, ClientCommand, ClientConfigArgs, ClientConfigFormat, ClientDoctorArgs,
-    ClientKind, Command, ErrorHelpArgs, GetArgs, GlobalOptions, HelpCommand, IngestArgs, InitArgs,
+    AgentPolicyMode, BackupCommand, BackupCreateArgs, BackupListArgs, Cli, ClientCommand,
+    ClientConfigArgs, ClientConfigFormat, ClientDoctorArgs, ClientKind, Command,
+    ConfigMigrateApplyArgs, ConfigMigrateCommand, ConfigMigratePlanArgs, DoctorArgs, DoctorCommand,
+    DoctorReportArgs, ErrorHelpArgs, ForgetApplyArgs, ForgetCommand, ForgetPlanArgs, GetArgs,
+    GlobalOptions, HelpCommand, IndexCommand, IndexDeleteArgs, IngestArgs, InitArgs,
     IntegrationActivateArgs, IntegrationCommand, IntegrationInstallArgs, IntegrationRepairArgs,
-    IntegrationStatusArgs, IntegrationUninstallArgs, IntegrationWorkspaceArgs, McpArgs, SearchArgs,
-    SearchMode as CliSearchMode, StatusArgs, TrustArgs, escape_terminal_bytes,
-    escape_terminal_text, exit_code_for, render_completions, render_man, render_verbose_version,
-    verbose_version_requested,
+    IntegrationStatusArgs, IntegrationUninstallArgs, IntegrationWorkspaceArgs, McpArgs,
+    MigrateApplyArgs, MigrateCommand, MigratePlanArgs, ModelCommand, ModelImportArgs,
+    ModelInstallArgs, ModelInstallKind, ModelListArgs, ModelRemoveArgs, ModelVerifyArgs,
+    ProjectCommand, ProjectCreateArgs, ProjectListArgs, ProjectSetRootArgs, ProjectUseArgs,
+    PruneApplyArgs, PruneCommand, PrunePlanArgs, RestoreApplyArgs, RestoreCommand, SearchArgs,
+    SearchMode as CliSearchMode, SourceAddArgs, SourceAttachArgs, SourceCommand,
+    SourceConnectorCommand, SourceDetachArgs, SourceListArgs, SourceRemoveArgs, StatusArgs,
+    TrustArgs, escape_terminal_bytes, escape_terminal_text, exit_code_for, render_completions,
+    render_man, render_verbose_version, verbose_version_requested,
 };
 use crate::config::{
-    ManagedPaths, ManagedPathsError, PointerError, SelectionError, SelectionMode, SelectionSource,
-    TrustError,
+    CONFIG_SCHEMA_VERSION, ConfigMigrationError, ConfigMigrationPlan, ManagedPaths,
+    ManagedPathsError, PREVIOUS_CONFIG_SCHEMA_VERSION, PointerError, SelectionError, SelectionMode,
+    SelectionSource, TRUST_PREVIOUS_SCHEMA_VERSION, TRUST_SCHEMA_VERSION, TrustError,
+    apply_config_migration, plan_config_migration,
 };
-use crate::domain::{DocumentId, ErrorSubcode, PublicError, Sha256Digest, SourceId};
+use crate::domain::{DocumentId, ErrorSubcode, PublicError, SourceId};
 use crate::ingest::{ChunkError, DiscoveryError};
 use crate::integration::{
     AgentPolicyError, AgentPolicyState, CodexAgentPolicy, CodexIntegration, CodexRegistrationState,
     IntegrationError, WorkspacePolicy, WorkspacePolicyError,
 };
 use crate::mcp::{
-    MAX_MCP_FRAME_BYTES, MCP_API_VERSION, McpServerError, serve_stdio, serve_workspace_stdio,
+    MAX_MCP_FRAME_BYTES, McpServerError, serve_stdio_with_model_cache, serve_workspace_stdio,
     validate_frame,
+};
+use crate::model::{
+    EmbeddingInferenceError, EmbeddingOptions, IndexModelState, ModelArtifactState, ModelError,
+    ModelMutation, ModelStore, QueryEmbeddingError, discover_model_pins,
+};
+use crate::protocol::{
+    API_VERSION as MCP_API_VERSION, CliSearchOutput, CliStatusOutput, EvidenceGetOutput,
+    GetPacketError, SearchCursorError, SearchCursorStaleCause, SearchCursorState,
+    decode_search_cursor, encode_search_cursor, retrieval_execution_fingerprint,
+    search_cursor_stale_cause,
 };
 use crate::search::query::QueryError;
 use crate::search::{
-    DuplicateReason, GetError, GetRequest, RankExplanation, Retriever, SearchError, SearchMode,
+    GetError, GetRequest, MAX_SEARCH_LIMIT, RankExplanation, Retriever, SearchError, SearchMode,
     SearchRequest, SearchResponse, SearchStopReason,
 };
-use crate::status::{
-    DocumentDrift, DriftOptions, DriftState, SourceStatus, SourceSyncState, Status, StatusError,
-    StatusReport,
-};
+use crate::status::{DocumentDrift, SourceStatus, SourceSyncState, StatusError, StatusReport};
 use crate::store::{
-    DeleteConfirmations, Doctor, DoctorReport, FilesystemLocality, FilesystemScope, IndexDb,
-    IngestOutcome, IngestPlan, OpenMode, SourceIngestState, StoragePreflight,
-    StoragePreflightError, StoreError, WriterLock,
+    BackupReservation, DEFAULT_WRITER_LOCK_TIMEOUT, DeleteConfirmations, Doctor, DoctorReport,
+    DoctorSupportReport, EmbeddingModelPin, EmbeddingProvenanceRecord, FilesystemLocality,
+    ForgetPlan, IndexDb, IndexEmbeddingProfile, IngestOutcome, MaintenanceError,
+    ManagedBackupCatalog, ManagedBackupDisposition, ManagedBackupDispositionOutcome,
+    ManagedBackupError, ManagedBackupInventoryItem, ManagedBackupKind, MigrationPlan, OpenMode,
+    PlanEnvelope, PreparedChunkEmbedding, PrunePlan, ReaderLease, RestorePlan, SourceIngestState,
+    StoragePreflight, StoragePreflightError, StoreError, WriterLock, apply_forget, apply_migration,
+    apply_prune, apply_restore, create_backup, inspect_backup, plan_forget, plan_migration,
+    plan_prune, read_plan, validate_plan_envelope, write_plan, write_private_json,
 };
 
 const SOURCE_PROBE_TIMEOUT: Duration = Duration::from_millis(500);
@@ -67,6 +99,9 @@ const INTEGRATION_LOCK_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Parse the process arguments, execute one command, and return its stable exit status.
 pub async fn run_from_env() -> ExitCode {
+    if let Some(exit) = crate::model::run_private_model_worker_from_env() {
+        return exit;
+    }
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
         Err(error) => {
@@ -115,6 +150,42 @@ pub async fn execute(cli: Cli) -> Result<crate::cli::ProcessExitCategory, Runtim
         Command::Ingest(arguments) => {
             run_ingest(&cli.global, managed_paths, current_dir, arguments)
         }
+        Command::Source(arguments) => match arguments.command {
+            SourceCommand::Add(arguments) => {
+                run_source_add(&cli.global, managed_paths, current_dir, arguments)
+            }
+            SourceCommand::List(arguments) => {
+                run_source_list(&cli.global, managed_paths, current_dir, arguments)
+            }
+            SourceCommand::Attach(arguments) => {
+                run_source_attach(&cli.global, managed_paths, current_dir, arguments)
+            }
+            SourceCommand::Detach(arguments) => {
+                run_source_detach(&cli.global, managed_paths, current_dir, arguments)
+            }
+            SourceCommand::Remove(arguments) => {
+                run_source_remove(&cli.global, managed_paths, current_dir, arguments)
+            }
+        },
+        Command::Project(arguments) => match arguments.command {
+            ProjectCommand::Create(arguments) => {
+                run_project_create(&cli.global, managed_paths, current_dir, arguments)
+            }
+            ProjectCommand::List(arguments) => {
+                run_project_list(&cli.global, managed_paths, current_dir, arguments)
+            }
+            ProjectCommand::Use(arguments) => {
+                run_project_use(&cli.global, managed_paths, current_dir, arguments)
+            }
+            ProjectCommand::SetRoot(arguments) => {
+                run_project_set_root(&cli.global, managed_paths, current_dir, arguments)
+            }
+        },
+        Command::Index(arguments) => match arguments.command {
+            IndexCommand::Delete(arguments) => {
+                run_index_delete(&cli.global, managed_paths, arguments)
+            }
+        },
         Command::Search(arguments) => {
             run_search(&cli.global, managed_paths, current_dir, arguments)
         }
@@ -122,7 +193,59 @@ pub async fn execute(cli: Cli) -> Result<crate::cli::ProcessExitCategory, Runtim
         Command::Status(arguments) => {
             run_status(&cli.global, managed_paths, current_dir, arguments)
         }
-        Command::Doctor(_) => run_doctor(&cli.global, managed_paths, current_dir),
+        Command::Doctor(arguments) => match arguments.command.clone() {
+            Some(DoctorCommand::Report(report)) => {
+                run_doctor_report(&cli.global, managed_paths, current_dir, report)
+            }
+            None => run_doctor(&cli.global, managed_paths, current_dir, arguments),
+        },
+        Command::Backup(arguments) => match arguments.command {
+            BackupCommand::Create(arguments) => {
+                run_backup_create(&cli.global, managed_paths, current_dir, arguments)
+            }
+            BackupCommand::List(arguments) => {
+                run_backup_list(&cli.global, managed_paths, current_dir, arguments)
+            }
+        },
+        Command::Prune(arguments) => match arguments.command {
+            PruneCommand::Plan(arguments) => {
+                run_prune_plan(&cli.global, managed_paths, current_dir, arguments)
+            }
+            PruneCommand::Apply(arguments) => {
+                run_prune_apply(&cli.global, managed_paths, current_dir, arguments)
+            }
+        },
+        Command::Forget(arguments) => match arguments.command {
+            ForgetCommand::Plan(arguments) => {
+                run_forget_plan(&cli.global, managed_paths, current_dir, arguments)
+            }
+            ForgetCommand::Apply(arguments) => {
+                run_forget_apply(&cli.global, managed_paths, current_dir, arguments)
+            }
+        },
+        Command::Restore(arguments) => match arguments.command {
+            RestoreCommand::Apply(arguments) => {
+                run_restore_apply(&cli.global, managed_paths, current_dir, arguments)
+            }
+        },
+        Command::Migrate(arguments) => match arguments.command {
+            MigrateCommand::Plan(arguments) => {
+                run_migrate_plan(managed_paths, current_dir, arguments)
+            }
+            MigrateCommand::Apply(arguments) => {
+                run_migrate_apply(managed_paths, current_dir, arguments)
+            }
+        },
+        Command::Config(arguments) => match arguments.command {
+            crate::cli::ConfigCommand::Migrate(arguments) => match arguments.command {
+                ConfigMigrateCommand::Plan(arguments) => {
+                    run_config_migrate_plan(&cli.global, managed_paths, current_dir, arguments)
+                }
+                ConfigMigrateCommand::Apply(arguments) => {
+                    run_config_migrate_apply(&cli.global, managed_paths, current_dir, arguments)
+                }
+            },
+        },
         Command::Context(arguments) => {
             run_context(&cli.global, managed_paths, current_dir, arguments.json)
         }
@@ -158,6 +281,19 @@ pub async fn execute(cli: Cli) -> Result<crate::cli::ProcessExitCategory, Runtim
                 run_integration_uninstall(&cli.global, managed_paths, arguments)
             }
         },
+        Command::Model(arguments) => match arguments.command {
+            ModelCommand::Install(arguments) => {
+                run_model_install(managed_paths, current_dir, arguments).await
+            }
+            ModelCommand::Import(arguments) => {
+                run_model_import(managed_paths, current_dir, arguments)
+            }
+            ModelCommand::List(arguments) => {
+                run_model_list(&cli.global, managed_paths, current_dir, arguments)
+            }
+            ModelCommand::Verify(arguments) => run_model_verify(managed_paths, arguments),
+            ModelCommand::Remove(arguments) => run_model_remove(managed_paths, arguments),
+        },
         Command::Completions(arguments) => {
             write_stdout(&render_completions(arguments.shell))?;
             Ok(crate::cli::ProcessExitCategory::Success)
@@ -171,6 +307,382 @@ pub async fn execute(cli: Cli) -> Result<crate::cli::ProcessExitCategory, Runtim
         }
         Command::Mcp(arguments) => {
             run_mcp(&cli.global, managed_paths, current_dir, arguments).await
+        }
+    }
+}
+
+async fn run_model_install(
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ModelInstallArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let ModelInstallKind::Embedding = arguments.kind;
+    let ca_bundle = arguments
+        .ca_bundle
+        .as_deref()
+        .map(|path| absolute_request_path(&current_dir, path));
+    let store = ModelStore::new(managed_paths.model_cache_dir());
+    let outcome = store
+        .install(&arguments.id, ca_bundle.as_deref())
+        .await
+        .map_err(map_model_error)?;
+    render_model_mutation("install", &outcome, arguments.json)?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_model_import(
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ModelImportArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let artifact = absolute_request_path(&current_dir, &arguments.artifact);
+    let store = ModelStore::new(managed_paths.model_cache_dir());
+    let outcome = store.import(&artifact).map_err(map_model_error)?;
+    render_model_mutation("import", &outcome, arguments.json)?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_model_list(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ModelListArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let selected_context = direct_context(global, managed_paths.clone(), current_dir).ok();
+    let selected_index = selected_context
+        .as_ref()
+        .map(|context| context.index_name.to_string());
+    let store = ModelStore::new(managed_paths.model_cache_dir());
+    let selected_index_state = selected_context
+        .as_ref()
+        .map(|context| resolve_index_model_state(context, &store))
+        .transpose()?;
+    let inventory = store.inventory();
+    let mut output = Vec::with_capacity(inventory.len());
+    for (manifest, item) in store.manifests().iter().zip(inventory) {
+        let pinned_by =
+            discover_model_pins(managed_paths.data_dir(), manifest).map_err(map_model_error)?;
+        let pinned_by_selected_index = selected_index
+            .as_ref()
+            .is_some_and(|selected| pinned_by.iter().any(|index| index == selected));
+        output.push(json!({
+            "id": item.id,
+            "kind": item.kind,
+            "state": item.state,
+            "dimension": item.dimension,
+            "license_id": item.license_id,
+            "upstream_revision": item.upstream_revision,
+            "source_url": manifest.source_url,
+            "manifest_sha256": item.fingerprint.to_string(),
+            "expected_bytes": item.expected_bytes,
+            "cache_path": json_path(&item.path),
+            "pinned_by_selected_index": pinned_by_selected_index,
+            "pinned_by_indexes": pinned_by,
+        }));
+    }
+
+    if arguments.json {
+        write_json_stdout(&json!({
+            "schema_version": "hsum.model-list.v1",
+            "request_id": Uuid::new_v4().to_string(),
+            "selected_index": selected_index,
+            "selected_index_state": selected_index_state,
+            "models": output,
+        }))?;
+    } else {
+        let mut human = String::new();
+        if let Some(state) = selected_index_state {
+            push_line(
+                &mut human,
+                "Selected index state",
+                serde_json::to_value(state)
+                    .ok()
+                    .and_then(|value| value.as_str().map(str::to_owned))
+                    .as_deref()
+                    .expect("index model states serialize as strings"),
+            );
+        }
+        for (ordinal, model) in output.iter().enumerate() {
+            if ordinal > 0 {
+                human.push('\n');
+            }
+            push_line(
+                &mut human,
+                "Model",
+                model["id"].as_str().expect("model IDs are strings"),
+            );
+            push_line(
+                &mut human,
+                "State",
+                model["state"].as_str().expect("model state is a string"),
+            );
+            push_line(
+                &mut human,
+                "Dimension",
+                &model["dimension"].as_u64().unwrap_or_default().to_string(),
+            );
+            push_line(
+                &mut human,
+                "Expected bytes",
+                &model["expected_bytes"]
+                    .as_u64()
+                    .unwrap_or_default()
+                    .to_string(),
+            );
+            push_line(
+                &mut human,
+                "Manifest SHA-256",
+                model["manifest_sha256"]
+                    .as_str()
+                    .expect("manifest hash is a string"),
+            );
+            push_line(
+                &mut human,
+                "Upstream revision",
+                model["upstream_revision"]
+                    .as_str()
+                    .expect("revision is a string"),
+            );
+            push_line(
+                &mut human,
+                "License",
+                model["license_id"].as_str().expect("license is a string"),
+            );
+            push_line(
+                &mut human,
+                "Cache",
+                model["cache_path"]
+                    .as_str()
+                    .expect("cache path is a string"),
+            );
+            push_line(
+                &mut human,
+                "Pinned by selected index",
+                bool_text(model["pinned_by_selected_index"].as_bool().unwrap_or(false)),
+            );
+            let pins = model["pinned_by_indexes"]
+                .as_array()
+                .expect("pin list is an array")
+                .iter()
+                .filter_map(Value::as_str)
+                .collect::<Vec<_>>();
+            push_line(
+                &mut human,
+                "Pinned by indexes",
+                &if pins.is_empty() {
+                    "none".to_owned()
+                } else {
+                    pins.join(", ")
+                },
+            );
+        }
+        write_stdout(human.as_bytes())?;
+    }
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn resolve_index_model_state(
+    context: &EffectiveContext,
+    store: &ModelStore<'_>,
+) -> Result<IndexModelState, RuntimeFailure> {
+    let database = IndexDb::open_existing(&context.database_path, OpenMode::ReadOnly)
+        .map_err(map_store_error)?;
+    let profile = database.embedding_profile().map_err(map_store_error)?;
+    let artifact = match &profile {
+        IndexEmbeddingProfile::LexicalOnly => ModelArtifactState::Missing,
+        IndexEmbeddingProfile::Pinned(pin) => {
+            let manifest = store.manifest(pin.model_id()).map_err(map_model_error)?;
+            let fingerprint = manifest
+                .fingerprint()
+                .map_err(ModelError::from)
+                .map_err(map_model_error)?;
+            if manifest.upstream_revision != pin.upstream_revision()
+                || fingerprint != pin.model_fingerprint()
+                || manifest.dimension != pin.dimension()
+            {
+                return Err(RuntimeFailure::from_error(
+                    ErrorSubcode::ModelFingerprint,
+                    "model_state",
+                    "the embedded manifest does not match the selected index pin",
+                ));
+            }
+            match store.inspect(manifest) {
+                Ok(()) => ModelArtifactState::Installed,
+                Err(ModelError::NotInstalled { .. }) => ModelArtifactState::Missing,
+                Err(_) => ModelArtifactState::Invalid,
+            }
+        }
+    };
+    let complete = database
+        .has_complete_vector_membership()
+        .map_err(map_store_error)?;
+    let model_was_used = database
+        .has_completed_vector_generation()
+        .map_err(map_store_error)?;
+    Ok(IndexModelState::derive_with_history(
+        &profile,
+        artifact,
+        complete,
+        model_was_used,
+    ))
+}
+
+fn run_model_verify(
+    managed_paths: ManagedPaths,
+    arguments: ModelVerifyArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let store = ModelStore::new(managed_paths.model_cache_dir());
+    let verification = store.verify(&arguments.id).map_err(map_model_error)?;
+    if arguments.json {
+        write_json_stdout(&json!({
+            "schema_version": "hsum.model-verify.v1",
+            "request_id": Uuid::new_v4().to_string(),
+            "id": verification.id,
+            "verified": true,
+            "files": verification.files,
+            "bytes": verification.bytes,
+            "manifest_sha256": verification.fingerprint.to_string(),
+            "cache_path": json_path(&verification.path),
+        }))?;
+    } else {
+        let mut output = String::new();
+        output.push_str("Model verification passed.\n");
+        push_line(&mut output, "Model", &verification.id);
+        push_line(&mut output, "Files", &verification.files.to_string());
+        push_line(&mut output, "Bytes", &verification.bytes.to_string());
+        push_line(
+            &mut output,
+            "Manifest SHA-256",
+            &verification.fingerprint.to_string(),
+        );
+        push_line(&mut output, "Cache", &human_path(&verification.path));
+        write_stdout(output.as_bytes())?;
+    }
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_model_remove(
+    managed_paths: ManagedPaths,
+    arguments: ModelRemoveArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let store = ModelStore::new(managed_paths.model_cache_dir());
+    let manifest = store.manifest(&arguments.id).map_err(map_model_error)?;
+    let pins = discover_model_pins(managed_paths.data_dir(), manifest).map_err(map_model_error)?;
+    let removal = store
+        .remove(&arguments.id, &pins, arguments.force)
+        .map_err(map_model_error)?;
+    if arguments.json {
+        write_json_stdout(&json!({
+            "schema_version": "hsum.model-remove.v1",
+            "request_id": Uuid::new_v4().to_string(),
+            "id": removal.id,
+            "removed": true,
+            "forced": removal.forced,
+            "affected_indexes": removal.affected_indexes,
+            "cache_path": json_path(&removal.path),
+        }))?;
+    } else {
+        let mut output = String::new();
+        output.push_str("Model removed.\n");
+        push_line(&mut output, "Model", &removal.id);
+        push_line(&mut output, "Cache", &human_path(&removal.path));
+        push_line(&mut output, "Forced", bool_text(removal.forced));
+        if !removal.affected_indexes.is_empty() {
+            push_line(
+                &mut output,
+                "Indexes left degraded",
+                &removal.affected_indexes.join(", "),
+            );
+        }
+        write_stdout(output.as_bytes())?;
+    }
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn render_model_mutation(
+    operation: &'static str,
+    outcome: &ModelMutation,
+    json: bool,
+) -> Result<(), RuntimeFailure> {
+    let verification = outcome.verification();
+    if json {
+        return write_json_stdout(&json!({
+            "schema_version": "hsum.model-mutation.v1",
+            "request_id": Uuid::new_v4().to_string(),
+            "operation": operation,
+            "id": verification.id,
+            "changed": outcome.changed(),
+            "verified": true,
+            "files": verification.files,
+            "bytes": verification.bytes,
+            "manifest_sha256": verification.fingerprint.to_string(),
+            "cache_path": json_path(&verification.path),
+        }));
+    }
+
+    let mut output = String::new();
+    if outcome.changed() {
+        output.push_str("Model installed and verified.\n");
+    } else {
+        output.push_str("Exact model is already installed and verified.\n");
+    }
+    push_line(&mut output, "Model", &verification.id);
+    push_line(&mut output, "Files", &verification.files.to_string());
+    push_line(&mut output, "Bytes", &verification.bytes.to_string());
+    push_line(
+        &mut output,
+        "Manifest SHA-256",
+        &verification.fingerprint.to_string(),
+    );
+    push_line(&mut output, "Cache", &human_path(&verification.path));
+    write_stdout(output.as_bytes())
+}
+
+fn map_model_error(error: ModelError) -> RuntimeFailure {
+    let subcode = match &error {
+        ModelError::UnknownModel(_) => ErrorSubcode::ConfigInvalid,
+        ModelError::NotInstalled { .. } | ModelError::Offline { .. } => {
+            ErrorSubcode::ModelNotInstalled
+        }
+        ModelError::Pinned { .. } | ModelError::PinDiscovery(_) => ErrorSubcode::ModelPinned,
+        ModelError::Dimension { .. } => ErrorSubcode::ModelDimension,
+        ModelError::Checksum { .. } => ErrorSubcode::ChecksumMismatch,
+        ModelError::NetworkTransient { .. } => ErrorSubcode::NetworkTransient,
+        ModelError::NetworkPermanent { .. } | ModelError::NetworkConfiguration(_) => {
+            ErrorSubcode::NetworkPermanent
+        }
+        ModelError::UnsafeArtifact(_)
+        | ModelError::UnsupportedImport(_)
+        | ModelError::ReceiptTooLarge => ErrorSubcode::PathInvalid,
+        ModelError::Io(_) => ErrorSubcode::StorageIo,
+        ModelError::ReceiptMissing(_)
+        | ModelError::ManifestMismatch { .. }
+        | ModelError::FileListMismatch { .. }
+        | ModelError::FileSize { .. }
+        | ModelError::DestinationOccupied(_)
+        | ModelError::TooManyFiles
+        | ModelError::IntegerOverflow
+        | ModelError::Manifest(_)
+        | ModelError::ReceiptJson(_) => ErrorSubcode::ModelFingerprint,
+    };
+    RuntimeFailure::from_error(subcode, "model", error)
+}
+
+fn map_embedding_inference_error(error: EmbeddingInferenceError) -> RuntimeFailure {
+    match error {
+        EmbeddingInferenceError::Artifact(error) => map_model_error(error),
+        error @ (EmbeddingInferenceError::WrongKind(_)
+        | EmbeddingInferenceError::ManifestFileMissing(_)
+        | EmbeddingInferenceError::OutputDimension { .. }
+        | EmbeddingInferenceError::DimensionOverflow) => {
+            RuntimeFailure::from_error(ErrorSubcode::ModelDimension, "reembed", error)
+        }
+        error @ (EmbeddingInferenceError::FastEmbed(_)
+        | EmbeddingInferenceError::EmptyInput
+        | EmbeddingInferenceError::OutputCount { .. }
+        | EmbeddingInferenceError::NonFinite { .. }
+        | EmbeddingInferenceError::NotNormalized { .. }) => {
+            RuntimeFailure::from_error(ErrorSubcode::ModelFingerprint, "reembed", error)
         }
     }
 }
@@ -214,18 +726,22 @@ impl RuntimeFailure {
         }
     }
 
-    fn unsupported_cursor() -> Self {
+    fn cursor_error(subcode: ErrorSubcode, reason: &'static str) -> Self {
         Self {
             public: Box::new(PublicError::with_details(
-                ErrorSubcode::QuerySyntax,
+                subcode,
                 Uuid::new_v4().to_string(),
                 json!({
                     "operation": "search",
                     "argument": "cursor",
-                    "reason": "CLI cursor pagination is unsupported in alpha.4; omit --cursor",
+                    "reason": reason,
                 }),
             )),
         }
+    }
+
+    fn stale_cursor(subcode: ErrorSubcode) -> Self {
+        Self::cursor_error(subcode, "cursor binding changed")
     }
 }
 
@@ -241,6 +757,32 @@ fn run_init(
     current_dir: PathBuf,
     arguments: InitArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let embedding_profile = match arguments.embedding_model.as_ref() {
+        None => IndexEmbeddingProfile::LexicalOnly,
+        Some(model_id) => {
+            let store = ModelStore::new(managed_paths.model_cache_dir());
+            let manifest = store.manifest(model_id.as_str()).map_err(map_model_error)?;
+            let fingerprint = manifest
+                .fingerprint()
+                .map_err(ModelError::from)
+                .map_err(map_model_error)?;
+            IndexEmbeddingProfile::Pinned(
+                EmbeddingModelPin::new(
+                    manifest.id.clone(),
+                    manifest.upstream_revision.clone(),
+                    fingerprint,
+                    manifest.dimension,
+                )
+                .map_err(|error| {
+                    RuntimeFailure::from_error(
+                        ErrorSubcode::ModelFingerprint,
+                        "init_embedding_profile",
+                        error,
+                    )
+                })?,
+            )
+        }
+    };
     let mut request = InitRequest::new(current_dir, managed_paths);
     request.requested_root = arguments.path;
     request.index_name = arguments.index;
@@ -253,6 +795,7 @@ fn run_init(
     request.allow_broad_root = arguments.allow_broad_root;
     request.allow_large_source = arguments.allow_large_source;
     request.index_quota_bytes = arguments.index_quota_bytes;
+    request.embedding_profile = embedding_profile;
 
     let outcome = initialize(&request).map_err(map_init_error)?;
     let ingest_exit = outcome.ingest.as_ref().map_or(
@@ -301,6 +844,14 @@ fn run_init(
     push_line(&mut output, "Index", outcome.index_name.as_str());
     push_line(&mut output, "Project", outcome.project_name.as_str());
     push_line(&mut output, "Data", &human_path(&outcome.database_path));
+    push_line(
+        &mut output,
+        "Embedding profile",
+        arguments
+            .embedding_model
+            .as_ref()
+            .map_or("lexical_only", |value| value.as_str()),
+    );
     if let Some(binding_id) = outcome.binding_id {
         push_line(&mut output, "Binding", &binding_id.to_string());
     }
@@ -385,6 +936,15 @@ fn run_init(
             output.push_str("Connect Codex:\n  ");
             output.push_str(&shell_quote_path(&executable));
             output.push_str(" integration install codex --confirm\n");
+        }
+        if let Some(model_id) = &arguments.embedding_model {
+            output.push_str("Semantic setup:\n  ");
+            output.push_str(&shell_quote_path(&executable));
+            output.push_str(" model install embedding ");
+            output.push_str(model_id.as_str());
+            output.push_str("\n  ");
+            output.push_str(&shell_quote_path(&executable));
+            output.push_str(" ingest --reembed\n");
         }
     }
     write_stdout(output.as_bytes())?;
@@ -492,46 +1052,35 @@ fn run_ingest(
     current_dir: PathBuf,
     arguments: IngestArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
-    let context = direct_context(global, managed_paths, current_dir)?;
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    if arguments.reembed {
+        return run_reembed(&context, Duration::from_millis(arguments.lock_timeout_ms));
+    }
     let confirmations = DeleteConfirmations {
         allow_empty_snapshot: arguments.allow_empty_snapshot,
         allow_mass_delete: arguments.allow_mass_delete,
     };
 
     if arguments.dry_run {
-        let scope = filesystem_scope(&context);
-        let database = IndexDb::open_existing(&context.database_path, OpenMode::ReadOnly)
-            .map_err(map_store_error)?;
-        let plan = plan_filesystem_ingest_with_timeout(
-            &database,
-            &scope,
-            &context.source_root,
-            &context.source_discovery_options,
+        let plan = plan_project_sources_with_timeout(
+            &context,
+            &arguments.source,
+            arguments.strict,
             Duration::from_millis(arguments.lock_timeout_ms),
         )
-        .map_err(map_filesystem_ingest_error)?;
-        drop(database);
+        .map_err(map_project_ingest_error)?;
         render_ingest_plan(&context, &plan, confirmations)?;
         return Ok(crate::cli::ProcessExitCategory::Success);
     }
 
-    let scope = filesystem_scope(&context);
-    let mut database = IndexDb::open_existing(&context.database_path, OpenMode::ReadWrite)
-        .map_err(map_store_error)?;
-    let outcome = ingest_filesystem_with_policy(
-        &mut database,
-        &scope,
-        &context.source_root,
-        &context.source_discovery_options,
-        false,
+    let outcome = ingest_project_sources_with_timeout(
+        &context,
+        &arguments.source,
+        arguments.strict,
         confirmations,
-        FilesystemIngestPolicy {
-            lock_timeout: Duration::from_millis(arguments.lock_timeout_ms),
-            index_quota_bytes: context.index_quota_bytes,
-        },
+        Duration::from_millis(arguments.lock_timeout_ms),
     )
-    .map_err(map_filesystem_ingest_error)?;
-    drop(database);
+    .map_err(map_project_ingest_error)?;
 
     let ingest_exit = ingest_exit_category(&outcome);
     render_ingest_outcome(&outcome)?;
@@ -556,6 +1105,199 @@ fn run_ingest(
     Ok(ingest_exit)
 }
 
+fn run_reembed(
+    context: &EffectiveContext,
+    lock_timeout: Duration,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let mut database = IndexDb::open_existing(&context.database_path, OpenMode::ReadWrite)
+        .map_err(map_store_error)?;
+    let profile = database.embedding_profile().map_err(map_store_error)?;
+    let IndexEmbeddingProfile::Pinned(pin) = profile else {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::ModelNotInstalled,
+            "reembed",
+            "the selected index is lexical-only; create a new index with --embedding-model",
+        ));
+    };
+    let initial_plan = database.plan_reembedding().map_err(map_store_error)?;
+    StoragePreflight::run(
+        &context.database_path,
+        initial_plan.estimated_write_bytes,
+        context.index_quota_bytes,
+    )
+    .map_err(|error| {
+        RuntimeFailure::from_error(storage_preflight_subcode(&error), "reembed", error)
+    })?;
+    let store = ModelStore::new(context.managed_paths.model_cache_dir());
+    let manifest = store.manifest(pin.model_id()).map_err(map_model_error)?;
+    let manifest_fingerprint = manifest
+        .fingerprint()
+        .map_err(ModelError::from)
+        .map_err(map_model_error)?;
+    if manifest.upstream_revision != pin.upstream_revision()
+        || manifest_fingerprint != pin.model_fingerprint()
+        || manifest.dimension != pin.dimension()
+    {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::ModelFingerprint,
+            "reembed",
+            "the embedded model manifest does not match the index pin",
+        ));
+    }
+    let artifact = store
+        .verify_embedding_artifact(pin.model_id())
+        .map_err(map_embedding_inference_error)?;
+    let options = EmbeddingOptions::new(
+        NonZeroUsize::new(512).expect("the frozen maximum length is nonzero"),
+        NonZeroUsize::new(2).expect("the frozen worker count is nonzero"),
+    );
+    let mut model = artifact
+        .read()
+        .and_then(|bytes| bytes.initialize(options))
+        .map_err(map_embedding_inference_error)?;
+    if model.fingerprint() != pin.model_fingerprint() || model.dimension() != pin.dimension() {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::ModelFingerprint,
+            "reembed",
+            "the verified inference session does not match the index pin",
+        ));
+    }
+    let provenance_json =
+        serde_json_canonicalizer::to_string(model.provenance()).map_err(|error| {
+            RuntimeFailure::from_error(ErrorSubcode::ModelFingerprint, "reembed_provenance", error)
+        })?;
+    let provenance = EmbeddingProvenanceRecord::from_json(&provenance_json).map_err(|error| {
+        RuntimeFailure::from_error(ErrorSubcode::ModelFingerprint, "reembed_provenance", error)
+    })?;
+
+    let writer_lock =
+        WriterLock::acquire(&context.database_path, lock_timeout).map_err(map_store_error)?;
+    let plan = database.plan_reembedding().map_err(map_store_error)?;
+    let storage_preflight = StoragePreflight::run(
+        &context.database_path,
+        plan.estimated_write_bytes,
+        context.index_quota_bytes,
+    )
+    .map_err(|error| {
+        RuntimeFailure::from_error(storage_preflight_subcode(&error), "reembed", error)
+    })?;
+
+    let mut after_passage_id = 0_i64;
+    let mut cached = 0_u64;
+    let mut concurrently_reused = 0_u64;
+    loop {
+        let inputs = database
+            .load_embedding_input_batch(after_passage_id, 8)
+            .map_err(map_store_error)?;
+        if inputs.is_empty() {
+            break;
+        }
+        let mut missing_inputs = Vec::with_capacity(inputs.len());
+        for input in &inputs {
+            if !database
+                .has_cached_embedding(input)
+                .map_err(map_store_error)?
+            {
+                missing_inputs.push(input);
+            }
+        }
+        if missing_inputs.is_empty() {
+            after_passage_id = inputs
+                .last()
+                .expect("a nonempty batch has a last input")
+                .passage_id();
+            continue;
+        }
+        let texts = missing_inputs
+            .iter()
+            .map(|input| input.text().to_owned())
+            .collect::<Vec<_>>();
+        let batch_size = NonZeroUsize::new(texts.len())
+            .expect("a nonempty embedding input batch has a nonzero size");
+        let vectors = model
+            .embed(&texts, batch_size)
+            .map_err(map_embedding_inference_error)?;
+        if vectors.len() != missing_inputs.len() {
+            return Err(map_store_error(StoreError::InvalidEmbedding(
+                "embedding batch cardinality",
+            )));
+        }
+        for (input, vector) in missing_inputs.into_iter().zip(vectors) {
+            let prepared = PreparedChunkEmbedding::from_input(input, vector, provenance.clone())
+                .map_err(map_store_error)?;
+            let cache_outcome = database
+                .cache_chunk_embedding_with_lock(&writer_lock, &prepared)
+                .map_err(map_store_error)?;
+            let counter = match cache_outcome {
+                crate::store::EmbeddingCacheOutcome::Inserted { .. } => &mut cached,
+                crate::store::EmbeddingCacheOutcome::Reused { .. } => &mut concurrently_reused,
+            };
+            *counter = counter.checked_add(1).ok_or_else(|| {
+                RuntimeFailure::from_error(
+                    ErrorSubcode::MemoryBudget,
+                    "reembed",
+                    "embedding count overflowed",
+                )
+            })?;
+        }
+        after_passage_id = inputs
+            .last()
+            .expect("a nonempty batch has a last input")
+            .passage_id();
+    }
+    let outcome = database
+        .commit_cached_reembedding_with_lock(&writer_lock)
+        .map_err(map_store_error)?;
+    let mut output = String::new();
+    output.push_str("Semantic re-embedding committed.\n");
+    push_line(&mut output, "Model", pin.model_id());
+    push_line(
+        &mut output,
+        "Model fingerprint",
+        &pin.model_fingerprint().to_string(),
+    );
+    push_line(&mut output, "Inputs cached", &cached.to_string());
+    push_line(
+        &mut output,
+        "Inputs reused",
+        &plan
+            .cached_inputs
+            .checked_add(concurrently_reused)
+            .ok_or_else(|| {
+                RuntimeFailure::from_error(
+                    ErrorSubcode::MemoryBudget,
+                    "reembed",
+                    "embedding reuse count overflowed",
+                )
+            })?
+            .to_string(),
+    );
+    push_line(
+        &mut output,
+        "Estimated write bytes",
+        &plan.estimated_write_bytes.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Active passages",
+        &outcome.passages.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Generation",
+        &outcome.generation_id.to_string(),
+    );
+    push_line(&mut output, "Index epoch", &outcome.index_epoch.to_string());
+    push_line(
+        &mut output,
+        "Vector slot",
+        &outcome.active_vector_slot.to_string(),
+    );
+    write_stdout(output.as_bytes())?;
+    render_storage_warnings(&storage_preflight)?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
 fn ingest_exit_category(outcome: &IngestOutcome) -> crate::cli::ProcessExitCategory {
     if !outcome.source_outcomes.is_empty()
         && outcome
@@ -576,90 +1318,643 @@ fn ingest_exit_category(outcome: &IngestOutcome) -> crate::cli::ProcessExitCateg
     }
 }
 
+fn run_source_add(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: SourceAddArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    match arguments.connector {
+        SourceConnectorCommand::Fs(arguments) => {
+            let request = AddFilesystemSourceRequest {
+                database_path: context.database_path.clone(),
+                project_id: context.project_id,
+                path: arguments.path,
+                source_name: arguments.name.clone(),
+                current_dir,
+                environment_home: env::var_os("HOME").map(PathBuf::from),
+                allow_broad_root: arguments.allow_broad_root,
+                index_quota_bytes: context.index_quota_bytes,
+                lock_timeout: DEFAULT_WRITER_LOCK_TIMEOUT,
+            };
+            let (registration, config) =
+                add_filesystem_source(&request).map_err(map_source_management_error)?;
+            let mut output = String::new();
+            output.push_str(if registration.created {
+                "Filesystem source configured.\n"
+            } else if registration.reactivated {
+                "Filesystem source reactivated.\n"
+            } else {
+                "Filesystem source already configured.\n"
+            });
+            push_line(&mut output, "Source", arguments.name.as_str());
+            push_line(
+                &mut output,
+                "Source ID",
+                &registration.source_id.to_string(),
+            );
+            push_line(&mut output, "Root", &human_path(config.root()));
+            push_line(
+                &mut output,
+                "Attached",
+                if registration.attached { "yes" } else { "no" },
+            );
+            if registration.attached {
+                output.push_str("Run `hsum ingest --source ");
+                output.push_str(&registration.source_id.to_string());
+                output.push_str("` to refresh this source.\n");
+            } else {
+                output.push_str("Activate: hsum project set-root ");
+                output.push_str(&shell_quote_path(config.root()));
+                output.push_str(" --source-name ");
+                output.push_str(arguments.name.as_str());
+                output.push_str(" --confirm");
+                if arguments.allow_broad_root {
+                    output.push_str(" --allow-broad-root");
+                }
+                output.push('\n');
+            }
+            write_stdout(output.as_bytes())?;
+            Ok(crate::cli::ProcessExitCategory::Success)
+        }
+        SourceConnectorCommand::Jsonl(arguments) => run_source_add_jsonl(&context, arguments),
+    }
+}
+
+fn run_source_add_jsonl(
+    context: &EffectiveContext,
+    arguments: crate::cli::JsonlSourceAddArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let request = AddJsonlSourceRequest {
+        database_path: context.database_path.clone(),
+        project_id: context.project_id,
+        project_name: context.project_name.clone(),
+        path: arguments.path,
+        source_name: arguments.name.clone(),
+        index_quota_bytes: context.index_quota_bytes,
+        lock_timeout: DEFAULT_WRITER_LOCK_TIMEOUT,
+    };
+    let (registration, config) = add_jsonl_source(&request).map_err(map_source_management_error)?;
+    let mut output = String::new();
+    output.push_str(if registration.created {
+        "JSONL source configured.\n"
+    } else if registration.attached {
+        "Existing JSONL source attached to the selected project.\n"
+    } else {
+        "JSONL source already configured.\n"
+    });
+    push_line(&mut output, "Source", arguments.name.as_str());
+    push_line(
+        &mut output,
+        "Source ID",
+        &registration.source_id.to_string(),
+    );
+    push_line(&mut output, "Project", context.project_name.as_str());
+    push_line(&mut output, "Snapshot", &human_path(config.path()));
+    output.push_str("Run `hsum ingest --source ");
+    output.push_str(&registration.source_id.to_string());
+    output.push_str("` to ingest this snapshot.\n");
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_source_list(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: SourceListArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let context = direct_context(global, managed_paths, current_dir)?;
+    let _reader_lease = ReaderLease::acquire(&context.database_path, DEFAULT_WRITER_LOCK_TIMEOUT)
+        .map_err(map_store_error)?;
+    let sources = list_sources_in_scope(&context.database_path, context.project_id, arguments.all)
+        .map_err(map_source_management_error)?;
+    if arguments.json {
+        let sources = sources
+            .iter()
+            .map(|source| {
+                json!({
+                    "source_id": source.source_id,
+                    "kind": source.kind.as_str(),
+                    "name": source.name.as_str(),
+                    "logical_uri": source.logical_uri,
+                    "attached": source.attached,
+                    "active_documents": source.active_documents,
+                    "last_success_at": source.last_success_at,
+                    "last_error": source.last_error_code.as_ref().map(|code| json!({
+                        "code": code,
+                        "detail": source.last_error_detail,
+                        "observed_at": source.last_error_at,
+                    })),
+                })
+            })
+            .collect::<Vec<_>>();
+        write_json_stdout(&json!({
+            "schema_version": MCP_API_VERSION,
+            "project": context.project_name.as_str(),
+            "project_id": context.project_id,
+            "sources": sources,
+        }))?;
+    } else {
+        let mut output = String::new();
+        push_line(&mut output, "Project", context.project_name.as_str());
+        for source in &sources {
+            output.push_str("Source ");
+            output.push_str(&source.source_id.to_string());
+            output.push_str("  ");
+            output.push_str(source.kind.as_str());
+            output.push_str("  ");
+            output.push_str(&escape_terminal_text(source.name.as_str()));
+            output.push_str("  ");
+            output.push_str(&escape_terminal_text(&source.logical_uri));
+            if !source.attached {
+                output.push_str("  unattached");
+            }
+            if let Some(code) = &source.last_error_code {
+                output.push_str("  error=");
+                output.push_str(&escape_terminal_text(code));
+            }
+            output.push('\n');
+        }
+        write_stdout(output.as_bytes())?;
+    }
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_source_attach(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: SourceAttachArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    debug_assert!(
+        arguments.confirm,
+        "clap requires source attach confirmation"
+    );
+    let context = direct_context(global, managed_paths, current_dir)?;
+    let outcome = attach_jsonl_source(
+        &context.database_path,
+        context.project_id,
+        &arguments.source,
+        context.index_quota_bytes,
+        DEFAULT_WRITER_LOCK_TIMEOUT,
+    )
+    .map_err(map_source_management_error)?;
+    let mut output = String::new();
+    output.push_str(if outcome.changed {
+        "JSONL source attached to the selected project.\n"
+    } else {
+        "JSONL source already attached to the selected project.\n"
+    });
+    push_line(&mut output, "Source", outcome.source_name.as_str());
+    push_line(&mut output, "Source ID", &outcome.source_id.to_string());
+    push_line(&mut output, "Project", context.project_name.as_str());
+    push_line(
+        &mut output,
+        "Scope revision",
+        &outcome.scope_revision.to_string(),
+    );
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_source_detach(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: SourceDetachArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    debug_assert!(
+        arguments.confirm,
+        "clap requires source detach confirmation"
+    );
+    let context = direct_context(global, managed_paths, current_dir)?;
+    let outcome = detach_jsonl_source(
+        &context.database_path,
+        context.project_id,
+        &arguments.source,
+        context.index_quota_bytes,
+        DEFAULT_WRITER_LOCK_TIMEOUT,
+    )
+    .map_err(map_source_management_error)?;
+    let mut output = String::new();
+    output.push_str(if outcome.changed {
+        "JSONL source detached from the selected project.\n"
+    } else {
+        "JSONL source already detached from the selected project.\n"
+    });
+    push_line(&mut output, "Source", outcome.source_name.as_str());
+    push_line(&mut output, "Source ID", &outcome.source_id.to_string());
+    push_line(&mut output, "Project", context.project_name.as_str());
+    push_line(
+        &mut output,
+        "Scope revision",
+        &outcome.scope_revision.to_string(),
+    );
+    output.push_str("Stored source heads and immutable versions were retained.\n");
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_source_remove(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: SourceRemoveArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    debug_assert!(
+        arguments.confirm,
+        "clap requires source removal confirmation"
+    );
+    let context = direct_context(global, managed_paths, current_dir)?;
+    let outcome = remove_jsonl_source(
+        &context.database_path,
+        context.project_id,
+        &arguments.source,
+        context.index_quota_bytes,
+        DEFAULT_WRITER_LOCK_TIMEOUT,
+    )
+    .map_err(map_source_management_error)?;
+    let mut output = String::from("JSONL source removed from active project scopes.\n");
+    push_line(&mut output, "Source", outcome.source_name.as_str());
+    push_line(&mut output, "Source ID", &outcome.source_id.to_string());
+    push_line(
+        &mut output,
+        "Generation",
+        &outcome
+            .generation_id
+            .map_or_else(|| "unchanged".to_owned(), |value| value.to_string()),
+    );
+    push_line(
+        &mut output,
+        "Tombstoned documents",
+        &outcome.tombstoned_documents.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Detached projects",
+        &outcome.detached_projects.to_string(),
+    );
+    output.push_str("Immutable versions remain available until explicit prune.\n");
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_project_create(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ProjectCreateArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let context = direct_context(global, managed_paths, current_dir)?;
+    let registration = create_project(&context, &arguments.name, DEFAULT_WRITER_LOCK_TIMEOUT)
+        .map_err(map_project_management_error)?;
+    let mut output = String::new();
+    output.push_str(if registration.created {
+        "Project created with the selected filesystem authority.\n"
+    } else {
+        "Project already exists.\n"
+    });
+    push_line(&mut output, "Project", arguments.name.as_str());
+    push_line(
+        &mut output,
+        "Project ID",
+        &registration.project_id.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Filesystem source",
+        &context.source_id.to_string(),
+    );
+    output.push_str("Run `hsum project use ");
+    output.push_str(arguments.name.as_str());
+    output.push_str(" --confirm` to select it persistently.\n");
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_project_list(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ProjectListArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let context = direct_context(global, managed_paths, current_dir)?;
+    let projects = list_projects(&context.database_path).map_err(map_project_management_error)?;
+    if arguments.json {
+        let projects = projects
+            .iter()
+            .map(|project| {
+                json!({
+                    "project_id": project.project_id,
+                    "name": project.name.as_str(),
+                    "selected": project.project_id == context.project_id,
+                    "scope_revision": project.scope_revision,
+                    "active_sources": project.active_sources,
+                    "filesystem_source_id": project.filesystem_source_id,
+                    "filesystem_source_name": project.filesystem_source_name.as_str(),
+                    "filesystem_root": project.filesystem_root,
+                })
+            })
+            .collect::<Vec<_>>();
+        write_json_stdout(&json!({
+            "schema_version": MCP_API_VERSION,
+            "index": context.index_name.as_str(),
+            "index_id": context.index_id,
+            "selected_project_id": context.project_id,
+            "projects": projects,
+        }))?;
+    } else {
+        let mut output = String::new();
+        push_line(&mut output, "Index", context.index_name.as_str());
+        for project in &projects {
+            output.push_str(if project.project_id == context.project_id {
+                "* "
+            } else {
+                "  "
+            });
+            output.push_str(project.name.as_str());
+            output.push_str("  ");
+            output.push_str(&project.project_id.to_string());
+            output.push_str("  sources=");
+            output.push_str(&project.active_sources.to_string());
+            output.push_str("  root=");
+            output.push_str(&escape_terminal_text(&project.filesystem_root));
+            output.push('\n');
+        }
+        write_stdout(output.as_bytes())?;
+    }
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_project_use(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ProjectUseArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    debug_assert!(arguments.confirm, "clap requires project use confirmation");
+    let context = direct_context(global, managed_paths, current_dir)?;
+    let outcome =
+        use_project(&context, &arguments.project).map_err(map_project_management_error)?;
+    let mut output = String::new();
+    output.push_str(if outcome.changed {
+        "Persistent project selection updated.\n"
+    } else {
+        "Project is already selected.\n"
+    });
+    push_line(&mut output, "Project", outcome.project.name.as_str());
+    push_line(
+        &mut output,
+        "Project ID",
+        &outcome.project.project_id.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Root",
+        &escape_terminal_text(&outcome.project.filesystem_root),
+    );
+    if Path::new(&outcome.project.filesystem_root) != context.source_root {
+        output.push_str(
+            "Run subsequent root-selected commands from the project's filesystem root.\n",
+        );
+    }
+    write_stdout(output.as_bytes())?;
+    if outcome.durability == Some(crate::config::AtomicSaveOutcome::DurabilityUnknown) {
+        write_stderr(
+            b"warning: the project selection was written, but parent-directory durability could \
+              not be confirmed on this filesystem\n",
+        )?;
+    }
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_project_set_root(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ProjectSetRootArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    debug_assert!(
+        arguments.confirm,
+        "clap requires root replacement confirmation"
+    );
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    let outcome = set_project_root(&SetProjectRootRequest {
+        context: &context,
+        path: arguments.path,
+        source_name: arguments.source_name,
+        current_dir,
+        environment_home: env::var_os("HOME").map(PathBuf::from),
+        allow_broad_root: arguments.allow_broad_root,
+        lock_timeout: DEFAULT_WRITER_LOCK_TIMEOUT,
+    })
+    .map_err(map_project_management_error)?;
+    let mut output = String::new();
+    output.push_str(if outcome.changed {
+        "Project filesystem authority replaced.\n"
+    } else {
+        "Project filesystem authority already matches the requested root.\n"
+    });
+    push_line(&mut output, "Project", context.project_name.as_str());
+    push_line(
+        &mut output,
+        "Root",
+        &escape_terminal_text(&outcome.new_root),
+    );
+    push_line(&mut output, "Source", outcome.new_source_name.as_str());
+    push_line(&mut output, "Source ID", &outcome.new_source_id.to_string());
+    push_line(
+        &mut output,
+        "Scope revision",
+        &outcome.scope_revision.to_string(),
+    );
+    if outcome.changed {
+        output.push_str(
+            "The old source membership and immutable versions were retained for history.\n",
+        );
+        output.push_str("Run `hsum ingest --strict` from the new root to index it.\n");
+    }
+    write_stdout(output.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_index_delete(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    arguments: IndexDeleteArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    debug_assert!(
+        arguments.confirm,
+        "clap requires index deletion confirmation"
+    );
+    let config_file = global
+        .config
+        .clone()
+        .unwrap_or_else(|| managed_paths.config_file());
+    let outcome = delete_index(&DeleteIndexRequest {
+        managed_paths,
+        config_file,
+        config_file_explicit: global.config.is_some(),
+        index_name: arguments.name,
+        lock_timeout: Duration::from_millis(arguments.lock_timeout_ms),
+    })
+    .map_err(map_index_management_error)?;
+    let mut output = String::from("Managed index deleted.\n");
+    push_line(&mut output, "Index", outcome.index_name.as_str());
+    push_line(&mut output, "Index ID", &outcome.index_id.to_string());
+    push_line(
+        &mut output,
+        "Trust bindings removed",
+        &outcome.removed_bindings.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Configured default cleared",
+        bool_text(outcome.cleared_configured_default),
+    );
+    push_line(
+        &mut output,
+        "Interrupted deletion resumed",
+        bool_text(outcome.resumed_quarantine),
+    );
+    output.push_str(
+        "Repository .hsum.toml pointers were retained as unauthoritative hints and can be removed manually.\n",
+    );
+    write_stdout(output.as_bytes())?;
+    if outcome.durability_unknown {
+        write_stderr(
+            b"warning: index deletion is visible, but parent-directory durability could not be confirmed\n",
+        )?;
+    }
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
 fn run_search(
     global: &GlobalOptions,
     managed_paths: ManagedPaths,
     current_dir: PathBuf,
     arguments: SearchArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
-    if arguments.cursor.is_some() {
-        return Err(RuntimeFailure::unsupported_cursor());
-    }
     let context = direct_context(global, managed_paths, current_dir)?;
+    let _reader_lease = ReaderLease::acquire(&context.database_path, DEFAULT_WRITER_LOCK_TIMEOUT)
+        .map_err(map_store_error)?;
+    let mode = match arguments.mode {
+        CliSearchMode::Auto => SearchMode::Auto,
+        CliSearchMode::Lexical => SearchMode::Lexical,
+        CliSearchMode::Hybrid => SearchMode::Hybrid,
+        CliSearchMode::Semantic => SearchMode::Semantic,
+    };
+    let decoded_cursor = decode_search_cursor(
+        arguments.cursor.as_deref(),
+        context.project_id,
+        &arguments.query,
+        mode,
+        arguments.explain,
+    )
+    .map_err(map_search_cursor_error)?;
+    let expected_snapshot = decoded_cursor
+        .state
+        .as_ref()
+        .map(search_snapshot_from_cursor);
     let request = SearchRequest::new(
         &arguments.query,
-        match arguments.mode {
-            CliSearchMode::Auto => SearchMode::Auto,
-            CliSearchMode::Lexical => SearchMode::Lexical,
-        },
-        usize::from(arguments.limit),
+        mode,
+        MAX_SEARCH_LIMIT,
         arguments.timeout_ms,
         arguments.explain,
     )
     .map_err(map_search_error)?;
-    let database = IndexDb::open_existing(&context.database_path, OpenMode::ReadOnly)
-        .map_err(map_store_error)?;
-    let response = database
-        .search(context.project_id, &request)
-        .map_err(map_search_error)?;
-    let cited_revisions = response
-        .results
-        .iter()
-        .map(|passage| {
-            (
-                passage.source_id,
-                passage.document_id,
-                passage.revision_sha256,
+    let embedding_runtime = if mode == SearchMode::Lexical {
+        None
+    } else {
+        Some(
+            SearchEmbeddingRuntime::new(context.managed_paths.model_cache_dir())
+                .map_err(SearchEvidenceError::from)
+                .map_err(map_search_evidence_error)?,
+        )
+    };
+    let outcome = SearchEvidence::execute(&SearchEvidenceRequest {
+        index_path: context.database_path.clone(),
+        project_id: context.project_id,
+        search: request,
+        embedding_runtime,
+        expected_snapshot,
+        page: SearchEvidencePage {
+            offset: decoded_cursor.offset,
+            limit: usize::from(arguments.limit),
+            body_bytes: None,
+        },
+        field_limits: SearchEvidenceFieldLimits::CLI,
+        probe_budget: SOURCE_PROBE_TIMEOUT,
+        operation_deadline: None,
+        deadline_stop_is_error: decoded_cursor.state.is_some(),
+        connection_observer: None,
+        cancelled: None,
+    })
+    .map_err(map_search_evidence_error)?;
+    let config_fingerprint = retrieval_execution_fingerprint(&outcome.response);
+    let cursor_state = SearchCursorState {
+        index_id: outcome.snapshot.index_id,
+        scope_revision: outcome.snapshot.scope_revision,
+        index_epoch: outcome.snapshot.index_epoch,
+        generation: outcome.snapshot.generation,
+        config_fingerprint,
+    };
+    if decoded_cursor
+        .state
+        .as_ref()
+        .is_some_and(|expected| expected != &cursor_state)
+    {
+        return Err(RuntimeFailure::stale_cursor(cursor_stale_subcode(
+            search_cursor_stale_cause(
+                decoded_cursor.state.as_ref().expect("checked above"),
+                &cursor_state,
+            ),
+        )));
+    }
+    let offset = decoded_cursor.offset;
+    let consumed = offset.saturating_add(outcome.response.results.len());
+    let next_cursor = if outcome.response.stop_reason != SearchStopReason::Deadline
+        && consumed < outcome.total_fetched
+        && consumed < MAX_SEARCH_LIMIT
+    {
+        Some(
+            encode_search_cursor(
+                consumed,
+                context.project_id,
+                &arguments.query,
+                mode,
+                arguments.explain,
+                &cursor_state,
             )
-        })
-        .collect::<BTreeSet<_>>();
-    let transaction = database
-        .connection()
-        .unchecked_transaction()
-        .map_err(|error| {
-            RuntimeFailure::from_error(sqlite_subcode(&error), "search_drift_snapshot", error)
-        })?;
-    let drift_targets = cited_revisions
-        .into_iter()
-        .map(|(source_id, document_id, revision_sha256)| {
-            Status::cited_drift_target(&transaction, source_id, document_id, revision_sha256)
-        })
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(map_status_error)?
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>();
-    transaction.rollback().map_err(|error| {
-        RuntimeFailure::from_error(sqlite_subcode(&error), "search_drift_snapshot", error)
-    })?;
-    drop(database);
-    let probe_deadline = Instant::now()
-        .checked_add(SOURCE_PROBE_TIMEOUT)
-        .unwrap_or_else(Instant::now);
-    let drift = drift_targets
-        .into_iter()
-        .map(|target| {
-            Status::probe_cited_target(
-                &context.source_root,
-                target,
-                DriftOptions {
-                    verify_content_hash: false,
-                    deadline: probe_deadline.saturating_duration_since(Instant::now()),
-                },
-            )
-        })
-        .collect::<Vec<_>>();
+            .map_err(map_search_cursor_error)?,
+        )
+    } else {
+        None
+    };
+    let response = outcome.response;
+    let drift = outcome.drift;
 
     if arguments.json {
-        let output = SearchJson::from_response(
-            &context,
+        let output = CliSearchOutput::from_response(
+            Uuid::new_v4().to_string(),
+            context.project_name.as_str().to_owned(),
             response,
-            Some(drift.as_slice()),
+            drift.as_slice(),
             arguments.explain,
+            next_cursor,
         );
         write_json_stdout(&output)?;
     } else {
-        render_search_human(&response, Some(drift.as_slice()), arguments.explain)?;
+        render_search_human(
+            &response,
+            Some(drift.as_slice()),
+            arguments.explain,
+            offset,
+            next_cursor.as_deref(),
+        )?;
     }
     Ok(crate::cli::ProcessExitCategory::Success)
 }
@@ -671,91 +1966,27 @@ fn run_get(
     arguments: GetArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
     let context = direct_context(global, managed_paths, current_dir)?;
+    let _reader_lease = ReaderLease::acquire(&context.database_path, DEFAULT_WRITER_LOCK_TIMEOUT)
+        .map_err(map_store_error)?;
     let request = GetRequest {
         project_id: context.project_id,
         citation: arguments.citation_uri,
         max_bytes: usize::try_from(arguments.max_bytes)
             .expect("u32 fits usize on supported targets"),
     };
-    let database = IndexDb::open_existing(&context.database_path, OpenMode::ReadOnly)
-        .map_err(map_store_error)?;
-    let response = database.get_evidence(&request).map_err(map_get_error)?;
-    let verification_snapshot = if arguments.verify_source_hash {
-        let transaction = database
-            .connection()
-            .unchecked_transaction()
-            .map_err(|error| {
-                RuntimeFailure::from_error(
-                    sqlite_subcode(&error),
-                    "get_verification_snapshot",
-                    error,
-                )
-            })?;
-        let current_head = current_head_body_sha256(
-            &transaction,
-            context.project_id,
-            request.citation.source_id,
-            request.citation.document_id,
-        )?;
-        let drift_target = Status::cited_drift_target(
-            &transaction,
-            request.citation.source_id,
-            request.citation.document_id,
-            request.citation.revision,
-        )
-        .map_err(map_status_error)?;
-        drop(transaction);
-        Some((current_head, drift_target))
-    } else {
-        None
-    };
-    drop(database);
-
-    let verification = if arguments.verify_source_hash {
-        let (current_head, drift_target) =
-            verification_snapshot.expect("verification snapshot was requested");
-        let observation = drift_target.map(|target| {
-            Status::probe_cited_target(
-                &context.source_root,
-                target,
-                DriftOptions {
-                    verify_content_hash: true,
-                    deadline: SOURCE_PROBE_TIMEOUT,
-                },
-            )
-        });
-        verify_source_hash(response.body_sha256, current_head, observation.as_ref())
-    } else {
-        "not_requested".to_owned()
-    };
-    let content = String::from_utf8(response.content)
-        .map_err(|error| RuntimeFailure::from_error(ErrorSubcode::Invariant, "get", error))?;
-    let metadata: Value = serde_json::from_str(&response.metadata_json)
-        .map_err(|error| RuntimeFailure::from_error(ErrorSubcode::Invariant, "get", error))?;
-
-    let output = GetJson {
-        schema_version: MCP_API_VERSION,
-        request_id: Uuid::new_v4().to_string(),
-        requested_citation_uri: response.requested_citation.to_string(),
-        returned_citation_uri: response.returned_citation.to_string(),
-        requested_line_span: LineSpanJson {
-            start: response.requested_line_span.start(),
-            end: response.requested_line_span.end(),
-        },
-        returned_line_span: LineSpanJson {
-            start: response.returned_line_span.start(),
-            end: response.returned_line_span.end(),
-        },
-        source_uri: response.source_uri,
-        title: response.title,
-        metadata,
-        source_updated_at: response.source_updated_at,
-        indexed_at: response.indexed_at,
-        content,
-        body_sha256: response.body_sha256.to_string(),
-        source_hash_verification: verification,
-        untrusted_content: response.untrusted_content,
-    };
+    let outcome = GetEvidence::execute(&GetEvidenceRequest {
+        index_path: context.database_path,
+        request,
+        verify_source_hash: arguments.verify_source_hash,
+        probe_deadline: Instant::now()
+            .checked_add(SOURCE_PROBE_TIMEOUT)
+            .unwrap_or_else(Instant::now),
+        field_limits: GetEvidenceFieldLimits::CLI,
+        connection_observer: None,
+    })
+    .map_err(map_get_evidence_error)?;
+    let output = EvidenceGetOutput::from_outcome(Uuid::new_v4().to_string(), outcome)
+        .map_err(map_get_packet_error)?;
     if arguments.json {
         write_json_stdout(&output)?;
     } else {
@@ -797,20 +2028,28 @@ fn run_status(
     arguments: StatusArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
     let context = direct_context(global, managed_paths, current_dir)?;
-    let report = Status::read(&context.database_path).map_err(map_status_error)?;
+    let _reader_lease = ReaderLease::acquire(&context.database_path, DEFAULT_WRITER_LOCK_TIMEOUT)
+        .map_err(map_store_error)?;
+    let outcome = StatusEvidence::execute(&StatusEvidenceRequest {
+        index_path: context.database_path.clone(),
+        project_id: context.project_id,
+        field_limits: StatusEvidenceFieldLimits::CLI,
+        operation_deadline: None,
+        connection_observer: None,
+        cancelled: None,
+    })
+    .map_err(map_status_evidence_error)?;
     if arguments.json {
-        write_json_stdout(&StatusJson {
-            schema_version: MCP_API_VERSION,
-            request_id: Uuid::new_v4().to_string(),
-            index_id: context.index_id.to_string(),
-            index: context.index_name.as_str(),
-            project_id: context.project_id.to_string(),
-            project: context.project_name.as_str(),
-            problems_only: arguments.problems,
-            report: &report,
-        })?;
+        let output = CliStatusOutput::from_outcome(
+            Uuid::new_v4().to_string(),
+            context.index_name.as_str().to_owned(),
+            context.project_name.as_str().to_owned(),
+            arguments.problems,
+            outcome,
+        );
+        write_json_stdout(&output)?;
     } else {
-        render_status_human(&context, &report, arguments.problems)?;
+        render_status_human(&context, &outcome.report, arguments.problems)?;
     }
     Ok(crate::cli::ProcessExitCategory::Success)
 }
@@ -819,10 +2058,912 @@ fn run_doctor(
     global: &GlobalOptions,
     managed_paths: ManagedPaths,
     current_dir: PathBuf,
+    arguments: DoctorArgs,
 ) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
     let context = direct_context(global, managed_paths, current_dir)?;
-    let report = Doctor::run(&context.database_path).map_err(map_store_error)?;
+    let report = if arguments.repair {
+        let outcome = Doctor::repair_abandoned(
+            &context.database_path,
+            Duration::from_millis(arguments.lock_timeout_ms),
+        )
+        .map_err(map_store_error)?;
+        let mut text = String::new();
+        text.push_str("Doctor repair completed after full pre/post validation.\n");
+        push_line(
+            &mut text,
+            "Abandoned generations removed",
+            &outcome.removed_abandoned_generations.to_string(),
+        );
+        write_stdout(text.as_bytes())?;
+        outcome.report
+    } else {
+        Doctor::run(&context.database_path).map_err(map_store_error)?
+    };
+    let _explicit_integrity = arguments.integrity;
     render_doctor_human(&context, &report)?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_doctor_report(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: DoctorReportArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    let output = absolute_request_path(&current_dir, &arguments.output);
+    let report = Doctor::support_report(&context.database_path).map_err(map_store_error)?;
+    write_private_json(&output, &report).map_err(map_maintenance_error)?;
+
+    let mut text = String::new();
+    text.push_str("Body-free, query-free Doctor report written.\n");
+    push_line(&mut text, "Report", &human_path(&output));
+    push_line(
+        &mut text,
+        "Included fields",
+        &DoctorSupportReport::INCLUDED_FIELDS.join(", "),
+    );
+    text.push_str(
+        "Excluded: document bodies, passages, queries, source URIs, connector keys, and paths.\n",
+    );
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_backup_create(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: BackupCreateArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let registry_path = managed_paths.managed_backup_registry_file();
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    let lock_timeout = Duration::from_millis(arguments.lock_timeout_ms);
+    let mut catalog = ManagedBackupCatalog::open(&registry_path, lock_timeout)
+        .map_err(map_managed_backup_error)?;
+    let requested_output = absolute_request_path(&current_dir, &arguments.output);
+    let output = catalog
+        .normalize_output(&requested_output)
+        .map_err(map_managed_backup_error)?;
+    let existing_reservation = catalog
+        .reservation(
+            context.index_id,
+            &context.index_name,
+            ManagedBackupKind::Manual,
+            &output,
+        )
+        .map_err(map_managed_backup_error)?;
+    if existing_reservation.is_none()
+        && output.try_exists().map_err(|error| {
+            RuntimeFailure::from_error(
+                io_subcode(&error, ErrorSubcode::IndexWrite),
+                "managed_backup",
+                error,
+            )
+        })?
+    {
+        return Err(map_maintenance_error(MaintenanceError::OutputExists(
+            output,
+        )));
+    }
+    let reservation = catalog
+        .reserve(
+            context.index_id,
+            &context.index_name,
+            ManagedBackupKind::Manual,
+            &output,
+        )
+        .map_err(map_managed_backup_error)?;
+    let receipt = if reservation == BackupReservation::Pending
+        && output.try_exists().map_err(|error| {
+            RuntimeFailure::from_error(
+                io_subcode(&error, ErrorSubcode::IndexWrite),
+                "managed_backup",
+                error,
+            )
+        })? {
+        inspect_backup(&output, context.index_id).map_err(map_maintenance_error)?
+    } else {
+        match create_backup(&context.database_path, &output, lock_timeout) {
+            Ok(receipt) => receipt,
+            Err(error) => {
+                catalog
+                    .cancel_if_missing(context.index_id, &output)
+                    .map_err(map_managed_backup_error)?;
+                return Err(map_maintenance_error(error));
+            }
+        }
+    };
+    catalog
+        .complete(context.index_id, &output, &receipt)
+        .map_err(map_managed_backup_error)?;
+    let mut text = String::new();
+    text.push_str("Verified backup created.\n");
+    push_line(&mut text, "Index ID", &receipt.index_id.to_string());
+    push_line(
+        &mut text,
+        "Schema version",
+        &receipt.schema_version.to_string(),
+    );
+    push_line(&mut text, "Index epoch", &receipt.index_epoch.to_string());
+    push_line(&mut text, "Backup", &human_path(&receipt.output));
+    push_line(&mut text, "Bytes", &receipt.file_bytes.to_string());
+    push_line(&mut text, "SHA-256", &receipt.file_sha256.to_string());
+    text.push_str("The backup is recorded in hSUM's managed inventory.\n");
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_backup_list(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: BackupListArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let selected = if arguments.all {
+        None
+    } else {
+        let context = direct_context(global, managed_paths.clone(), current_dir)?;
+        Some((context.index_id, context.index_name))
+    };
+    let registry_path = managed_paths.managed_backup_registry_file();
+    let inventory = if managed_paths.data_dir().try_exists().map_err(|error| {
+        RuntimeFailure::from_error(
+            io_subcode(&error, ErrorSubcode::IndexWrite),
+            "managed_backup",
+            error,
+        )
+    })? {
+        ManagedBackupCatalog::open(
+            &registry_path,
+            Duration::from_millis(arguments.lock_timeout_ms),
+        )
+        .map_err(map_managed_backup_error)?
+        .inventory(selected.as_ref().map(|(index_id, _)| *index_id))
+        .map_err(map_managed_backup_error)?
+    } else {
+        Vec::new()
+    };
+    if arguments.json {
+        let value = json!({
+            "format": "hsum.managed-backup-inventory.v1",
+            "scope": selected.as_ref().map_or("all", |_| "selected-index"),
+            "index_id": selected.as_ref().map(|(index_id, _)| index_id.to_string()),
+            "index_name": selected.as_ref().map(|(_, index_name)| index_name.as_str()),
+            "backups": inventory.iter().map(managed_backup_json).collect::<Vec<_>>(),
+        });
+        write_json_stdout(&value)?;
+    } else {
+        let mut text = String::from("Managed backup inventory.\n");
+        push_line(
+            &mut text,
+            "Scope",
+            if arguments.all {
+                "all indexes"
+            } else {
+                "selected index"
+            },
+        );
+        push_line(&mut text, "Backups", &inventory.len().to_string());
+        push_line(
+            &mut text,
+            "May contain evidence",
+            &inventory
+                .iter()
+                .filter(|item| item.state.may_contain_evidence())
+                .count()
+                .to_string(),
+        );
+        append_managed_backup_inventory(&mut text, &inventory);
+        write_stdout(text.as_bytes())?;
+    }
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn managed_backup_json(item: &ManagedBackupInventoryItem) -> Value {
+    json!({
+        "index_id": item.index_id.to_string(),
+        "index_name": item.index_name.as_str(),
+        "kind": item.kind.as_str(),
+        "path": json_path(&item.path),
+        "state": item.state.as_str(),
+        "may_contain_evidence": item.state.may_contain_evidence(),
+        "file_bytes": item.file_bytes,
+        "file_sha256": item.file_sha256.map(|digest| digest.to_string()),
+    })
+}
+
+fn append_managed_backup_inventory(text: &mut String, inventory: &[ManagedBackupInventoryItem]) {
+    for (offset, item) in inventory.iter().enumerate() {
+        text.push_str("Backup ");
+        text.push_str(&(offset + 1).to_string());
+        text.push_str(":\n");
+        push_line(text, "  Index", item.index_name.as_str());
+        push_line(text, "  Index ID", &item.index_id.to_string());
+        push_line(text, "  Kind", item.kind.as_str());
+        push_line(text, "  State", item.state.as_str());
+        push_line(text, "  Path", &human_path(&item.path));
+        if let Some(bytes) = item.file_bytes {
+            push_line(text, "  Recorded bytes", &bytes.to_string());
+        }
+        if let Some(digest) = item.file_sha256 {
+            push_line(text, "  Recorded SHA-256", &digest.to_string());
+        }
+    }
+}
+
+fn run_prune_plan(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: PrunePlanArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    let output = absolute_request_path(&current_dir, &arguments.output);
+    let before = OffsetDateTime::parse(&arguments.before, &Rfc3339).map_err(|error| {
+        RuntimeFailure::from_error(ErrorSubcode::ConfigInvalid, "prune_before", error)
+    })?;
+    let plan = plan_prune(
+        &context.database_path,
+        before,
+        arguments.keep_latest,
+        Duration::from_millis(arguments.lock_timeout_ms),
+    )
+    .map_err(map_maintenance_error)?;
+    write_plan(&output, &plan).map_err(map_maintenance_error)?;
+    let mut text = String::new();
+    text.push_str("Prune plan written; no evidence was deleted.\n");
+    push_line(&mut text, "Plan", &human_path(&output));
+    push_line(&mut text, "Plan hash", &plan.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Affected revisions",
+        &plan.plan.affected_revisions.len().to_string(),
+    );
+    push_line(
+        &mut text,
+        "Affected citations",
+        &plan.plan.affected_citation_count.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Generations removed",
+        &plan.plan.generations_removed.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Logical reclaimable bytes",
+        &plan.plan.logical_reclaimable_bytes.to_string(),
+    );
+    text.push_str("Review every affected revision and citation in the plan.\n");
+    text.push_str("Apply: hsum prune apply ");
+    text.push_str(&shell_quote_path(&output));
+    text.push_str(" --backup <new-backup.sqlite> --confirm ");
+    text.push_str(&plan.plan_hash.to_string());
+    text.push('\n');
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_prune_apply(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: PruneApplyArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let registry_path = managed_paths.managed_backup_registry_file();
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    let plan_path = absolute_request_path(&current_dir, &arguments.plan);
+    let plan: PlanEnvelope<PrunePlan> = read_plan(&plan_path).map_err(map_maintenance_error)?;
+    validate_plan_envelope("hsum.prune-plan.v1", &plan, arguments.confirm)
+        .map_err(map_maintenance_error)?;
+    let lock_timeout = Duration::from_millis(arguments.lock_timeout_ms);
+    let mut catalog = ManagedBackupCatalog::open(&registry_path, lock_timeout)
+        .map_err(map_managed_backup_error)?;
+    let requested_backup = absolute_request_path(&current_dir, &arguments.backup);
+    let backup = catalog
+        .normalize_output(&requested_backup)
+        .map_err(map_managed_backup_error)?;
+    catalog
+        .reserve(
+            context.index_id,
+            &context.index_name,
+            ManagedBackupKind::Prune,
+            &backup,
+        )
+        .map_err(map_managed_backup_error)?;
+    let outcome = match apply_prune(
+        &context.database_path,
+        &plan,
+        arguments.confirm,
+        &backup,
+        lock_timeout,
+    ) {
+        Ok(outcome) => outcome,
+        Err(error) => {
+            catalog
+                .cancel_if_missing(context.index_id, &backup)
+                .map_err(map_managed_backup_error)?;
+            return Err(map_maintenance_error(error));
+        }
+    };
+    catalog
+        .complete(context.index_id, &backup, &outcome.backup)
+        .map_err(map_managed_backup_error)?;
+    let mut text = String::new();
+    text.push_str("Prune applied and the resulting index passed Doctor.\n");
+    push_line(&mut text, "Plan hash", &outcome.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Affected revisions",
+        &outcome.affected_revisions.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Affected citations",
+        &outcome.affected_citations.to_string(),
+    );
+    push_line(&mut text, "Backup", &human_path(&outcome.backup.output));
+    text.push_str(
+        "Rollback: stop hSUM readers, preserve the pruned index, replace it with the verified \
+         backup above, then run `hsum doctor`.\n",
+    );
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_forget_plan(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ForgetPlanArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    let output = absolute_request_path(&current_dir, &arguments.output);
+    let plan = plan_forget(
+        &context.database_path,
+        context.project_id,
+        &arguments.citation,
+        Duration::from_millis(arguments.lock_timeout_ms),
+    )
+    .map_err(map_maintenance_error)?;
+    write_plan(&output, &plan).map_err(map_maintenance_error)?;
+    let citation_count = plan
+        .plan
+        .affected_revisions
+        .iter()
+        .map(|revision| revision.canonical_stored_chunk_citations.len())
+        .sum::<usize>();
+    let body_bytes = plan
+        .plan
+        .affected_revisions
+        .iter()
+        .map(|revision| revision.original_body_bytes)
+        .sum::<u64>();
+    let mut text = String::new();
+    text.push_str("Forget plan written; no evidence was changed.\n");
+    push_line(&mut text, "Plan", &human_path(&output));
+    push_line(&mut text, "Plan hash", &plan.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Affected revisions",
+        &plan.plan.affected_revisions.len().to_string(),
+    );
+    push_line(&mut text, "Affected citations", &citation_count.to_string());
+    push_line(&mut text, "Evidence body bytes", &body_bytes.to_string());
+    text.push_str("Review every revision namespace in the plan.\n");
+    text.push_str("Apply: hsum forget apply ");
+    text.push_str(&shell_quote_path(&output));
+    text.push_str(
+        " --recovery-backup <new-recovery.sqlite> --restore-plan <new-restore.json> \
+         --keep-managed-backups --confirm ",
+    );
+    text.push_str(&plan.plan_hash.to_string());
+    text.push('\n');
+    text.push_str(
+        "Choose --purge-managed-backups instead only after reviewing `hsum backup list`.\n",
+    );
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_forget_apply(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ForgetApplyArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let registry_path = managed_paths.managed_backup_registry_file();
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    let plan_path = absolute_request_path(&current_dir, &arguments.plan);
+    let restore_plan = absolute_request_path(&current_dir, &arguments.restore_plan);
+    let plan: PlanEnvelope<ForgetPlan> = read_plan(&plan_path).map_err(map_maintenance_error)?;
+    validate_plan_envelope("hsum.forget-plan.v1", &plan, arguments.confirm)
+        .map_err(map_maintenance_error)?;
+    let lock_timeout = Duration::from_millis(arguments.lock_timeout_ms);
+    let mut catalog = ManagedBackupCatalog::open(&registry_path, lock_timeout)
+        .map_err(map_managed_backup_error)?;
+    let requested_recovery = absolute_request_path(&current_dir, &arguments.recovery_backup);
+    let recovery_backup = catalog
+        .normalize_output(&requested_recovery)
+        .map_err(map_managed_backup_error)?;
+    let prior_reservation = catalog
+        .reservation(
+            context.index_id,
+            &context.index_name,
+            ManagedBackupKind::ForgetRecovery,
+            &recovery_backup,
+        )
+        .map_err(map_managed_backup_error)?;
+    let recovery_exists = recovery_backup.try_exists().map_err(|error| {
+        RuntimeFailure::from_error(
+            io_subcode(&error, ErrorSubcode::IndexWrite),
+            "managed_backup",
+            error,
+        )
+    })?;
+    let reservation = if prior_reservation.is_none() && recovery_exists {
+        let recovered =
+            inspect_backup(&recovery_backup, context.index_id).map_err(map_maintenance_error)?;
+        if recovered.schema_version != plan.plan.schema_version
+            || recovered.index_epoch != plan.plan.index_epoch
+        {
+            return Err(map_maintenance_error(
+                MaintenanceError::RecoveryBackupMismatch,
+            ));
+        }
+        catalog
+            .reserve(
+                context.index_id,
+                &context.index_name,
+                ManagedBackupKind::ForgetRecovery,
+                &recovery_backup,
+            )
+            .map_err(map_managed_backup_error)?;
+        catalog
+            .complete(context.index_id, &recovery_backup, &recovered)
+            .map_err(map_managed_backup_error)?;
+        BackupReservation::Complete
+    } else {
+        catalog
+            .reserve(
+                context.index_id,
+                &context.index_name,
+                ManagedBackupKind::ForgetRecovery,
+                &recovery_backup,
+            )
+            .map_err(map_managed_backup_error)?
+    };
+    if reservation == BackupReservation::Pending && recovery_exists {
+        let recovered =
+            inspect_backup(&recovery_backup, context.index_id).map_err(map_maintenance_error)?;
+        if recovered.schema_version != plan.plan.schema_version
+            || recovered.index_epoch != plan.plan.index_epoch
+        {
+            return Err(map_maintenance_error(
+                MaintenanceError::RecoveryBackupMismatch,
+            ));
+        }
+        catalog
+            .complete(context.index_id, &recovery_backup, &recovered)
+            .map_err(map_managed_backup_error)?;
+    }
+    let disposition = if arguments.purge_managed_backups {
+        ManagedBackupDisposition::Purge
+    } else {
+        debug_assert!(arguments.keep_managed_backups);
+        ManagedBackupDisposition::Keep
+    };
+    if disposition == ManagedBackupDisposition::Purge {
+        catalog
+            .preflight_purge(context.index_id)
+            .map_err(map_managed_backup_error)?;
+    }
+    let outcome = match apply_forget(
+        &context.database_path,
+        &plan,
+        arguments.confirm,
+        &recovery_backup,
+        &restore_plan,
+        lock_timeout,
+    ) {
+        Ok(outcome) => outcome,
+        Err(error) => {
+            catalog
+                .cancel_if_missing(context.index_id, &recovery_backup)
+                .map_err(map_managed_backup_error)?;
+            return Err(map_maintenance_error(error));
+        }
+    };
+    catalog
+        .complete(context.index_id, &recovery_backup, &outcome.recovery_backup)
+        .map_err(map_managed_backup_error)?;
+    let backup_disposition = catalog
+        .apply_disposition(context.index_id, disposition)
+        .map_err(map_managed_backup_error)?;
+    let mut text = String::new();
+    text.push_str("Forget applied; the compacted replacement index passed Doctor.\n");
+    push_line(&mut text, "Plan hash", &outcome.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Forgotten revisions",
+        &outcome.affected_revisions.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Replacement epoch",
+        &outcome.replacement_epoch.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Recovery backup",
+        &human_path(&outcome.recovery_backup.output),
+    );
+    push_line(
+        &mut text,
+        "Recovery SHA-256",
+        &outcome.recovery_backup.file_sha256.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Restore plan",
+        &human_path(&outcome.restore_plan),
+    );
+    push_line(
+        &mut text,
+        "Restore plan hash",
+        &outcome.restore_plan_hash.to_string(),
+    );
+    push_managed_backup_disposition(&mut text, &backup_disposition, disposition);
+    if disposition == ManagedBackupDisposition::Keep {
+        text.push_str(
+            "Warning: retained managed backups may still contain the forgotten evidence; guard or destroy them according to your retention policy.\n",
+        );
+        text.push_str("Immediate undo only: hsum restore apply ");
+        text.push_str(&shell_quote_path(&outcome.restore_plan));
+        text.push_str(" --recovery-backup ");
+        text.push_str(&shell_quote_path(&outcome.recovery_backup.output));
+        text.push_str(" --safety-backup <new-safety.sqlite> --confirm ");
+        text.push_str(&outcome.restore_plan_hash.to_string());
+        text.push('\n');
+    } else {
+        text.push_str(
+            "The recovery backup was purged; the restore plan remains as an audit artifact but immediate undo is unavailable.\n",
+        );
+    }
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn push_managed_backup_disposition(
+    text: &mut String,
+    outcome: &ManagedBackupDispositionOutcome,
+    disposition: ManagedBackupDisposition,
+) {
+    text.push_str("Managed backup inventory at disposition:\n");
+    append_managed_backup_inventory(text, &outcome.inventory);
+    push_line(text, "Managed backups purged", &outcome.purged.to_string());
+    push_line(
+        text,
+        "Managed backups retained",
+        &outcome.retained.to_string(),
+    );
+    push_line(
+        text,
+        "Missing inventory entries cleared",
+        &outcome.missing.to_string(),
+    );
+    push_line(
+        text,
+        "Disposition",
+        match disposition {
+            ManagedBackupDisposition::Keep => "kept",
+            ManagedBackupDisposition::Purge => "purged",
+        },
+    );
+}
+
+fn run_restore_apply(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: RestoreApplyArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let registry_path = managed_paths.managed_backup_registry_file();
+    let context = direct_context(global, managed_paths, current_dir.clone())?;
+    let plan_path = absolute_request_path(&current_dir, &arguments.plan);
+    let recovery_backup = absolute_request_path(&current_dir, &arguments.recovery_backup);
+    let plan: PlanEnvelope<RestorePlan> = read_plan(&plan_path).map_err(map_maintenance_error)?;
+    validate_plan_envelope("hsum.restore-plan.v1", &plan, arguments.confirm)
+        .map_err(map_maintenance_error)?;
+    let lock_timeout = Duration::from_millis(arguments.lock_timeout_ms);
+    let mut catalog = ManagedBackupCatalog::open(&registry_path, lock_timeout)
+        .map_err(map_managed_backup_error)?;
+    let requested_safety = absolute_request_path(&current_dir, &arguments.safety_backup);
+    let safety_backup = catalog
+        .normalize_output(&requested_safety)
+        .map_err(map_managed_backup_error)?;
+    catalog
+        .reserve(
+            context.index_id,
+            &context.index_name,
+            ManagedBackupKind::RestoreSafety,
+            &safety_backup,
+        )
+        .map_err(map_managed_backup_error)?;
+    let outcome = match apply_restore(
+        &context.database_path,
+        &plan,
+        arguments.confirm,
+        &recovery_backup,
+        &safety_backup,
+        lock_timeout,
+    ) {
+        Ok(outcome) => outcome,
+        Err(error) => {
+            catalog
+                .cancel_if_missing(context.index_id, &safety_backup)
+                .map_err(map_managed_backup_error)?;
+            return Err(map_maintenance_error(error));
+        }
+    };
+    catalog
+        .complete(context.index_id, &safety_backup, &outcome.safety_backup)
+        .map_err(map_managed_backup_error)?;
+    let mut text = String::new();
+    text.push_str("Restore applied; the replacement index passed Doctor.\n");
+    push_line(&mut text, "Plan hash", &outcome.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Restored revisions",
+        &outcome.restored_revisions.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Replacement epoch",
+        &outcome.replacement_epoch.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Safety backup",
+        &human_path(&outcome.safety_backup.output),
+    );
+    text.push_str("The safety backup intentionally preserves the pre-restore forgotten state.\n");
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_migrate_plan(
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: MigratePlanArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let database_path = managed_paths.index_database(&arguments.index);
+    let output = absolute_request_path(&current_dir, &arguments.output);
+    let plan = plan_migration(
+        &database_path,
+        arguments.index.as_str(),
+        Duration::from_millis(arguments.lock_timeout_ms),
+    )
+    .map_err(map_maintenance_error)?;
+    write_plan(&output, &plan).map_err(map_maintenance_error)?;
+    let mut text = String::new();
+    text.push_str("Migration plan written; the index was not changed.\n");
+    push_line(&mut text, "Plan", &human_path(&output));
+    push_line(&mut text, "Plan hash", &plan.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Schema transition",
+        &format!(
+            "{} -> {}",
+            plan.plan.from_schema_version, plan.plan.to_schema_version
+        ),
+    );
+    push_line(
+        &mut text,
+        "Migration steps",
+        &plan.plan.steps.len().to_string(),
+    );
+    if plan.plan.steps.is_empty() {
+        text.push_str("The index already uses the current schema; there is nothing to apply.\n");
+    } else {
+        text.push_str("Apply: hsum migrate apply --index ");
+        text.push_str(arguments.index.as_str());
+        text.push(' ');
+        text.push_str(&shell_quote_path(&output));
+        text.push_str(" --backup <new-backup.sqlite> --confirm ");
+        text.push_str(&plan.plan_hash.to_string());
+        text.push('\n');
+    }
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_migrate_apply(
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: MigrateApplyArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let registry_path = managed_paths.managed_backup_registry_file();
+    let database_path = managed_paths.index_database(&arguments.index);
+    let plan_path = absolute_request_path(&current_dir, &arguments.plan);
+    let plan: PlanEnvelope<MigrationPlan> = read_plan(&plan_path).map_err(map_maintenance_error)?;
+    validate_plan_envelope("hsum.migration-plan.v1", &plan, arguments.confirm)
+        .map_err(map_maintenance_error)?;
+    let lock_timeout = Duration::from_millis(arguments.lock_timeout_ms);
+    let mut catalog = ManagedBackupCatalog::open(&registry_path, lock_timeout)
+        .map_err(map_managed_backup_error)?;
+    let requested_backup = absolute_request_path(&current_dir, &arguments.backup);
+    let backup = catalog
+        .normalize_output(&requested_backup)
+        .map_err(map_managed_backup_error)?;
+    catalog
+        .reserve(
+            plan.plan.index_id,
+            &arguments.index,
+            ManagedBackupKind::Migration,
+            &backup,
+        )
+        .map_err(map_managed_backup_error)?;
+    let outcome = match apply_migration(
+        &database_path,
+        arguments.index.as_str(),
+        &plan,
+        arguments.confirm,
+        &backup,
+        lock_timeout,
+    ) {
+        Ok(outcome) => outcome,
+        Err(error) => {
+            catalog
+                .cancel_if_missing(plan.plan.index_id, &backup)
+                .map_err(map_managed_backup_error)?;
+            return Err(map_maintenance_error(error));
+        }
+    };
+    catalog
+        .complete(plan.plan.index_id, &backup, &outcome.backup)
+        .map_err(map_managed_backup_error)?;
+    let mut text = String::new();
+    text.push_str("Migration applied and the resulting index passed Doctor.\n");
+    push_line(&mut text, "Plan hash", &outcome.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Schema transition",
+        &format!(
+            "{} -> {}",
+            outcome.from_schema_version, outcome.to_schema_version
+        ),
+    );
+    push_line(&mut text, "Backup", &human_path(&outcome.backup.output));
+    text.push_str(
+        "Rollback: stop hSUM readers, preserve the migrated index, replace it with the verified \
+         backup above, and use the N-1 hSUM binary to run `hsum doctor`.\n",
+    );
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_config_migrate_plan(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ConfigMigratePlanArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let config_file = global.config.as_deref().map_or_else(
+        || managed_paths.config_file(),
+        |path| absolute_request_path(&current_dir, path),
+    );
+    let trust_file = managed_paths.trust_registry_file();
+    let output = absolute_request_path(&current_dir, &arguments.output);
+    let backup_directory = absolute_request_path(&current_dir, &arguments.backup_dir);
+    if output == config_file
+        || output == trust_file
+        || output.starts_with(&backup_directory)
+        || backup_directory.starts_with(&output)
+    {
+        return Err(RuntimeFailure::from_error(
+            ErrorSubcode::PathInvalid,
+            "config_migration_paths",
+            "the plan, live configuration, and backup bundle paths must not overlap",
+        ));
+    }
+    let plan = plan_config_migration(
+        &config_file,
+        &trust_file,
+        &backup_directory,
+        Duration::from_millis(arguments.lock_timeout_ms),
+    )
+    .map_err(map_config_migration_error)?;
+    write_plan(&output, &plan).map_err(map_maintenance_error)?;
+
+    let mut text = String::new();
+    text.push_str("Configuration migration plan written; no configuration files were changed.\n");
+    push_line(&mut text, "Plan", &human_path(&output));
+    push_line(&mut text, "Plan hash", &plan.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Artifacts inspected",
+        &plan.plan.artifacts.len().to_string(),
+    );
+    push_line(
+        &mut text,
+        "Migrations required",
+        &plan.plan.migrations_required().to_string(),
+    );
+    push_line(
+        &mut text,
+        "Required peak bytes",
+        &plan.plan.estimated_peak_bytes.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Backup directory",
+        &human_path(&backup_directory),
+    );
+    if plan.plan.migrations_required() == 0 {
+        text.push_str("Configuration and trust files already use the current schema.\n");
+    } else {
+        text.push_str("Apply: hsum");
+        if global.config.is_some() {
+            text.push_str(" --config ");
+            text.push_str(&shell_quote_path(&config_file));
+        }
+        text.push_str(" config migrate apply ");
+        text.push_str(&shell_quote_path(&output));
+        text.push_str(" --confirm ");
+        text.push_str(&plan.plan_hash.to_string());
+        text.push('\n');
+    }
+    write_stdout(text.as_bytes())?;
+    Ok(crate::cli::ProcessExitCategory::Success)
+}
+
+fn run_config_migrate_apply(
+    global: &GlobalOptions,
+    managed_paths: ManagedPaths,
+    current_dir: PathBuf,
+    arguments: ConfigMigrateApplyArgs,
+) -> Result<crate::cli::ProcessExitCategory, RuntimeFailure> {
+    let config_file = global.config.as_deref().map_or_else(
+        || managed_paths.config_file(),
+        |path| absolute_request_path(&current_dir, path),
+    );
+    let trust_file = managed_paths.trust_registry_file();
+    let plan_path = absolute_request_path(&current_dir, &arguments.plan);
+    let plan: PlanEnvelope<ConfigMigrationPlan> =
+        read_plan(&plan_path).map_err(map_maintenance_error)?;
+    let outcome = apply_config_migration(
+        &config_file,
+        &trust_file,
+        &plan,
+        arguments.confirm,
+        Duration::from_millis(arguments.lock_timeout_ms),
+    )
+    .map_err(map_config_migration_error)?;
+
+    let mut text = String::new();
+    text.push_str("Configuration migration applied and validated.\n");
+    push_line(&mut text, "Plan hash", &outcome.plan_hash.to_string());
+    push_line(
+        &mut text,
+        "Migrated artifacts",
+        &outcome.migrated_artifacts.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Already migrated artifacts",
+        &outcome.already_migrated_artifacts.to_string(),
+    );
+    push_line(
+        &mut text,
+        "Backup directory",
+        &human_path(&outcome.backup_directory),
+    );
+    text.push_str(
+        "Rollback: stop hSUM processes and restore each exact .bak file present in the backup directory above with its private permissions.\n",
+    );
+    write_stdout(text.as_bytes())?;
     Ok(crate::cli::ProcessExitCategory::Success)
 }
 
@@ -1311,8 +3452,9 @@ fn run_integration_authorize_workspace(
     push_line(&mut output, "Workspace", &human_path(&root));
     push_line(&mut output, "Authorization changed", bool_text(changed));
     output.push_str(
-        "New Git repositories below this directory will be indexed separately and lazily on \
-         their first hSUM tool call. Repository files are not modified.\n",
+        "Compatibility record stored. Read-only MCP does not activate repositories from this \
+         record; run `hsum integration activate codex --path <repository> --confirm` for each \
+         repository.\n",
     );
     write_stdout(output.as_bytes())?;
     Ok(crate::cli::ProcessExitCategory::Success)
@@ -1342,8 +3484,8 @@ fn run_integration_revoke_workspace(
     push_line(&mut output, "Workspace", &human_path(&root));
     push_line(&mut output, "Authorization removed", bool_text(changed));
     output.push_str(
-        "Existing repository bindings and indexes were kept; only future lazy activation was \
-         disabled.\n",
+        "Existing repository bindings and indexes were kept. Read-only MCP does not perform \
+         lazy activation.\n",
     );
     write_stdout(output.as_bytes())?;
     Ok(crate::cli::ProcessExitCategory::Success)
@@ -2358,7 +4500,8 @@ async fn run_mcp(
     request.config_file = None;
     let context = resolve_context(&request).map_err(map_context_error)?;
     let _ = global;
-    serve_stdio(context.database_path, context.project_id)
+    let model_cache = context.managed_paths.model_cache_dir();
+    serve_stdio_with_model_cache(context.database_path, context.project_id, model_cache)
         .await
         .map_err(map_mcp_server_error)?;
     Ok(crate::cli::ProcessExitCategory::Success)
@@ -2380,90 +4523,25 @@ fn direct_context(
     resolve_context(&request)
 }
 
-fn filesystem_scope(context: &EffectiveContext) -> FilesystemScope {
-    FilesystemScope {
-        source_id: context.source_id,
-        source_name: context.source_name.clone(),
-        source_logical_uri: context.source_root.to_string_lossy().into_owned(),
-        source_config_json: context.source_config_json.clone(),
-        project_id: context.project_id,
-        project_name: context.project_name.clone(),
-    }
-}
-
-fn current_head_body_sha256(
-    connection: &rusqlite::Connection,
-    project_id: crate::domain::ProjectId,
-    source_id: SourceId,
-    document_id: DocumentId,
-) -> Result<Option<Sha256Digest>, RuntimeFailure> {
-    let bytes: Option<Vec<u8>> = connection
-        .query_row(
-            "SELECT cb.body_sha256
-             FROM document_heads AS dh
-             JOIN documents AS d ON d.id = dh.document_id
-             JOIN document_versions AS dv ON dv.id = dh.document_version_id
-             JOIN content_blobs AS cb ON cb.id = dv.content_blob_id
-             JOIN project_sources AS ps ON ps.source_id = d.source_id
-             WHERE dh.state = 'active'
-               AND ps.project_id = ?1
-               AND d.source_id = ?2
-               AND d.id = ?3",
-            rusqlite::params![
-                project_id.as_uuid().as_bytes().as_slice(),
-                source_id.as_uuid().as_bytes().as_slice(),
-                document_id.as_uuid().as_bytes().as_slice(),
-            ],
-            |row| row.get(0),
-        )
-        .optional()
-        .map_err(|error| {
-            RuntimeFailure::from_error(sqlite_subcode(&error), "get_verification_snapshot", error)
-        })?;
-    let Some(bytes) = bytes else {
-        return Ok(None);
-    };
-    let bytes: [u8; 32] = bytes.try_into().map_err(|_| {
-        RuntimeFailure::from_error(
-            ErrorSubcode::HeadIndexMismatch,
-            "get_verification_snapshot",
-            "current head body digest is not 32 bytes",
-        )
-    })?;
-    Ok(Some(Sha256Digest::from_bytes(bytes)))
-}
-
-fn verify_source_hash(
-    cited_body_sha256: Sha256Digest,
-    current_head_sha256: Option<Sha256Digest>,
-    observation: Option<&DocumentDrift>,
-) -> String {
-    let Some(observation) = observation else {
-        return "unverifiable".to_owned();
-    };
-    match (
-        observation.content_matches,
-        observation.state,
-        current_head_sha256,
-    ) {
-        (Some(true), _, Some(current)) if current == cited_body_sha256 => "unchanged",
-        (Some(true), _, Some(_)) => "changed",
-        (Some(false), _, _) => "changed",
-        (None, DriftState::Missing, _) => "missing",
-        (None, DriftState::Blocked, _) => "blocked",
-        (Some(_), _, None) | (None, _, _) => "unverifiable",
-    }
-    .to_owned()
-}
-
 fn render_ingest_plan(
     context: &EffectiveContext,
-    plan: &IngestPlan,
+    project_plan: &ProjectIngestPlan,
     confirmations: DeleteConfirmations,
 ) -> Result<(), RuntimeFailure> {
+    let plan = &project_plan.aggregate;
     let mut output = String::new();
     output.push_str("DRY RUN — no index data was changed.\n");
-    push_line(&mut output, "Root", &human_path(&context.source_root));
+    push_line(&mut output, "Project", context.project_name.as_str());
+    push_line(
+        &mut output,
+        "Targeted sources",
+        &project_plan.targeted_sources.to_string(),
+    );
+    push_line(
+        &mut output,
+        "Failed sources",
+        &project_plan.failed_sources.to_string(),
+    );
     push_line(
         &mut output,
         "Prior active documents",
@@ -2551,9 +4629,9 @@ fn render_ingest_plan(
 fn render_ingest_outcome(outcome: &IngestOutcome) -> Result<(), RuntimeFailure> {
     let mut output = String::new();
     if ingest_exit_category(outcome) == crate::cli::ProcessExitCategory::Failure {
-        output.push_str("Filesystem ingest failed; no generation was activated.\n");
+        output.push_str("Ingest failed; no generation was activated.\n");
     } else {
-        output.push_str("Filesystem ingest complete.\n");
+        output.push_str("Ingest complete.\n");
     }
     push_line(
         &mut output,
@@ -2622,12 +4700,33 @@ fn render_search_human(
     response: &SearchResponse,
     drift: Option<&[DocumentDrift]>,
     explain: bool,
+    offset: usize,
+    next_cursor: Option<&str>,
 ) -> Result<(), RuntimeFailure> {
     let executable = absolute_executable()?;
     let mut output = String::new();
+    output.push_str("mode: ");
+    output.push_str(response.requested_mode.as_str());
+    output.push_str(" -> ");
+    output.push_str(response.effective_mode.as_str());
+    output.push('\n');
+    for degraded in &response.degraded_mode {
+        output.push_str("degraded: ");
+        output.push_str(&escape_terminal_text(degraded));
+        output.push('\n');
+    }
+    for hint in &response.hints {
+        output.push_str("hint: ");
+        output.push_str(&escape_terminal_text(hint));
+        output.push('\n');
+    }
     for (index, passage) in response.results.iter().enumerate() {
-        let state = source_state(drift_for(drift, passage.source_id, passage.document_id));
-        output.push_str(&(index + 1).to_string());
+        let state = EvidenceSourceState::from_observation(drift_for(
+            drift,
+            passage.source_id,
+            passage.document_id,
+        ));
+        output.push_str(&(offset + index + 1).to_string());
         output.push_str("  ");
         output.push_str(&escape_terminal_text(&passage.source_uri));
         output.push(':');
@@ -2635,7 +4734,7 @@ fn render_search_human(
         output.push('-');
         output.push_str(&passage.line_span.end().to_string());
         output.push_str("  [");
-        output.push_str(state);
+        output.push_str(state.as_str());
         output.push_str("]\n   ");
         output.push_str(
             &passage
@@ -2669,6 +4768,11 @@ fn render_search_human(
     output.push_str("stop: ");
     output.push_str(search_stop_reason(response.stop_reason));
     output.push('\n');
+    if let Some(next_cursor) = next_cursor {
+        output.push_str("next cursor: ");
+        output.push_str(&escape_terminal_text(next_cursor));
+        output.push('\n');
+    }
     write_stdout(output.as_bytes())
 }
 
@@ -2827,242 +4931,16 @@ fn render_doctor_human(
     );
     push_line(&mut output, "Journal mode", &report.journal_mode);
     push_line(&mut output, "Read only", bool_text(report.read_only));
+    push_line(
+        &mut output,
+        "Abandoned generations",
+        &report.abandoned_generations.to_string(),
+    );
     output.push_str(
         "Security note: filesystem hard links cannot be distinguished from their original \
          regular files; secret-path rules are defense in depth.\n",
     );
     write_stdout(output.as_bytes())
-}
-
-#[derive(Serialize)]
-struct SearchJson {
-    schema_version: &'static str,
-    request_id: String,
-    generation: Option<i64>,
-    index_epoch: u64,
-    project: String,
-    project_id: String,
-    scope_revision: u64,
-    requested_mode: String,
-    effective_mode: String,
-    retrievers: Vec<String>,
-    degraded_mode: Vec<String>,
-    hints: Vec<String>,
-    results: Vec<SearchPassageJson>,
-    next_cursor: Option<String>,
-    stop_reason: &'static str,
-    examined: CandidateCountsJson,
-    timing_ms: TimingJson,
-}
-
-impl SearchJson {
-    fn from_response(
-        context: &EffectiveContext,
-        response: SearchResponse,
-        drift: Option<&[DocumentDrift]>,
-        explain: bool,
-    ) -> Self {
-        Self {
-            schema_version: MCP_API_VERSION,
-            request_id: Uuid::new_v4().to_string(),
-            generation: response.generation,
-            index_epoch: response.index_epoch,
-            project: context.project_name.as_str().to_owned(),
-            project_id: response.project_id.to_string(),
-            scope_revision: response.scope_revision,
-            requested_mode: response.requested_mode.as_str().to_owned(),
-            effective_mode: response.effective_mode.as_str().to_owned(),
-            retrievers: response
-                .retrievers
-                .iter()
-                .map(|value| value.as_str().to_owned())
-                .collect(),
-            degraded_mode: Vec::new(),
-            hints: Vec::new(),
-            results: response
-                .results
-                .into_iter()
-                .map(|passage| {
-                    let source_state =
-                        source_state(drift_for(drift, passage.source_id, passage.document_id));
-                    let score = explain.then(|| SearchScoreJson {
-                        fused: passage.score.fused,
-                        fusion_units: passage.score.fusion_units,
-                        lists: passage
-                            .score
-                            .lists
-                            .iter()
-                            .map(RankJson::from_rank)
-                            .collect(),
-                    });
-                    SearchPassageJson {
-                        citation_uri: passage.citation().to_string(),
-                        index_id: passage.index_id.to_string(),
-                        source_id: passage.source_id.to_string(),
-                        document_id: passage.document_id.to_string(),
-                        revision_sha256: passage.revision_sha256.to_string(),
-                        source_uri: passage.source_uri,
-                        title: passage.title,
-                        span: SpanJson {
-                            start_byte: passage.byte_span.start(),
-                            end_byte: passage.byte_span.end(),
-                            start_line: passage.line_span.start(),
-                            end_line: passage.line_span.end(),
-                        },
-                        content: passage.content,
-                        content_sha256: passage.content_sha256.to_string(),
-                        source_updated_at: passage.source_updated_at,
-                        indexed_at: passage.indexed_at,
-                        head_generation: passage.head_generation,
-                        source_state,
-                        untrusted_content: passage.untrusted_content,
-                        score,
-                        duplicate_citations: passage
-                            .duplicate_citations
-                            .into_iter()
-                            .map(|duplicate| DuplicateJson {
-                                citation_uri: duplicate.citation.to_string(),
-                                reason: match duplicate.reason {
-                                    DuplicateReason::SameContent => "same_content",
-                                    DuplicateReason::OverlappingSpan => "overlapping_span",
-                                },
-                            })
-                            .collect(),
-                    }
-                })
-                .collect(),
-            next_cursor: None,
-            stop_reason: search_stop_reason(response.stop_reason),
-            examined: CandidateCountsJson {
-                exact: response.examined.exact,
-                exact_fallback: response.examined.exact_fallback,
-                lexical: response.examined.lexical,
-            },
-            timing_ms: TimingJson {
-                exact: response.timing.exact_ms,
-                exact_fallback: response.timing.exact_fallback_ms,
-                lexical: response.timing.lexical_ms,
-                fusion: response.timing.fusion_ms,
-                total: response.timing.total_ms,
-            },
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct SearchPassageJson {
-    citation_uri: String,
-    index_id: String,
-    source_id: String,
-    document_id: String,
-    revision_sha256: String,
-    source_uri: String,
-    title: String,
-    span: SpanJson,
-    content: String,
-    content_sha256: String,
-    source_updated_at: Option<String>,
-    indexed_at: String,
-    head_generation: i64,
-    source_state: &'static str,
-    untrusted_content: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    score: Option<SearchScoreJson>,
-    duplicate_citations: Vec<DuplicateJson>,
-}
-
-#[derive(Serialize)]
-struct SpanJson {
-    start_byte: u64,
-    end_byte: u64,
-    start_line: u64,
-    end_line: u64,
-}
-
-#[derive(Serialize)]
-struct SearchScoreJson {
-    fused: f64,
-    fusion_units: u64,
-    lists: Vec<RankJson>,
-}
-
-#[derive(Serialize)]
-struct RankJson {
-    name: &'static str,
-    rank: usize,
-    contribution_units: u64,
-    backend_score: Option<f64>,
-}
-
-impl RankJson {
-    fn from_rank(rank: &RankExplanation) -> Self {
-        Self {
-            name: rank.retriever.as_str(),
-            rank: rank.rank,
-            contribution_units: rank.contribution_units,
-            backend_score: rank.backend_score,
-        }
-    }
-}
-
-#[derive(Serialize)]
-struct DuplicateJson {
-    citation_uri: String,
-    reason: &'static str,
-}
-
-#[derive(Serialize)]
-struct CandidateCountsJson {
-    exact: usize,
-    exact_fallback: usize,
-    lexical: usize,
-}
-
-#[derive(Serialize)]
-struct TimingJson {
-    exact: u64,
-    exact_fallback: u64,
-    lexical: u64,
-    fusion: u64,
-    total: u64,
-}
-
-#[derive(Serialize)]
-struct GetJson {
-    schema_version: &'static str,
-    request_id: String,
-    requested_citation_uri: String,
-    returned_citation_uri: String,
-    requested_line_span: LineSpanJson,
-    returned_line_span: LineSpanJson,
-    source_uri: String,
-    title: String,
-    metadata: Value,
-    source_updated_at: Option<String>,
-    indexed_at: String,
-    content: String,
-    body_sha256: String,
-    source_hash_verification: String,
-    untrusted_content: bool,
-}
-
-#[derive(Serialize)]
-struct LineSpanJson {
-    start: u64,
-    end: u64,
-}
-
-#[derive(Serialize)]
-struct StatusJson<'a> {
-    schema_version: &'static str,
-    request_id: String,
-    index_id: String,
-    index: &'a str,
-    project_id: String,
-    project: &'a str,
-    problems_only: bool,
-    #[serde(flatten)]
-    report: &'a StatusReport,
 }
 
 #[derive(Serialize)]
@@ -3141,8 +5019,21 @@ fn command_requests_json(command: &Command) -> bool {
             | Command::Get(GetArgs { json: true, .. })
             | Command::Status(StatusArgs { json: true, .. })
             | Command::Context(crate::cli::ContextArgs { json: true })
+            | Command::Source(crate::cli::SourceArgs {
+                command: SourceCommand::List(SourceListArgs { json: true, .. }),
+            })
+            | Command::Project(crate::cli::ProjectArgs {
+                command: ProjectCommand::List(ProjectListArgs { json: true }),
+            })
             | Command::Integration(crate::cli::IntegrationArgs {
                 command: IntegrationCommand::Status(IntegrationStatusArgs { json: true, .. }),
+            })
+            | Command::Model(crate::cli::ModelArgs {
+                command: ModelCommand::Install(ModelInstallArgs { json: true, .. })
+                    | ModelCommand::Import(ModelImportArgs { json: true, .. })
+                    | ModelCommand::List(ModelListArgs { json: true })
+                    | ModelCommand::Verify(ModelVerifyArgs { json: true, .. })
+                    | ModelCommand::Remove(ModelRemoveArgs { json: true, .. }),
             })
     )
 }
@@ -3210,6 +5101,14 @@ fn absolute_executable() -> Result<PathBuf, RuntimeFailure> {
         ));
     }
     Ok(absolute)
+}
+
+fn absolute_request_path(current_dir: &Path, path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        current_dir.join(path)
+    }
 }
 
 #[cfg(unix)]
@@ -3307,6 +5206,7 @@ fn rank_summary(rank: &RankExplanation) -> String {
         Retriever::Exact => "exact",
         Retriever::ExactFallback => "exact fallback",
         Retriever::Lexical => "BM25",
+        Retriever::Vector => "vector",
     };
     format!("{name} #{}", rank.rank)
 }
@@ -3319,15 +5219,6 @@ fn drift_for(
     drift?.iter().find(|observation| {
         observation.source_id == source_id && observation.document_id == document_id
     })
-}
-
-fn source_state(observation: Option<&DocumentDrift>) -> &'static str {
-    match observation.map(|value| value.state) {
-        Some(DriftState::MetadataUnchanged) => "metadata_unchanged",
-        Some(DriftState::MetadataChanged) => "changed_since_ingest",
-        Some(DriftState::Missing) => "missing_since_ingest",
-        Some(DriftState::Blocked | DriftState::Unknown) | None => "unverifiable",
-    }
 }
 
 fn exit_code(code: i32) -> ExitCode {
@@ -3368,12 +5259,13 @@ fn map_context_error(error: ContextError) -> RuntimeFailure {
         | ContextError::ConfigChangedDuringRead
         | ContextError::ConfigNotUtf8
         | ContextError::ConfigMalformed(_)
-        | ContextError::ConfigSchema { .. }
+        | ContextError::InvalidConfigEpoch
         | ContextError::IncompleteConfiguredDefault
         | ContextError::IncompleteEnvironmentSelection
         | ContextError::NonUtf8Environment
         | ContextError::LogicalSelection(_)
         | ContextError::InvalidFilesystemSourceConfig(_) => ErrorSubcode::ConfigInvalid,
+        ContextError::ConfigSchema { found } => config_schema_subcode(*found),
         ContextError::Pointer(error) => pointer_subcode(error),
         ContextError::Trust(error) => trust_subcode(error),
         ContextError::Io(source) if source.kind() == io::ErrorKind::PermissionDenied => {
@@ -3392,7 +5284,12 @@ fn map_context_error(error: ContextError) -> RuntimeFailure {
 }
 
 fn map_init_error(error: InitError) -> RuntimeFailure {
-    let subcode = match &error {
+    let subcode = init_subcode(&error);
+    RuntimeFailure::from_error(subcode, "init", error)
+}
+
+fn init_subcode(error: &InitError) -> ErrorSubcode {
+    match error {
         InitError::BroadRootConfirmationRequired { .. } => {
             ErrorSubcode::BroadRootConfirmationRequired
         }
@@ -3401,6 +5298,7 @@ fn map_init_error(error: InitError) -> RuntimeFailure {
         }
         InitError::TrustConfirmationRequired => ErrorSubcode::TrustConfirmationRequired,
         InitError::RebuildWithoutIngest => ErrorSubcode::ConfigInvalid,
+        InitError::EmbeddingProfileMismatch => ErrorSubcode::ModelFingerprint,
         InitError::RebuildBindingRequired { .. } => ErrorSubcode::IndexNotFound,
         InitError::ForcePointerWithoutWrite | InitError::UnsafePointerPath { .. } => {
             ErrorSubcode::PointerInvalid
@@ -3440,13 +5338,117 @@ fn map_init_error(error: InitError) -> RuntimeFailure {
             ErrorSubcode::DiskSpace
         }
         InitError::Io(_) => ErrorSubcode::StorageIo,
-    };
-    RuntimeFailure::from_error(subcode, "init", error)
+    }
 }
 
-fn map_filesystem_ingest_error(error: FilesystemIngestError) -> RuntimeFailure {
-    let subcode = filesystem_ingest_subcode(&error);
+fn map_project_ingest_error(error: ProjectIngestError) -> RuntimeFailure {
+    let subcode = match &error {
+        ProjectIngestError::NoSources
+        | ProjectIngestError::FilesystemAuthorityMismatch
+        | ProjectIngestError::InconsistentIndexQuota { .. }
+        | ProjectIngestError::JsonlConfig(_) => ErrorSubcode::ConfigInvalid,
+        ProjectIngestError::StrictFilesystemSource { .. }
+        | ProjectIngestError::StrictFilesystemFailures { .. } => {
+            ErrorSubcode::EnumerationIncomplete
+        }
+        ProjectIngestError::StrictJsonlSource { .. } => ErrorSubcode::EnumerationIncomplete,
+        ProjectIngestError::SourceManagement(error) => source_management_subcode(error),
+        ProjectIngestError::Filesystem(error) => filesystem_ingest_subcode(error),
+        ProjectIngestError::Store(error) => store_subcode(error),
+        ProjectIngestError::StoragePreflight(error) => storage_preflight_subcode(error),
+    };
     RuntimeFailure::from_error(subcode, "ingest", error)
+}
+
+fn map_project_management_error(error: ProjectManagementError) -> RuntimeFailure {
+    match error {
+        ProjectManagementError::Init(error) => map_init_error(error),
+        ProjectManagementError::Store(error) => {
+            let subcode = store_subcode(&error);
+            RuntimeFailure::from_error(subcode, "project", error)
+        }
+        ProjectManagementError::StoragePreflight(error) => {
+            let subcode = storage_preflight_subcode(&error);
+            RuntimeFailure::from_error(subcode, "project", error)
+        }
+        ProjectManagementError::Trust(error) => {
+            let subcode = trust_subcode(&error);
+            RuntimeFailure::from_error(subcode, "project", error)
+        }
+        ProjectManagementError::Config(error) => {
+            let subcode = source_config_subcode(&error);
+            RuntimeFailure::from_error(subcode, "project", error)
+        }
+        error @ ProjectManagementError::ProjectNotFound(_) => {
+            RuntimeFailure::from_error(ErrorSubcode::ProjectNotFound, "project", error)
+        }
+        error @ ProjectManagementError::PersistentBindingRequired => {
+            RuntimeFailure::from_error(ErrorSubcode::PathTrust, "project", error)
+        }
+        error @ ProjectManagementError::NonUtf8Root => {
+            RuntimeFailure::from_error(ErrorSubcode::PathInvalid, "project", error)
+        }
+        error @ ProjectManagementError::SourceNameCollision => {
+            RuntimeFailure::from_error(ErrorSubcode::ConfigInvalid, "project", error)
+        }
+        error @ ProjectManagementError::TrustRollback { .. } => {
+            RuntimeFailure::from_error(ErrorSubcode::Invariant, "project", error)
+        }
+    }
+}
+
+fn map_source_management_error(error: SourceManagementError) -> RuntimeFailure {
+    let subcode = source_management_subcode(&error);
+    RuntimeFailure::from_error(subcode, "source", error)
+}
+
+fn map_index_management_error(error: IndexManagementError) -> RuntimeFailure {
+    let subcode = match &error {
+        IndexManagementError::IndexNotFound(_) => ErrorSubcode::IndexNotFound,
+        IndexManagementError::Store(error) => store_subcode(error),
+        IndexManagementError::Trust(error) => trust_subcode(error),
+        IndexManagementError::ConfigSchema { found } => config_schema_subcode(*found),
+        IndexManagementError::UnsafeManagedDirectory(_) => ErrorSubcode::UnsupportedStorage,
+        IndexManagementError::InvalidManagedPath(_) => ErrorSubcode::PathInvalid,
+        IndexManagementError::QuarantineCleanup { source, .. }
+        | IndexManagementError::Io(source) => io_subcode(source, ErrorSubcode::IndexWrite),
+        IndexManagementError::DeletionRecoveryConflict
+        | IndexManagementError::ConfigPathOverlap
+        | IndexManagementError::IncompleteConfiguredDefault
+        | IndexManagementError::InvalidConfigEpoch
+        | IndexManagementError::ConfigEpochOverflow
+        | IndexManagementError::ConfigUnsafe
+        | IndexManagementError::ConfigTooLarge
+        | IndexManagementError::ConfigChanged
+        | IndexManagementError::ConfigNotUtf8
+        | IndexManagementError::ConfigToml(_)
+        | IndexManagementError::LogicalSelection(_) => ErrorSubcode::ConfigInvalid,
+        IndexManagementError::ConfigSerialize(_) => ErrorSubcode::Invariant,
+    };
+    RuntimeFailure::from_error(subcode, "index_delete", error)
+}
+
+fn source_management_subcode(error: &SourceManagementError) -> ErrorSubcode {
+    match error {
+        SourceManagementError::Init(error) => init_subcode(error),
+        SourceManagementError::Trust(error) => trust_subcode(error),
+        SourceManagementError::Canonicalize(error)
+            if error.kind() == io::ErrorKind::PermissionDenied =>
+        {
+            ErrorSubcode::SourceRead
+        }
+        SourceManagementError::Canonicalize(_)
+        | SourceManagementError::NotRegularFile
+        | SourceManagementError::NonUtf8Path
+        | SourceManagementError::NonUtf8FilesystemRoot => ErrorSubcode::PathInvalid,
+        SourceManagementError::FilesystemConfig(error) => source_config_subcode(error),
+        SourceManagementError::Config(_)
+        | SourceManagementError::SourceNotFound(_)
+        | SourceManagementError::RemovalRequiresJsonl
+        | SourceManagementError::MembershipRequiresJsonl => ErrorSubcode::ConfigInvalid,
+        SourceManagementError::Store(error) => store_subcode(error),
+        SourceManagementError::StoragePreflight(error) => storage_preflight_subcode(error),
+    }
 }
 
 fn filesystem_ingest_subcode(error: &FilesystemIngestError) -> ErrorSubcode {
@@ -3506,7 +5508,8 @@ fn pointer_subcode(error: &PointerError) -> ErrorSubcode {
 fn trust_subcode(error: &TrustError) -> ErrorSubcode {
     match error {
         TrustError::Malformed(_)
-        | TrustError::UnsupportedSchema { .. }
+        | TrustError::InvalidConfigEpoch
+        | TrustError::ConfigEpochOverflow
         | TrustError::InvalidIndexName(_)
         | TrustError::InvalidProjectName(_)
         | TrustError::NonCanonicalRoot { .. }
@@ -3515,6 +5518,7 @@ fn trust_subcode(error: &TrustError) -> ErrorSubcode {
         | TrustError::ConflictingIdentity
         | TrustError::DuplicateBinding { .. }
         | TrustError::NonRandomBinding { .. }
+        | TrustError::BindingNotFound { .. }
         | TrustError::TooManyBindings { .. }
         | TrustError::NonUtf8Root { .. }
         | TrustError::UnsafeFile
@@ -3522,6 +5526,7 @@ fn trust_subcode(error: &TrustError) -> ErrorSubcode {
         | TrustError::ChangedDuringRead
         | TrustError::NotUtf8
         | TrustError::InvalidIdentity(_) => ErrorSubcode::TrustRegistryInvalid,
+        TrustError::UnsupportedSchema { found } => trust_schema_subcode(*found),
         TrustError::CanonicalizeRoot { .. }
         | TrustError::RootNotDirectory { .. }
         | TrustError::MissingParent { .. } => ErrorSubcode::PathInvalid,
@@ -3538,6 +5543,26 @@ fn trust_subcode(error: &TrustError) -> ErrorSubcode {
         }
         TrustError::Write(_) => ErrorSubcode::StorageIo,
     }
+}
+
+const fn schema_subcode(found: u32, current: u32, previous: u32) -> ErrorSubcode {
+    if found == previous {
+        ErrorSubcode::MigrationRequired
+    } else if found < previous {
+        ErrorSubcode::UpgradeRequired
+    } else if found > current {
+        ErrorSubcode::DowngradeUnsupported
+    } else {
+        ErrorSubcode::ConfigInvalid
+    }
+}
+
+const fn config_schema_subcode(found: u32) -> ErrorSubcode {
+    schema_subcode(found, CONFIG_SCHEMA_VERSION, PREVIOUS_CONFIG_SCHEMA_VERSION)
+}
+
+const fn trust_schema_subcode(found: u32) -> ErrorSubcode {
+    schema_subcode(found, TRUST_SCHEMA_VERSION, TRUST_PREVIOUS_SCHEMA_VERSION)
 }
 
 fn source_config_subcode(error: &SourceConfigError) -> ErrorSubcode {
@@ -3647,6 +5672,106 @@ fn discovery_subcode(error: &DiscoveryError) -> ErrorSubcode {
     }
 }
 
+fn map_search_evidence_error(error: SearchEvidenceError) -> RuntimeFailure {
+    match error {
+        SearchEvidenceError::Store(error) => map_store_error(error),
+        SearchEvidenceError::Search(error) => map_search_error(error),
+        SearchEvidenceError::ModelNotConfigured => RuntimeFailure::from_error(
+            ErrorSubcode::ModelNotConfigured,
+            "semantic_search",
+            "the selected index has no embedding model configured",
+        ),
+        SearchEvidenceError::QueryEmbedding(error) => {
+            RuntimeFailure::from_error(query_embedding_subcode(&error), "query_embedding", error)
+        }
+        SearchEvidenceError::Status(error) => map_status_error(error),
+        SearchEvidenceError::SourceConfig(error) => {
+            RuntimeFailure::from_error(source_config_subcode(&error), "search_source_root", error)
+        }
+        SearchEvidenceError::Sqlite(error) => {
+            RuntimeFailure::from_error(sqlite_subcode(&error), "search", error)
+        }
+        error @ (SearchEvidenceError::FieldLimit | SearchEvidenceError::BodyLimit) => {
+            RuntimeFailure::from_error(ErrorSubcode::MemoryBudget, "search", error)
+        }
+        error @ (SearchEvidenceError::SourceUnavailable | SearchEvidenceError::Corrupt(_)) => {
+            RuntimeFailure::from_error(ErrorSubcode::HeadIndexMismatch, "search", error)
+        }
+        SearchEvidenceError::SnapshotChanged { expected, actual } => {
+            let subcode = if expected.index_id != actual.index_id
+                || expected.index_epoch != actual.index_epoch
+            {
+                ErrorSubcode::IndexEpoch
+            } else if expected.generation != actual.generation {
+                ErrorSubcode::Generation
+            } else if expected.scope_revision != actual.scope_revision {
+                ErrorSubcode::ScopeRevision
+            } else {
+                ErrorSubcode::QueryFingerprint
+            };
+            RuntimeFailure::stale_cursor(subcode)
+        }
+        SearchEvidenceError::Cancelled => RuntimeFailure::from_error(
+            ErrorSubcode::ClientCancelled,
+            "search",
+            "search request cancelled",
+        ),
+        SearchEvidenceError::Deadline => RuntimeFailure::from_error(
+            ErrorSubcode::RequestDeadline,
+            "search",
+            "search deadline expired",
+        ),
+    }
+}
+
+const fn query_embedding_subcode(error: &QueryEmbeddingError) -> ErrorSubcode {
+    match error {
+        QueryEmbeddingError::ModelMissing => ErrorSubcode::ModelNotInstalled,
+        QueryEmbeddingError::ModelUnverified | QueryEmbeddingError::ModelIncompatible => {
+            ErrorSubcode::ModelFingerprint
+        }
+        QueryEmbeddingError::Busy => ErrorSubcode::ModelQueue,
+        QueryEmbeddingError::Restarting => ErrorSubcode::ModelRestarting,
+        QueryEmbeddingError::Cancelled => ErrorSubcode::ClientCancelled,
+        QueryEmbeddingError::Deadline => ErrorSubcode::RequestDeadline,
+        QueryEmbeddingError::InvalidRequest(_) | QueryEmbeddingError::Protocol => {
+            ErrorSubcode::Invariant
+        }
+    }
+}
+
+fn map_search_cursor_error(error: SearchCursorError) -> RuntimeFailure {
+    match error {
+        SearchCursorError::Malformed => {
+            RuntimeFailure::cursor_error(ErrorSubcode::QuerySyntax, "malformed")
+        }
+        SearchCursorError::QueryFingerprint => {
+            RuntimeFailure::stale_cursor(ErrorSubcode::QueryFingerprint)
+        }
+        SearchCursorError::InvalidConfiguration => {
+            RuntimeFailure::from_error(ErrorSubcode::Invariant, "encode_cursor_config", error)
+        }
+    }
+}
+
+fn cursor_stale_subcode(cause: SearchCursorStaleCause) -> ErrorSubcode {
+    match cause {
+        SearchCursorStaleCause::IndexEpoch => ErrorSubcode::IndexEpoch,
+        SearchCursorStaleCause::Generation => ErrorSubcode::Generation,
+        SearchCursorStaleCause::ScopeRevision => ErrorSubcode::ScopeRevision,
+        SearchCursorStaleCause::QueryFingerprint => ErrorSubcode::QueryFingerprint,
+    }
+}
+
+fn search_snapshot_from_cursor(state: &SearchCursorState) -> SearchEvidenceSnapshot {
+    SearchEvidenceSnapshot {
+        index_id: state.index_id,
+        scope_revision: state.scope_revision,
+        index_epoch: state.index_epoch,
+        generation: state.generation,
+    }
+}
+
 fn map_search_error(error: SearchError) -> RuntimeFailure {
     let subcode = match &error {
         SearchError::Query(QueryError::Blank) => ErrorSubcode::QueryEmpty,
@@ -3657,24 +5782,84 @@ fn map_search_error(error: SearchError) -> RuntimeFailure {
         SearchError::ProjectNotFound => ErrorSubcode::ProjectNotFound,
         SearchError::DeadlineExceeded => ErrorSubcode::RequestDeadline,
         SearchError::NonFiniteScore => ErrorSubcode::NonfiniteScore,
+        SearchError::QueryEmbeddingRequired | SearchError::InvalidQueryEmbedding(_) => {
+            ErrorSubcode::Invariant
+        }
+        SearchError::SemanticUnavailable => ErrorSubcode::ModelNotConfigured,
         SearchError::Corrupt(_) => ErrorSubcode::HeadIndexMismatch,
         SearchError::Sqlite(error) => sqlite_subcode(error),
+        SearchError::Store(error) => store_subcode(error),
         SearchError::ExactMatcher => ErrorSubcode::Invariant,
     };
     RuntimeFailure::from_error(subcode, "search", error)
+}
+
+fn map_get_evidence_error(error: GetEvidenceError) -> RuntimeFailure {
+    match error {
+        GetEvidenceError::Store(error) => map_store_error(error),
+        GetEvidenceError::Get(error) => map_get_error(error),
+        GetEvidenceError::Status(error) => map_status_error(error),
+        GetEvidenceError::Sqlite(error) => {
+            RuntimeFailure::from_error(sqlite_subcode(&error), "get", error)
+        }
+        GetEvidenceError::SourceConfig(_)
+        | GetEvidenceError::FieldLimit
+        | GetEvidenceError::SourceUnavailable => {
+            RuntimeFailure::from_error(ErrorSubcode::HeadIndexMismatch, "get", error)
+        }
+    }
+}
+
+fn map_get_packet_error(error: GetPacketError) -> RuntimeFailure {
+    RuntimeFailure::from_error(ErrorSubcode::Invariant, "get", error)
 }
 
 fn map_get_error(error: GetError) -> RuntimeFailure {
     let subcode = match &error {
         GetError::ScopeDenied => ErrorSubcode::ScopeHidden,
         GetError::EvidenceNotFound => ErrorSubcode::EvidenceNotFound,
+        GetError::EvidenceForgotten => ErrorSubcode::ForgetTombstone,
         GetError::InvalidBound { .. } | GetError::BoundBelowPassage { .. } => {
             ErrorSubcode::LimitOutOfRange
         }
         GetError::Corrupt(_) => ErrorSubcode::HeadIndexMismatch,
         GetError::Sqlite(error) => sqlite_subcode(error),
+        GetError::Store(error) => store_subcode(error),
     };
     RuntimeFailure::from_error(subcode, "get", error)
+}
+
+fn map_status_evidence_error(error: StatusEvidenceError) -> RuntimeFailure {
+    match error {
+        StatusEvidenceError::Store(error) => map_store_error(error),
+        StatusEvidenceError::Status(error) => map_status_error(error),
+        StatusEvidenceError::Sqlite(error) => {
+            RuntimeFailure::from_error(sqlite_subcode(&error), "status", error)
+        }
+        StatusEvidenceError::ProjectNotFound => RuntimeFailure::from_error(
+            ErrorSubcode::ProjectNotFound,
+            "status",
+            "bound project does not exist",
+        ),
+        StatusEvidenceError::FieldLimit => RuntimeFailure::from_error(
+            ErrorSubcode::MemoryBudget,
+            "status",
+            "stored status exceeds field limits",
+        ),
+        error @ StatusEvidenceError::Corrupt(_) => {
+            RuntimeFailure::from_error(ErrorSubcode::HeadIndexMismatch, "status", error)
+        }
+        StatusEvidenceError::Cancelled => RuntimeFailure::from_error(
+            ErrorSubcode::ClientCancelled,
+            "status",
+            "status request cancelled",
+        ),
+        StatusEvidenceError::Deadline => RuntimeFailure::from_error(
+            ErrorSubcode::RequestDeadline,
+            "status",
+            "status deadline expired",
+        ),
+    }
 }
 
 fn map_status_error(error: StatusError) -> RuntimeFailure {
@@ -3691,21 +5876,171 @@ fn map_store_error(error: StoreError) -> RuntimeFailure {
     RuntimeFailure::from_error(subcode, "index", error)
 }
 
+fn map_maintenance_error(error: MaintenanceError) -> RuntimeFailure {
+    match error {
+        MaintenanceError::Store(error) => map_store_error(error),
+        error @ MaintenanceError::StoragePreflight(_) => {
+            let MaintenanceError::StoragePreflight(source) = &error else {
+                unreachable!()
+            };
+            RuntimeFailure::from_error(storage_preflight_subcode(source), "maintenance", error)
+        }
+        error @ MaintenanceError::Io(_) => {
+            let MaintenanceError::Io(source) = &error else {
+                unreachable!()
+            };
+            RuntimeFailure::from_error(
+                io_subcode(source, ErrorSubcode::IndexWrite),
+                "maintenance",
+                error,
+            )
+        }
+        error => {
+            let subcode = match &error {
+                MaintenanceError::Time(_) | MaintenanceError::Json(_) => ErrorSubcode::Unexpected,
+                MaintenanceError::OutputExists(_) => ErrorSubcode::MaintenanceOutputExists,
+                MaintenanceError::OutputHasNoParent(_)
+                | MaintenanceError::BackupOverlapsIndex
+                | MaintenanceError::UnsafePlanFile(_)
+                | MaintenanceError::ReplacementPathMismatch
+                | MaintenanceError::OutputPathsOverlap => ErrorSubcode::PathInvalid,
+                MaintenanceError::BackupIdentityMismatch
+                | MaintenanceError::RecoveryBackupMismatch => {
+                    ErrorSubcode::MaintenanceBackupMismatch
+                }
+                MaintenanceError::BackupSidecarPresent => ErrorSubcode::UnsupportedStorage,
+                MaintenanceError::PlanTooLarge => ErrorSubcode::MemoryBudget,
+                MaintenanceError::PlanFormat
+                | MaintenanceError::PlanHashInvalid
+                | MaintenanceError::PlanIndexMismatch => ErrorSubcode::MaintenancePlanInvalid,
+                MaintenanceError::ConfirmationMismatch => {
+                    ErrorSubcode::MaintenanceConfirmationMismatch
+                }
+                MaintenanceError::PlanStale => ErrorSubcode::MaintenancePlanStale,
+                MaintenanceError::RestoreStateMismatch => ErrorSubcode::RestoreStateMismatch,
+                MaintenanceError::NoMaintenanceWork => ErrorSubcode::MaintenanceNoWork,
+                MaintenanceError::HistoryNotPruned => ErrorSubcode::ForgetRequiresPrune,
+                MaintenanceError::InvalidPruneSelector => ErrorSubcode::PruneSelectorInvalid,
+                MaintenanceError::ForgetTargetUnavailable => ErrorSubcode::EvidenceNotFound,
+                MaintenanceError::UnsupportedMigrationPath => ErrorSubcode::UpgradeRequired,
+                MaintenanceError::InvalidStoredIdentity
+                | MaintenanceError::InvalidStoredDigest
+                | MaintenanceError::InvalidStoredSpan => ErrorSubcode::Invariant,
+                MaintenanceError::Store(_)
+                | MaintenanceError::StoragePreflight(_)
+                | MaintenanceError::Io(_) => unreachable!(),
+            };
+            RuntimeFailure::from_error(subcode, "maintenance", error)
+        }
+    }
+}
+
+fn map_managed_backup_error(error: ManagedBackupError) -> RuntimeFailure {
+    match error {
+        ManagedBackupError::Store(error) => map_store_error(error),
+        error @ ManagedBackupError::Io(_) => {
+            let ManagedBackupError::Io(source) = &error else {
+                unreachable!()
+            };
+            RuntimeFailure::from_error(
+                io_subcode(source, ErrorSubcode::IndexWrite),
+                "managed_backup",
+                error,
+            )
+        }
+        error => {
+            let subcode = match &error {
+                ManagedBackupError::RegistryPathInvalid(_)
+                | ManagedBackupError::BackupPathInvalid(_) => ErrorSubcode::PathInvalid,
+                ManagedBackupError::UnsafeRegistry(_) | ManagedBackupError::UnsafeBackup(_) => {
+                    ErrorSubcode::UnsupportedStorage
+                }
+                ManagedBackupError::RegistryTooLarge
+                | ManagedBackupError::RegistryTooManyEntries => ErrorSubcode::MemoryBudget,
+                ManagedBackupError::PendingBackup(_)
+                | ManagedBackupError::BackupChanged(_)
+                | ManagedBackupError::BackupPathAlreadyManaged(_)
+                | ManagedBackupError::ReservationMissing(_)
+                | ManagedBackupError::ReceiptMismatch(_) => ErrorSubcode::MaintenanceBackupMismatch,
+                ManagedBackupError::Json(_)
+                | ManagedBackupError::RegistryFormat
+                | ManagedBackupError::RegistryOrder
+                | ManagedBackupError::RegistryIndexName
+                | ManagedBackupError::RegistryChanged
+                | ManagedBackupError::RegistryEpochOverflow
+                | ManagedBackupError::PathEncoding => ErrorSubcode::ConfigInvalid,
+                ManagedBackupError::Store(_) | ManagedBackupError::Io(_) => unreachable!(),
+            };
+            RuntimeFailure::from_error(subcode, "managed_backup", error)
+        }
+    }
+}
+
+fn map_config_migration_error(error: ConfigMigrationError) -> RuntimeFailure {
+    match error {
+        ConfigMigrationError::Maintenance(error) => map_maintenance_error(error),
+        ConfigMigrationError::Store(error) => map_store_error(error),
+        ConfigMigrationError::StoragePreflight(error) => {
+            let subcode = storage_preflight_subcode(&error);
+            RuntimeFailure::from_error(subcode, "config_migration", error)
+        }
+        ConfigMigrationError::Trust(error) => {
+            let subcode = trust_subcode(&error);
+            RuntimeFailure::from_error(subcode, "config_migration", error)
+        }
+        error => {
+            let subcode = match &error {
+                ConfigMigrationError::Toml(_)
+                | ConfigMigrationError::InvalidConfigEpoch(_)
+                | ConfigMigrationError::IncompleteConfiguredDefault
+                | ConfigMigrationError::LogicalSelection(_) => ErrorSubcode::ConfigInvalid,
+                ConfigMigrationError::TomlSerialize(_) => ErrorSubcode::Invariant,
+                ConfigMigrationError::Json(_) => ErrorSubcode::Unexpected,
+                ConfigMigrationError::Io(source) => io_subcode(source, ErrorSubcode::IndexWrite),
+                ConfigMigrationError::PathsMustBeAbsolute
+                | ConfigMigrationError::PathsOverlap
+                | ConfigMigrationError::PathHasNoParent(_)
+                | ConfigMigrationError::UnsafeFile(_)
+                | ConfigMigrationError::UnsafeBackupDirectory(_) => ErrorSubcode::PathInvalid,
+                ConfigMigrationError::PlanPathMismatch | ConfigMigrationError::PlanInvalid => {
+                    ErrorSubcode::MaintenancePlanInvalid
+                }
+                ConfigMigrationError::PlanStale => ErrorSubcode::MaintenancePlanStale,
+                ConfigMigrationError::BackupMismatch => ErrorSubcode::MaintenanceBackupMismatch,
+                ConfigMigrationError::FileTooLarge(_) => ErrorSubcode::FileTooLarge,
+                ConfigMigrationError::FileChanged(_) => ErrorSubcode::SourceChangedDuringRead,
+                ConfigMigrationError::NotUtf8(_) => ErrorSubcode::InvalidUtf8,
+                ConfigMigrationError::UnsupportedSchema { found, current, .. } => {
+                    schema_subcode(*found, *current, current.saturating_sub(1))
+                }
+                ConfigMigrationError::Maintenance(_)
+                | ConfigMigrationError::Store(_)
+                | ConfigMigrationError::StoragePreflight(_)
+                | ConfigMigrationError::Trust(_) => unreachable!(),
+            };
+            RuntimeFailure::from_error(subcode, "config_migration", error)
+        }
+    }
+}
+
 fn store_subcode(error: &StoreError) -> ErrorSubcode {
     match error {
         StoreError::Sqlite(error) => sqlite_subcode(error),
         StoreError::Io(error) => io_subcode(error, ErrorSubcode::IndexWrite),
         StoreError::Time(_) => ErrorSubcode::Unexpected,
         StoreError::AlreadyExists(_) => ErrorSubcode::IndexPathOccupied,
-        StoreError::WalUnavailable(_) => ErrorSubcode::UnsupportedStorage,
+        StoreError::WalUnavailable(_) | StoreError::SqliteVecRegistration(_) => {
+            ErrorSubcode::UnsupportedStorage
+        }
         StoreError::MissingPath(_) => ErrorSubcode::IndexNotFound,
         StoreError::UnsafeIndexPath(_) => ErrorSubcode::UnsupportedStorage,
-        StoreError::WriterLockBusy { .. } => ErrorSubcode::WriterLock,
-        StoreError::InvalidApplicationId { .. } => ErrorSubcode::ApplicationId,
-        StoreError::UnsupportedSchemaVersion { current, found } if found > current => {
-            ErrorSubcode::DowngradeUnsupported
+        StoreError::WriterLockBusy { .. } | StoreError::ReplacementLockBusy { .. } => {
+            ErrorSubcode::WriterLock
         }
-        StoreError::UnsupportedSchemaVersion { .. } => ErrorSubcode::MigrationRequired,
+        StoreError::InvalidApplicationId { .. } => ErrorSubcode::ApplicationId,
+        StoreError::UnsupportedSchemaVersion { current, found } => {
+            schema_subcode(*found, *current, current.saturating_sub(1))
+        }
         StoreError::SchemaChecksumMismatch
         | StoreError::SchemaManifestMismatch
         | StoreError::MissingSchemaObject(_)
@@ -3721,9 +6056,18 @@ fn store_subcode(error: &StoreError) -> ErrorSubcode {
         | StoreError::GenerationInvariant(_)
         | StoreError::ChunkLayoutMismatch
         | StoreError::ScopeConflict => ErrorSubcode::HeadIndexMismatch,
-        StoreError::UnsafeWriterLock(_) | StoreError::WriterLockUnsupported => {
-            ErrorSubcode::UnsupportedStorage
-        }
+        StoreError::ForgetTombstone => ErrorSubcode::ForgetTombstone,
+        StoreError::ForgetLedgerMismatch => ErrorSubcode::ForgetLedgerMismatch,
+        StoreError::ProjectNotFound => ErrorSubcode::ProjectNotFound,
+        StoreError::ProjectLimitExceeded { .. } => ErrorSubcode::ConfigInvalid,
+        StoreError::SourceConflict
+        | StoreError::SourceNotFound
+        | StoreError::SourceLimitExceeded { .. }
+        | StoreError::UnsupportedSourceKind => ErrorSubcode::ConfigInvalid,
+        StoreError::UnsafeWriterLock(_)
+        | StoreError::WriterLockUnsupported
+        | StoreError::UnsafeReplacementLock(_)
+        | StoreError::ReplacementLockUnsupported => ErrorSubcode::UnsupportedStorage,
         StoreError::ReadOnlyRequired | StoreError::ReadWriteRequired => ErrorSubcode::Invariant,
         StoreError::EmptySnapshotConfirmationRequired => {
             ErrorSubcode::EmptySnapshotConfirmationRequired
@@ -3733,15 +6077,18 @@ fn store_subcode(error: &StoreError) -> ErrorSubcode {
         }
         StoreError::IntegerOverflow => ErrorSubcode::MemoryBudget,
         StoreError::InvalidPreparedDocument(_)
+        | StoreError::InvalidEmbedding(_)
         | StoreError::DuplicateConnectorKey
         | StoreError::HashCollision
-        | StoreError::WriterLockMismatch => ErrorSubcode::Invariant,
+        | StoreError::WriterLockMismatch
+        | StoreError::ReplacementLockMismatch => ErrorSubcode::Invariant,
     }
 }
 
 fn map_mcp_server_error(error: McpServerError) -> RuntimeFailure {
     let subcode = match &error {
         McpServerError::Store(error) => store_subcode(error),
+        McpServerError::QueryEmbedding(error) => query_embedding_subcode(error),
         McpServerError::ProjectNotFound => ErrorSubcode::ProjectNotFound,
         McpServerError::InvalidMetadata => ErrorSubcode::Invariant,
         McpServerError::Initialize(_) => ErrorSubcode::ClientDisconnected,
@@ -3840,6 +6187,75 @@ mod tests {
             store_subcode(&StoreError::AlreadyExists(PathBuf::from("index.sqlite"))),
             ErrorSubcode::IndexPathOccupied
         );
+    }
+
+    #[test]
+    fn schema_age_maps_to_migrate_upgrade_or_downgrade_guidance() {
+        assert_eq!(
+            store_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 2,
+            }),
+            ErrorSubcode::MigrationRequired
+        );
+        assert_eq!(
+            store_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 1,
+            }),
+            ErrorSubcode::UpgradeRequired
+        );
+        assert_eq!(
+            store_subcode(&StoreError::UnsupportedSchemaVersion {
+                current: 3,
+                found: 4,
+            }),
+            ErrorSubcode::DowngradeUnsupported
+        );
+    }
+
+    #[test]
+    fn maintenance_failures_have_operation_specific_recovery_subcodes() {
+        for (error, expected) in [
+            (
+                MaintenanceError::OutputExists(PathBuf::from("plan.json")),
+                ErrorSubcode::MaintenanceOutputExists,
+            ),
+            (
+                MaintenanceError::PlanHashInvalid,
+                ErrorSubcode::MaintenancePlanInvalid,
+            ),
+            (
+                MaintenanceError::ConfirmationMismatch,
+                ErrorSubcode::MaintenanceConfirmationMismatch,
+            ),
+            (
+                MaintenanceError::PlanStale,
+                ErrorSubcode::MaintenancePlanStale,
+            ),
+            (
+                MaintenanceError::NoMaintenanceWork,
+                ErrorSubcode::MaintenanceNoWork,
+            ),
+            (
+                MaintenanceError::HistoryNotPruned,
+                ErrorSubcode::ForgetRequiresPrune,
+            ),
+            (
+                MaintenanceError::RestoreStateMismatch,
+                ErrorSubcode::RestoreStateMismatch,
+            ),
+            (
+                MaintenanceError::BackupIdentityMismatch,
+                ErrorSubcode::MaintenanceBackupMismatch,
+            ),
+            (
+                MaintenanceError::InvalidPruneSelector,
+                ErrorSubcode::PruneSelectorInvalid,
+            ),
+        ] {
+            assert_eq!(map_maintenance_error(error).public.subcode, expected);
+        }
     }
 
     #[test]

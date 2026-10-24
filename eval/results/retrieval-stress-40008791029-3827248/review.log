@@ -1,0 +1,77 @@
+{
+  "reviewed_at_utc": "2026-10-23T23:03:24.767986+00:00",
+  "candidate": "38272481bfbc9bb831ac05304135f3bdc54dda05",
+  "run_url": "https://github.com/burkan2/hSUM/actions/runs/40008791029",
+  "artifact_id": 12535907304,
+  "artifact_zip_sha256": "8ef94d8ab10b6040acb912cf54ed01d843611cce79b64a890445b0779c6b3a34",
+  "native_report_only_stress_pass": true,
+  "qualification": {
+    "checks": {
+      "all_scale_probes_returned_evidence": true,
+      "cancel_storm_recovered": true,
+      "concurrent_old_readers_retained_prior_snapshots": true,
+      "cross_source_embedding_inputs_reused": true,
+      "duplicate_body_deduplicated": true,
+      "final_hybrid_used_vectors": true,
+      "one_hundred_metadata_only_generations": true,
+      "one_million_active_passages": true,
+      "rss_recorded": true,
+      "sixty_four_sources": true
+    },
+    "latency_slo_applied": false,
+    "observed_deadline_count": 0,
+    "report_only": true
+  },
+  "scale_observations_recomputed": 75,
+  "final_vector_hybrid_observations_recomputed": 5,
+  "cancel_storm": {
+    "cancelled_requests": 8,
+    "hybrid_examined": {
+      "exact": 0,
+      "exact_fallback": 0,
+      "lexical": 0,
+      "vector": 500
+    },
+    "hybrid_recovery": true,
+    "late_responses_suppressed": true,
+    "lexical_examined": {
+      "exact": 0,
+      "exact_fallback": 0,
+      "lexical": 500,
+      "vector": 0
+    },
+    "lexical_recovery": true,
+    "peak_process_tree_rss_bytes": 654983168,
+    "real_worker_processes_paused": 2
+  },
+  "first_observed_knee": {
+    "observed_p50_ms": 597.2053510000137,
+    "passages": 111160,
+    "previous_p50_ms": 174.47543099999052,
+    "query_id": "maximum-posting-literal",
+    "ratio": 3.422862162180566,
+    "rule": "current p50 is more than 2x the preceding scale point",
+    "source_count": 8
+  },
+  "first_observed_deadline": null,
+  "checks": {
+    "artifact_digest_and_exact_clean_source_candidate": true,
+    "frozen_manifest_and_corpus": true,
+    "all_75_scale_observations_and_summaries": true,
+    "all_5_final_hybrid_observations_and_summary": true,
+    "candidate_caps_finite_timings_and_result_presence": true,
+    "scale_knee_and_deadline_recomputed": true,
+    "four_old_readers_retained_generation": true,
+    "hundred_metadata_operations_recorded": true,
+    "million_memberships_and_embedding_cache_counts": true,
+    "eight_cancellations_two_workers_no_late_responses_and_both_recoveries": true,
+    "memory_storage_and_amplification_recorded": true,
+    "pre_cancellation_log_matches_final_report": true
+  },
+  "limits": [
+    "Report-only stress workload; no 100k latency/CV/cold-cache or superiority claim.",
+    "No independent worker timestamps or full MCP transcript are uploaded; cancellation/no-late-response evidence is the completion of the frozen same-process harness and its final summary.",
+    "Full index and executable are not uploaded, so physical integrity/model provenance/candidate byte validation cannot be independently rerun from these artifacts.",
+    "Metadata operations contain aggregate timing statistics; individual operation timings cannot be independently recomputed from the report."
+  ]
+}

@@ -1,0 +1,88 @@
+name: Parser fuzz smoke
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/parser-fuzz.yml
+      - Cargo.lock
+      - Cargo.toml
+      - fuzz/**
+      - scripts/run-parser-fuzz.sh
+      - scripts/test_run_parser_fuzz.py
+      - src/domain/**
+      - src/ingest/**
+      - src/mcp.rs
+      - src/protocol/**
+      - src/search/**
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/parser-fuzz.yml
+      - Cargo.lock
+      - Cargo.toml
+      - fuzz/**
+      - scripts/run-parser-fuzz.sh
+      - scripts/test_run_parser_fuzz.py
+      - src/domain/**
+      - src/ingest/**
+      - src/mcp.rs
+      - src/protocol/**
+      - src/search/**
+  schedule:
+    - cron: '31 4 * * 3'
+  workflow_dispatch:
+    inputs:
+      seconds_per_target:
+        description: "Seconds per parser (1–1800); six parsers run sequentially"
+        default: '15'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: parser-fuzz-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-x86_64:
+    name: Linux x86_64 parser fuzz smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Verify the bounded campaign runner
+        run: python3 scripts/test_run_parser_fuzz.py
+
+      - name: Install the pinned nightly toolchain
+        shell: bash
+        run: rustup toolchain install nightly-2026-08-15 --profile minimal
+
+      - name: Install the pinned cargo-fuzz frontend
+        shell: bash
+        run: cargo +nightly-2026-08-15 install cargo-fuzz --version 0.13.2 --locked
+
+      - name: Build all parser fuzz targets
+        shell: bash
+        run: cargo +nightly-2026-08-15 fuzz build
+
+      - name: Run the bounded crash-regression campaign
+        env:
+          FUZZ_SECONDS: ${{ inputs.seconds_per_target || '15' }}
+        shell: bash
+        run: bash scripts/run-parser-fuzz.sh "$RUNNER_TEMP/parser-fuzz-logs"
+
+      - name: Upload campaign statistics and crash artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: parser-fuzz-evidence
+          path: |
+            fuzz/artifacts/
+            ${{ runner.temp }}/parser-fuzz-logs/
+          if-no-files-found: ignore
+          retention-days: 14

@@ -1,0 +1,42 @@
+{
+  "qualification": false,
+  "recorded_at_utc": "2026-10-23T19:03:57.752874+00:00",
+  "before_candidate": "1ce11d00bf8cad949c12a9c496ab7dba3675717f",
+  "after_candidate": "38272481bfbc9bb831ac05304135f3bdc54dda05",
+  "scope": "Paired reduced-product and isolated native SQL diagnostics; neither the frozen 100k protocol nor the million-passage stress qualification. Local diagnostics ran alongside 100k re-embedding/build work.",
+  "source_sha256": "2ccce3ce6a8b1c11e7628604b5e5ef0eb784768665d0bd707f311bd5ebed63ee",
+  "checks": {
+    "full_contributor_gate": true,
+    "regression_fails_before_repair_at_20_sorts": true,
+    "ordered_500_native_rows_identical": true,
+    "later_page_field_bounds_still_rejected": true,
+    "optimized_release_build": true,
+    "release_smoke": true,
+    "all_reduced_product_results_equal": true,
+    "all_18_small_cli_controls_equal": true,
+    "all_180_small_returned_contents_verified": true,
+    "small_real_model_cancel_storm": true,
+    "portability_reports_recomputed_and_exactly_equal": true
+  },
+  "local_check_log_sha256": "af874523fce07eb8957185c5516499ec2f8f83caee5d7aa24e2399779d47fb8f",
+  "review": "Author review of cursor lifetime, transaction scope, candidate cap, ranking/ties, deadline/field errors, and call sites; no independent review claimed.",
+  "after_binary_sha256": "9a08baa1c98d65a2628e72b28bc3ee54cc58011ec50f0446cbd8f1a12c7bed10",
+  "before_source_hash_verified_against_git": true,
+  "synthetic_million_fixture_counts": {
+    "active_passages": 1000000,
+    "passages_fts": 1000000,
+    "document_heads": 100000,
+    "project_sources": 64,
+    "chunks": 10
+  },
+  "native_stress_rerun_url": "https://github.com/burkan2/hSUM/actions/runs/40008791029",
+  "native_stress_rerun_candidate": "38272481bfbc9bb831ac05304135f3bdc54dda05",
+  "follow_up": {
+    "automation_id": "finish-hsum-performance-qualification",
+    "name": "Finish hSUM performance qualification",
+    "kind": "heartbeat",
+    "status": "ACTIVE",
+    "scope": "Finish and review these finite native runs; no duplicate active benchmarks or mixed-candidate reports."
+  },
+  "pr_check_connector": "Unavailable without a connected GitHub account; no independent PR-check review claimed. Existing native workflow run receipts remain separately recorded."
+}

@@ -13,8 +13,9 @@ use uuid::{Uuid, Version};
 use crate::config::safe_file::{BoundedReadError, read_bounded_file};
 use crate::domain::{IdParseError, IndexId, ProjectId, SafeSlug, SlugError};
 
-const TRUST_SCHEMA_VERSION: u32 = 1;
-const TRUST_REGISTRY_MAX_BYTES: usize = 1024 * 1024;
+pub const TRUST_SCHEMA_VERSION: u32 = 2;
+pub const TRUST_PREVIOUS_SCHEMA_VERSION: u32 = 1;
+pub(crate) const TRUST_REGISTRY_MAX_BYTES: usize = 1024 * 1024;
 const TRUST_REGISTRY_MAX_BINDINGS: usize = 4096;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -155,6 +156,7 @@ impl TrustBinding {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TrustRegistry {
+    config_epoch: u64,
     bindings: Vec<TrustBinding>,
 }
 
@@ -167,14 +169,22 @@ impl Default for TrustRegistry {
 impl TrustRegistry {
     pub const fn new() -> Self {
         Self {
+            config_epoch: 1,
             bindings: Vec::new(),
         }
     }
 
     pub fn from_bindings(bindings: Vec<TrustBinding>) -> Result<Self, TrustError> {
-        let registry = Self { bindings };
+        let registry = Self {
+            config_epoch: 1,
+            bindings,
+        };
         registry.validate()?;
         Ok(registry)
+    }
+
+    pub const fn config_epoch(&self) -> u64 {
+        self.config_epoch
     }
 
     pub fn bindings(&self) -> &[TrustBinding] {
@@ -183,11 +193,21 @@ impl TrustRegistry {
 
     pub fn parse(contents: &str) -> Result<Self, TrustError> {
         validate_registry_size(contents.as_bytes())?;
+        let version: TrustRegistryVersion =
+            toml::from_str(contents).map_err(TrustError::Malformed)?;
+        if version.schema_version != TRUST_SCHEMA_VERSION {
+            return Err(TrustError::UnsupportedSchema {
+                found: version.schema_version,
+            });
+        }
         let wire: TrustRegistryWire = toml::from_str(contents).map_err(TrustError::Malformed)?;
         if wire.schema_version != TRUST_SCHEMA_VERSION {
             return Err(TrustError::UnsupportedSchema {
                 found: wire.schema_version,
             });
+        }
+        if wire.config_epoch == 0 {
+            return Err(TrustError::InvalidConfigEpoch);
         }
         if wire.bindings.len() > TRUST_REGISTRY_MAX_BINDINGS {
             return Err(TrustError::TooManyBindings {
@@ -208,6 +228,32 @@ impl TrustRegistry {
                 project_name: SafeSlug::new(binding.project_name)
                     .map_err(TrustError::InvalidProjectName)?,
             });
+        }
+        let registry = Self {
+            config_epoch: wire.config_epoch,
+            bindings,
+        };
+        registry.validate()?;
+        Ok(registry)
+    }
+
+    pub(crate) fn parse_previous_for_migration(contents: &str) -> Result<Self, TrustError> {
+        validate_registry_size(contents.as_bytes())?;
+        let wire: TrustRegistryWireV1 = toml::from_str(contents).map_err(TrustError::Malformed)?;
+        if wire.schema_version != TRUST_PREVIOUS_SCHEMA_VERSION {
+            return Err(TrustError::UnsupportedSchema {
+                found: wire.schema_version,
+            });
+        }
+        if wire.bindings.len() > TRUST_REGISTRY_MAX_BINDINGS {
+            return Err(TrustError::TooManyBindings {
+                found: wire.bindings.len(),
+                maximum: TRUST_REGISTRY_MAX_BINDINGS,
+            });
+        }
+        let mut bindings = Vec::with_capacity(wire.bindings.len());
+        for binding in wire.bindings {
+            bindings.push(binding.try_into_binding()?);
         }
         Self::from_bindings(bindings)
     }
@@ -272,6 +318,7 @@ impl TrustRegistry {
                 maximum: TRUST_REGISTRY_MAX_BINDINGS,
             });
         }
+        let next_epoch = self.next_epoch()?;
 
         let binding_id = loop {
             let candidate = BindingId::new_v4();
@@ -285,7 +332,100 @@ impl TrustRegistry {
         };
         let binding = TrustBinding::from_registration(binding_id, registration);
         self.bindings.push(binding.clone());
+        self.config_epoch = next_epoch;
         Ok(RegistrationOutcome::Created(binding))
+    }
+
+    pub fn retarget_binding(
+        &mut self,
+        binding_id: BindingId,
+        canonical_root: PathBuf,
+        project_id: ProjectId,
+        project_name: SafeSlug,
+    ) -> Result<RetargetOutcome, TrustError> {
+        validate_canonical_root(&canonical_root)?;
+        let position = self
+            .bindings
+            .iter()
+            .position(|binding| binding.binding_id == binding_id)
+            .ok_or(TrustError::BindingNotFound { binding_id })?;
+        let current = &self.bindings[position];
+        if current.canonical_root == canonical_root
+            && current.project_id == project_id
+            && current.project_name == project_name
+        {
+            return Ok(RetargetOutcome {
+                binding: current.clone(),
+                changed: false,
+            });
+        }
+        if self
+            .bindings
+            .iter()
+            .enumerate()
+            .any(|(index, binding)| index != position && binding.canonical_root == canonical_root)
+        {
+            return Err(TrustError::ConflictingRoot {
+                root: canonical_root,
+            });
+        }
+        let next_epoch = self.next_epoch()?;
+        let original = self.bindings[position].clone();
+        self.bindings[position].canonical_root = canonical_root;
+        self.bindings[position].project_id = project_id;
+        self.bindings[position].project_name = project_name;
+        if let Err(error) = self.validate() {
+            self.bindings[position] = original;
+            return Err(error);
+        }
+        self.config_epoch = next_epoch;
+        Ok(RetargetOutcome {
+            binding: self.bindings[position].clone(),
+            changed: true,
+        })
+    }
+
+    pub(crate) fn remove_binding(
+        &mut self,
+        binding_id: BindingId,
+    ) -> Result<TrustBinding, TrustError> {
+        let position = self
+            .bindings
+            .iter()
+            .position(|binding| binding.binding_id == binding_id)
+            .ok_or(TrustError::BindingNotFound { binding_id })?;
+        let next_epoch = self.next_epoch()?;
+        let removed = self.bindings.remove(position);
+        self.config_epoch = next_epoch;
+        Ok(removed)
+    }
+
+    pub fn remove_index_bindings(
+        &mut self,
+        index_name: &SafeSlug,
+        index_id: IndexId,
+    ) -> Result<Vec<TrustBinding>, TrustError> {
+        if self.bindings.iter().any(|binding| {
+            (binding.index_name == *index_name && binding.index_id != index_id)
+                || (binding.index_id == index_id && binding.index_name != *index_name)
+        }) {
+            return Err(TrustError::ConflictingIdentity);
+        }
+        let removed = self
+            .bindings
+            .iter()
+            .filter(|binding| binding.index_name == *index_name && binding.index_id == index_id)
+            .cloned()
+            .collect::<Vec<_>>();
+        if removed.is_empty() {
+            return Ok(removed);
+        }
+        let next_epoch = self.next_epoch()?;
+        self.bindings
+            .retain(|binding| binding.index_name != *index_name || binding.index_id != index_id);
+        self.config_epoch = next_epoch;
+        self.validate()?;
+        Ok(removed)
     }
 
     pub fn to_toml(&self) -> Result<String, TrustError> {
@@ -317,6 +457,7 @@ impl TrustRegistry {
 
         let contents = toml::to_string_pretty(&TrustRegistryWireRef {
             schema_version: TRUST_SCHEMA_VERSION,
+            config_epoch: self.config_epoch,
             bindings,
         })
         .map_err(TrustError::Serialize)?;
@@ -358,6 +499,9 @@ impl TrustRegistry {
     }
 
     fn validate(&self) -> Result<(), TrustError> {
+        if self.config_epoch == 0 {
+            return Err(TrustError::InvalidConfigEpoch);
+        }
         if self.bindings.len() > TRUST_REGISTRY_MAX_BINDINGS {
             return Err(TrustError::TooManyBindings {
                 found: self.bindings.len(),
@@ -411,6 +555,12 @@ impl TrustRegistry {
         }
         Ok(())
     }
+
+    fn next_epoch(&self) -> Result<u64, TrustError> {
+        self.config_epoch
+            .checked_add(1)
+            .ok_or(TrustError::ConfigEpochOverflow)
+    }
 }
 
 fn validate_registry_size(contents: &[u8]) -> Result<(), TrustError> {
@@ -431,6 +581,12 @@ pub enum AtomicSaveOutcome {
 pub enum RegistrationOutcome {
     Created(TrustBinding),
     Existing(TrustBinding),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RetargetOutcome {
+    pub binding: TrustBinding,
+    pub changed: bool,
 }
 
 pub fn canonicalize_repository_root(root: &Path) -> Result<PathBuf, TrustError> {
@@ -526,6 +682,20 @@ fn sync_parent_directory(_path: &Path) -> Result<(), TrustError> {
 #[serde(deny_unknown_fields)]
 struct TrustRegistryWire {
     schema_version: u32,
+    config_epoch: u64,
+    #[serde(default)]
+    bindings: Vec<TrustBindingWire>,
+}
+
+#[derive(Deserialize)]
+struct TrustRegistryVersion {
+    schema_version: u32,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TrustRegistryWireV1 {
+    schema_version: u32,
     #[serde(default)]
     bindings: Vec<TrustBindingWire>,
 }
@@ -541,9 +711,24 @@ struct TrustBindingWire {
     project_name: String,
 }
 
+impl TrustBindingWire {
+    fn try_into_binding(self) -> Result<TrustBinding, TrustError> {
+        Ok(TrustBinding {
+            binding_id: self.binding_id,
+            canonical_root: PathBuf::from(self.root),
+            index_id: self.index_id,
+            index_name: SafeSlug::new(self.index_name).map_err(TrustError::InvalidIndexName)?,
+            project_id: self.project_id,
+            project_name: SafeSlug::new(self.project_name)
+                .map_err(TrustError::InvalidProjectName)?,
+        })
+    }
+}
+
 #[derive(Serialize)]
 struct TrustRegistryWireRef<'a> {
     schema_version: u32,
+    config_epoch: u64,
     bindings: Vec<TrustBindingWireRef<'a>>,
 }
 
@@ -563,6 +748,10 @@ pub enum TrustError {
     Malformed(#[source] toml::de::Error),
     #[error("trust registry schema {found} is unsupported")]
     UnsupportedSchema { found: u32 },
+    #[error("trust registry config epoch must be at least one")]
+    InvalidConfigEpoch,
+    #[error("trust registry config epoch overflowed")]
+    ConfigEpochOverflow,
     #[error("trust registry index name is invalid")]
     InvalidIndexName(#[source] SlugError),
     #[error("trust registry project name is invalid")]
@@ -587,6 +776,8 @@ pub enum TrustError {
     DuplicateBinding { binding_id: BindingId },
     #[error("binding {binding_id} is not a random UUIDv4 value")]
     NonRandomBinding { binding_id: BindingId },
+    #[error("binding {binding_id} is not present in the trust registry")]
+    BindingNotFound { binding_id: BindingId },
     #[error("trust registry has {found} bindings; maximum is {maximum}")]
     TooManyBindings { found: usize, maximum: usize },
     #[error("repository root cannot be represented as UTF-8: {root:?}")]

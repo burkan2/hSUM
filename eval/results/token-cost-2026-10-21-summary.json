@@ -1,0 +1,140 @@
+{
+  "schema_version": "hsum.token-cost-summary.v1",
+  "raw_report_sha256": "f2eb021292667febdd1962905e532d7cb3cd2ac1383a1c90720b06847e53cef3",
+  "conditions": {
+    "native": {
+      "count": 25,
+      "sums": {
+        "context_bytes": 81411,
+        "total_input_tokens": 78025,
+        "input_tokens": 50,
+        "cache_creation_input_tokens": 60911,
+        "cache_read_input_tokens": 17064,
+        "output_tokens": 7095,
+        "reported_cost_usd": 0.6328008,
+        "task_success": 6.0,
+        "fact_accuracy": 14.983333333333333,
+        "evidence_precision": 8.416666666666666,
+        "model_latency_ms": 130164.830833
+      },
+      "means": {
+        "context_bytes": 3256.44,
+        "total_input_tokens": 3121,
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 2436.44,
+        "cache_read_input_tokens": 682.56,
+        "output_tokens": 283.8,
+        "reported_cost_usd": 0.025312032,
+        "task_success": 0.24,
+        "fact_accuracy": 0.5993333333333333,
+        "evidence_precision": 0.33666666666666667,
+        "model_latency_ms": 5206.59323332
+      },
+      "cost_per_success_usd": 0.10546680000000001,
+      "empty_bundles": 14,
+      "classes": {
+        "concept": {
+          "count": 5,
+          "successes": 0.0
+        },
+        "exact-phrase": {
+          "count": 5,
+          "successes": 2.0
+        },
+        "identifier": {
+          "count": 5,
+          "successes": 4.0
+        },
+        "multi-evidence": {
+          "count": 5,
+          "successes": 0.0
+        },
+        "paraphrase": {
+          "count": 5,
+          "successes": 0.0
+        }
+      }
+    },
+    "hsum": {
+      "count": 25,
+      "sums": {
+        "context_bytes": 79580,
+        "total_input_tokens": 74755,
+        "input_tokens": 50,
+        "cache_creation_input_tokens": 56930,
+        "cache_read_input_tokens": 17775,
+        "output_tokens": 12155,
+        "reported_cost_usd": 0.702295,
+        "task_success": 7.0,
+        "fact_accuracy": 14.366666666666667,
+        "evidence_precision": 9.25,
+        "model_latency_ms": 178114.681458
+      },
+      "means": {
+        "context_bytes": 3183.2,
+        "total_input_tokens": 2990.2,
+        "input_tokens": 2,
+        "cache_creation_input_tokens": 2277.2,
+        "cache_read_input_tokens": 711,
+        "output_tokens": 486.2,
+        "reported_cost_usd": 0.0280918,
+        "task_success": 0.28,
+        "fact_accuracy": 0.5746666666666667,
+        "evidence_precision": 0.37,
+        "model_latency_ms": 7124.58725832
+      },
+      "cost_per_success_usd": 0.10032785714285715,
+      "empty_bundles": 10,
+      "classes": {
+        "concept": {
+          "count": 5,
+          "successes": 3.0
+        },
+        "exact-phrase": {
+          "count": 5,
+          "successes": 1.0
+        },
+        "identifier": {
+          "count": 5,
+          "successes": 3.0
+        },
+        "multi-evidence": {
+          "count": 5,
+          "successes": 0.0
+        },
+        "paraphrase": {
+          "count": 5,
+          "successes": 0.0
+        }
+      }
+    }
+  },
+  "paired_differences_hsum_minus_native": {
+    "total_input_tokens": {
+      "estimate": -130.8,
+      "lower": -843.64,
+      "upper": 550.32
+    },
+    "reported_cost_usd": {
+      "estimate": 0.0027797679999999993,
+      "lower": -0.003943200000000001,
+      "upper": 0.009506879999999999
+    },
+    "task_success": {
+      "estimate": 0.04,
+      "lower": -0.12,
+      "upper": 0.2
+    },
+    "context_bytes": {
+      "estimate": -73.24,
+      "lower": -1606.8,
+      "upper": 1432.08
+    }
+  },
+  "bootstrap_seed": 20261021,
+  "bootstrap_resamples": 10000,
+  "confidence": 0.95,
+  "interpretation_limit": "Across tasks from one local corpus, one trial per condition; not a repeated-run interval.",
+  "corrected_report_sha256": "b03a216d049e3522a898a0d5b3a8625654e534aa356fe16cd531c8ab7fcdb3e1",
+  "scoring_correction": "See corrected-report.json; raw report retained unchanged."
+}

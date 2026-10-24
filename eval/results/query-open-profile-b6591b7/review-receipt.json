@@ -1,0 +1,110 @@
+{
+  "scope": "Author diagnostic A/B/A intervention on a disposable recovered Mac clone, not frozen qualification and not native Linux execution.",
+  "candidate": "b6591b7405320c924dc341111006d8d87b1e0c8a",
+  "binary_sha256": "84fe650dbf03c3b2755f5d586277ee949b8e0ae84a7c55d8d597c9e0688483de",
+  "observation_counts": [
+    120,
+    120,
+    40
+  ],
+  "server_summaries": [
+    {
+      "identifier-01": {
+        "server_total_ms": {
+          "n": 60,
+          "p50": 121,
+          "p95": 163,
+          "worst": 423
+        },
+        "client_ms": {
+          "n": 60,
+          "p50": 124.57495799753815,
+          "p95": 166.00916697643697,
+          "worst": 431.0177500010468
+        }
+      },
+      "ordinary-02": {
+        "server_total_ms": {
+          "n": 60,
+          "p50": 258,
+          "p95": 283,
+          "worst": 468
+        },
+        "client_ms": {
+          "n": 60,
+          "p50": 260.9032499603927,
+          "p95": 285.98204196896404,
+          "worst": 473.37816696381196
+        }
+      }
+    },
+    {
+      "identifier-01": {
+        "server_total_ms": {
+          "n": 60,
+          "p50": 42,
+          "p95": 45,
+          "worst": 47
+        },
+        "client_ms": {
+          "n": 60,
+          "p50": 44.529875041916966,
+          "p95": 47.525874979328364,
+          "worst": 50.04779202863574
+        }
+      },
+      "ordinary-02": {
+        "server_total_ms": {
+          "n": 60,
+          "p50": 177,
+          "p95": 184,
+          "worst": 200
+        },
+        "client_ms": {
+          "n": 60,
+          "p50": 180.23787502897903,
+          "p95": 186.38016702607274,
+          "worst": 203.19845800986513
+        }
+      }
+    },
+    {
+      "identifier-01": {
+        "server_total_ms": {
+          "n": 20,
+          "p50": 122,
+          "p95": 131,
+          "worst": 137
+        },
+        "client_ms": {
+          "n": 20,
+          "p50": 125.58158294996247,
+          "p95": 134.67029196908697,
+          "worst": 140.268457995262
+        }
+      },
+      "ordinary-02": {
+        "server_total_ms": {
+          "n": 20,
+          "p50": 259,
+          "p95": 350,
+          "worst": 372
+        },
+        "client_ms": {
+          "n": 20,
+          "p50": 262.3432499822229,
+          "p95": 353.36845804704353,
+          "worst": 375.56333403335884
+        }
+      }
+    }
+  ],
+  "wal_begin_read_stack_sample_counts": {
+    "sample.txt": 271,
+    "keeper-sample.txt": 1,
+    "released-sample.txt": 171
+  },
+  "keeper_sqlite_version": "3.50.4",
+  "integrity": "Each query validated by the unchanged retrieval-scale packet validator; corpus/model/index not rebuilt. No source/threshold change. No claim of independent source review or retained full result transcript.",
+  "initial_failure": "First diagnostic collected samples then failed because summarize_observations requires all four classes. Initial source/log/sample preserved; reduced per-query distribution uses existing distribution helper. No qualification was attempted."
+}

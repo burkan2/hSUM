@@ -1,0 +1,186 @@
+name: Retrieval determinism
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/retrieval-determinism.yml
+      - Cargo.lock
+      - Cargo.toml
+      - benches/retrieval_determinism/**
+      - migrations/**
+      - src/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retrieval-determinism-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FIXTURE_REPOSITORY: /opt/hsum-retrieval-determinism-repository
+
+jobs:
+  freeze-index:
+    name: Freeze one portable lexical index
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install the qualification Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the candidate binary
+        shell: bash
+        run: cargo +1.91.0 build --locked --release --bin hsum
+
+      - name: Create the fixed cross-target repository path
+        shell: bash
+        run: |
+          sudo mkdir -p "$FIXTURE_REPOSITORY"
+          sudo chown "$(id -u):$(id -g)" "$FIXTURE_REPOSITORY"
+          chmod 700 "$FIXTURE_REPOSITORY"
+
+      - name: Freeze one closed lexical index
+        shell: bash
+        run: |
+          python3 benches/retrieval_determinism/harness.py prepare \
+            --hsum "$PWD/target/release/hsum" \
+            --home "$RUNNER_TEMP/determinism-home" \
+            --repository "$FIXTURE_REPOSITORY" \
+            --output "$RUNNER_TEMP/determinism-fixture.json"
+          tar -C "$RUNNER_TEMP" -czf "$RUNNER_TEMP/determinism-home.tar.gz" \
+            determinism-home
+
+      - name: Upload the exact portable fixture
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrieval-determinism-fixture
+          path: |
+            ${{ runner.temp }}/determinism-home.tar.gz
+            ${{ runner.temp }}/determinism-fixture.json
+          if-no-files-found: error
+          compression-level: 0
+
+  native-processes:
+    name: ${{ matrix.name }}
+    needs: freeze-index
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+          - name: macOS arm64
+            runner: macos-15
+            expected_arch: arm64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install the qualification Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Confirm the native runner architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the candidate binary
+        shell: bash
+        run: cargo +1.91.0 build --locked --release --bin hsum
+
+      - name: Download the exact portable fixture
+        uses: actions/download-artifact@v8
+        with:
+          name: retrieval-determinism-fixture
+          path: fixture
+
+      - name: Restore the index and frozen repository path
+        shell: bash
+        run: |
+          tar -C "$RUNNER_TEMP" -xzf fixture/determinism-home.tar.gz
+          sudo mkdir -p "$FIXTURE_REPOSITORY"
+          sudo chown "$(id -u):$(id -g)" "$FIXTURE_REPOSITORY"
+          chmod 700 "$FIXTURE_REPOSITORY"
+          python3 benches/retrieval_determinism/harness.py materialize \
+            --repository "$FIXTURE_REPOSITORY"
+
+      - name: Run five fresh CLI and MCP processes offline
+        env:
+          HSUM_OFFLINE: '1'
+        shell: bash
+        run: |
+          python3 benches/retrieval_determinism/harness.py run \
+            --hsum "$PWD/target/release/hsum" \
+            --home "$RUNNER_TEMP/determinism-home" \
+            --repository "$FIXTURE_REPOSITORY" \
+            --fixture-report "$PWD/fixture/determinism-fixture.json" \
+            --output "$RUNNER_TEMP/retrieval-determinism-${{ matrix.expected_arch }}.json"
+
+      - name: Upload native process evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrieval-determinism-${{ matrix.expected_arch }}
+          path: ${{ runner.temp }}/retrieval-determinism-${{ matrix.expected_arch }}.json
+          if-no-files-found: error
+          compression-level: 0
+
+  cross-target:
+    name: Cross-target lexical ordering
+    needs: native-processes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install the qualification Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Download Linux x86_64 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: retrieval-determinism-x86_64
+          path: evidence/x86_64
+
+      - name: Download macOS arm64 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: retrieval-determinism-arm64
+          path: evidence/arm64
+
+      - name: Compare every ordered citation and explanation
+        shell: bash
+        run: |
+          python3 benches/retrieval_determinism/harness.py compare \
+            evidence/x86_64/retrieval-determinism-x86_64.json \
+            evidence/arm64/retrieval-determinism-arm64.json \
+            --output "$RUNNER_TEMP/retrieval-determinism-cross-target.json"
+
+      - name: Upload cross-target disposition
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrieval-determinism-cross-target
+          path: ${{ runner.temp }}/retrieval-determinism-cross-target.json
+          if-no-files-found: error
+          compression-level: 0

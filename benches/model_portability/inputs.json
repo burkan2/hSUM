@@ -1,0 +1,10 @@
+[
+  "query: Which code path verifies a pinned model before inference?",
+  "query: recover an immutable citation after the live source changed",
+  "query: MODEL_MISSING semantic search fallback behavior",
+  "passage: hSUM keeps exact evidence bytes local and returns revision-pinned citations.",
+  "passage: fn verify_embedding_artifact(&self, id: &str) validates every manifest checksum.",
+  "passage: SQLite readers retain a coherent snapshot while a writer commits a new generation.",
+  "passage: Air-gapped model import uses the same content-addressed cache and receipt contract.",
+  "passage: The lexical baseline remains available until semantic retrieval proves measurable value."
+]

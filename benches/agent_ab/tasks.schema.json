@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hsum.dev/schemas/benchmark/tasks.v2.json",
+  "title": "hSUM frozen public gold benchmark",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "benchmark_id", "frozen_at", "description", "protocol", "tasks"],
+  "properties": {
+    "schema_version": {"const": "hsum.benchmark.tasks.v2"},
+    "benchmark_id": {"const": "hsum-public-gold-25-v1"},
+    "frozen_at": {"type": "string", "format": "date"},
+    "description": {"type": "string", "minLength": 1},
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["query_count", "class_distribution", "cutoffs", "primary_metric", "secondary_metrics", "corpus_scope", "baseline_parameters", "relevance_unit", "judgment_scale"],
+      "properties": {
+        "query_count": {"const": 25},
+        "class_distribution": {
+          "const": {
+            "identifier": 5,
+            "exact-phrase": 5,
+            "concept": 5,
+            "paraphrase": 5,
+            "multi-evidence": 5
+          }
+        },
+        "cutoffs": {"const": [1, 5]},
+        "primary_metric": {"const": "ndcg@5"},
+        "secondary_metrics": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "corpus_scope": {
+          "const": ["src", "tests", "docs", "outputs/IMPLEMENTATION_STATUS.md", "README.md", "CHANGELOG.md", "TODOS.md"]
+        },
+        "baseline_parameters": {
+          "const": {
+            "runs_per_query": 5,
+            "limit": 5,
+            "context_lines": 20,
+            "retrievers": ["ripgrep", "git-grep", "hsum"],
+            "index_builds": 3
+          }
+        },
+        "relevance_unit": {"const": "deduplicated repository-relative document path"},
+        "judgment_scale": {
+          "const": {
+            "0": "not relevant",
+            "1": "supporting context",
+            "2": "direct authoritative answer"
+          }
+        }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 25,
+      "maxItems": 25,
+      "items": {"$ref": "#/$defs/task"},
+      "allOf": [
+        {"contains": {"properties": {"class": {"const": "identifier"}}}, "minContains": 5, "maxContains": 5},
+        {"contains": {"properties": {"class": {"const": "exact-phrase"}}}, "minContains": 5, "maxContains": 5},
+        {"contains": {"properties": {"class": {"const": "concept"}}}, "minContains": 5, "maxContains": 5},
+        {"contains": {"properties": {"class": {"const": "paraphrase"}}}, "minContains": 5, "maxContains": 5},
+        {"contains": {"properties": {"class": {"const": "multi-evidence"}}}, "minContains": 5, "maxContains": 5}
+      ]
+    }
+  },
+  "$defs": {
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "class", "query", "question", "judgments", "required_patterns"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+        "class": {"enum": ["identifier", "exact-phrase", "concept", "paraphrase", "multi-evidence"]},
+        "query": {"type": "string", "minLength": 1},
+        "question": {"type": "string", "minLength": 1},
+        "judgments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/judgment"}
+        },
+        "required_patterns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "judgment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "grade"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"},
+        "grade": {"enum": [1, 2]}
+      }
+    }
+  }
+}

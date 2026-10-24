@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/Users/b.k./.cache/hsum-qualification/query-profile-b6591b7/profile.py", line 26, in <module>
+    report={'candidate':candidate,'binary_sha256':h.sha256_file(binary),'scope':'Reduced Mac native CPU sampling on a disposable APFS-cloned recovered 100k index; two lexical queries, five warmups, 60 repetitions, no cold eviction. Diagnostic only; not Linux evidence or frozen qualification. Sampling can perturb latency.','observations':observations,'summary':h.summarize_observations(observations),'peak_process_tree_rss_bytes':rss,'sample_exit':sampler.returncode,'sample_sha256':h.sha256_file(root/'sample.txt'),'source_sha256':{p:hashlib.sha256(subprocess.check_output(['git','show',candidate+':'+p],cwd=repo)).hexdigest() for p in ['src/store/doctor.rs','src/store/open.rs','src/app/search_evidence.rs']}}
+                                                                                                                                                                                                                                                                                                                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/Users/b.k./Desktop/hSUM/benches/retrieval_scale/harness.py", line 765, in summarize_observations
+    raise HarnessError(f"no measured observations for {query_class}")
+benches.retrieval_scale.harness.HarnessError: no measured observations for exact_fallback

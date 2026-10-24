@@ -1,0 +1,26 @@
+{
+  "schema_version": "hsum.sqlite-vec-native-disposition.v1",
+  "passed": true,
+  "platforms": [
+    {
+      "os": "linux",
+      "arch": "x86_64"
+    },
+    {
+      "os": "macos",
+      "arch": "aarch64"
+    }
+  ],
+  "dependency_identity": [
+    "0.1.7",
+    "5.17.4",
+    "2.0.0-rc.13",
+    "1.28.0"
+  ],
+  "fanout_p95_ms": [
+    64.53739399999999,
+    46.750583999999996
+  ],
+  "raw_backend_passed": false,
+  "storage_revision_passed": true
+}

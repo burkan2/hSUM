@@ -1,0 +1,158 @@
+name: Vector portability
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/vector-portability.yml
+      - Cargo.lock
+      - Cargo.toml
+      - benches/sqlite_vec/**
+      - examples/sqlite-vec-portability.rs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vector-portability-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sqlite-vec:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+            dependency_command: ldd
+          - name: macOS arm64
+            runner: macos-15
+            expected_arch: arm64
+            dependency_command: otool -L
+    env:
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Prepare runner-local evidence paths
+        shell: bash
+        run: |
+          {
+            echo "REPORT_PATH=$RUNNER_TEMP/sqlite-vec-portability-${{ matrix.expected_arch }}.json"
+            echo "DEPENDENCIES_PATH=$RUNNER_TEMP/sqlite-vec-portability-${{ matrix.expected_arch }}-dependencies.txt"
+          } >> "$GITHUB_ENV"
+
+      - name: Confirm the native runner architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the composite sqlite-vec and FastEmbed ONNX probe
+        shell: bash
+        run: |
+          cargo +1.91.0 build --locked --release \
+            --features vector-portability \
+            --example sqlite-vec-portability
+
+      - name: Record executable format and dynamic dependencies
+        shell: bash
+        run: |
+          {
+            file target/release/examples/sqlite-vec-portability
+            ${{ matrix.dependency_command }} target/release/examples/sqlite-vec-portability
+          } > "$DEPENDENCIES_PATH"
+
+      - name: Run the fixed protocol without network access
+        env:
+          HSUM_OFFLINE: "1"
+        shell: bash
+        run: |
+          target/release/examples/sqlite-vec-portability \
+            --output "$REPORT_PATH"
+          python3 -c 'import json,os; report=json.load(open(os.environ["REPORT_PATH"], encoding="utf-8")); assert report["passed"] is True; assert report["raw_backend_passed"] is False; assert all(report["storage_revision_checks"].values())'
+
+      - name: Upload native vector portability evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: sqlite-vec-portability-${{ matrix.expected_arch }}
+          path: |
+            ${{ env.REPORT_PATH }}
+            ${{ env.DEPENDENCIES_PATH }}
+          if-no-files-found: error
+          compression-level: 0
+
+  native-disposition:
+    name: Native storage-revision disposition
+    needs: sqlite-vec
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download Linux x86_64 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: sqlite-vec-portability-x86_64
+          path: evidence/x86_64
+
+      - name: Download macOS arm64 evidence
+        uses: actions/download-artifact@v8
+        with:
+          name: sqlite-vec-portability-arm64
+          path: evidence/arm64
+
+      - name: Require the same revised contract on both native targets
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          reports = [
+              json.loads(Path("evidence/x86_64/sqlite-vec-portability-x86_64.json").read_text()),
+              json.loads(Path("evidence/arm64/sqlite-vec-portability-arm64.json").read_text()),
+          ]
+          assert {(r["platform"]["os"], r["platform"]["arch"]) for r in reports} == {
+              ("linux", "x86_64"), ("macos", "aarch64")
+          }
+          assert all(r["passed"] and not r["raw_backend_passed"] for r in reports)
+          assert all(all(r["storage_revision_checks"].values()) for r in reports)
+          assert reports[0]["observations"]["revised_slot_a_tie_ids"] == reports[1]["observations"]["revised_slot_a_tie_ids"]
+          assert reports[0]["observations"]["revised_slot_b_tie_ids"] == reports[1]["observations"]["revised_slot_b_tie_ids"]
+          identity = [
+              (
+                  r["dependency"]["sqlite_vec_crate_version"],
+                  r["dependency"]["fastembed_version"],
+                  r["dependency"]["ort_crate_version"],
+                  r["dependency"]["onnx_runtime_version"],
+              )
+              for r in reports
+          ]
+          assert identity[0] == identity[1]
+          summary = {
+              "schema_version": "hsum.sqlite-vec-native-disposition.v1",
+              "passed": True,
+              "platforms": [r["platform"] for r in reports],
+              "dependency_identity": identity[0],
+              "fanout_p95_ms": [r["metrics"]["fanout_p95_ms"] for r in reports],
+              "raw_backend_passed": False,
+              "storage_revision_passed": True,
+          }
+          Path("sqlite-vec-native-disposition.json").write_text(
+              json.dumps(summary, indent=2) + "\n", encoding="utf-8"
+          )
+          PY
+
+      - name: Upload native disposition
+        uses: actions/upload-artifact@v7
+        with:
+          name: sqlite-vec-native-disposition
+          path: sqlite-vec-native-disposition.json
+          if-no-files-found: error
+          compression-level: 0

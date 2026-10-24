@@ -19,13 +19,15 @@ impl FakeCodex {
     fn new(state: &str) -> Self {
         let root = tempdir().unwrap();
         let executable = root.path().join("codex");
+        let staged_executable = root.path().join("codex.staged");
         let state_file = root.path().join("state");
         let command_file = root.path().join("command");
         let desired_hsum = root.path().join("hsum");
         fs::write(&state_file, state).unwrap();
         fs::write(&command_file, desired_hsum.as_os_str().as_encoded_bytes()).unwrap();
-        fs::write(&executable, fake_codex_script()).unwrap();
-        fs::set_permissions(&executable, fs::Permissions::from_mode(0o700)).unwrap();
+        fs::write(&staged_executable, fake_codex_script()).unwrap();
+        fs::set_permissions(&staged_executable, fs::Permissions::from_mode(0o700)).unwrap();
+        fs::rename(staged_executable, &executable).unwrap();
         Self {
             root,
             adapter: CodexIntegration::from_executable(executable),

@@ -1,14 +1,20 @@
 #[cfg(unix)]
+use std::collections::BTreeMap;
+#[cfg(unix)]
 use std::ffi::OsString;
 #[cfg(not(unix))]
 use std::fs::OpenOptions;
 use std::io;
+#[cfg(unix)]
+use std::os::fd::{AsFd, BorrowedFd, OwnedFd};
 use std::path::{Path, PathBuf};
+#[cfg(unix)]
+use std::sync::{Arc, Mutex, OnceLock};
 use std::time::Duration;
 
 use rusqlite::config::DbConfig;
 use rusqlite::limits::Limit;
-use rusqlite::{Connection, OpenFlags, TransactionBehavior, params};
+use rusqlite::{Connection, OpenFlags, OptionalExtension, TransactionBehavior, params};
 use thiserror::Error;
 use time::OffsetDateTime;
 use time::format_description::well_known::Rfc3339;
@@ -16,7 +22,11 @@ use time::format_description::well_known::Rfc3339;
 use crate::domain::IndexId;
 use crate::store::doctor::{FingerprintPolicy, InspectionDepth, inspect_connection};
 use crate::store::schema::{
-    APPLICATION_ID, MIGRATION_0001, SCHEMA_VERSION, pipeline_fingerprint, schema_checksum,
+    APPLICATION_ID, MIGRATIONS, SCHEMA_VERSION, migration_checksum, schema_checksum,
+};
+use crate::store::vector::{
+    IndexEmbeddingProfile, ensure_sqlite_vec_registered, insert_embedding_metadata,
+    read_embedding_profile,
 };
 
 const MAX_VALUE_BYTES: i32 = 32 * 1024 * 1024;
@@ -37,15 +47,30 @@ pub enum OpenMode {
 
 impl IndexDb {
     pub fn create(path: &Path, index_id: IndexId) -> Result<Self, StoreError> {
-        Self::create_with_durability(path, index_id, &OsIndexDurability)
+        Self::create_with_embedding_profile(path, index_id, &IndexEmbeddingProfile::LexicalOnly)
+    }
+
+    pub fn create_with_embedding_profile(
+        path: &Path,
+        index_id: IndexId,
+        embedding_profile: &IndexEmbeddingProfile,
+    ) -> Result<Self, StoreError> {
+        Self::create_with_durability(path, index_id, embedding_profile, &OsIndexDurability)
     }
 
     fn create_with_durability(
         path: &Path,
         index_id: IndexId,
+        embedding_profile: &IndexEmbeddingProfile,
         durability: &impl IndexDurability,
     ) -> Result<Self, StoreError> {
-        Self::create_with_durability_and_observer(path, index_id, durability, &mut |_| {})
+        Self::create_with_durability_and_observer(
+            path,
+            index_id,
+            embedding_profile,
+            durability,
+            &mut |_| {},
+        )
     }
 
     #[doc(hidden)]
@@ -54,15 +79,23 @@ impl IndexDb {
         index_id: IndexId,
         mut observer: impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
-        Self::create_with_durability_and_observer(path, index_id, &OsIndexDurability, &mut observer)
+        Self::create_with_durability_and_observer(
+            path,
+            index_id,
+            &IndexEmbeddingProfile::LexicalOnly,
+            &OsIndexDurability,
+            &mut observer,
+        )
     }
 
     fn create_with_durability_and_observer(
         path: &Path,
         index_id: IndexId,
+        embedding_profile: &IndexEmbeddingProfile,
         durability: &impl IndexDurability,
         observer: &mut impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
+        ensure_sqlite_vec_registered()?;
         let parent = ValidatedParent::acquire(path)?;
         parent.require_sidecars_absent()?;
         let mut reservation = reserve_new_file(parent)?;
@@ -100,15 +133,18 @@ impl IndexDb {
         let applied_at = OffsetDateTime::now_utc().format(&Rfc3339)?;
         let index_uuid = *index_id.as_uuid().as_bytes();
         let schema_digest = schema_checksum();
-        let pipeline_digest = pipeline_fingerprint();
+        let pipeline_digest = crate::store::schema::pipeline_fingerprint_for(embedding_profile);
 
+        connection.pragma_update(None, "foreign_keys", false)?;
         let transaction_result =
             connection.transaction_with_behavior(TransactionBehavior::Immediate);
         reservation.observe_sidecars()?;
         let transaction = transaction_result?;
-        let migration_result = transaction.execute_batch(MIGRATION_0001);
-        reservation.observe_sidecars()?;
-        migration_result?;
+        for (_, migration) in MIGRATIONS {
+            let migration_result = transaction.execute_batch(migration);
+            reservation.observe_sidecars()?;
+            migration_result?;
+        }
         let application_id_result =
             transaction.pragma_update(None, "application_id", APPLICATION_ID);
         reservation.observe_sidecars()?;
@@ -116,31 +152,37 @@ impl IndexDb {
         let schema_version_result = transaction.pragma_update(None, "user_version", SCHEMA_VERSION);
         reservation.observe_sidecars()?;
         schema_version_result?;
-        let migration_row_result = transaction.execute(
-            "INSERT INTO schema_migrations(version, applied_at, checksum)
-             VALUES (?1, ?2, ?3)",
-            params![
-                i64::from(SCHEMA_VERSION),
-                applied_at,
-                schema_digest.as_bytes().as_slice(),
-            ],
-        );
-        reservation.observe_sidecars()?;
-        migration_row_result?;
+        for (version, _) in MIGRATIONS {
+            let checksum = migration_checksum(version)
+                .expect("compiled migration list has a checksum for every version");
+            let migration_row_result = transaction.execute(
+                "INSERT INTO schema_migrations(version, applied_at, checksum)
+                 VALUES (?1, ?2, ?3)",
+                params![
+                    i64::from(version),
+                    applied_at,
+                    checksum.as_bytes().as_slice(),
+                ],
+            );
+            reservation.observe_sidecars()?;
+            migration_row_result?;
+        }
 
         let metadata_result = (|| -> Result<(), rusqlite::Error> {
-            let metadata: [(&str, &[u8]); 8] = [
+            let schema_version = SCHEMA_VERSION.to_string();
+            let metadata: [(&str, &[u8]); 9] = [
                 ("index_uuid", index_uuid.as_slice()),
                 ("api_version", b"hsum.api.v1"),
-                ("schema_version", b"1"),
+                ("schema_version", schema_version.as_bytes()),
                 ("schema_checksum", schema_digest.as_bytes().as_slice()),
-                ("embedding_profile", b"none"),
                 (
                     "pipeline_fingerprint",
                     pipeline_digest.as_bytes().as_slice(),
                 ),
                 ("index_epoch", b"0"),
                 ("active_generation", b""),
+                ("history_floor_epoch", b"1"),
+                ("replacement_epoch", b"0"),
             ];
             let mut insert =
                 transaction.prepare("INSERT INTO index_meta(key, value) VALUES (?1, ?2)")?;
@@ -151,9 +193,18 @@ impl IndexDb {
         })();
         reservation.observe_sidecars()?;
         metadata_result?;
+        insert_embedding_metadata(&transaction, embedding_profile)?;
         let commit_result = transaction.commit();
         reservation.observe_sidecars()?;
         commit_result?;
+        connection.pragma_update(None, "foreign_keys", true)?;
+        let foreign_key_violation = connection
+            .query_row("PRAGMA foreign_key_check", [], |_| Ok(()))
+            .optional()?
+            .is_some();
+        if foreign_key_violation {
+            return Err(StoreError::ForeignKeyCheckFailed);
+        }
         observer("after_creation_transaction");
         reservation.verify_connection(&connection)?;
         let durability_result = durability.sync_created_index(reservation.validated());
@@ -219,6 +270,18 @@ impl IndexDb {
         Ok(database)
     }
 
+    pub(crate) fn open_existing_for_maintenance(
+        path: &Path,
+        mode: OpenMode,
+    ) -> Result<Self, StoreError> {
+        let database = match mode {
+            OpenMode::ReadOnly => Self::open_read_only(path)?,
+            OpenMode::ReadWrite => Self::open_read_write_with_observer(path, &mut |_| {})?,
+        };
+        database.verify_live_identity()?;
+        Ok(database)
+    }
+
     pub(crate) fn remove(self) -> Result<(), StoreError> {
         self.validated_path.verify_connection(&self.connection)?;
         let Self {
@@ -238,6 +301,7 @@ impl IndexDb {
         path: &Path,
         observer: &mut impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
+        ensure_sqlite_vec_registered()?;
         let identity = validate_index_path(path, FileAccess::ReadOnly)?;
         identity.validate_sidecars()?;
         identity.revalidate_namespace()?;
@@ -268,6 +332,7 @@ impl IndexDb {
         path: &Path,
         observer: &mut impl FnMut(&'static str),
     ) -> Result<Self, StoreError> {
+        ensure_sqlite_vec_registered()?;
         let identity = validate_index_path(path, FileAccess::ReadWrite)?;
         identity.validate_sidecars()?;
         identity.revalidate_namespace()?;
@@ -306,6 +371,10 @@ impl IndexDb {
         &self.path
     }
 
+    pub fn embedding_profile(&self) -> Result<IndexEmbeddingProfile, StoreError> {
+        read_embedding_profile(&self.connection)
+    }
+
     #[doc(hidden)]
     pub fn verify_live_identity(&self) -> Result<(), StoreError> {
         self.validated_path.verify_connection(&self.connection)
@@ -339,12 +408,12 @@ fn sync_created_index(path: &ValidatedIndexPath) -> Result<(), StoreError> {
 }
 
 #[cfg(all(unix, target_os = "macos"))]
-fn sync_file_descriptor(descriptor: &std::os::fd::OwnedFd) -> io::Result<()> {
+fn sync_file_descriptor(descriptor: &impl std::os::fd::AsFd) -> io::Result<()> {
     rustix::fs::fcntl_fullfsync(descriptor).map_err(Into::into)
 }
 
 #[cfg(all(unix, not(target_os = "macos")))]
-fn sync_file_descriptor(descriptor: &std::os::fd::OwnedFd) -> io::Result<()> {
+fn sync_file_descriptor(descriptor: &impl std::os::fd::AsFd) -> io::Result<()> {
     rustix::fs::fsync(descriptor).map_err(Into::into)
 }
 
@@ -372,10 +441,47 @@ fn sqlite_sidecar_path(path: &Path, suffix: &str) -> PathBuf {
 }
 
 #[cfg(unix)]
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 struct FileIdentity {
     device: u64,
     inode: u64,
+}
+
+#[cfg(unix)]
+fn pinned_descriptors() -> &'static Mutex<BTreeMap<FileIdentity, Arc<OwnedFd>>> {
+    static DESCRIPTORS: OnceLock<Mutex<BTreeMap<FileIdentity, Arc<OwnedFd>>>> = OnceLock::new();
+    DESCRIPTORS.get_or_init(|| Mutex::new(BTreeMap::new()))
+}
+
+// Closing any descriptor for an inode drops this process's SQLite record locks.
+// Share validation descriptors and close the last reference under the same registry lock as open.
+#[cfg(unix)]
+struct PinnedDescriptor {
+    identity: FileIdentity,
+    descriptor: Option<Arc<OwnedFd>>,
+}
+
+#[cfg(unix)]
+impl AsFd for PinnedDescriptor {
+    fn as_fd(&self) -> BorrowedFd<'_> {
+        self.descriptor.as_ref().expect("live descriptor").as_fd()
+    }
+}
+
+#[cfg(unix)]
+impl Drop for PinnedDescriptor {
+    fn drop(&mut self) {
+        let mut descriptors = pinned_descriptors()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        drop(self.descriptor.take());
+        if descriptors
+            .get(&self.identity)
+            .is_some_and(|descriptor| Arc::strong_count(descriptor) == 1)
+        {
+            descriptors.remove(&self.identity);
+        }
+    }
 }
 
 #[cfg(unix)]
@@ -399,6 +505,7 @@ struct ValidatedParent {
     physical_path: PathBuf,
     file_name: OsString,
     requested_path: PathBuf,
+    sidecars: std::cell::RefCell<[Option<PinnedDescriptor>; 3]>,
 }
 
 #[cfg(unix)]
@@ -470,6 +577,7 @@ impl ValidatedParent {
             physical_path,
             file_name,
             requested_path: path.to_path_buf(),
+            sidecars: std::cell::RefCell::new([None, None, None]),
         })
     }
 
@@ -504,15 +612,38 @@ impl ValidatedParent {
     fn open_validated_sidecar(
         &self,
         suffix: &str,
-    ) -> Result<Option<(std::os::fd::OwnedFd, FileIdentity)>, StoreError> {
+    ) -> Result<Option<(PinnedDescriptor, FileIdentity)>, StoreError> {
         let name = self.sidecar_name(suffix);
-        open_validated_regular_at(
+        let current = open_validated_regular_at(
             &self.descriptor,
             &name,
             &sqlite_sidecar_path(&self.requested_path, suffix),
             FileAccess::ReadOnly,
             true,
-        )
+        )?;
+        if let Some((descriptor, identity)) = current.as_ref() {
+            let slot = SQLITE_SIDECAR_SUFFIXES
+                .iter()
+                .position(|known| *known == suffix)
+                .expect("known SQLite sidecar");
+            let mut retained = self.sidecars.borrow_mut();
+            if let Some(known) = retained[slot].as_ref() {
+                if known.identity != *identity {
+                    return Err(StoreError::UnsafeIndexPath(sqlite_sidecar_path(
+                        &self.requested_path,
+                        suffix,
+                    )));
+                }
+            } else {
+                retained[slot] = Some(PinnedDescriptor {
+                    identity: *identity,
+                    descriptor: Some(Arc::clone(
+                        descriptor.descriptor.as_ref().expect("live descriptor"),
+                    )),
+                });
+            }
+        }
+        Ok(current)
     }
 
     fn validate_sidecars(&self) -> Result<[Option<FileIdentity>; 3], StoreError> {
@@ -539,7 +670,7 @@ impl ValidatedParent {
 #[cfg(unix)]
 struct ValidatedIndexPath {
     parent: ValidatedParent,
-    descriptor: std::os::fd::OwnedFd,
+    descriptor: PinnedDescriptor,
     identity: FileIdentity,
     access: FileAccess,
     path: PathBuf,
@@ -685,9 +816,12 @@ fn open_validated_regular_at(
     reported_path: &Path,
     access: FileAccess,
     optional: bool,
-) -> Result<Option<(std::os::fd::OwnedFd, FileIdentity)>, StoreError> {
+) -> Result<Option<(PinnedDescriptor, FileIdentity)>, StoreError> {
     use rustix::fs::{AtFlags, Mode, OFlags, fstat, openat, statat};
 
+    let mut descriptors = pinned_descriptors()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let before = match statat(parent, name, AtFlags::SYMLINK_NOFOLLOW) {
         Ok(metadata) => metadata,
         Err(rustix::io::Errno::NOENT) if optional => return Ok(None),
@@ -706,14 +840,29 @@ fn open_validated_regular_at(
         .union(OFlags::CLOEXEC)
         .union(OFlags::NOFOLLOW)
         .union(OFlags::NONBLOCK);
-    let descriptor = openat(parent, name, flags, Mode::empty())
-        .map_err(|error| unsafe_component_error(reported_path, error))?;
+    let identity = stat_identity(&before);
+    let descriptor = if let Some(descriptor) = descriptors.get(&identity) {
+        Arc::clone(descriptor)
+    } else {
+        Arc::new(
+            openat(parent, name, flags, Mode::empty())
+                .map_err(|error| unsafe_component_error(reported_path, error))?,
+        )
+    };
     let after = fstat(&descriptor).map_err(io::Error::from)?;
     validate_private_regular_stat(&after, reported_path)?;
     if !same_stat_identity(&before, &after) {
         return Err(StoreError::UnsafeIndexPath(reported_path.to_path_buf()));
     }
-    Ok(Some((descriptor, stat_identity(&after))))
+    descriptors
+        .entry(identity)
+        .or_insert_with(|| Arc::clone(&descriptor));
+    let pinned = PinnedDescriptor {
+        identity,
+        descriptor: Some(descriptor),
+    };
+    drop(descriptors);
+    Ok(Some((pinned, stat_identity(&after))))
 }
 
 #[cfg(unix)]
@@ -815,6 +964,9 @@ fn sqlite_main_handle_has_moved(connection: &Connection) -> Result<bool, StoreEr
 fn reserve_new_file(parent: ValidatedParent) -> Result<NewFileReservation, StoreError> {
     use rustix::fs::{AtFlags, Mode, OFlags, fstat, openat, statat};
 
+    let mut descriptors = pinned_descriptors()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
     let flags = OFlags::RDWR
         .union(OFlags::CREATE)
         .union(OFlags::EXCL)
@@ -842,6 +994,13 @@ fn reserve_new_file(parent: ValidatedParent) -> Result<NewFileReservation, Store
     }
     let identity = stat_identity(&held);
     let physical_path = parent.path();
+    let descriptor = Arc::new(descriptor);
+    descriptors.insert(identity, Arc::clone(&descriptor));
+    let descriptor = PinnedDescriptor {
+        identity,
+        descriptor: Some(descriptor),
+    };
+    drop(descriptors);
     Ok(NewFileReservation {
         validated: Some(ValidatedIndexPath {
             parent,
@@ -1202,6 +1361,8 @@ pub(crate) fn configure_connection(connection: &Connection) -> Result<(), StoreE
 pub enum StoreError {
     #[error("SQLite operation failed")]
     Sqlite(#[from] rusqlite::Error),
+    #[error("sqlite-vec static registration failed with SQLite code {0}")]
+    SqliteVecRegistration(i32),
     #[error("filesystem operation failed")]
     Io(#[from] io::Error),
     #[error("time formatting failed")]
@@ -1246,14 +1407,32 @@ pub enum StoreError {
     ReadWriteRequired,
     #[error("prepared document is invalid: {0}")]
     InvalidPreparedDocument(&'static str),
+    #[error("prepared embedding is invalid: {0}")]
+    InvalidEmbedding(&'static str),
     #[error("snapshot contains a duplicate connector key")]
     DuplicateConnectorKey,
     #[error("the filesystem source or project conflicts with the index")]
     ScopeConflict,
+    #[error("the configured source name or logical URI conflicts with the index")]
+    SourceConflict,
+    #[error("the configured source was not found")]
+    SourceNotFound,
+    #[error("the managed index already contains the maximum of {maximum} active sources")]
+    SourceLimitExceeded { maximum: usize },
+    #[error("the selected project was not found")]
+    ProjectNotFound,
+    #[error("the managed index already contains the maximum of {maximum} projects")]
+    ProjectLimitExceeded { maximum: usize },
+    #[error("the source kind is not supported by this operation")]
+    UnsupportedSourceKind,
     #[error("a SHA-256 collision was detected")]
     HashCollision,
     #[error("stored chunk layout does not match the prepared layout")]
     ChunkLayoutMismatch,
+    #[error("the prepared revision is protected by a body-free forget tombstone")]
+    ForgetTombstone,
+    #[error("the body-free forget ledger does not match stored evidence")]
+    ForgetLedgerMismatch,
     #[error("empty snapshot requires --allow-empty-snapshot")]
     EmptySnapshotConfirmationRequired,
     #[error("deleting {absent} of {eligible_prior} documents requires --allow-mass-delete")]
@@ -1277,6 +1456,14 @@ pub enum StoreError {
     UnsafeWriterLock(PathBuf),
     #[error("writer locks are unsupported on this platform")]
     WriterLockUnsupported,
+    #[error("evidence replacement lock remained busy for {timeout_ms} ms")]
+    ReplacementLockBusy { timeout_ms: u64 },
+    #[error("evidence replacement lock does not protect this index")]
+    ReplacementLockMismatch,
+    #[error("replacement lock sidecar is not a private, user-owned regular file: {0}")]
+    UnsafeReplacementLock(PathBuf),
+    #[error("evidence replacement locks are unsupported on this platform")]
+    ReplacementLockUnsupported,
 }
 
 #[cfg(test)]
@@ -1299,6 +1486,85 @@ mod tests {
         directory
     }
 
+    #[cfg(unix)]
+    fn assert_process_record_lock(path: &Path, start: u64, length: u64, held: bool) {
+        let output = std::process::Command::new("python3")
+            .args([
+                "-c",
+                r#"
+import fcntl, os, sys
+fd = os.open(sys.argv[1], os.O_RDWR | os.O_NOFOLLOW)
+try:
+    fcntl.lockf(fd, fcntl.LOCK_EX | fcntl.LOCK_NB, int(sys.argv[3]), int(sys.argv[2]))
+    print("unlocked")
+except BlockingIOError:
+    print("held")
+finally:
+    os.close(fd)
+"#,
+            ])
+            .arg(path)
+            .arg(start.to_string())
+            .arg(length.to_string())
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            String::from_utf8_lossy(&output.stdout).trim(),
+            if held { "held" } else { "unlocked" },
+            "{} offset {start}",
+            path.display()
+        );
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn validation_preserves_wal_locks_across_overlapping_connections() {
+        let directory = private_tempdir();
+        let path = directory.path().join("index.sqlite");
+        let first = IndexDb::create(&path, IndexId::new_v4()).unwrap();
+        let shm = sqlite_sidecar_path(&path, "-shm");
+        let identity = first.validated_path.identity;
+        // SQLite's shared DMS lock protects the lifetime of mapped WAL index pages.
+        assert_process_record_lock(&shm, 128, 1, true);
+        assert_process_record_lock(&path, 1_073_741_826, 510, true);
+        first.verify_live_identity().unwrap();
+        assert_process_record_lock(&shm, 128, 1, true);
+        assert_process_record_lock(&path, 1_073_741_826, 510, true);
+        first.connection().execute_batch("BEGIN IMMEDIATE").unwrap();
+        assert_process_record_lock(&shm, 120, 1, true);
+        let second = IndexDb::open_existing(&path, OpenMode::ReadOnly).unwrap();
+        first.verify_live_identity().unwrap();
+        assert_process_record_lock(&shm, 120, 1, true);
+        drop(first);
+        assert_process_record_lock(&shm, 120, 1, false);
+        assert_process_record_lock(&shm, 128, 1, true);
+        assert_process_record_lock(&path, 1_073_741_826, 510, true);
+        second.verify_live_identity().unwrap();
+        assert_process_record_lock(&shm, 128, 1, true);
+        let path_for_thread = path.clone();
+        std::thread::spawn(move || {
+            for _ in 0..8 {
+                let reader = IndexDb::open_existing(&path_for_thread, OpenMode::ReadOnly).unwrap();
+                reader.verify_live_identity().unwrap();
+            }
+        })
+        .join()
+        .unwrap();
+        assert_process_record_lock(&shm, 128, 1, true);
+        assert_process_record_lock(&path, 1_073_741_826, 510, true);
+        drop(second);
+        if shm.exists() {
+            assert_process_record_lock(&shm, 128, 1, false);
+        }
+        assert_process_record_lock(&path, 1_073_741_826, 510, false);
+        assert!(!pinned_descriptors().lock().unwrap().contains_key(&identity));
+    }
+
     struct InspectCommittedSchema<'a> {
         called: &'a Cell<bool>,
         fail_after_inspection: bool,
@@ -1317,7 +1583,11 @@ mod tests {
                     row.get(0)
                 })
                 .map_err(StoreError::from)?;
-            assert_eq!(migration_count, 1, "durability runs only after commit");
+            assert_eq!(
+                migration_count,
+                i64::from(SCHEMA_VERSION),
+                "durability runs only after the complete migration chain commits"
+            );
             self.called.set(true);
             if self.fail_after_inspection {
                 return Err(StoreError::Io(io::Error::other(
@@ -1337,6 +1607,7 @@ mod tests {
         let database = IndexDb::create_with_durability(
             &path,
             IndexId::new_v4(),
+            &IndexEmbeddingProfile::LexicalOnly,
             &InspectCommittedSchema {
                 called: &called,
                 fail_after_inspection: false,
@@ -1357,6 +1628,7 @@ mod tests {
         let error = IndexDb::create_with_durability(
             &path,
             IndexId::new_v4(),
+            &IndexEmbeddingProfile::LexicalOnly,
             &InspectCommittedSchema {
                 called: &called,
                 fail_after_inspection: true,

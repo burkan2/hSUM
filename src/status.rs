@@ -31,8 +31,10 @@ const MAX_STATUS_SOURCE_CONFIG_BYTES: i64 = 16 * 1024;
 const MAX_STATUS_ERROR_CODE_BYTES: i64 = 64;
 const MAX_STATUS_ERROR_DETAIL_BYTES: i64 = 64 * 1024;
 const MAX_STATUS_TIMESTAMP_BYTES: i64 = 128;
+const MAX_STATUS_SOURCES: i64 = 64;
 const MAX_DRIFT_CONNECTOR_KEY_BYTES: i64 = 4096;
 const MAX_DRIFT_TOTAL_CONNECTOR_KEY_BYTES: i64 = 4 * 1024 * 1024;
+const DRIFT_QUEUE_POLL_INTERVAL: Duration = Duration::from_millis(2);
 
 struct DriftTargetRow {
     source: Vec<u8>,
@@ -79,6 +81,11 @@ impl Status {
         database_read_only: bool,
     ) -> Result<StatusReport, StatusError> {
         read_status_snapshot(connection, database_read_only)
+    }
+
+    /// Adds storage capacity and locality diagnostics after SQLite is closed.
+    pub(crate) fn attach_storage_status(index_path: &Path, report: &mut StatusReport) {
+        attach_storage_status(index_path, report);
     }
 
     /// Captures the one filesystem target associated with a cited immutable
@@ -170,6 +177,12 @@ impl Status {
             .observations
             .pop()
             .expect("one submitted target always produces one observation")
+    }
+
+    /// Produces the explicit freshness state for a connector whose configured
+    /// snapshot is authoritative but whose records have no live file probe.
+    pub(crate) fn snapshot_only_target(target: DriftTarget) -> DocumentDrift {
+        observation(&target, DriftState::SnapshotOnly, None)
     }
 }
 
@@ -318,6 +331,7 @@ pub struct DocumentDrift {
 pub enum DriftState {
     MetadataUnchanged,
     MetadataChanged,
+    SnapshotOnly,
     Missing,
     Blocked,
     Unknown,
@@ -397,11 +411,8 @@ fn run_bounded_probe(
         deadline,
         response,
     };
-    match worker.try_send(job) {
-        Ok(()) => {}
-        Err(TrySendError::Full(_)) | Err(TrySendError::Disconnected(_)) => {
-            return unknown_drift_report(&targets);
-        }
+    if !send_until(worker, job, deadline) {
+        return unknown_drift_report(&targets);
     }
 
     match receiver.recv_timeout(deadline.saturating_duration_since(Instant::now())) {
@@ -409,6 +420,25 @@ fn run_bounded_probe(
         Err(mpsc::RecvTimeoutError::Timeout | mpsc::RecvTimeoutError::Disconnected) => {
             unknown_drift_report(&targets)
         }
+    }
+}
+
+fn send_until<T>(sender: &SyncSender<T>, mut value: T, deadline: Instant) -> bool {
+    loop {
+        if Instant::now() >= deadline {
+            return false;
+        }
+        match sender.try_send(value) {
+            Ok(()) => return true,
+            Err(TrySendError::Disconnected(_)) => return false,
+            Err(TrySendError::Full(returned)) => value = returned,
+        }
+
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return false;
+        }
+        thread::sleep(remaining.min(DRIFT_QUEUE_POLL_INTERVAL));
     }
 }
 
@@ -550,29 +580,36 @@ fn read_index_quota(connection: &Connection) -> Result<Option<u64>, StatusError>
     let mut statement = connection.prepare(
         "SELECT config_json
          FROM sources
-         WHERE kind = 'filesystem'
+         WHERE removed_at IS NULL
          ORDER BY id
-         LIMIT 2",
+         LIMIT ?1",
     )?;
     let configs = statement
-        .query_map([], |row| row.get::<_, String>(0))?
+        .query_map([MAX_STATUS_SOURCES], |row| row.get::<_, String>(0))?
         .collect::<rusqlite::Result<Vec<_>>>()?;
-    let [config] = configs.as_slice() else {
-        return Ok(None);
-    };
-    let value: serde_json::Value = serde_json::from_str(config)
-        .map_err(|_| StatusError::Invalid("filesystem source configuration"))?;
-    let object = value
-        .as_object()
-        .ok_or(StatusError::Invalid("filesystem source configuration"))?;
-    match object.get("index_quota_bytes") {
-        None | Some(serde_json::Value::Null) => Ok(None),
-        Some(value) => value
-            .as_u64()
-            .filter(|quota| *quota != 0)
-            .map(Some)
-            .ok_or(StatusError::Invalid("index quota")),
+    let mut shared_quota = None;
+    for (index, config) in configs.iter().enumerate() {
+        let value: serde_json::Value = serde_json::from_str(config)
+            .map_err(|_| StatusError::Invalid("source configuration"))?;
+        let object = value
+            .as_object()
+            .ok_or(StatusError::Invalid("source configuration"))?;
+        let quota = match object.get("index_quota_bytes") {
+            None | Some(serde_json::Value::Null) => None,
+            Some(value) => Some(
+                value
+                    .as_u64()
+                    .filter(|quota| *quota != 0)
+                    .ok_or(StatusError::Invalid("index quota"))?,
+            ),
+        };
+        if index == 0 {
+            shared_quota = quota;
+        } else if shared_quota != quota {
+            return Err(StatusError::Invalid("inconsistent index quota"));
+        }
     }
+    Ok(shared_quota)
 }
 
 fn attach_storage_status(index_path: &Path, report: &mut StatusReport) {
@@ -656,10 +693,11 @@ fn read_sources(connection: &Connection) -> Result<Vec<SourceStatus>, StatusErro
                     WHERE ap.source_id = s.id
                 )
          FROM sources AS s
+         WHERE s.removed_at IS NULL
          ORDER BY s.name, s.id
-         LIMIT 1",
+         LIMIT ?1",
     )?;
-    let rows = statement.query_map([], |row| {
+    let rows = statement.query_map([MAX_STATUS_SOURCES], |row| {
         Ok((
             row.get::<_, Vec<u8>>(0)?,
             row.get::<_, String>(1)?,
@@ -705,17 +743,17 @@ fn read_sources(connection: &Connection) -> Result<Vec<SourceStatus>, StatusErro
 }
 
 fn validate_status_source_bounds(connection: &Connection) -> Result<(), StatusError> {
-    let multiple_sources: bool = connection.query_row(
+    let too_many_sources: bool = connection.query_row(
         "SELECT EXISTS(
              SELECT 1
              FROM sources
-             LIMIT 1 OFFSET 1
+             LIMIT 1 OFFSET ?1
          )",
-        [],
+        [MAX_STATUS_SOURCES],
         |row| row.get(0),
     )?;
-    if multiple_sources {
-        return Err(StatusError::Invalid("alpha source cardinality"));
+    if too_many_sources {
+        return Err(StatusError::Invalid("source cardinality"));
     }
 
     let invalid_fields: bool = connection.query_row(
@@ -838,9 +876,10 @@ fn read_drift_targets_bounded(
              SELECT 1
              FROM document_heads AS dh
              JOIN documents AS d ON d.id = dh.document_id
+             JOIN sources AS s ON s.id = d.source_id
              JOIN document_versions AS dv ON dv.id = dh.document_version_id
              JOIN content_blobs AS cb ON cb.id = dv.content_blob_id
-             WHERE dh.state = 'active'
+             WHERE dh.state = 'active' AND s.kind = 'filesystem'
              LIMIT 1 OFFSET ?1
          )",
         [max_targets],
@@ -892,9 +931,10 @@ fn read_drift_targets_bounded(
         "SELECT COALESCE(SUM(length(d.connector_key)), 0) > ?1
          FROM document_heads AS dh
          JOIN documents AS d ON d.id = dh.document_id
+         JOIN sources AS s ON s.id = d.source_id
          JOIN document_versions AS dv ON dv.id = dh.document_version_id
          JOIN content_blobs AS cb ON cb.id = dv.content_blob_id
-         WHERE dh.state = 'active'",
+         WHERE dh.state = 'active' AND s.kind = 'filesystem'",
         [max_connector_bytes],
         |row| row.get(0),
     )?;
@@ -907,9 +947,10 @@ fn read_drift_targets_bounded(
                 dv.source_updated_at, length(cb.original_bytes), cb.body_sha256
          FROM document_heads AS dh
          JOIN documents AS d ON d.id = dh.document_id
+         JOIN sources AS s ON s.id = d.source_id
          JOIN document_versions AS dv ON dv.id = dh.document_version_id
          JOIN content_blobs AS cb ON cb.id = dv.content_blob_id
-         WHERE dh.state = 'active'
+         WHERE dh.state = 'active' AND s.kind = 'filesystem'
          ORDER BY d.source_id, d.connector_key, d.id
          LIMIT ?1",
     )?;
@@ -1304,14 +1345,23 @@ mod tests {
     }
 
     #[test]
-    fn source_status_rejects_a_second_alpha_source_before_loading_rows() {
+    fn source_status_accepts_multiple_sources_and_rejects_cap_plus_one() {
         let connection = source_bounds_connection();
-        insert_status_source(&connection, 1, "{}", None);
-        insert_status_source(&connection, 2, "{}", None);
+        for id in 0..MAX_STATUS_SOURCES {
+            insert_status_source(&connection, u8::try_from(id).unwrap(), "{}", None);
+        }
+        assert!(validate_status_source_bounds(&connection).is_ok());
+
+        insert_status_source(
+            &connection,
+            u8::try_from(MAX_STATUS_SOURCES).unwrap(),
+            "{}",
+            None,
+        );
 
         assert!(matches!(
             validate_status_source_bounds(&connection),
-            Err(StatusError::Invalid("alpha source cardinality"))
+            Err(StatusError::Invalid("source cardinality"))
         ));
     }
 
@@ -1369,13 +1419,25 @@ mod tests {
                      document_id,
                      document_version_id INTEGER,
                      state
+                 );
+                 CREATE TABLE sources (
+                     id,
+                     kind
                  );",
+            )
+            .unwrap();
+
+        let fixture_source = SourceId::from_uuid(Uuid::from_u128(1));
+        connection
+            .execute(
+                "INSERT INTO sources(id, kind) VALUES (?1, 'filesystem')",
+                [fixture_source.as_uuid().as_bytes().as_slice()],
             )
             .unwrap();
 
         let mut first = None;
         for ordinal in 0..rows {
-            let source_id = SourceId::from_uuid(Uuid::from_u128(1));
+            let source_id = fixture_source;
             let document_id =
                 DocumentId::from_uuid(Uuid::from_u128(u128::try_from(ordinal).unwrap() + 2));
             let revision_sha256 = Sha256Digest::of_bytes(format!("revision-{ordinal}").as_bytes());
@@ -1560,5 +1622,33 @@ mod tests {
         assert!(started.elapsed() < Duration::from_millis(750));
         assert!(report.deadline_reached);
         assert_eq!(report.observations[0].state, DriftState::Unknown);
+    }
+
+    #[test]
+    fn queued_probe_submission_waits_for_capacity_within_its_deadline() {
+        let (sender, receiver) = mpsc::sync_channel(1);
+        sender.send(1_u8).unwrap();
+        let drainer = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(20));
+            assert_eq!(receiver.recv().unwrap(), 1);
+            assert_eq!(receiver.recv().unwrap(), 2);
+        });
+
+        assert!(send_until(
+            &sender,
+            2,
+            Instant::now() + Duration::from_millis(250)
+        ));
+        drainer.join().unwrap();
+    }
+
+    #[test]
+    fn queued_probe_submission_stops_at_its_deadline() {
+        let (sender, _receiver) = mpsc::sync_channel(1);
+        sender.send(1_u8).unwrap();
+        let started = Instant::now();
+
+        assert!(!send_until(&sender, 2, started + Duration::from_millis(20)));
+        assert!(started.elapsed() < Duration::from_millis(250));
     }
 }

@@ -1,5 +1,6 @@
 mod chunk;
 mod filesystem;
+mod jsonl;
 mod literals;
 mod pipeline;
 mod quote_bloom;
@@ -21,6 +22,12 @@ pub use filesystem::{
 };
 pub(crate) use filesystem::{
     FilesystemDiscoveryEstimate, discover_files_spooled_bounded, estimate_filesystem_discovery,
+};
+pub use jsonl::{
+    JsonlDeletion, JsonlRecord, JsonlSnapshot, JsonlSnapshotError, MAX_JSONL_COLLECTION_MEMBERS,
+    MAX_JSONL_CONTENT_BYTES, MAX_JSONL_ID_BYTES, MAX_JSONL_LINE_BYTES, MAX_JSONL_METADATA_BYTES,
+    MAX_JSONL_NESTING_DEPTH, MAX_JSONL_SOURCE_URI_BYTES, MAX_JSONL_TITLE_BYTES,
+    parse_jsonl_snapshot,
 };
 pub use literals::{
     MAX_IDENTIFIER_LITERAL_BYTES, MAX_IDENTIFIER_LITERALS_PER_PASSAGE,

@@ -1,0 +1,121 @@
+Linux x86_64	Validate the frozen client and README contracts	﻿2026-10-23T23:26:25.4859548Z ##[group]Run python3 benches/client_dogfood/harness.py validate
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4860002Z [36;1mpython3 benches/client_dogfood/harness.py validate[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4860391Z [36;1mpython3 -W error benches/client_dogfood/test_harness.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4860767Z [36;1mpython3 -W error benches/agent_ab/test_benchmark.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4861115Z [36;1mpython3 -W error benches/agent_ab/test_token_cost.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4861454Z [36;1mpython3 scripts/verify_readme_contract.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4861767Z [36;1mpython3 scripts/verify_completion_ledger.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4862090Z [36;1mpython3 scripts/verify_binstall_metadata.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4862440Z [36;1mpython3 -W error scripts/test_verify_readme_contract.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4862819Z [36;1mpython3 -W error scripts/test_verify_completion_ledger.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4863227Z [36;1mpython3 -W error scripts/test_verify_binstall_metadata.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4863587Z [36;1mpython3 -W error scripts/test_verify_binstall_evidence.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4863993Z [36;1mpython3 -W error scripts/test_verify_clean_machine_evidence.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4864386Z [36;1mpython3 -W error scripts/test_verify_cargo_publish_policy.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4864759Z [36;1mpython3 -W error scripts/test_verify_release_assets.py[0m
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4924556Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4924897Z env:
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4925160Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.16/x64
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4925569Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.16/x64/lib/pkgconfig
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4925943Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.16/x64
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4926296Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.16/x64
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4926626Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.16/x64
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4926984Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.16/x64/lib
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.4927302Z ##[endgroup]
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.6011930Z {"manifest_sha256":"5605ee6af83018606801d3de1d0bbcb431aa4e5a036c0e4790a6ead09f5fc727","protocol_id":"cross-client-citation-round-trip-v2","status":"valid"}
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.8607945Z ........
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.8608500Z ----------------------------------------------------------------------
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.8609064Z Ran 8 tests in 0.003s
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.8609240Z 
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.8609342Z OK
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.9972844Z .....................
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.9973384Z ----------------------------------------------------------------------
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.9973830Z Ran 21 tests in 0.044s
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.9973971Z 
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:25.9974044Z OK
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.0931898Z ........
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.0932393Z ----------------------------------------------------------------------
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.0932896Z Ran 8 tests in 0.003s
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.0933053Z 
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.0933152Z OK
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1357998Z {"allowed_statuses":["available","beta","planned","unsupported"],"capability_count":27,"package_version":"0.1.0-alpha.4","passed":true,"schema_version":"hsum.readme-contract.v1"}
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1702112Z Traceback (most recent call last):
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1733358Z   File "/home/runner/work/hSUM/hSUM/scripts/verify_completion_ledger.py", line 138, in <module>
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1735008Z     main()
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1735229Z     ~~~~^^
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1735709Z   File "/home/runner/work/hSUM/hSUM/scripts/verify_completion_ledger.py", line 133, in main
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1736335Z     report = verify(args.ledger.read_text(encoding="utf-8"))
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1736940Z   File "/home/runner/work/hSUM/hSUM/scripts/verify_completion_ledger.py", line 100, in verify
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1737703Z     require_claim(
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1737956Z     ~~~~~~~~~~~~~^
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1738198Z         ledger,
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1738431Z         ^^^^^^^
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1738666Z     ...<2 lines>...
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1739294Z         f"({earned}/{applicable} applicable evidence cells)",
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1739715Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1740059Z     )
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1740273Z     ^
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1740806Z   File "/home/runner/work/hSUM/hSUM/scripts/verify_completion_ledger.py", line 61, in require_claim
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1741597Z     raise LedgerError(f"ledger metric is stale; expected {expected}")
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1742457Z LedgerError: ledger metric is stale; expected - Full stable-program evidence: **70.3%** (222/316 applicable evidence cells)
+Linux x86_64	Validate the frozen client and README contracts	2026-10-23T23:26:26.1808996Z ##[error]Process completed with exit code 1.
+macOS arm64	Validate the frozen client and README contracts	﻿2026-10-23T23:26:23.7519420Z ##[group]Run python3 benches/client_dogfood/harness.py validate
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7519900Z [36;1mpython3 benches/client_dogfood/harness.py validate[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7520320Z [36;1mpython3 -W error benches/client_dogfood/test_harness.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7520720Z [36;1mpython3 -W error benches/agent_ab/test_benchmark.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7521070Z [36;1mpython3 -W error benches/agent_ab/test_token_cost.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7521420Z [36;1mpython3 scripts/verify_readme_contract.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7521730Z [36;1mpython3 scripts/verify_completion_ledger.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7522050Z [36;1mpython3 scripts/verify_binstall_metadata.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7522390Z [36;1mpython3 -W error scripts/test_verify_readme_contract.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7522800Z [36;1mpython3 -W error scripts/test_verify_completion_ledger.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7523220Z [36;1mpython3 -W error scripts/test_verify_binstall_metadata.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7523610Z [36;1mpython3 -W error scripts/test_verify_binstall_evidence.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7535280Z [36;1mpython3 -W error scripts/test_verify_clean_machine_evidence.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7535740Z [36;1mpython3 -W error scripts/test_verify_cargo_publish_policy.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7536140Z [36;1mpython3 -W error scripts/test_verify_release_assets.py[0m
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7579700Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7580040Z env:
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7580320Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7580790Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7581230Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7581610Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7581980Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:23.7582280Z ##[endgroup]
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.0757340Z {"manifest_sha256":"5605ee6af83018606801d3de1d0bbcb431aa4e5a036c0e4790a6ead09f5fc727","protocol_id":"cross-client-citation-round-trip-v2","status":"valid"}
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.2029340Z ........
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.2037450Z ----------------------------------------------------------------------
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.2038350Z Ran 8 tests in 0.003s
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.2123510Z 
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.2124010Z OK
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.3599320Z .....................
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.3600220Z ----------------------------------------------------------------------
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.3600730Z Ran 21 tests in 0.075s
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.3600960Z 
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.3601120Z OK
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.4362390Z ........
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.4363010Z ----------------------------------------------------------------------
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.4363530Z Ran 8 tests in 0.003s
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.4363760Z 
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.4363910Z OK
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.4721480Z {"allowed_statuses":["available","beta","planned","unsupported"],"capability_count":27,"package_version":"0.1.0-alpha.4","passed":true,"schema_version":"hsum.readme-contract.v1"}
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5025190Z Traceback (most recent call last):
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5044050Z   File "/Users/runner/work/hSUM/hSUM/scripts/verify_completion_ledger.py", line 138, in <module>
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5044490Z     main()
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5044620Z     ~~~~^^
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5045040Z   File "/Users/runner/work/hSUM/hSUM/scripts/verify_completion_ledger.py", line 133, in main
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5045520Z     report = verify(args.ledger.read_text(encoding="utf-8"))
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5045970Z   File "/Users/runner/work/hSUM/hSUM/scripts/verify_completion_ledger.py", line 100, in verify
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5046860Z     require_claim(
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5047010Z     ~~~~~~~~~~~~~^
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5047170Z         ledger,
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5047310Z         ^^^^^^^
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5047460Z     ...<2 lines>...
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5047690Z         f"({earned}/{applicable} applicable evidence cells)",
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5048380Z         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5048600Z     )
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5048750Z     ^
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5049150Z   File "/Users/runner/work/hSUM/hSUM/scripts/verify_completion_ledger.py", line 61, in require_claim
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5049650Z     raise LedgerError(f"ledger metric is stale; expected {expected}")
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5050230Z LedgerError: ledger metric is stale; expected - Full stable-program evidence: **70.3%** (222/316 applicable evidence cells)
+macOS arm64	Validate the frozen client and README contracts	2026-10-23T23:26:24.5086370Z ##[error]Process completed with exit code 1.

@@ -1,0 +1,1471 @@
+{
+  "schema_version": "hsum.exact-page-diagnostic.v1",
+  "qualification": false,
+  "reason": "Retained partial 100k Apple M2 index from the old corpus; isolated diagnostic only, not the corrected frozen qualification protocol",
+  "cwd": "/Users/b.k./.cache/hsum-qualification/2026-10-21-WkRefX/corpus",
+  "hsum_home": "/Users/b.k./.cache/hsum-qualification/2026-10-21-WkRefX/home",
+  "binaries": {
+    "before": "1e770f1348321d19e5f0cf4c0a1273d8df47abac1ed44a08e55634ffff924170",
+    "after": "641b5d7caea840899097f0f5f79177f203f1c00862398bbb3c024133e97427a6"
+  },
+  "observations": [
+    {
+      "repetition": 1,
+      "condition": "before",
+      "query": "scale_identifier_000001",
+      "exit_code": 4,
+      "client_round_trip_ms": 10541.86125000706,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"d39db0af-8215-4130-bb71-a8f236060d58\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "d39db0af-8215-4130-bb71-a8f236060d58",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 1,
+      "condition": "after",
+      "query": "scale_identifier_000001",
+      "exit_code": 4,
+      "client_round_trip_ms": 10032.742332987254,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"b9469fa3-0f4c-4275-9f9a-bc659ea2a73d\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "b9469fa3-0f4c-4275-9f9a-bc659ea2a73d",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 1,
+      "condition": "before",
+      "query": "\"a+b\"",
+      "exit_code": 4,
+      "client_round_trip_ms": 10030.52333300002,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"d166db2f-fce0-4542-ba10-f244b4ff5c21\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "d166db2f-fce0-4542-ba10-f244b4ff5c21",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 1,
+      "condition": "after",
+      "query": "\"a+b\"",
+      "exit_code": 0,
+      "client_round_trip_ms": 286.47558300872333,
+      "packet": {
+        "schema_version": "hsum.api.v1",
+        "request_id": "4f9abd3e-bb0d-4b14-9dbf-3d3b88905192",
+        "generation": 1,
+        "index_epoch": 1,
+        "project": "default",
+        "project_id": "b4b9a585-28c5-4c88-97c2-e5661c82a151",
+        "scope_revision": 0,
+        "requested_mode": "lexical",
+        "effective_mode": "lexical",
+        "retrievers": [
+          "exact",
+          "exact_fallback",
+          "lexical"
+        ],
+        "degraded_mode": [],
+        "hints": [],
+        "results": [
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/00d7d905-5d63-4ad5-b0e6-0e7d5384ec34?rev=5d2529f081a12ace7b8b2818898961b95328af752fc51d4ce13d13fa6ce73dbf#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "00d7d905-5d63-4ad5-b0e6-0e7d5384ec34",
+            "revision_sha256": "5d2529f081a12ace7b8b2818898961b95328af752fc51d4ce13d13fa6ce73dbf",
+            "source_uri": "repo://document-05938.txt",
+            "title": "document-05938.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_05938 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "30bd4ceeefe1c2e4784df9c9d62edf6f560d56136bdda7efa6ae7cbd0e267d2f",
+            "source_updated_at": "2026-10-20T22:49:11.017850765Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.040983606557,
+              "fusion_units": 40983606557,
+              "lists": [
+                {
+                  "name": "exact_fallback",
+                  "rank": 1,
+                  "contribution_units": 24590163934,
+                  "backend_score": null
+                },
+                {
+                  "name": "lexical",
+                  "rank": 1,
+                  "contribution_units": 16393442623,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/025f999e-4345-4d3b-bd7a-d6890db49489?rev=9de5147dda69110cb87152ec80b6fe5af97c8148aad3fab8fa085be4b12a3cdb#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "025f999e-4345-4d3b-bd7a-d6890db49489",
+            "revision_sha256": "9de5147dda69110cb87152ec80b6fe5af97c8148aad3fab8fa085be4b12a3cdb",
+            "source_uri": "repo://document-06163.txt",
+            "title": "document-06163.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_06163 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "bd03b51df2eea71a88b154e7f6a1ba5374074b3c1ab942258676018bf82a676c",
+            "source_updated_at": "2026-10-20T22:49:11.03780839Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.016129032258,
+              "fusion_units": 16129032258,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 2,
+                  "contribution_units": 16129032258,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/0273ecfc-4850-40e4-bb78-383ada6a708e?rev=bc54133dc22ef218c2968aa7425922d58b9bcee7778667b8172f8c05b3226898#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "0273ecfc-4850-40e4-bb78-383ada6a708e",
+            "revision_sha256": "bc54133dc22ef218c2968aa7425922d58b9bcee7778667b8172f8c05b3226898",
+            "source_uri": "repo://document-07938.txt",
+            "title": "document-07938.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_07938 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "c6a4f4833ff8699996afbc01bc89fa4e45c80cc17c4d8e2112a27c0943f8c487",
+            "source_updated_at": "2026-10-20T22:49:11.187032377Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015873015873,
+              "fusion_units": 15873015873,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 3,
+                  "contribution_units": 15873015873,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/030e1bd5-f9f4-466d-a9ab-c27ebf02f57f?rev=e29a4edd67eb0808e2f82593463cff16bf324d40b75f6d16161f39becb17eb03#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "030e1bd5-f9f4-466d-a9ab-c27ebf02f57f",
+            "revision_sha256": "e29a4edd67eb0808e2f82593463cff16bf324d40b75f6d16161f39becb17eb03",
+            "source_uri": "repo://document-08388.txt",
+            "title": "document-08388.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_08388 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "13c5ca24fb7fa80293e3333d36bd7962ad7821de8c4db76d2c23c427e48f2d6e",
+            "source_updated_at": "2026-10-20T22:49:11.236099744Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015625,
+              "fusion_units": 15625000000,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 4,
+                  "contribution_units": 15625000000,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/0368aaf0-3c64-4403-8b5e-a520c741eb35?rev=05280f2785498d113436a4caa26eedcbac404b967baceaa6888a40eebd45f2f9#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "0368aaf0-3c64-4403-8b5e-a520c741eb35",
+            "revision_sha256": "05280f2785498d113436a4caa26eedcbac404b967baceaa6888a40eebd45f2f9",
+            "source_uri": "repo://document-08763.txt",
+            "title": "document-08763.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_08763 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "942410eebe353c200af02b8556dbe16c907c8f39d845fd93cc012b8b3dbc9f86",
+            "source_updated_at": "2026-10-20T22:49:11.284598077Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015384615385,
+              "fusion_units": 15384615385,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 5,
+                  "contribution_units": 15384615385,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/03d9dfa4-89bc-42b0-b6dd-93ff8c5fbb7f?rev=4e6a93a548299f2d16ec914f2e6f07c175e421b80e370da38067124923b28206#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "03d9dfa4-89bc-42b0-b6dd-93ff8c5fbb7f",
+            "revision_sha256": "4e6a93a548299f2d16ec914f2e6f07c175e421b80e370da38067124923b28206",
+            "source_uri": "repo://document-06263.txt",
+            "title": "document-06263.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_06263 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "ac7854214e2583b4ff5a5c48bbd34fe463210ee8b708f04e5e8f8ee7cb52f1f8",
+            "source_updated_at": "2026-10-20T22:49:11.047041797Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015151515152,
+              "fusion_units": 15151515152,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 6,
+                  "contribution_units": 15151515152,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/047b6614-22e8-4edb-894a-327de6dc4b2f?rev=7efe182b89d28194b8bc12b31cdd91fff11540f90df1c9c34554b498e27ac3ec#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "047b6614-22e8-4edb-894a-327de6dc4b2f",
+            "revision_sha256": "7efe182b89d28194b8bc12b31cdd91fff11540f90df1c9c34554b498e27ac3ec",
+            "source_uri": "repo://document-03988.txt",
+            "title": "document-03988.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_03988 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "c9fbcb88deab0e4e85b12cd5f00ef38c39fd2b3f6a4408cb0dbd5a8d747947de",
+            "source_updated_at": "2026-10-20T22:49:10.785455033Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014925373134,
+              "fusion_units": 14925373134,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 7,
+                  "contribution_units": 14925373134,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/052e3dcc-65e3-4e43-a407-01c8b0b52211?rev=b2de5605f32fe4e7c98bda4447392aa4ef00515b7c8a199e1ed1a94a19fb6a25#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "052e3dcc-65e3-4e43-a407-01c8b0b52211",
+            "revision_sha256": "b2de5605f32fe4e7c98bda4447392aa4ef00515b7c8a199e1ed1a94a19fb6a25",
+            "source_uri": "repo://document-07638.txt",
+            "title": "document-07638.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_07638 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "98710e4f2a3f0a2e1df8242cc60e323c5036283baee0863af6ed3e9ad7ad83e9",
+            "source_updated_at": "2026-10-20T22:49:11.162693274Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014705882353,
+              "fusion_units": 14705882353,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 8,
+                  "contribution_units": 14705882353,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/05485817-668d-440f-a999-f715a752d570?rev=8200ef9f76fec600613707798a2f604c002d85ae2507a1c7710b5c4379745cb5#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "05485817-668d-440f-a999-f715a752d570",
+            "revision_sha256": "8200ef9f76fec600613707798a2f604c002d85ae2507a1c7710b5c4379745cb5",
+            "source_uri": "repo://document-01863.txt",
+            "title": "document-01863.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_01863 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "8edc169a68775a023ee995a6d8f41c27d12be18e4f20b0ac51833df8f1e19717",
+            "source_updated_at": "2026-10-20T22:49:10.582636037Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014492753623,
+              "fusion_units": 14492753623,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 9,
+                  "contribution_units": 14492753623,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/05686b1e-3f96-45ed-9fff-4255e86baaa0?rev=a3eaa9478010c25bdd27a1c300261823b99afb3e1b633e0c889b35eb495c0611#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "05686b1e-3f96-45ed-9fff-4255e86baaa0",
+            "revision_sha256": "a3eaa9478010c25bdd27a1c300261823b99afb3e1b633e0c889b35eb495c0611",
+            "source_uri": "repo://document-09138.txt",
+            "title": "document-09138.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_09138 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "22e770ca407703994940ce02826ea788b4a091187ef7f7519bb7815badf3967a",
+            "source_updated_at": "2026-10-20T22:49:11.375872036Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014285714286,
+              "fusion_units": 14285714286,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 10,
+                  "contribution_units": 14285714286,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          }
+        ],
+        "next_cursor": "v1.AQoDe50_A71J5KgiXSNe6vdsAAAAAAAAAAAAAAAAAAAAAQEAAAAAAAAAATJeucIHKuzGgXm3dxBTC927VRcnacOnwUCKlM0rwC3SW2vos5ySQwpBU7ucVD7Wwtnv8V5jal8RtGj6enovPvCNmzA-8_6FENE5GLGCJCGQ1obX3ubnsoD8tx0nTnwhZg",
+        "stop_reason": "limit_reached",
+        "examined": {
+          "exact": 1,
+          "exact_fallback": 500,
+          "lexical": 50,
+          "vector": 0
+        },
+        "timing_ms": {
+          "query_embedding": 0,
+          "exact": 82,
+          "exact_fallback": 82,
+          "lexical": 157,
+          "vector": 0,
+          "fusion": 0,
+          "body_materialization": 31,
+          "total": 253
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "repetition": 2,
+      "condition": "after",
+      "query": "scale_identifier_000001",
+      "exit_code": 4,
+      "client_round_trip_ms": 10022.748791991035,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"0acef6d9-6c17-4684-98af-8c6c5e995b7a\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "0acef6d9-6c17-4684-98af-8c6c5e995b7a",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 2,
+      "condition": "before",
+      "query": "scale_identifier_000001",
+      "exit_code": 4,
+      "client_round_trip_ms": 10047.046458988916,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"c1dbcc94-ff59-4b32-90be-dedd76c57fb6\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "c1dbcc94-ff59-4b32-90be-dedd76c57fb6",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 2,
+      "condition": "after",
+      "query": "\"a+b\"",
+      "exit_code": 0,
+      "client_round_trip_ms": 263.22116699884646,
+      "packet": {
+        "schema_version": "hsum.api.v1",
+        "request_id": "c2ff5395-dff0-4726-b954-8257f6233b10",
+        "generation": 1,
+        "index_epoch": 1,
+        "project": "default",
+        "project_id": "b4b9a585-28c5-4c88-97c2-e5661c82a151",
+        "scope_revision": 0,
+        "requested_mode": "lexical",
+        "effective_mode": "lexical",
+        "retrievers": [
+          "exact",
+          "exact_fallback",
+          "lexical"
+        ],
+        "degraded_mode": [],
+        "hints": [],
+        "results": [
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/00d7d905-5d63-4ad5-b0e6-0e7d5384ec34?rev=5d2529f081a12ace7b8b2818898961b95328af752fc51d4ce13d13fa6ce73dbf#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "00d7d905-5d63-4ad5-b0e6-0e7d5384ec34",
+            "revision_sha256": "5d2529f081a12ace7b8b2818898961b95328af752fc51d4ce13d13fa6ce73dbf",
+            "source_uri": "repo://document-05938.txt",
+            "title": "document-05938.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_05938 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "30bd4ceeefe1c2e4784df9c9d62edf6f560d56136bdda7efa6ae7cbd0e267d2f",
+            "source_updated_at": "2026-10-20T22:49:11.017850765Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.040983606557,
+              "fusion_units": 40983606557,
+              "lists": [
+                {
+                  "name": "exact_fallback",
+                  "rank": 1,
+                  "contribution_units": 24590163934,
+                  "backend_score": null
+                },
+                {
+                  "name": "lexical",
+                  "rank": 1,
+                  "contribution_units": 16393442623,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/025f999e-4345-4d3b-bd7a-d6890db49489?rev=9de5147dda69110cb87152ec80b6fe5af97c8148aad3fab8fa085be4b12a3cdb#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "025f999e-4345-4d3b-bd7a-d6890db49489",
+            "revision_sha256": "9de5147dda69110cb87152ec80b6fe5af97c8148aad3fab8fa085be4b12a3cdb",
+            "source_uri": "repo://document-06163.txt",
+            "title": "document-06163.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_06163 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "bd03b51df2eea71a88b154e7f6a1ba5374074b3c1ab942258676018bf82a676c",
+            "source_updated_at": "2026-10-20T22:49:11.03780839Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.016129032258,
+              "fusion_units": 16129032258,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 2,
+                  "contribution_units": 16129032258,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/0273ecfc-4850-40e4-bb78-383ada6a708e?rev=bc54133dc22ef218c2968aa7425922d58b9bcee7778667b8172f8c05b3226898#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "0273ecfc-4850-40e4-bb78-383ada6a708e",
+            "revision_sha256": "bc54133dc22ef218c2968aa7425922d58b9bcee7778667b8172f8c05b3226898",
+            "source_uri": "repo://document-07938.txt",
+            "title": "document-07938.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_07938 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "c6a4f4833ff8699996afbc01bc89fa4e45c80cc17c4d8e2112a27c0943f8c487",
+            "source_updated_at": "2026-10-20T22:49:11.187032377Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015873015873,
+              "fusion_units": 15873015873,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 3,
+                  "contribution_units": 15873015873,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/030e1bd5-f9f4-466d-a9ab-c27ebf02f57f?rev=e29a4edd67eb0808e2f82593463cff16bf324d40b75f6d16161f39becb17eb03#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "030e1bd5-f9f4-466d-a9ab-c27ebf02f57f",
+            "revision_sha256": "e29a4edd67eb0808e2f82593463cff16bf324d40b75f6d16161f39becb17eb03",
+            "source_uri": "repo://document-08388.txt",
+            "title": "document-08388.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_08388 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "13c5ca24fb7fa80293e3333d36bd7962ad7821de8c4db76d2c23c427e48f2d6e",
+            "source_updated_at": "2026-10-20T22:49:11.236099744Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015625,
+              "fusion_units": 15625000000,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 4,
+                  "contribution_units": 15625000000,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/0368aaf0-3c64-4403-8b5e-a520c741eb35?rev=05280f2785498d113436a4caa26eedcbac404b967baceaa6888a40eebd45f2f9#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "0368aaf0-3c64-4403-8b5e-a520c741eb35",
+            "revision_sha256": "05280f2785498d113436a4caa26eedcbac404b967baceaa6888a40eebd45f2f9",
+            "source_uri": "repo://document-08763.txt",
+            "title": "document-08763.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_08763 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "942410eebe353c200af02b8556dbe16c907c8f39d845fd93cc012b8b3dbc9f86",
+            "source_updated_at": "2026-10-20T22:49:11.284598077Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015384615385,
+              "fusion_units": 15384615385,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 5,
+                  "contribution_units": 15384615385,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/03d9dfa4-89bc-42b0-b6dd-93ff8c5fbb7f?rev=4e6a93a548299f2d16ec914f2e6f07c175e421b80e370da38067124923b28206#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "03d9dfa4-89bc-42b0-b6dd-93ff8c5fbb7f",
+            "revision_sha256": "4e6a93a548299f2d16ec914f2e6f07c175e421b80e370da38067124923b28206",
+            "source_uri": "repo://document-06263.txt",
+            "title": "document-06263.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_06263 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "ac7854214e2583b4ff5a5c48bbd34fe463210ee8b708f04e5e8f8ee7cb52f1f8",
+            "source_updated_at": "2026-10-20T22:49:11.047041797Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015151515152,
+              "fusion_units": 15151515152,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 6,
+                  "contribution_units": 15151515152,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/047b6614-22e8-4edb-894a-327de6dc4b2f?rev=7efe182b89d28194b8bc12b31cdd91fff11540f90df1c9c34554b498e27ac3ec#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "047b6614-22e8-4edb-894a-327de6dc4b2f",
+            "revision_sha256": "7efe182b89d28194b8bc12b31cdd91fff11540f90df1c9c34554b498e27ac3ec",
+            "source_uri": "repo://document-03988.txt",
+            "title": "document-03988.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_03988 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "c9fbcb88deab0e4e85b12cd5f00ef38c39fd2b3f6a4408cb0dbd5a8d747947de",
+            "source_updated_at": "2026-10-20T22:49:10.785455033Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014925373134,
+              "fusion_units": 14925373134,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 7,
+                  "contribution_units": 14925373134,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/052e3dcc-65e3-4e43-a407-01c8b0b52211?rev=b2de5605f32fe4e7c98bda4447392aa4ef00515b7c8a199e1ed1a94a19fb6a25#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "052e3dcc-65e3-4e43-a407-01c8b0b52211",
+            "revision_sha256": "b2de5605f32fe4e7c98bda4447392aa4ef00515b7c8a199e1ed1a94a19fb6a25",
+            "source_uri": "repo://document-07638.txt",
+            "title": "document-07638.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_07638 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "98710e4f2a3f0a2e1df8242cc60e323c5036283baee0863af6ed3e9ad7ad83e9",
+            "source_updated_at": "2026-10-20T22:49:11.162693274Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014705882353,
+              "fusion_units": 14705882353,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 8,
+                  "contribution_units": 14705882353,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/05485817-668d-440f-a999-f715a752d570?rev=8200ef9f76fec600613707798a2f604c002d85ae2507a1c7710b5c4379745cb5#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "05485817-668d-440f-a999-f715a752d570",
+            "revision_sha256": "8200ef9f76fec600613707798a2f604c002d85ae2507a1c7710b5c4379745cb5",
+            "source_uri": "repo://document-01863.txt",
+            "title": "document-01863.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_01863 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "8edc169a68775a023ee995a6d8f41c27d12be18e4f20b0ac51833df8f1e19717",
+            "source_updated_at": "2026-10-20T22:49:10.582636037Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014492753623,
+              "fusion_units": 14492753623,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 9,
+                  "contribution_units": 14492753623,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/05686b1e-3f96-45ed-9fff-4255e86baaa0?rev=a3eaa9478010c25bdd27a1c300261823b99afb3e1b633e0c889b35eb495c0611#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "05686b1e-3f96-45ed-9fff-4255e86baaa0",
+            "revision_sha256": "a3eaa9478010c25bdd27a1c300261823b99afb3e1b633e0c889b35eb495c0611",
+            "source_uri": "repo://document-09138.txt",
+            "title": "document-09138.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_09138 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "22e770ca407703994940ce02826ea788b4a091187ef7f7519bb7815badf3967a",
+            "source_updated_at": "2026-10-20T22:49:11.375872036Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014285714286,
+              "fusion_units": 14285714286,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 10,
+                  "contribution_units": 14285714286,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          }
+        ],
+        "next_cursor": "v1.AQoDe50_A71J5KgiXSNe6vdsAAAAAAAAAAAAAAAAAAAAAQEAAAAAAAAAATJeucIHKuzGgXm3dxBTC927VRcnacOnwUCKlM0rwC3SW2vos5ySQwpBU7ucVD7Wwtnv8V5jal8RtGj6enovPvCNmzA-8_6FENE5GLGCJCGQ1obX3ubnsoD8tx0nTnwhZg",
+        "stop_reason": "limit_reached",
+        "examined": {
+          "exact": 1,
+          "exact_fallback": 500,
+          "lexical": 50,
+          "vector": 0
+        },
+        "timing_ms": {
+          "query_embedding": 0,
+          "exact": 57,
+          "exact_fallback": 57,
+          "lexical": 163,
+          "vector": 0,
+          "fusion": 0,
+          "body_materialization": 28,
+          "total": 232
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "repetition": 2,
+      "condition": "before",
+      "query": "\"a+b\"",
+      "exit_code": 4,
+      "client_round_trip_ms": 10029.842624993762,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"b66e3ca1-2c7f-47bd-aa61-10b27203ea1b\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "b66e3ca1-2c7f-47bd-aa61-10b27203ea1b",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 3,
+      "condition": "before",
+      "query": "scale_identifier_000001",
+      "exit_code": 4,
+      "client_round_trip_ms": 10029.785082995659,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"eedbdf60-515c-49c3-b2ef-8f0c5bba27e1\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "eedbdf60-515c-49c3-b2ef-8f0c5bba27e1",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 3,
+      "condition": "after",
+      "query": "scale_identifier_000001",
+      "exit_code": 4,
+      "client_round_trip_ms": 10091.114417009521,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"aa4cf3aa-c3e1-490e-bc75-1a59e0a17ec9\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "aa4cf3aa-c3e1-490e-bc75-1a59e0a17ec9",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 3,
+      "condition": "before",
+      "query": "\"a+b\"",
+      "exit_code": 4,
+      "client_round_trip_ms": 10029.606625001179,
+      "packet": {
+        "stdout": ""
+      },
+      "stderr": "{\"code\":\"TIMEOUT\",\"subcode\":\"REQUEST_DEADLINE\",\"message\":\"the request deadline expired\",\"retryable\":true,\"details\":{\"operation\":\"search\",\"reason\":\"search deadline expired\"},\"next_action\":\"retry or raise the timeout within the documented bound\",\"request_id\":\"df2a8ef8-ee14-408f-b99f-d5c7aecef1d8\",\"docs_url\":\"https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE\"}\n",
+      "error_packet": {
+        "code": "TIMEOUT",
+        "subcode": "REQUEST_DEADLINE",
+        "message": "the request deadline expired",
+        "retryable": true,
+        "details": {
+          "operation": "search",
+          "reason": "search deadline expired"
+        },
+        "next_action": "retry or raise the timeout within the documented bound",
+        "request_id": "df2a8ef8-ee14-408f-b99f-d5c7aecef1d8",
+        "docs_url": "https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE"
+      }
+    },
+    {
+      "repetition": 3,
+      "condition": "after",
+      "query": "\"a+b\"",
+      "exit_code": 0,
+      "client_round_trip_ms": 331.18354200269096,
+      "packet": {
+        "schema_version": "hsum.api.v1",
+        "request_id": "88eba007-0c71-4e31-9f95-c527efaf4fef",
+        "generation": 1,
+        "index_epoch": 1,
+        "project": "default",
+        "project_id": "b4b9a585-28c5-4c88-97c2-e5661c82a151",
+        "scope_revision": 0,
+        "requested_mode": "lexical",
+        "effective_mode": "lexical",
+        "retrievers": [
+          "exact",
+          "exact_fallback",
+          "lexical"
+        ],
+        "degraded_mode": [],
+        "hints": [],
+        "results": [
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/00d7d905-5d63-4ad5-b0e6-0e7d5384ec34?rev=5d2529f081a12ace7b8b2818898961b95328af752fc51d4ce13d13fa6ce73dbf#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "00d7d905-5d63-4ad5-b0e6-0e7d5384ec34",
+            "revision_sha256": "5d2529f081a12ace7b8b2818898961b95328af752fc51d4ce13d13fa6ce73dbf",
+            "source_uri": "repo://document-05938.txt",
+            "title": "document-05938.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_05938 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "30bd4ceeefe1c2e4784df9c9d62edf6f560d56136bdda7efa6ae7cbd0e267d2f",
+            "source_updated_at": "2026-10-20T22:49:11.017850765Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.040983606557,
+              "fusion_units": 40983606557,
+              "lists": [
+                {
+                  "name": "exact_fallback",
+                  "rank": 1,
+                  "contribution_units": 24590163934,
+                  "backend_score": null
+                },
+                {
+                  "name": "lexical",
+                  "rank": 1,
+                  "contribution_units": 16393442623,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/025f999e-4345-4d3b-bd7a-d6890db49489?rev=9de5147dda69110cb87152ec80b6fe5af97c8148aad3fab8fa085be4b12a3cdb#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "025f999e-4345-4d3b-bd7a-d6890db49489",
+            "revision_sha256": "9de5147dda69110cb87152ec80b6fe5af97c8148aad3fab8fa085be4b12a3cdb",
+            "source_uri": "repo://document-06163.txt",
+            "title": "document-06163.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_06163 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "bd03b51df2eea71a88b154e7f6a1ba5374074b3c1ab942258676018bf82a676c",
+            "source_updated_at": "2026-10-20T22:49:11.03780839Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.016129032258,
+              "fusion_units": 16129032258,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 2,
+                  "contribution_units": 16129032258,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/0273ecfc-4850-40e4-bb78-383ada6a708e?rev=bc54133dc22ef218c2968aa7425922d58b9bcee7778667b8172f8c05b3226898#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "0273ecfc-4850-40e4-bb78-383ada6a708e",
+            "revision_sha256": "bc54133dc22ef218c2968aa7425922d58b9bcee7778667b8172f8c05b3226898",
+            "source_uri": "repo://document-07938.txt",
+            "title": "document-07938.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_07938 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "c6a4f4833ff8699996afbc01bc89fa4e45c80cc17c4d8e2112a27c0943f8c487",
+            "source_updated_at": "2026-10-20T22:49:11.187032377Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015873015873,
+              "fusion_units": 15873015873,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 3,
+                  "contribution_units": 15873015873,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/030e1bd5-f9f4-466d-a9ab-c27ebf02f57f?rev=e29a4edd67eb0808e2f82593463cff16bf324d40b75f6d16161f39becb17eb03#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "030e1bd5-f9f4-466d-a9ab-c27ebf02f57f",
+            "revision_sha256": "e29a4edd67eb0808e2f82593463cff16bf324d40b75f6d16161f39becb17eb03",
+            "source_uri": "repo://document-08388.txt",
+            "title": "document-08388.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_08388 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "13c5ca24fb7fa80293e3333d36bd7962ad7821de8c4db76d2c23c427e48f2d6e",
+            "source_updated_at": "2026-10-20T22:49:11.236099744Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015625,
+              "fusion_units": 15625000000,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 4,
+                  "contribution_units": 15625000000,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/0368aaf0-3c64-4403-8b5e-a520c741eb35?rev=05280f2785498d113436a4caa26eedcbac404b967baceaa6888a40eebd45f2f9#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "0368aaf0-3c64-4403-8b5e-a520c741eb35",
+            "revision_sha256": "05280f2785498d113436a4caa26eedcbac404b967baceaa6888a40eebd45f2f9",
+            "source_uri": "repo://document-08763.txt",
+            "title": "document-08763.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_08763 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "942410eebe353c200af02b8556dbe16c907c8f39d845fd93cc012b8b3dbc9f86",
+            "source_updated_at": "2026-10-20T22:49:11.284598077Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015384615385,
+              "fusion_units": 15384615385,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 5,
+                  "contribution_units": 15384615385,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/03d9dfa4-89bc-42b0-b6dd-93ff8c5fbb7f?rev=4e6a93a548299f2d16ec914f2e6f07c175e421b80e370da38067124923b28206#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "03d9dfa4-89bc-42b0-b6dd-93ff8c5fbb7f",
+            "revision_sha256": "4e6a93a548299f2d16ec914f2e6f07c175e421b80e370da38067124923b28206",
+            "source_uri": "repo://document-06263.txt",
+            "title": "document-06263.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_06263 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "ac7854214e2583b4ff5a5c48bbd34fe463210ee8b708f04e5e8f8ee7cb52f1f8",
+            "source_updated_at": "2026-10-20T22:49:11.047041797Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015151515152,
+              "fusion_units": 15151515152,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 6,
+                  "contribution_units": 15151515152,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/047b6614-22e8-4edb-894a-327de6dc4b2f?rev=7efe182b89d28194b8bc12b31cdd91fff11540f90df1c9c34554b498e27ac3ec#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "047b6614-22e8-4edb-894a-327de6dc4b2f",
+            "revision_sha256": "7efe182b89d28194b8bc12b31cdd91fff11540f90df1c9c34554b498e27ac3ec",
+            "source_uri": "repo://document-03988.txt",
+            "title": "document-03988.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_03988 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "c9fbcb88deab0e4e85b12cd5f00ef38c39fd2b3f6a4408cb0dbd5a8d747947de",
+            "source_updated_at": "2026-10-20T22:49:10.785455033Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014925373134,
+              "fusion_units": 14925373134,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 7,
+                  "contribution_units": 14925373134,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/052e3dcc-65e3-4e43-a407-01c8b0b52211?rev=b2de5605f32fe4e7c98bda4447392aa4ef00515b7c8a199e1ed1a94a19fb6a25#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "052e3dcc-65e3-4e43-a407-01c8b0b52211",
+            "revision_sha256": "b2de5605f32fe4e7c98bda4447392aa4ef00515b7c8a199e1ed1a94a19fb6a25",
+            "source_uri": "repo://document-07638.txt",
+            "title": "document-07638.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_07638 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "98710e4f2a3f0a2e1df8242cc60e323c5036283baee0863af6ed3e9ad7ad83e9",
+            "source_updated_at": "2026-10-20T22:49:11.162693274Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014705882353,
+              "fusion_units": 14705882353,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 8,
+                  "contribution_units": 14705882353,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/05485817-668d-440f-a999-f715a752d570?rev=8200ef9f76fec600613707798a2f604c002d85ae2507a1c7710b5c4379745cb5#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "05485817-668d-440f-a999-f715a752d570",
+            "revision_sha256": "8200ef9f76fec600613707798a2f604c002d85ae2507a1c7710b5c4379745cb5",
+            "source_uri": "repo://document-01863.txt",
+            "title": "document-01863.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_01863 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "8edc169a68775a023ee995a6d8f41c27d12be18e4f20b0ac51833df8f1e19717",
+            "source_updated_at": "2026-10-20T22:49:10.582636037Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014492753623,
+              "fusion_units": 14492753623,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 9,
+                  "contribution_units": 14492753623,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/037b9d3f-03bd-49e4-a822-5d235eeaf76c/4b451ed2-e1b0-5924-a5f8-648df15d3c25/05686b1e-3f96-45ed-9fff-4255e86baaa0?rev=a3eaa9478010c25bdd27a1c300261823b99afb3e1b633e0c889b35eb495c0611#bytes=0-1800",
+            "index_id": "037b9d3f-03bd-49e4-a822-5d235eeaf76c",
+            "source_id": "4b451ed2-e1b0-5924-a5f8-648df15d3c25",
+            "document_id": "05686b1e-3f96-45ed-9fff-4255e86baaa0",
+            "revision_sha256": "a3eaa9478010c25bdd27a1c300261823b99afb3e1b633e0c889b35eb495c0611",
+            "source_uri": "repo://document-09138.txt",
+            "title": "document-09138.txt",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "a+b scale_document_09138 local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrieval immutable generation vector citation  local evidence archive bounded retrie",
+            "content_sha256": "22e770ca407703994940ce02826ea788b4a091187ef7f7519bb7815badf3967a",
+            "source_updated_at": "2026-10-20T22:49:11.375872036Z",
+            "indexed_at": "2026-10-20T22:49:12.891015Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014285714286,
+              "fusion_units": 14285714286,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 10,
+                  "contribution_units": 14285714286,
+                  "backend_score": -6.655747433501791
+                }
+              ]
+            },
+            "duplicate_citations": []
+          }
+        ],
+        "next_cursor": "v1.AQoDe50_A71J5KgiXSNe6vdsAAAAAAAAAAAAAAAAAAAAAQEAAAAAAAAAATJeucIHKuzGgXm3dxBTC927VRcnacOnwUCKlM0rwC3SW2vos5ySQwpBU7ucVD7Wwtnv8V5jal8RtGj6enovPvCNmzA-8_6FENE5GLGCJCGQ1obX3ubnsoD8tx0nTnwhZg",
+        "stop_reason": "limit_reached",
+        "examined": {
+          "exact": 1,
+          "exact_fallback": 500,
+          "lexical": 50,
+          "vector": 0
+        },
+        "timing_ms": {
+          "query_embedding": 0,
+          "exact": 69,
+          "exact_fallback": 67,
+          "lexical": 158,
+          "vector": 0,
+          "fusion": 0,
+          "body_materialization": 30,
+          "total": 243
+        }
+      },
+      "stderr": ""
+    }
+  ],
+  "observed_at": "2026-10-22T15:37:02.851351+00:00",
+  "host": {
+    "architecture": "arm64",
+    "cpu": "Apple M2",
+    "os": "26.4.1"
+  },
+  "build_base_commit": "1d330d45c528d949dd0b07745e1a604f458e175a",
+  "source_file_sha256": "1c6a73ba7353b94951d4799d18170abb2dae514c85fe35195b8f2f783809314d",
+  "command_suffix": [
+    "search",
+    "<query>",
+    "--mode",
+    "lexical",
+    "--limit",
+    "10",
+    "--timeout-ms",
+    "10000",
+    "--json",
+    "--explain"
+  ],
+  "summary": {
+    "fallback_after_client_median_ms": 286.47558300872333,
+    "fallback_after_server_total_ms": [
+      253,
+      232,
+      243
+    ],
+    "fallback_after_exact_ms": [
+      82,
+      57,
+      69
+    ],
+    "fallback_before": "3/3 TIMEOUT at 10000 ms",
+    "identifier_before_and_after": "6/6 TIMEOUT at 10000 ms",
+    "validation": "All 30 successful result contents match source byte windows and content SHA-256; ordered citations and scores agree across three after runs. Before/after CLI result equality cannot be checked because the old binary times out."
+  }
+}

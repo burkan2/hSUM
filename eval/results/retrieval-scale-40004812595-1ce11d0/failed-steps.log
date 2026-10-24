@@ -1,0 +1,24 @@
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	﻿2026-10-23T19:58:36.1326420Z ##[group]Run python3 benches/retrieval_scale/harness.py run \
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1326695Z [36;1mpython3 benches/retrieval_scale/harness.py run \[0m
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1326899Z [36;1m  --hsum "$PWD/target/release/hsum" \[0m
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1327093Z [36;1m  --corpus "$RUNNER_TEMP/retrieval-scale/corpus" \[0m
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1327292Z [36;1m  --home "$RUNNER_TEMP/retrieval-scale/home" \[0m
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1327532Z [36;1m  --setup-report "$RUNNER_TEMP/retrieval-scale/setup-linux-x86_64.json" \[0m
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1327820Z [36;1m  --cold-cache-helper "$PWD/benches/retrieval_scale/drop-cache-linux.sh" \[0m
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1328089Z [36;1m  --output "$RUNNER_TEMP/retrieval-scale/linux-x86_64-100k.json"[0m
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1379463Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1379650Z env:
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1379761Z   CARGO_INCREMENTAL: 0
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1379896Z   MODEL_ID: bge-small-en-v1-5-fp32
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1380075Z   pythonLocation: /opt/hostedtoolcache/Python/3.13.16/x64
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1380480Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.13.16/x64/lib/pkgconfig
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1380709Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.16/x64
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1380916Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.16/x64
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1381123Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.13.16/x64
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1381328Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.13.16/x64/lib
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.1381505Z ##[endgroup]
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T19:58:36.3103380Z run 1/3: starting fresh MCP process
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T20:01:04.2173513Z run 2/3: starting fresh MCP process
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T20:03:31.7399231Z run 3/3: starting fresh MCP process
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T20:05:59.0470384Z qualification=FAIL; report: /home/runner/work/_temp/retrieval-scale/linux-x86_64-100k.json
+Linux x86_64 100k qualification	Run the canonical cold and warm protocol	2026-10-23T20:05:59.0569613Z ##[error]Process completed with exit code 1.

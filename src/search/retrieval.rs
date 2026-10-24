@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
@@ -17,7 +18,7 @@ use crate::domain::{
 };
 use crate::ingest::{MAX_IDENTIFIER_LITERAL_BYTES, QuoteBloom};
 use crate::search::query::{ExactAtomKind, ParsedQuery, QueryError};
-use crate::store::IndexDb;
+use crate::store::{EMBEDDING_DIMENSION, IndexDb};
 
 pub const DEFAULT_SEARCH_LIMIT: usize = 10;
 pub const MIN_SEARCH_LIMIT: usize = 1;
@@ -28,6 +29,8 @@ pub const MAX_SEARCH_DEADLINE_MS: u64 = 10_000;
 
 const INITIAL_CANDIDATE_DEPTH: usize = 50;
 const MAX_CANDIDATES_PER_LIST: usize = 500;
+const VECTOR_CANDIDATES_PER_SOURCE: usize = 50;
+const MAX_PROJECT_SOURCES: usize = 64;
 const MAX_SEARCH_SOURCE_URI_BYTES: usize = 16 * 1024;
 const MAX_SEARCH_TITLE_BYTES: usize = 16 * 1024;
 const MAX_SEARCH_CONTENT_BYTES: usize = 1_800;
@@ -40,6 +43,8 @@ const RANK_FUSION_K: u64 = 60;
 pub enum SearchMode {
     Auto,
     Lexical,
+    Hybrid,
+    Semantic,
 }
 
 impl SearchMode {
@@ -47,6 +52,8 @@ impl SearchMode {
         match self {
             Self::Auto => "auto",
             Self::Lexical => "lexical",
+            Self::Hybrid => "hybrid",
+            Self::Semantic => "semantic",
         }
     }
 }
@@ -62,6 +69,7 @@ pub enum Retriever {
     Exact,
     ExactFallback,
     Lexical,
+    Vector,
 }
 
 impl Retriever {
@@ -70,6 +78,7 @@ impl Retriever {
             Self::Exact => "exact",
             Self::ExactFallback => "exact_fallback",
             Self::Lexical => "lexical",
+            Self::Vector => "vector",
         }
     }
 }
@@ -87,6 +96,7 @@ pub struct SearchRequest {
     limit: usize,
     deadline_ms: u64,
     explain: bool,
+    query_embedding: Option<Vec<u8>>,
 }
 
 impl SearchRequest {
@@ -118,13 +128,14 @@ impl SearchRequest {
             limit,
             deadline_ms,
             explain,
+            query_embedding: None,
         })
     }
 
     pub fn with_defaults(query: &str) -> Result<Self, SearchError> {
         Self::new(
             query,
-            SearchMode::Auto,
+            SearchMode::Lexical,
             DEFAULT_SEARCH_LIMIT,
             DEFAULT_SEARCH_DEADLINE_MS,
             false,
@@ -150,6 +161,51 @@ impl SearchRequest {
     pub const fn explain(&self) -> bool {
         self.explain
     }
+
+    pub(crate) fn with_deadline_ms(mut self, deadline_ms: u64) -> Result<Self, SearchError> {
+        if !(MIN_SEARCH_DEADLINE_MS..=MAX_SEARCH_DEADLINE_MS).contains(&deadline_ms) {
+            return Err(SearchError::InvalidDeadline {
+                requested_ms: deadline_ms,
+                minimum_ms: MIN_SEARCH_DEADLINE_MS,
+                maximum_ms: MAX_SEARCH_DEADLINE_MS,
+            });
+        }
+        self.deadline_ms = deadline_ms;
+        Ok(self)
+    }
+
+    pub fn with_query_embedding(mut self, embedding: &[f32]) -> Result<Self, SearchError> {
+        if embedding.len() != EMBEDDING_DIMENSION as usize {
+            return Err(SearchError::InvalidQueryEmbedding("vector dimension"));
+        }
+        if embedding.iter().any(|component| !component.is_finite()) {
+            return Err(SearchError::InvalidQueryEmbedding("non-finite component"));
+        }
+        let norm = embedding
+            .iter()
+            .map(|component| component * component)
+            .sum::<f32>()
+            .sqrt();
+        if !norm.is_finite() || (norm - 1.0).abs() > 0.001 {
+            return Err(SearchError::InvalidQueryEmbedding("vector normalization"));
+        }
+        let mut blob = Vec::with_capacity(std::mem::size_of_val(embedding));
+        for component in embedding {
+            blob.extend_from_slice(&component.to_le_bytes());
+        }
+        self.query_embedding = Some(blob);
+        Ok(self)
+    }
+
+    fn query_embedding(&self) -> Result<&[u8], SearchError> {
+        self.query_embedding
+            .as_deref()
+            .ok_or(SearchError::QueryEmbeddingRequired)
+    }
+
+    fn query_embedding_if_present(&self) -> Option<&[u8]> {
+        self.query_embedding.as_deref()
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -165,15 +221,76 @@ pub struct CandidateCounts {
     pub exact: usize,
     pub exact_fallback: usize,
     pub lexical: usize,
+    pub vector: usize,
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct SearchTiming {
+    pub query_embedding_ms: u64,
     pub exact_ms: u64,
     pub exact_fallback_ms: u64,
     pub lexical_ms: u64,
+    pub vector_ms: u64,
     pub fusion_ms: u64,
+    pub body_materialization_ms: u64,
     pub total_ms: u64,
+}
+
+thread_local! {
+    static SEARCH_MATERIALIZATION_ELAPSED: Cell<Option<Duration>> = const { Cell::new(None) };
+}
+
+struct SearchMaterializationProbe {
+    prior: Option<Duration>,
+}
+
+impl SearchMaterializationProbe {
+    fn arm() -> Self {
+        let prior =
+            SEARCH_MATERIALIZATION_ELAPSED.with(|elapsed| elapsed.replace(Some(Duration::ZERO)));
+        Self { prior }
+    }
+
+    fn elapsed(&self) -> Duration {
+        SEARCH_MATERIALIZATION_ELAPSED.with(|elapsed| elapsed.get().unwrap_or(Duration::ZERO))
+    }
+}
+
+impl Drop for SearchMaterializationProbe {
+    fn drop(&mut self) {
+        SEARCH_MATERIALIZATION_ELAPSED.with(|elapsed| {
+            let current = elapsed.replace(self.prior);
+            if let (Some(prior), Some(current)) = (self.prior, current) {
+                elapsed.set(Some(prior.saturating_add(current)));
+            }
+        });
+    }
+}
+
+struct PassageMaterializationSample {
+    started: Instant,
+}
+
+impl PassageMaterializationSample {
+    fn start() -> Self {
+        Self {
+            started: Instant::now(),
+        }
+    }
+}
+
+impl Drop for PassageMaterializationSample {
+    fn drop(&mut self) {
+        record_materialization(self.started.elapsed());
+    }
+}
+
+fn record_materialization(sample: Duration) {
+    SEARCH_MATERIALIZATION_ELAPSED.with(|elapsed| {
+        if let Some(current) = elapsed.get() {
+            elapsed.set(Some(current.saturating_add(sample)));
+        }
+    });
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -185,6 +302,8 @@ pub struct SearchResponse {
     pub requested_mode: SearchMode,
     pub effective_mode: SearchMode,
     pub retrievers: Vec<Retriever>,
+    pub degraded_mode: Vec<String>,
+    pub hints: Vec<String>,
     pub results: Vec<EvidencePassage>,
     pub stop_reason: SearchStopReason,
     pub examined: CandidateCounts,
@@ -274,12 +393,20 @@ pub enum SearchError {
     Corrupt(&'static str),
     #[error("a retrieval backend returned a non-finite score")]
     NonFiniteScore,
+    #[error("semantic retrieval requires one validated query embedding")]
+    QueryEmbeddingRequired,
+    #[error("query embedding is invalid: {0}")]
+    InvalidQueryEmbedding(&'static str),
+    #[error("the active generation has no complete compatible vector membership")]
+    SemanticUnavailable,
     #[error("exact matcher could not be built")]
     ExactMatcher,
     #[error("search deadline expired")]
     DeadlineExceeded,
     #[error("SQLite operation failed")]
     Sqlite(#[from] rusqlite::Error),
+    #[error("the validated index path changed during search")]
+    Store(#[from] crate::store::StoreError),
 }
 
 impl IndexDb {
@@ -289,18 +416,22 @@ impl IndexDb {
         request: &SearchRequest,
     ) -> Result<SearchResponse, SearchError> {
         let _value_limit = SearchValueLimit::arm(self.connection())?;
+        let materialization = SearchMaterializationProbe::arm();
         let started = Instant::now();
         let deadline = started + Duration::from_millis(request.deadline_ms);
         let interrupt = DeadlineInterrupt::arm(self.connection(), deadline);
         let result = execute_search(self, project_id, request, started, deadline);
         drop(interrupt);
 
-        match result {
+        let mut result = match result {
             Err(SearchError::Sqlite(error)) if is_interrupted(&error) => {
                 Err(SearchError::DeadlineExceeded)
             }
             result => result,
-        }
+        }?;
+        result.timing.body_materialization_ms = millis(materialization.elapsed());
+        self.verify_live_identity()?;
+        Ok(result)
     }
 }
 
@@ -344,6 +475,55 @@ fn execute_search(
     let transaction = database.connection().unchecked_transaction()?;
     let context = load_search_context(&transaction, project_id)?;
 
+    if request.mode == SearchMode::Semantic {
+        let response = execute_semantic_search(
+            &transaction,
+            project_id,
+            request,
+            &context,
+            started,
+            deadline,
+        )?;
+        transaction.commit()?;
+        return Ok(response);
+    }
+
+    let use_vector = match request.mode {
+        SearchMode::Auto => {
+            context.vectors_complete && request.query_embedding_if_present().is_some()
+        }
+        SearchMode::Lexical => false,
+        SearchMode::Hybrid => {
+            let _ = request.query_embedding()?;
+            if !context.vectors_complete {
+                return Err(SearchError::SemanticUnavailable);
+            }
+            true
+        }
+        SearchMode::Semantic => unreachable!("semantic search returned above"),
+    };
+
+    let vector_started = Instant::now();
+    let vector_page = if use_vector {
+        Some(fetch_project_vector_candidates(
+            &transaction,
+            project_id,
+            context.vector_slot,
+            request.query_embedding()?,
+            deadline,
+        )?)
+    } else {
+        None
+    };
+    let vector_elapsed = if use_vector {
+        vector_started.elapsed()
+    } else {
+        Duration::ZERO
+    };
+    let mut vector_depth = vector_page
+        .as_ref()
+        .map_or(0, |page| page.candidates.len().min(INITIAL_CANDIDATE_DEPTH));
+
     let exact_started = Instant::now();
     let mut exact = ExactPager::new(&request.query)?;
     #[cfg(test)]
@@ -356,18 +536,27 @@ fn execute_search(
 
     let lexical_expression = compile_lexical_expression(request.query.original());
     let lexical_started = Instant::now();
+    let mut lexical_statement = transaction.prepare(&lexical_page_sql())?;
+    // Keep one bounded ranking cursor while fusion reveals 50 candidates at a time.
+    let mut lexical_rows = lexical_expression
+        .as_deref()
+        .map(|expression| {
+            lexical_statement
+                .query(params![
+                    uuid_bytes(project_id).as_slice(),
+                    expression,
+                    i64::try_from(MAX_CANDIDATES_PER_LIST)
+                        .map_err(|_| SearchError::Corrupt("candidate limit overflow"))?,
+                    0,
+                ])
+                .map_err(SearchError::from)
+        })
+        .transpose()?;
     let mut lexical = Vec::new();
     let mut lexical_exhausted = lexical_expression.is_none();
     let mut lexical_deadline = exact.deadline || Instant::now() >= deadline;
-    if !lexical_deadline && let Some(expression) = lexical_expression.as_deref() {
-        let page = fetch_lexical_page(
-            &transaction,
-            project_id,
-            expression,
-            0,
-            INITIAL_CANDIDATE_DEPTH,
-            deadline,
-        )?;
+    if !lexical_deadline && let Some(rows) = lexical_rows.as_mut() {
+        let page = fetch_lexical_page(rows, INITIAL_CANDIDATE_DEPTH, deadline)?;
         lexical_exhausted = page.exhausted;
         lexical_deadline = page.deadline;
         lexical.extend(page.candidates);
@@ -384,6 +573,9 @@ fn execute_search(
             &context,
             &exact_candidates[..exact_depth],
             &lexical,
+            vector_page
+                .as_ref()
+                .map_or(&[], |page| &page.candidates[..vector_depth]),
             request.explain,
             deadline,
         )?;
@@ -416,17 +608,14 @@ fn execute_search(
             && !lexical_exhausted
             && lexical.len() < MAX_CANDIDATES_PER_LIST
         {
-            let Some(expression) = lexical_expression.as_deref() else {
+            let Some(rows) = lexical_rows.as_mut() else {
                 return Err(SearchError::Corrupt(
-                    "lexical expression disappeared during paging",
+                    "lexical cursor disappeared during paging",
                 ));
             };
             let page_started = Instant::now();
             let page = fetch_lexical_page(
-                &transaction,
-                project_id,
-                expression,
-                lexical.len(),
+                rows,
                 (MAX_CANDIDATES_PER_LIST - lexical.len()).min(INITIAL_CANDIDATE_DEPTH),
                 deadline,
             )?;
@@ -437,10 +626,23 @@ fn execute_search(
             lexical.extend(page.candidates);
         }
 
+        if !exact.deadline
+            && !lexical_deadline
+            && Instant::now() < deadline
+            && let Some(page) = vector_page.as_ref()
+            && vector_depth < page.candidates.len()
+        {
+            let next_depth = (vector_depth + INITIAL_CANDIDATE_DEPTH).min(page.candidates.len());
+            progressed |= next_depth > vector_depth;
+            vector_depth = next_depth;
+        }
+
         if !progressed {
             stop_reason = if exact.work_exhausted()
                 || (!lexical_exhausted && lexical.len() == MAX_CANDIDATES_PER_LIST)
-            {
+                || vector_page.as_ref().is_some_and(|page| {
+                    vector_depth == page.candidates.len() && page.work_exhausted
+                }) {
                 SearchStopReason::WorkBudgetExhausted
             } else {
                 SearchStopReason::UniqueExhausted
@@ -449,12 +651,22 @@ fn execute_search(
         }
     }
 
+    drop(lexical_rows);
+    #[cfg(test)]
+    SEARCH_TEST_HOOKS.with(|hooks| {
+        hooks.borrow_mut().lexical_sort_operations +=
+            lexical_statement.get_status(rusqlite::StatementStatus::Sort);
+    });
+    drop(lexical_statement);
     transaction.commit()?;
     let mut retrievers = vec![Retriever::Exact];
     if exact.fallback_used {
         retrievers.push(Retriever::ExactFallback);
     }
     retrievers.push(Retriever::Lexical);
+    if use_vector {
+        retrievers.push(Retriever::Vector);
+    }
 
     Ok(SearchResponse {
         project_id,
@@ -462,23 +674,354 @@ fn execute_search(
         generation: context.generation,
         index_epoch: context.index_epoch,
         requested_mode: request.mode,
-        effective_mode: SearchMode::Lexical,
+        effective_mode: if use_vector {
+            SearchMode::Hybrid
+        } else {
+            SearchMode::Lexical
+        },
         retrievers,
+        degraded_mode: Vec::new(),
+        hints: Vec::new(),
         results,
         stop_reason,
         examined: CandidateCounts {
             exact: exact_depth,
             exact_fallback: exact.fallback_examined,
             lexical: lexical.len(),
+            vector: vector_depth,
         },
         timing: SearchTiming {
+            query_embedding_ms: 0,
             exact_ms: millis(exact_elapsed),
             exact_fallback_ms: millis(exact.fallback_elapsed),
             lexical_ms: millis(lexical_elapsed),
+            vector_ms: millis(vector_elapsed),
             fusion_ms: millis(fusion_elapsed),
+            body_materialization_ms: 0,
             total_ms: millis(started.elapsed()),
         },
     })
+}
+
+fn execute_semantic_search(
+    connection: &Connection,
+    project_id: ProjectId,
+    request: &SearchRequest,
+    context: &SearchContext,
+    started: Instant,
+    deadline: Instant,
+) -> Result<SearchResponse, SearchError> {
+    let query_embedding = request.query_embedding()?;
+    if !context.vectors_complete {
+        return Err(SearchError::SemanticUnavailable);
+    }
+
+    let vector_started = Instant::now();
+    let vector_page = fetch_project_vector_candidates(
+        connection,
+        project_id,
+        context.vector_slot,
+        query_embedding,
+        deadline,
+    )?;
+    let vector_elapsed = vector_started.elapsed();
+    let examined = vector_page.candidates.len();
+    let mut depth = examined.min(INITIAL_CANDIDATE_DEPTH);
+    let mut fusion_elapsed = Duration::ZERO;
+    let stop_reason;
+    let mut results;
+
+    loop {
+        let fusion_started = Instant::now();
+        results = fuse_and_dedupe(
+            context,
+            &[],
+            &[],
+            &vector_page.candidates[..depth],
+            request.explain,
+            deadline,
+        )?;
+        fusion_elapsed += fusion_started.elapsed();
+
+        if results.len() >= request.limit {
+            results.truncate(request.limit);
+            stop_reason = SearchStopReason::LimitReached;
+            break;
+        }
+        if depth == examined {
+            stop_reason = if vector_page.work_exhausted {
+                SearchStopReason::WorkBudgetExhausted
+            } else {
+                SearchStopReason::UniqueExhausted
+            };
+            break;
+        }
+        if Instant::now() >= deadline {
+            stop_reason = SearchStopReason::Deadline;
+            break;
+        }
+        depth = (depth + INITIAL_CANDIDATE_DEPTH).min(examined);
+    }
+
+    Ok(SearchResponse {
+        project_id,
+        scope_revision: context.scope_revision,
+        generation: context.generation,
+        index_epoch: context.index_epoch,
+        requested_mode: request.mode,
+        effective_mode: SearchMode::Semantic,
+        retrievers: vec![Retriever::Vector],
+        degraded_mode: Vec::new(),
+        hints: Vec::new(),
+        results,
+        stop_reason,
+        examined: CandidateCounts {
+            exact: 0,
+            exact_fallback: 0,
+            lexical: 0,
+            vector: depth,
+        },
+        timing: SearchTiming {
+            query_embedding_ms: 0,
+            exact_ms: 0,
+            exact_fallback_ms: 0,
+            lexical_ms: 0,
+            vector_ms: millis(vector_elapsed),
+            fusion_ms: millis(fusion_elapsed),
+            body_materialization_ms: 0,
+            total_ms: millis(started.elapsed()),
+        },
+    })
+}
+
+struct VectorPage {
+    candidates: Vec<VectorCandidate>,
+    work_exhausted: bool,
+}
+
+#[derive(Clone)]
+struct VectorCandidate {
+    passage: Passage,
+    distance: f64,
+}
+
+#[derive(Clone, Copy)]
+struct RawVectorCandidate {
+    rowid: i64,
+    distance: f64,
+}
+
+fn fetch_project_vector_candidates(
+    connection: &Connection,
+    project_id: ProjectId,
+    slot: VectorSlot,
+    query_embedding: &[u8],
+    deadline: Instant,
+) -> Result<VectorPage, SearchError> {
+    let mut source_statement = connection.prepare(
+        "SELECT s.id
+         FROM project_sources AS ps
+         JOIN sources AS s ON s.id = ps.source_id
+         WHERE ps.project_id = ?1
+           AND ps.removed_at IS NULL
+           AND s.removed_at IS NULL
+         ORDER BY s.id
+         LIMIT 65",
+    )?;
+    let source_rows = source_statement.query_map([uuid_bytes(project_id).as_slice()], |row| {
+        row.get::<_, Vec<u8>>(0)
+    })?;
+    let mut source_ids = Vec::new();
+    for source_id in source_rows {
+        source_ids.push(SourceId::from_uuid(uuid_from_blob(&source_id?)?));
+    }
+    if source_ids.len() > MAX_PROJECT_SOURCES {
+        return Err(SearchError::Corrupt("project source cardinality"));
+    }
+
+    let mut candidates = Vec::with_capacity(
+        source_ids
+            .len()
+            .saturating_mul(VECTOR_CANDIDATES_PER_SOURCE),
+    );
+    for source_id in source_ids {
+        if Instant::now() >= deadline {
+            return Err(SearchError::DeadlineExceeded);
+        }
+        let raw = deterministic_source_knn(
+            connection,
+            slot,
+            query_embedding,
+            source_id,
+            VECTOR_CANDIDATES_PER_SOURCE,
+        )?;
+        candidates.extend(materialize_source_vector_candidates(
+            connection, project_id, source_id, &raw,
+        )?);
+    }
+    candidates.sort_by(compare_vector_candidates);
+    let work_exhausted = candidates.len() > MAX_CANDIDATES_PER_LIST;
+    candidates.truncate(MAX_CANDIDATES_PER_LIST);
+    Ok(VectorPage {
+        candidates,
+        work_exhausted,
+    })
+}
+
+fn deterministic_source_knn(
+    connection: &Connection,
+    slot: VectorSlot,
+    query_embedding: &[u8],
+    source_id: SourceId,
+    k: usize,
+) -> Result<Vec<RawVectorCandidate>, SearchError> {
+    let sql = format!(
+        "SELECT rowid, distance FROM {}
+         WHERE embedding MATCH ?1 AND source_id = ?2 AND k = ?3
+         ORDER BY distance",
+        slot.table()
+    );
+    let mut candidates = query_raw_vector_candidates(
+        connection,
+        &sql,
+        params![
+            query_embedding,
+            source_id.to_string(),
+            i64::try_from(k + 1)
+                .map_err(|_| SearchError::Corrupt("vector candidate limit overflow"))?,
+        ],
+    )?;
+    if has_vector_boundary_tie(&candidates, k) {
+        return exact_source_knn(connection, slot, query_embedding, source_id, k);
+    }
+    candidates.truncate(k);
+    candidates.sort_by(compare_raw_vector_candidates);
+    Ok(candidates)
+}
+
+fn has_vector_boundary_tie(candidates: &[RawVectorCandidate], k: usize) -> bool {
+    k > 0
+        && candidates
+            .get(k - 1)
+            .zip(candidates.get(k))
+            .is_some_and(|(left, right)| left.distance == right.distance)
+}
+
+fn exact_source_knn(
+    connection: &Connection,
+    slot: VectorSlot,
+    query_embedding: &[u8],
+    source_id: SourceId,
+    k: usize,
+) -> Result<Vec<RawVectorCandidate>, SearchError> {
+    let sql = format!(
+        "SELECT rowid, vec_distance_cosine(embedding, ?1) AS exact_distance
+         FROM {} WHERE source_id = ?2
+         ORDER BY exact_distance, rowid LIMIT ?3",
+        slot.table()
+    );
+    query_raw_vector_candidates(
+        connection,
+        &sql,
+        params![
+            query_embedding,
+            source_id.to_string(),
+            i64::try_from(k)
+                .map_err(|_| SearchError::Corrupt("vector candidate limit overflow"))?,
+        ],
+    )
+}
+
+fn query_raw_vector_candidates<P: rusqlite::Params>(
+    connection: &Connection,
+    sql: &str,
+    parameters: P,
+) -> Result<Vec<RawVectorCandidate>, SearchError> {
+    let mut statement = connection.prepare(sql)?;
+    let rows = statement.query_map(parameters, |row| {
+        Ok(RawVectorCandidate {
+            rowid: row.get(0)?,
+            distance: row.get(1)?,
+        })
+    })?;
+    let mut candidates = Vec::new();
+    for candidate in rows {
+        let candidate = candidate?;
+        if !candidate.distance.is_finite() {
+            return Err(SearchError::NonFiniteScore);
+        }
+        candidates.push(candidate);
+    }
+    Ok(candidates)
+}
+
+fn materialize_source_vector_candidates(
+    connection: &Connection,
+    project_id: ProjectId,
+    source_id: SourceId,
+    raw: &[RawVectorCandidate],
+) -> Result<Vec<VectorCandidate>, SearchError> {
+    if raw.is_empty() {
+        return Ok(Vec::new());
+    }
+    let placeholders = std::iter::repeat_n("?", raw.len())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let columns = passage_columns();
+    let sql = format!(
+        "SELECT {columns}
+         FROM active_passages AS ap
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c ON c.id = ap.chunk_id
+         JOIN sources AS s ON s.id = ap.source_id AND s.removed_at IS NULL
+         WHERE ps.project_id = ?
+           AND ap.source_id = ?
+           AND ap.id IN ({placeholders})"
+    );
+    let mut values = Vec::with_capacity(raw.len() + 2);
+    values.push(Value::Blob(uuid_bytes(project_id).to_vec()));
+    values.push(Value::Blob(source_id.as_uuid().as_bytes().to_vec()));
+    values.extend(raw.iter().map(|candidate| Value::Integer(candidate.rowid)));
+
+    let mut statement = connection.prepare(&sql)?;
+    let rows = statement.query_map(params_from_iter(values), |row| read_guarded_passage(row, 0))?;
+    let mut passages = BTreeMap::new();
+    for passage in rows {
+        let passage = passage??;
+        let passage_id = passage.id;
+        if passage.source_id != source_id || passages.insert(passage_id, passage).is_some() {
+            return Err(SearchError::Corrupt("vector candidate materialization"));
+        }
+    }
+
+    raw.iter()
+        .map(|candidate| {
+            let passage = passages
+                .remove(&candidate.rowid)
+                .ok_or(SearchError::Corrupt(
+                    "vector candidate is not active in project",
+                ))?;
+            Ok(VectorCandidate {
+                passage,
+                distance: candidate.distance,
+            })
+        })
+        .collect()
+}
+
+fn compare_raw_vector_candidates(
+    left: &RawVectorCandidate,
+    right: &RawVectorCandidate,
+) -> Ordering {
+    left.distance
+        .total_cmp(&right.distance)
+        .then_with(|| left.rowid.cmp(&right.rowid))
+}
+
+fn compare_vector_candidates(left: &VectorCandidate, right: &VectorCandidate) -> Ordering {
+    left.distance
+        .total_cmp(&right.distance)
+        .then_with(|| compare_passage_identity(&left.passage, &right.passage))
 }
 
 struct DeadlineInterrupt {
@@ -554,6 +1097,23 @@ struct SearchContext {
     scope_revision: u64,
     generation: Option<i64>,
     index_epoch: u64,
+    vector_slot: VectorSlot,
+    vectors_complete: bool,
+}
+
+#[derive(Clone, Copy)]
+enum VectorSlot {
+    A,
+    B,
+}
+
+impl VectorSlot {
+    const fn table(self) -> &'static str {
+        match self {
+            Self::A => "passages_vec_a",
+            Self::B => "passages_vec_b",
+        }
+    }
 }
 
 fn load_search_context(
@@ -579,13 +1139,71 @@ fn load_search_context(
         Some(parse_metadata_i64(&generation_bytes, "active_generation")?)
     };
     let index_epoch = parse_metadata_u64(&metadata(connection, "index_epoch")?, "index_epoch")?;
+    let vector_slot = match metadata(connection, "active_vector_slot")?.as_slice() {
+        b"0" => VectorSlot::A,
+        b"1" => VectorSlot::B,
+        _ => return Err(SearchError::Corrupt("active_vector_slot")),
+    };
+    let vectors_complete = load_vectors_complete(connection, generation)?;
 
     Ok(SearchContext {
         index_id,
         scope_revision,
         generation,
         index_epoch,
+        vector_slot,
+        vectors_complete,
     })
+}
+
+fn load_vectors_complete(
+    connection: &Connection,
+    generation: Option<i64>,
+) -> Result<bool, SearchError> {
+    let profile = metadata(connection, "embedding_profile")?;
+    let expected_pin = match profile.as_slice() {
+        b"none" => None,
+        b"pinned" => {
+            let fingerprint = metadata(connection, "embedding_model_fingerprint")?;
+            if fingerprint.len() != 32
+                || parse_metadata_i64(
+                    &metadata(connection, "embedding_dimension")?,
+                    "embedding_dimension",
+                )? != i64::from(EMBEDDING_DIMENSION)
+            {
+                return Err(SearchError::Corrupt("embedding profile metadata"));
+            }
+            Some(fingerprint)
+        }
+        _ => return Err(SearchError::Corrupt("embedding_profile")),
+    };
+    let Some(generation) = generation else {
+        return Ok(false);
+    };
+    let (state, fingerprint, dimension) = connection
+        .query_row(
+            "SELECT vector_state, embedding_model_fingerprint, embedding_dimension
+             FROM generations
+             WHERE id = ?1 AND state = 'committed'",
+            [generation],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, Option<Vec<u8>>>(1)?,
+                    row.get::<_, Option<i64>>(2)?,
+                ))
+            },
+        )
+        .optional()?
+        .ok_or(SearchError::Corrupt("active generation is missing"))?;
+    match state.as_str() {
+        "absent" => Ok(false),
+        "complete" => Ok(expected_pin.is_some_and(|expected| {
+            fingerprint.as_deref() == Some(expected.as_slice())
+                && dimension == Some(i64::from(EMBEDDING_DIMENSION))
+        })),
+        _ => Err(SearchError::Corrupt("generation vector state")),
+    }
 }
 
 fn metadata(connection: &Connection, key: &'static str) -> Result<Vec<u8>, SearchError> {
@@ -1003,6 +1621,7 @@ fn fetch_identifier_hint_page(
         .collect::<Vec<_>>()
         .join(", ");
     let passage_columns = passage_columns();
+    // Keep literal matches outside passage materialization instead of scanning the project.
     let sql = format!(
         "WITH atoms(literal, byte_len) AS (
              VALUES {atom_values}
@@ -1013,7 +1632,7 @@ fn fetch_identifier_hint_page(
              JOIN passage_literals AS pl ON pl.literal = atoms.literal
              JOIN active_passages AS ap ON ap.id = pl.passage_id
              JOIN project_sources AS ps ON ps.source_id = ap.source_id
-             WHERE ps.project_id = ?
+             WHERE ps.project_id = ? AND ps.removed_at IS NULL
          ),
          ranked(passage_id, matched_atoms, matched_bytes, longest_atom) AS (
              SELECT passage_id, COUNT(*), SUM(byte_len), MAX(byte_len)
@@ -1025,8 +1644,9 @@ fn fetch_identifier_hint_page(
                 ranked.matched_bytes,
                 ranked.longest_atom
          FROM ranked
-         JOIN active_passages AS ap ON ap.id = ranked.passage_id
-         {PASSAGE_JOINS}
+         CROSS JOIN active_passages AS ap ON ap.id = ranked.passage_id
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c ON c.id = ap.chunk_id
          WHERE ps.project_id = ?
          ORDER BY ranked.matched_atoms DESC,
                   ranked.matched_bytes DESC,
@@ -1058,6 +1678,11 @@ fn fetch_identifier_hint_page(
     for row in rows {
         passages.push(row??);
     }
+    #[cfg(test)]
+    SEARCH_TEST_HOOKS.with(|hooks| {
+        hooks.borrow_mut().identifier_vm_steps =
+            statement.get_status(rusqlite::StatementStatus::VmStep);
+    });
     Ok(passages)
 }
 
@@ -1069,20 +1694,7 @@ fn fetch_phrase_candidates(
     limit: usize,
 ) -> Result<Vec<Passage>, SearchError> {
     let expression = format!("\"{}\"", phrase.replace('"', "\"\""));
-    let passage_columns = passage_columns();
-    let mut statement = connection.prepare(&format!(
-        "SELECT {passage_columns}, bm25(passages_fts) AS lexical_score
-         FROM passages_fts
-         JOIN active_passages AS ap ON ap.id = passages_fts.rowid
-         {PASSAGE_JOINS}
-         WHERE ps.project_id = ?1
-           AND passages_fts MATCH ?2
-         ORDER BY lexical_score ASC,
-                  ap.source_id ASC,
-                  ap.document_id ASC,
-                  c.start_byte ASC
-         LIMIT ?3 OFFSET ?4"
-    ))?;
+    let mut statement = connection.prepare(&lexical_page_sql())?;
     let rows = statement.query_map(
         params![
             uuid_bytes(project_id).as_slice(),
@@ -1100,6 +1712,38 @@ fn fetch_phrase_candidates(
     collect_scored_passages(rows)
 }
 
+fn lexical_page_sql() -> String {
+    let passage_columns = passage_columns();
+    // Keep the FTS cursor outside rowid lookups so BM25 statistics are computed once.
+    // Rank using covering indexes, then load guarded passage bodies only for the selected page.
+    format!(
+        "WITH ranked AS MATERIALIZED (
+             SELECT ap.id, bm25(passages_fts) AS lexical_score
+             FROM passages_fts
+             CROSS JOIN active_passages AS ap ON ap.id = passages_fts.rowid
+             {PASSAGE_SCOPE_JOINS}
+             JOIN chunks AS c INDEXED BY chunks_order_idx ON c.id = ap.chunk_id
+             WHERE ps.project_id = ?1
+               AND passages_fts MATCH ?2
+             ORDER BY lexical_score ASC,
+                      ap.source_id ASC,
+                      ap.document_id ASC,
+                      c.start_byte ASC
+             LIMIT ?3 OFFSET ?4
+         )
+         SELECT {passage_columns}, ranked.lexical_score
+         FROM ranked
+         CROSS JOIN active_passages AS ap ON ap.id = ranked.id
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c ON c.id = ap.chunk_id
+         WHERE ps.project_id = ?1
+         ORDER BY ranked.lexical_score ASC,
+                  ap.source_id ASC,
+                  ap.document_id ASC,
+                  c.start_byte ASC"
+    )
+}
+
 fn fetch_project_passages(
     connection: &Connection,
     project_id: ProjectId,
@@ -1107,11 +1751,17 @@ fn fetch_project_passages(
     limit: usize,
 ) -> Result<Vec<Passage>, SearchError> {
     let passage_columns = passage_columns();
+    // Expose the leading index constraint so SQLite can page in identity order.
     let mut statement = connection.prepare(&format!(
         "SELECT {passage_columns}
          FROM active_passages AS ap
-         {PASSAGE_JOINS}
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c ON c.id = ap.chunk_id
          WHERE ps.project_id = ?1
+           AND ap.source_id IN (
+               SELECT source_id FROM project_sources
+               WHERE project_id = ?1 AND removed_at IS NULL
+           )
          ORDER BY ap.source_id ASC,
                   ap.document_id ASC,
                   c.start_byte ASC
@@ -1129,6 +1779,11 @@ fn fetch_project_passages(
     for row in rows {
         passages.push(row??);
     }
+    #[cfg(test)]
+    SEARCH_TEST_HOOKS.with(|hooks| {
+        hooks.borrow_mut().raw_scan_vm_steps =
+            statement.get_status(rusqlite::StatementStatus::VmStep);
+    });
     Ok(passages)
 }
 
@@ -1154,39 +1809,17 @@ struct LexicalCandidate {
 }
 
 fn fetch_lexical_page(
-    connection: &Connection,
-    project_id: ProjectId,
-    expression: &str,
-    offset: usize,
+    rows: &mut rusqlite::Rows<'_>,
     limit: usize,
     deadline: Instant,
 ) -> Result<LexicalPage, SearchError> {
     #[cfg(test)]
     SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow_mut().lexical_fetches += 1);
 
-    let passage_columns = passage_columns();
-    let mut statement = connection.prepare(&format!(
-        "SELECT {passage_columns}, bm25(passages_fts) AS lexical_score
-         FROM passages_fts
-         JOIN active_passages AS ap ON ap.id = passages_fts.rowid
-         {PASSAGE_JOINS}
-         WHERE ps.project_id = ?1
-           AND passages_fts MATCH ?2
-         ORDER BY lexical_score ASC,
-                  ap.source_id ASC,
-                  ap.document_id ASC,
-                  c.start_byte ASC
-         LIMIT ?3 OFFSET ?4"
-    ))?;
-    let mut rows = statement.query(params![
-        uuid_bytes(project_id).as_slice(),
-        expression,
-        i64::try_from(limit).map_err(|_| SearchError::Corrupt("candidate limit overflow"))?,
-        i64::try_from(offset).map_err(|_| SearchError::Corrupt("candidate offset overflow"))?,
-    ])?;
     let mut candidates = Vec::new();
     let mut deadline_reached = false;
-    while let Some(row) = rows.next()? {
+    while candidates.len() < limit {
+        let Some(row) = rows.next()? else { break };
         if Instant::now() >= deadline {
             deadline_reached = true;
             break;
@@ -1295,16 +1928,17 @@ fn passage_columns() -> String {
         dh.generation_id"
     )
 }
-const PASSAGE_JOINS: &str = "
-    JOIN project_sources AS ps ON ps.source_id = ap.source_id
+const PASSAGE_SCOPE_JOINS: &str = "
+    JOIN project_sources AS ps
+      ON ps.source_id = ap.source_id
+     AND ps.removed_at IS NULL
     JOIN document_heads AS dh
       ON dh.document_id = ap.document_id
      AND dh.document_version_id = ap.document_version_id
      AND dh.state = 'active'
     JOIN document_versions AS dv
       ON dv.id = ap.document_version_id
-     AND dv.document_id = ap.document_id
-    JOIN chunks AS c ON c.id = ap.chunk_id";
+     AND dv.document_id = ap.document_id";
 
 #[derive(Clone)]
 struct Passage {
@@ -1328,6 +1962,7 @@ fn read_guarded_passage(
     row: &Row<'_>,
     offset: usize,
 ) -> rusqlite::Result<Result<Passage, SearchError>> {
+    let _sample = PassageMaterializationSample::start();
     if row.get::<_, bool>(offset)? {
         return Ok(Err(SearchError::Corrupt(
             "stored search candidate exceeds alpha field bounds",
@@ -1450,15 +2085,18 @@ struct FusionCandidate {
     passage: Passage,
     exact_rank: Option<usize>,
     lexical_rank: Option<usize>,
+    vector_rank: Option<usize>,
     matched_exact_bytes: usize,
     exact_fallback: bool,
     lexical_score: Option<f64>,
+    vector_distance: Option<f64>,
 }
 
 fn fuse_and_dedupe(
     context: &SearchContext,
     exact: &[ExactCandidate],
     lexical: &[LexicalCandidate],
+    vector: &[VectorCandidate],
     explain: bool,
     deadline: Instant,
 ) -> Result<Vec<EvidencePassage>, SearchError> {
@@ -1471,9 +2109,11 @@ fn fuse_and_dedupe(
                 passage: candidate.passage.clone(),
                 exact_rank: Some(index + 1),
                 lexical_rank: None,
+                vector_rank: None,
                 matched_exact_bytes: candidate.matched_bytes,
                 exact_fallback: candidate.fallback,
                 lexical_score: None,
+                vector_distance: None,
             },
         );
     }
@@ -1485,12 +2125,31 @@ fn fuse_and_dedupe(
                 passage: candidate.passage.clone(),
                 exact_rank: None,
                 lexical_rank: None,
+                vector_rank: None,
                 matched_exact_bytes: 0,
                 exact_fallback: false,
                 lexical_score: None,
+                vector_distance: None,
             });
         entry.lexical_rank = Some(index + 1);
         entry.lexical_score = Some(candidate.score);
+    }
+    for (index, candidate) in vector.iter().enumerate() {
+        check_materialization_deadline(index, deadline)?;
+        let entry = candidates
+            .entry(candidate.passage.id)
+            .or_insert_with(|| FusionCandidate {
+                passage: candidate.passage.clone(),
+                exact_rank: None,
+                lexical_rank: None,
+                vector_rank: None,
+                matched_exact_bytes: 0,
+                exact_fallback: false,
+                lexical_score: None,
+                vector_distance: None,
+            });
+        entry.vector_rank = Some(index + 1);
+        entry.vector_distance = Some(candidate.distance);
     }
 
     let mut candidates = candidates
@@ -1608,6 +2267,16 @@ impl From<FusionCandidate> for RankedFusionCandidate {
                 backend_score: candidate.lexical_score,
             });
         }
+        if let Some(rank) = candidate.vector_rank {
+            let contribution = lexical_contribution(rank);
+            fusion_units += contribution;
+            lists.push(RankExplanation {
+                retriever: Retriever::Vector,
+                rank,
+                contribution_units: contribution,
+                backend_score: candidate.vector_distance,
+            });
+        }
 
         Self {
             passage: candidate.passage,
@@ -1691,6 +2360,9 @@ fn millis(duration: Duration) -> u64 {
 struct SearchTestHooks {
     inject_slow_exact_query: bool,
     lexical_fetches: usize,
+    lexical_sort_operations: i32,
+    raw_scan_vm_steps: i32,
+    identifier_vm_steps: i32,
 }
 
 #[cfg(test)]
@@ -1725,6 +2397,373 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
+    fn duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary() {
+        use crate::ingest::{ChunkKind, SnapshotRevision, revision_sha256};
+        use crate::store::{DeleteConfirmations, FilesystemScope, PreparedChunk, PreparedDocument};
+
+        let directory = private_test_directory();
+        let mut database =
+            IndexDb::create(&directory.path().join("index.sqlite"), IndexId::new_v4()).unwrap();
+        let project_id = ProjectId::new_v4();
+        let source_id = SourceId::new_v4();
+        let scope = FilesystemScope {
+            source_id,
+            source_name: "selected".parse().unwrap(),
+            source_logical_uri: "file:///selected".to_owned(),
+            source_config_json: r#"{"root":"/selected"}"#.to_owned(),
+            project_id,
+            project_name: "selected".parse().unwrap(),
+        };
+        let body = b"shared lexical evidence\n";
+        let digest = Sha256Digest::of_bytes(body);
+        let documents = (0..600)
+            .map(|number| {
+                let title = format!("document-{number}.md");
+                let source_uri = format!("repo://{title}");
+                let literals = crate::store::prepare_passage_literals(&title, &source_uri, body);
+                PreparedDocument {
+                    connector_key: title.as_bytes().to_vec(),
+                    revision_sha256: revision_sha256(&SnapshotRevision {
+                        body,
+                        source_uri: &source_uri,
+                        title: &title,
+                        metadata: &serde_json::json!({}),
+                        source_updated_at: None,
+                    })
+                    .unwrap(),
+                    title,
+                    source_uri,
+                    metadata_json: "{}".to_owned(),
+                    source_updated_at: None,
+                    body: body.to_vec(),
+                    body_sha256: digest,
+                    chunker_fingerprint: crate::store::chunker_fingerprint(ChunkKind::Markdown),
+                    chunks: vec![PreparedChunk {
+                        ordinal: 0,
+                        byte_span: ByteSpan::new(0, body.len() as u64).unwrap(),
+                        line_span: LineSpan::new(1, 1).unwrap(),
+                        body_text: String::from_utf8(body.to_vec()).unwrap(),
+                        content_sha256: digest,
+                        quote_bloom: QuoteBloom::from_content(body).into_bytes(),
+                        literals,
+                    }],
+                }
+            })
+            .collect::<Vec<_>>();
+        database
+            .apply_filesystem_snapshot(&scope, &documents, &[], DeleteConfirmations::default())
+            .unwrap();
+        SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow_mut().lexical_sort_operations = 0);
+        let response = database
+            .search(
+                project_id,
+                &SearchRequest::new(
+                    "shared lexical evidence",
+                    SearchMode::Lexical,
+                    50,
+                    10_000,
+                    true,
+                )
+                .unwrap(),
+            )
+            .unwrap();
+        assert_eq!(response.stop_reason, SearchStopReason::WorkBudgetExhausted);
+        assert_eq!(response.examined.lexical, 500);
+        assert_eq!(response.results.len(), 1);
+        assert_eq!(response.results[0].content.as_bytes(), body);
+        assert_eq!(response.results[0].duplicate_citations.len(), 499);
+        let actual = std::iter::once(response.results[0].document_id)
+            .chain(
+                response.results[0]
+                    .duplicate_citations
+                    .iter()
+                    .map(|entry| entry.citation.document_id),
+            )
+            .collect::<Vec<_>>();
+        let expected = database
+            .connection()
+            .prepare("SELECT document_id FROM active_passages ORDER BY document_id LIMIT 500")
+            .unwrap()
+            .query_map([], |row| {
+                Ok(DocumentId::from_uuid(
+                    uuid_from_blob(&row.get::<_, Vec<u8>>(0)?).unwrap(),
+                ))
+            })
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        assert_eq!(actual, expected);
+        let sorts = SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow().lexical_sort_operations);
+        assert!(
+            sorts <= 2,
+            "adaptive pages repeated the corpus ranking: {sorts} sorts"
+        );
+
+        database
+            .connection()
+            .execute(
+                "UPDATE document_versions SET title = ?1 WHERE document_id = ?2",
+                params![
+                    "x".repeat(MAX_SEARCH_TITLE_BYTES + 1),
+                    expected[50].as_uuid().as_bytes().as_slice()
+                ],
+            )
+            .unwrap();
+        let mut statement = database.connection().prepare(&lexical_page_sql()).unwrap();
+        let mut rows = statement
+            .query(params![
+                uuid_bytes(project_id).as_slice(),
+                "shared AND lexical AND evidence",
+                500,
+                0,
+            ])
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(10);
+        assert_eq!(
+            fetch_lexical_page(&mut rows, 50, deadline)
+                .unwrap()
+                .candidates
+                .len(),
+            50
+        );
+        assert!(matches!(
+            fetch_lexical_page(&mut rows, 50, deadline),
+            Err(SearchError::Corrupt(
+                "stored search candidate exceeds alpha field bounds"
+            ))
+        ));
+    }
+
+    #[test]
+    fn lexical_ranking_uses_covered_chunk_order_before_loading_the_page() {
+        let directory = private_test_directory();
+        let database =
+            IndexDb::create(&directory.path().join("index.sqlite"), IndexId::new_v4()).unwrap();
+        let mut statement = database
+            .connection()
+            .prepare(&format!("EXPLAIN QUERY PLAN {}", lexical_page_sql()))
+            .unwrap();
+        let plan = statement
+            .query_map(
+                params![
+                    uuid_bytes(ProjectId::new_v4()).as_slice(),
+                    "evidence",
+                    50,
+                    5
+                ],
+                |row| row.get::<_, String>(3),
+            )
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        let rank_end = plan
+            .iter()
+            .position(|step| step == "SCAN ranked")
+            .expect("ranked page must be materialized before loading passage bodies");
+        assert!(
+            plan[..rank_end]
+                .iter()
+                .any(|step| step.contains("SEARCH c USING COVERING INDEX chunks_order_idx")),
+            "{plan:?}"
+        );
+        assert!(
+            plan[rank_end..]
+                .iter()
+                .any(|step| step.contains("SEARCH c USING INTEGER PRIMARY KEY")),
+            "{plan:?}"
+        );
+    }
+
+    #[test]
+    fn exact_pages_seek_scoped_candidates_without_scanning_the_whole_project() {
+        use crate::ingest::{ChunkKind, SnapshotRevision, revision_sha256};
+        use crate::store::{DeleteConfirmations, FilesystemScope, PreparedChunk, PreparedDocument};
+
+        let directory = private_test_directory();
+        let mut database = IndexDb::create(
+            &directory.path().join("index.sqlite"),
+            IndexId::from_uuid(Uuid::new_v4()),
+        )
+        .unwrap();
+        let project_id = ProjectId::from_uuid(Uuid::from_u128(100));
+        let mut expected = Vec::new();
+        // Earlier unrelated and removed sources must not consume this page's work budget.
+        for (source_number, document_count) in [(1_u128, 1000), (2, 1000), (3, 30), (4, 1000)] {
+            let source_id = SourceId::from_uuid(Uuid::from_u128(source_number));
+            let scope = FilesystemScope {
+                source_id,
+                source_name: format!("source-{source_number}").parse().unwrap(),
+                source_logical_uri: format!("file:///source-{source_number}"),
+                source_config_json: format!(r#"{{"root":"/source-{source_number}"}}"#),
+                project_id: if source_number == 1 {
+                    ProjectId::from_uuid(Uuid::from_u128(200))
+                } else {
+                    project_id
+                },
+                project_name: if source_number == 1 {
+                    "other"
+                } else {
+                    "selected"
+                }
+                .parse()
+                .unwrap(),
+            };
+            let documents = (0..document_count)
+                .map(|number| {
+                    let title = format!("document-{number}.md");
+                    let source_uri = format!("repo://{title}");
+                    let body =
+                        format!("raw ^ evidence scale_identifier_{number:06}\n").into_bytes();
+                    let digest = Sha256Digest::of_bytes(&body);
+                    let literals =
+                        crate::store::prepare_passage_literals(&title, &source_uri, &body);
+                    PreparedDocument {
+                        connector_key: title.as_bytes().to_vec(),
+                        revision_sha256: revision_sha256(&SnapshotRevision {
+                            body: &body,
+                            source_uri: &source_uri,
+                            title: &title,
+                            metadata: &serde_json::json!({}),
+                            source_updated_at: None,
+                        })
+                        .unwrap(),
+                        title,
+                        source_uri,
+                        metadata_json: "{}".to_owned(),
+                        source_updated_at: None,
+                        body_sha256: digest,
+                        chunker_fingerprint: crate::store::chunker_fingerprint(ChunkKind::Markdown),
+                        chunks: vec![PreparedChunk {
+                            ordinal: 0,
+                            byte_span: ByteSpan::new(0, body.len() as u64).unwrap(),
+                            line_span: LineSpan::new(1, 1).unwrap(),
+                            body_text: String::from_utf8(body.clone()).unwrap(),
+                            content_sha256: digest,
+                            quote_bloom: QuoteBloom::from_content(&body).into_bytes(),
+                            literals,
+                        }],
+                        body,
+                    }
+                })
+                .collect::<Vec<_>>();
+            database
+                .apply_filesystem_snapshot(&scope, &documents, &[], DeleteConfirmations::default())
+                .unwrap();
+            if source_number >= 3 {
+                let mut statement = database
+                    .connection()
+                    .prepare("SELECT id, document_id FROM active_passages WHERE source_id = ?1")
+                    .unwrap();
+                expected.extend(
+                    statement
+                        .query_map([source_id.as_uuid().as_bytes().as_slice()], |row| {
+                            Ok((source_id, row.get::<_, Vec<u8>>(1)?, row.get::<_, i64>(0)?))
+                        })
+                        .unwrap()
+                        .collect::<Result<Vec<_>, _>>()
+                        .unwrap(),
+                );
+            }
+            if source_number == 2 {
+                database.connection().execute(
+                    "UPDATE project_sources SET removed_at = '2026-10-22T00:00:00Z' WHERE source_id = ?1",
+                    [source_id.as_uuid().as_bytes().as_slice()],
+                ).unwrap();
+            }
+        }
+        expected.sort();
+        let passages = fetch_project_passages(database.connection(), project_id, 5, 50).unwrap();
+        assert_eq!(
+            passages
+                .iter()
+                .map(|passage| passage.id)
+                .collect::<Vec<_>>(),
+            expected[5..55]
+                .iter()
+                .map(|entry| entry.2)
+                .collect::<Vec<_>>()
+        );
+        let steps = SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow().raw_scan_vm_steps);
+        assert!(
+            steps < 20_000,
+            "bounded page scanned/sorted the corpus: {steps} VM steps"
+        );
+        let atoms = vec!["scale_identifier_000017".to_owned()];
+        let matches =
+            fetch_identifier_hint_page(database.connection(), project_id, &atoms, 0, 50).unwrap();
+        assert_eq!(
+            matches
+                .iter()
+                .map(|passage| (passage.source_id, passage.title.as_str()))
+                .collect::<Vec<_>>(),
+            vec![
+                (SourceId::from_uuid(Uuid::from_u128(3)), "document-17.md"),
+                (SourceId::from_uuid(Uuid::from_u128(4)), "document-17.md"),
+            ]
+        );
+        let steps = SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow().identifier_vm_steps);
+        assert!(
+            steps < 5_000,
+            "identifier page scanned unrelated passages: {steps} VM steps"
+        );
+        let next =
+            fetch_identifier_hint_page(database.connection(), project_id, &atoms, 1, 1).unwrap();
+        assert_eq!(next.len(), 1);
+        assert_eq!(next[0].id, matches[1].id);
+
+        let mut statement = database.connection().prepare(&lexical_page_sql()).unwrap();
+        let mut rows = statement
+            .query(params![
+                uuid_bytes(project_id).as_slice(),
+                "raw AND evidence",
+                50,
+                5,
+            ])
+            .unwrap();
+        let lexical =
+            fetch_lexical_page(&mut rows, 50, Instant::now() + Duration::from_secs(10)).unwrap();
+        let phrase =
+            fetch_phrase_candidates(database.connection(), project_id, "raw ^ evidence", 5, 50)
+                .unwrap();
+        let expected_ids = expected[5..55]
+            .iter()
+            .map(|entry| entry.2)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            lexical
+                .candidates
+                .iter()
+                .map(|entry| entry.passage.id)
+                .collect::<Vec<_>>(),
+            expected_ids
+        );
+        assert_eq!(
+            phrase.iter().map(|entry| entry.id).collect::<Vec<_>>(),
+            expected_ids
+        );
+    }
+
+    #[test]
+    fn materialization_probe_is_nested_and_search_scoped() {
+        record_materialization(Duration::from_millis(99));
+        let outer = SearchMaterializationProbe::arm();
+        record_materialization(Duration::from_millis(2));
+        {
+            let inner = SearchMaterializationProbe::arm();
+            record_materialization(Duration::from_millis(3));
+            assert_eq!(inner.elapsed(), Duration::from_millis(3));
+        }
+        assert_eq!(outer.elapsed(), Duration::from_millis(5));
+        drop(outer);
+
+        assert_eq!(
+            SEARCH_MATERIALIZATION_ELAPSED.with(Cell::get),
+            None,
+            "a completed search must not leak timing into later work"
+        );
+    }
+
+    #[test]
     fn lexical_compiler_treats_fts_operators_as_quoted_terms() {
         assert_eq!(
             compile_lexical_expression("alpha) OR (beta* NEAR(title:gamma)"),
@@ -1739,7 +2778,95 @@ mod tests {
             exact_contribution(1) + lexical_contribution(3),
             40_463_179_807
         );
+        assert_eq!(
+            exact_contribution(1) + lexical_contribution(3) + lexical_contribution(2),
+            56_592_212_065
+        );
         assert_eq!(lexical_contribution(1), 16_393_442_623);
+    }
+
+    #[test]
+    fn vector_knn_filters_by_source_before_applying_k() {
+        let directory = private_test_directory();
+        let database = IndexDb::create(
+            &directory.path().join("index.sqlite"),
+            IndexId::from_uuid(Uuid::new_v4()),
+        )
+        .unwrap();
+        let selected = SourceId::from_uuid(Uuid::new_v4());
+        let hidden = SourceId::from_uuid(Uuid::new_v4());
+        let query = unit_vector_blob(0);
+        let closer = unit_vector_blob(0);
+        let selected_vector = unit_vector_blob(1);
+        for rowid in 1..=51_i64 {
+            database
+                .connection()
+                .execute(
+                    "INSERT INTO passages_vec_a(rowid, embedding, source_id)
+                     VALUES (?1, ?2, ?3)",
+                    params![rowid, closer, hidden.to_string()],
+                )
+                .unwrap();
+        }
+        database
+            .connection()
+            .execute(
+                "INSERT INTO passages_vec_a(rowid, embedding, source_id)
+                 VALUES (100, ?1, ?2)",
+                params![selected_vector, selected.to_string()],
+            )
+            .unwrap();
+
+        let candidates = deterministic_source_knn(
+            database.connection(),
+            VectorSlot::A,
+            &query,
+            selected,
+            VECTOR_CANDIDATES_PER_SOURCE,
+        )
+        .unwrap();
+
+        assert_eq!(candidates.len(), 1);
+        assert_eq!(candidates[0].rowid, 100);
+    }
+
+    #[test]
+    fn vector_knn_boundary_ties_use_exact_rowid_order() {
+        let directory = private_test_directory();
+        let database = IndexDb::create(
+            &directory.path().join("index.sqlite"),
+            IndexId::from_uuid(Uuid::new_v4()),
+        )
+        .unwrap();
+        let source = SourceId::from_uuid(Uuid::new_v4());
+        let query = unit_vector_blob(0);
+        for rowid in (1..=51_i64).rev() {
+            database
+                .connection()
+                .execute(
+                    "INSERT INTO passages_vec_a(rowid, embedding, source_id)
+                     VALUES (?1, ?2, ?3)",
+                    params![rowid, query, source.to_string()],
+                )
+                .unwrap();
+        }
+
+        let candidates = deterministic_source_knn(
+            database.connection(),
+            VectorSlot::A,
+            &query,
+            source,
+            VECTOR_CANDIDATES_PER_SOURCE,
+        )
+        .unwrap();
+
+        assert_eq!(
+            candidates
+                .iter()
+                .map(|candidate| candidate.rowid)
+                .collect::<Vec<_>>(),
+            (1..=50_i64).collect::<Vec<_>>()
+        );
     }
 
     #[test]
@@ -1752,6 +2879,83 @@ mod tests {
             ByteSpan::new(0, 100).unwrap(),
             ByteSpan::new(51, 151).unwrap(),
         ));
+    }
+
+    #[test]
+    fn hybrid_dedupe_and_equal_unit_ties_are_stable_and_explanations_are_bounded() {
+        let context = SearchContext {
+            index_id: IndexId::from_uuid(
+                Uuid::parse_str("018f47f0-9d9a-7a63-b4cc-8d6f2c8a4400").unwrap(),
+            ),
+            scope_revision: 0,
+            generation: Some(1),
+            index_epoch: 1,
+            vector_slot: VectorSlot::A,
+            vectors_complete: true,
+        };
+        let winner = test_passage(1, 1, 1, 0, 100, "canonical winner");
+        let overlap = test_passage(2, 1, 1, 50, 150, "overlapping evidence");
+        let same_content = test_passage(3, 3, 3, 0, 100, "canonical winner");
+        let lexical_tie = test_passage(4, 4, 4, 0, 100, "lexical tie");
+        let vector_tie = test_passage(5, 5, 5, 0, 100, "vector tie");
+
+        let exact = vec![ExactCandidate {
+            passage: winner.clone(),
+            matched_atoms: 1,
+            matched_bytes: 16,
+            longest_atom: 16,
+            fallback: false,
+        }];
+        let lexical = vec![
+            LexicalCandidate {
+                passage: overlap,
+                score: -2.0,
+            },
+            LexicalCandidate {
+                passage: lexical_tie.clone(),
+                score: -1.0,
+            },
+        ];
+        let vector = vec![
+            VectorCandidate {
+                passage: same_content,
+                distance: 0.0,
+            },
+            VectorCandidate {
+                passage: vector_tie.clone(),
+                distance: 0.5,
+            },
+        ];
+
+        let results = fuse_and_dedupe(
+            &context,
+            &exact,
+            &lexical,
+            &vector,
+            true,
+            Instant::now() + Duration::from_secs(1),
+        )
+        .unwrap();
+
+        assert_eq!(results.len(), 3);
+        assert_eq!(results[0].content, winner.content);
+        assert_eq!(results[0].duplicate_citations.len(), 2);
+        assert!(
+            results[0]
+                .duplicate_citations
+                .iter()
+                .any(|duplicate| duplicate.reason == DuplicateReason::SameContent)
+        );
+        assert!(
+            results[0]
+                .duplicate_citations
+                .iter()
+                .any(|duplicate| duplicate.reason == DuplicateReason::OverlappingSpan)
+        );
+        assert_eq!(results[1].source_id, lexical_tie.source_id);
+        assert_eq!(results[2].source_id, vector_tie.source_id);
+        assert_eq!(results[1].score.fusion_units, results[2].score.fusion_units);
+        assert!(results.iter().all(|result| result.score.lists.len() <= 3));
     }
 
     #[test]
@@ -1821,5 +3025,64 @@ mod tests {
         assert!(matches!(result, Err(SearchError::DeadlineExceeded)));
         let lexical_fetches = SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow().lexical_fetches);
         assert_eq!(lexical_fetches, 0);
+    }
+
+    fn private_test_directory() -> tempfile::TempDir {
+        let directory = tempdir().unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700))
+                .unwrap();
+        }
+        directory
+    }
+
+    fn test_passage(
+        id: i64,
+        source_suffix: u16,
+        document_suffix: u16,
+        start: u64,
+        end: u64,
+        content: &str,
+    ) -> Passage {
+        let source_id = SourceId::from_uuid(
+            Uuid::parse_str(&format!(
+                "018f47f0-9d9a-7a63-b4cc-8d6f2c8a{source_suffix:04x}"
+            ))
+            .unwrap(),
+        );
+        let document_id = DocumentId::from_uuid(
+            Uuid::parse_str(&format!(
+                "018f47f0-9d9a-7a63-b4cc-8d6f2c8b{document_suffix:04x}"
+            ))
+            .unwrap(),
+        );
+        Passage {
+            id,
+            source_id,
+            document_id,
+            revision_sha256: Sha256Digest::of_bytes(format!("revision-{id}").as_bytes()),
+            source_uri: format!("repo://passage-{id}.md"),
+            title: format!("passage-{id}.md"),
+            byte_span: ByteSpan::new(start, end).unwrap(),
+            line_span: LineSpan::new(1, 1).unwrap(),
+            content: content.to_owned(),
+            content_sha256: Sha256Digest::of_bytes(content.as_bytes()),
+            quote_bloom: QuoteBloom::from_content(content.as_bytes()),
+            source_updated_at: None,
+            indexed_at: "2026-08-02T00:00:00Z".to_owned(),
+            head_generation: 1,
+        }
+    }
+
+    fn unit_vector_blob(coordinate: usize) -> Vec<u8> {
+        let mut vector = vec![0.0_f32; EMBEDDING_DIMENSION as usize];
+        vector[coordinate] = 1.0;
+        let mut blob = Vec::with_capacity(std::mem::size_of_val(vector.as_slice()));
+        for component in vector {
+            blob.extend_from_slice(&component.to_le_bytes());
+        }
+        blob
     }
 }

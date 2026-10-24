@@ -1,0 +1,115 @@
+{
+  "schema_version": "hsum.parser-fuzz-campaign.v1",
+  "run": "https://github.com/burkan2/hSUM/actions/runs/39655481738",
+  "source_commit": "24285b28bf1368546484b1ae4ba55bdd699a971f",
+  "status": "passed",
+  "seconds_per_target": 1800,
+  "target_count": 6,
+  "total_executions": 664006230,
+  "total_target_seconds": 10806,
+  "targets": [
+    {
+      "target": "chunk_bytes",
+      "runs": 20362813,
+      "duration_seconds": 1801,
+      "log_sha256": "43606c6f1323fa2eb8bff6426b8fa8560c435411052bd5a9911007558edc7376",
+      "final_statistics": [
+        "\"rjal/\\015\\015\" # Uses: 48",
+        "\"o\\000\" # Uses: 33",
+        "###### End of recommended dictionary. ######",
+        "Done 20362813 runs in 1801 second(s)",
+        "stat::number_of_executed_units: 20362813",
+        "stat::average_exec_per_sec:     11306",
+        "stat::new_units_added:          18233",
+        "stat::slowest_unit_time_sec:    0",
+        "stat::peak_rss_mb:              742"
+      ]
+    },
+    {
+      "target": "citation_uri",
+      "runs": 496348666,
+      "duration_seconds": 1801,
+      "log_sha256": "629a0a65c56fb98db588f606379a37370b7e23605107b50815570b9c53504e94",
+      "final_statistics": [
+        "\"hsum:afadc\" # Uses: 356914",
+        "\"byte47\" # Uses: 264618",
+        "###### End of recommended dictionary. ######",
+        "Done 496348666 runs in 1801 second(s)",
+        "stat::number_of_executed_units: 496348666",
+        "stat::average_exec_per_sec:     275596",
+        "stat::new_units_added:          3341",
+        "stat::slowest_unit_time_sec:    0",
+        "stat::peak_rss_mb:              520"
+      ]
+    },
+    {
+      "target": "jsonl_snapshot",
+      "runs": 30912945,
+      "duration_seconds": 1801,
+      "log_sha256": "10abcc64e4960256f4f6fa9769c3fd014b00952614c47f3eb8a10485d86725b9",
+      "final_statistics": [
+        "\"gic`\" # Uses: 248",
+        "\"c\\000\\000\\000\" # Uses: 36",
+        "###### End of recommended dictionary. ######",
+        "Done 30912945 runs in 1801 second(s)",
+        "stat::number_of_executed_units: 30912945",
+        "stat::average_exec_per_sec:     17164",
+        "stat::new_units_added:          28816",
+        "stat::slowest_unit_time_sec:    0",
+        "stat::peak_rss_mb:              673"
+      ]
+    },
+    {
+      "target": "mcp_frame",
+      "runs": 20401275,
+      "duration_seconds": 1801,
+      "log_sha256": "672cd82255f0c4eaf04fe020f3d83141b7e4e5ab9fe17ec512ae9e578669f6c5",
+      "final_statistics": [
+        "\"%-\" # Uses: 29",
+        "\"\\312\\003\" # Uses: 28",
+        "###### End of recommended dictionary. ######",
+        "Done 20401275 runs in 1801 second(s)",
+        "stat::number_of_executed_units: 20401275",
+        "stat::average_exec_per_sec:     11327",
+        "stat::new_units_added:          22357",
+        "stat::slowest_unit_time_sec:    0",
+        "stat::peak_rss_mb:              650"
+      ]
+    },
+    {
+      "target": "query_parser",
+      "runs": 40966063,
+      "duration_seconds": 1801,
+      "log_sha256": "6a59b07dd4691e6cd06c1dba0e10fc3f5a0ee7c0616ec182059b95c15e586a8c",
+      "final_statistics": [
+        "\"\\000\\000\\000\\000\\000\\000\\004\\006\" # Uses: 404",
+        "\"-po/\" # Uses: 105",
+        "###### End of recommended dictionary. ######",
+        "Done 40966063 runs in 1801 second(s)",
+        "stat::number_of_executed_units: 40966063",
+        "stat::average_exec_per_sec:     22746",
+        "stat::new_units_added:          10261",
+        "stat::slowest_unit_time_sec:    0",
+        "stat::peak_rss_mb:              602"
+      ]
+    },
+    {
+      "target": "search_cursor",
+      "runs": 55014468,
+      "duration_seconds": 1801,
+      "log_sha256": "af693292dfa7bcabd501dc126fef93766f7ed792ac373de3c15a79ffc7747454",
+      "final_statistics": [
+        "\"a\\000\\000\\000\" # Uses: 297407",
+        "\"\\001\\000\\000\\000\\000\\000\\000\\000\" # Uses: 205451",
+        "###### End of recommended dictionary. ######",
+        "Done 55014468 runs in 1801 second(s)",
+        "stat::number_of_executed_units: 55014468",
+        "stat::average_exec_per_sec:     30546",
+        "stat::new_units_added:          263",
+        "stat::slowest_unit_time_sec:    0",
+        "stat::peak_rss_mb:              463"
+      ]
+    }
+  ],
+  "limits": "One seeded Linux x86_64 campaign; not exhaustive and not an independent security review."
+}

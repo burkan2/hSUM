@@ -1,0 +1,14 @@
+{
+  "observed_at_utc": "2026-10-23T19:16:13.812309+00:00",
+  "candidate": "1ce11d00bf8cad949c12a9c496ab7dba3675717f",
+  "prepare_process_pid": 11401,
+  "reembed_process_pid": 11603,
+  "prepare_exit_exists": false,
+  "setup_report_exists": false,
+  "measurement_started": false,
+  "measurement_exit_exists": false,
+  "measurement_report_exists": false,
+  "local_authentication": "User confirmed completion; process inspection confirms the sudo prompt has exited and the Terminal launcher/authorization keepalive remain active, waiting for preparation.",
+  "binary_sha256_verified": true,
+  "local_authentication_completed": true
+}

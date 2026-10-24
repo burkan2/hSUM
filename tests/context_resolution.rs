@@ -133,7 +133,8 @@ fn a_strict_configured_default_selects_direct_cli_from_an_unrelated_directory() 
     write_private_config(
         &paths.config_file(),
         concat!(
-            "schema_version = 1\n",
+            "schema_version = 2\n",
+            "config_epoch = 1\n",
             "default_index = \"fixture\"\n",
             "default_project = \"default\"\n"
         ),
@@ -150,6 +151,27 @@ fn a_strict_configured_default_selects_direct_cli_from_an_unrelated_directory() 
     assert_eq!(context.index_id, initialized.index_id);
     assert_eq!(context.project_id, initialized.project_id);
     drop(portable_home);
+}
+
+#[test]
+fn n_minus_one_user_config_is_diagnosed_before_v2_fields_are_required() {
+    let (_repository, _portable_home, paths, _initialized) = initialized_fixture();
+    let bytes = concat!(
+        "schema_version = 1\n",
+        "default_index = \"fixture\"\n",
+        "default_project = \"default\"\n",
+    );
+    write_private_config(&paths.config_file(), bytes);
+    let unrelated = tempdir().unwrap();
+
+    assert!(matches!(
+        resolve_context(&ContextRequest::direct(
+            unrelated.path().to_path_buf(),
+            paths.clone(),
+        )),
+        Err(ContextError::ConfigSchema { found: 1 })
+    ));
+    assert_eq!(fs::read_to_string(paths.config_file()).unwrap(), bytes);
 }
 
 #[test]

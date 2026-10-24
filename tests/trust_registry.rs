@@ -67,6 +67,50 @@ fn conflicting_root_registration_fails_without_mutating_the_registry() {
 }
 
 #[test]
+fn retargeting_preserves_binding_identity_and_rejects_root_collisions() {
+    let first_root = tempdir().unwrap();
+    let occupied_root = tempdir().unwrap();
+    let target_root = tempdir().unwrap();
+    let mut registry = TrustRegistry::new();
+    let first = match registry.register(registration(first_root.path())).unwrap() {
+        RegistrationOutcome::Created(binding) => binding,
+        RegistrationOutcome::Existing(_) => unreachable!(),
+    };
+    registry
+        .register(registration(occupied_root.path()))
+        .unwrap();
+    let before_collision = registry.clone();
+    assert!(matches!(
+        registry.retarget_binding(
+            first.binding_id(),
+            canonicalize_repository_root(occupied_root.path()).unwrap(),
+            ProjectId::new_v4(),
+            SafeSlug::new("occupied").unwrap(),
+        ),
+        Err(TrustError::ConflictingRoot { .. })
+    ));
+    assert_eq!(registry, before_collision);
+
+    let target_project_id = ProjectId::new_v4();
+    let outcome = registry
+        .retarget_binding(
+            first.binding_id(),
+            canonicalize_repository_root(target_root.path()).unwrap(),
+            target_project_id,
+            SafeSlug::new("target").unwrap(),
+        )
+        .unwrap();
+    assert!(outcome.changed);
+    assert_eq!(outcome.binding.binding_id(), first.binding_id());
+    assert_eq!(outcome.binding.project_id(), target_project_id);
+    assert_eq!(outcome.binding.project_name().as_str(), "target");
+    assert_eq!(
+        outcome.binding.canonical_root(),
+        canonicalize_repository_root(target_root.path()).unwrap()
+    );
+}
+
+#[test]
 fn parsed_bindings_reject_duplicate_roots_and_identity_aliases() {
     let first_root = tempdir().unwrap();
     let second_root = tempdir().unwrap();
@@ -160,7 +204,8 @@ fn trust_toml_rejects_unknown_fields_noncanonical_ids_and_roots() {
     let canonical = canonicalize_repository_root(root.path()).unwrap();
     let base = format!(
         r#"
-schema_version = 1
+schema_version = 2
+config_epoch = 1
 
 [[bindings]]
 root = "{}"
@@ -200,6 +245,70 @@ project_name = "compiler"
         TrustRegistry::parse(&noncanonical),
         Err(TrustError::InvalidStoredRoot { .. })
     ));
+}
+
+#[test]
+fn public_trust_mutations_advance_the_config_epoch_only_when_state_changes() {
+    let first_root = tempdir().unwrap();
+    let second_root = tempdir().unwrap();
+    let mut registry = TrustRegistry::new();
+    assert_eq!(registry.config_epoch(), 1);
+
+    let registration = registration(first_root.path());
+    let binding = match registry.register(registration.clone()).unwrap() {
+        RegistrationOutcome::Created(binding) => binding,
+        RegistrationOutcome::Existing(_) => unreachable!(),
+    };
+    assert_eq!(registry.config_epoch(), 2);
+
+    assert!(matches!(
+        registry.register(registration).unwrap(),
+        RegistrationOutcome::Existing(_)
+    ));
+    assert_eq!(registry.config_epoch(), 2);
+
+    registry
+        .retarget_binding(
+            binding.binding_id(),
+            canonicalize_repository_root(second_root.path()).unwrap(),
+            ProjectId::new_v4(),
+            SafeSlug::new("second").unwrap(),
+        )
+        .unwrap();
+    assert_eq!(registry.config_epoch(), 3);
+}
+
+#[test]
+fn index_binding_removal_is_identity_checked_atomic_and_idempotent() {
+    let first_root = tempdir().unwrap();
+    let second_root = tempdir().unwrap();
+    let mut registry = TrustRegistry::new();
+    let requested = registration(first_root.path());
+    registry.register(requested.clone()).unwrap();
+    registry.register(registration(second_root.path())).unwrap();
+    assert_eq!(registry.config_epoch(), 3);
+
+    let before_conflict = registry.clone();
+    assert!(matches!(
+        registry.remove_index_bindings(&requested.index_name, IndexId::new_v4()),
+        Err(TrustError::ConflictingIdentity)
+    ));
+    assert_eq!(registry, before_conflict);
+
+    let removed = registry
+        .remove_index_bindings(&requested.index_name, requested.index_id)
+        .unwrap();
+    assert_eq!(removed.len(), 2);
+    assert!(registry.bindings().is_empty());
+    assert_eq!(registry.config_epoch(), 4);
+
+    assert!(
+        registry
+            .remove_index_bindings(&requested.index_name, requested.index_id)
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(registry.config_epoch(), 4);
 }
 
 #[test]

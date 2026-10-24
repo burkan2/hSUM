@@ -1,0 +1,107 @@
+name: Retrieval stress
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/retrieval-stress.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retrieval-stress-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: '0'
+  MODEL_ID: bge-small-en-v1-5-fp32
+
+jobs:
+  linux-x86_64:
+    name: Linux x86_64 one-million-passage report
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install the qualification Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Confirm the native runner and record initial capacity
+        shell: bash
+        run: |
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = x86_64
+          mkdir -m 700 "$RUNNER_TEMP/retrieval-stress"
+          {
+            uname -a
+            free -b
+            df -B1 "$RUNNER_TEMP"
+            ulimit -n
+          } > "$RUNNER_TEMP/retrieval-stress/runner-capacity.txt"
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build and isolate the release candidate
+        shell: bash
+        run: |
+          cargo +1.91.0 build --locked --release --bin hsum
+          mkdir -m 700 "$RUNNER_TEMP/retrieval-stress/bin"
+          cp target/release/hsum "$RUNNER_TEMP/retrieval-stress/bin/hsum"
+          cargo +1.91.0 clean --release
+          test -x "$RUNNER_TEMP/retrieval-stress/bin/hsum"
+          df -B1 "$RUNNER_TEMP" >> "$RUNNER_TEMP/retrieval-stress/runner-capacity.txt"
+          free_bytes="$(df -B1 --output=avail "$RUNNER_TEMP" | tail -1 | tr -d ' ')"
+          test "$free_bytes" -ge 12884901888
+
+      - name: Install and verify the pinned model outside timed stages
+        shell: bash
+        run: |
+          mkdir -m 700 "$RUNNER_TEMP/retrieval-stress/home"
+          HSUM_HOME="$RUNNER_TEMP/retrieval-stress/home" \
+            "$RUNNER_TEMP/retrieval-stress/bin/hsum" --no-color --no-progress \
+            model install embedding "$MODEL_ID"
+          HSUM_HOME="$RUNNER_TEMP/retrieval-stress/home" \
+            "$RUNNER_TEMP/retrieval-stress/bin/hsum" --no-color --no-progress \
+            model verify "$MODEL_ID" --json
+
+      - name: Run the frozen report-only stress protocol offline
+        env:
+          HSUM_OFFLINE: '1'
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 benches/retrieval_stress/harness.py run \
+            --hsum "$RUNNER_TEMP/retrieval-stress/bin/hsum" \
+            --workspace "$RUNNER_TEMP/retrieval-stress/workspace" \
+            --home "$RUNNER_TEMP/retrieval-stress/home" \
+            --output "$RUNNER_TEMP/retrieval-stress/linux-x86_64-1m.json" \
+            2>&1 | tee "$RUNNER_TEMP/retrieval-stress/harness.log"
+
+      - name: Record final capacity
+        if: always()
+        shell: bash
+        run: |
+          {
+            free -b
+            df -B1 "$RUNNER_TEMP"
+          } >> "$RUNNER_TEMP/retrieval-stress/runner-capacity.txt"
+
+      - name: Upload immutable raw evidence and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrieval-stress-linux-x86_64
+          path: |
+            ${{ runner.temp }}/retrieval-stress/linux-x86_64-1m.json
+            ${{ runner.temp }}/retrieval-stress/harness.log
+            ${{ runner.temp }}/retrieval-stress/runner-capacity.txt
+          if-no-files-found: error
+          compression-level: 9

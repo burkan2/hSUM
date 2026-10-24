@@ -1,0 +1,348 @@
+{
+  "benchmark": "agent-ab",
+  "conditions": {
+    "hsum": {
+      "aggregate": {
+        "citation_validity": 0.625,
+        "context_bytes": 5325.75,
+        "end_to_end_latency_ms": 9751.47948975,
+        "end_to_end_latency_p95_ms": 12335.54855085,
+        "evidence_precision": 0.625,
+        "fact_accuracy": 0.75,
+        "input_tokens": 20463.25,
+        "model_latency_ms": 9603.306563,
+        "output_tokens": 224.75,
+        "retrieval_latency_ms": 148.17292675,
+        "task_count": 4,
+        "task_success": 0.5,
+        "tool_calls": 0.0,
+        "tool_output_bytes": 0.0
+      },
+      "trials": [
+        {
+          "agent_mode": "precollected",
+          "condition": "hsum",
+          "metrics": {
+            "citation_validity": 1.0,
+            "context_bytes": 7150,
+            "end_to_end_latency_ms": 12596.064126000001,
+            "evidence_precision": 1.0,
+            "fact_accuracy": 1.0,
+            "input_tokens": 20903,
+            "model_latency_ms": 12355.804459,
+            "output_tokens": 339,
+            "retrieval_latency_ms": 240.259667,
+            "task_success": 1.0,
+            "tool_calls": 0,
+            "tool_output_bytes": 0
+          },
+          "process": {
+            "event_count": 29,
+            "exit_code": 0,
+            "stderr_tail": "52Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-project-researcher.toml: TOML parse error at line 260, column 2\n    |\n260 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:16.828142Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-research-synthesizer.toml must define a non-empty `name`\n2026-07-31T09:58:16.828258Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-roadmapper.toml must define a non-empty `name`\n2026-07-31T09:58:16.828404Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-verifier.toml: TOML parse error at line 214, column 16\n    |\n214 | grep -E \"fetch\\(['\\\"].*$api_path|axios\\.(get|post).*$api_path\" \"$component\" 2>/dev/null\n    |                ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:16.836228Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:16.837481Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:17.542717Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/eval-harness/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:17.542727Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/project-guidelines-example/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:17.542729Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/verification-loop/SKILL.md: missing YAML frontmatter delimited by ---\n"
+          },
+          "response": {
+            "answer": "The five source-hash verification states are: `unchanged`, `changed`, `missing`, `blocked`, and `unverifiable`.",
+            "confidence": 1,
+            "evidence": [
+              {
+                "citation_uri": "hsum://v1/12458f45-0c25-4ed5-8c74-635cf1c58869/09f03823-55cc-5a0f-a9d7-ed54a9bb4d32/1f9a5687-5f6f-47fb-892e-37c5fed9ebec?rev=f7ba66f03061ca33b9432428ab83c8179fc2c6524f902e249a800fc9e693305f#bytes=87280-88199",
+                "end_line": 2457,
+                "path": "src/runtime.rs",
+                "start_line": 2436
+              },
+              {
+                "citation_uri": "hsum://v1/12458f45-0c25-4ed5-8c74-635cf1c58869/09f03823-55cc-5a0f-a9d7-ed54a9bb4d32/d60c164c-7a43-45a6-9393-6ce502f464d5?rev=0e247f406f542406bda914ace0996518d2bf45848c97bab2373f99181088055b#bytes=27207-28458",
+                "end_line": 706,
+                "path": "src/mcp.rs",
+                "start_line": 700
+              }
+            ]
+          },
+          "task_id": "exact-verify-source-hash"
+        },
+        {
+          "agent_mode": "precollected",
+          "condition": "hsum",
+          "metrics": {
+            "citation_validity": 1.0,
+            "context_bytes": 8008,
+            "end_to_end_latency_ms": 8964.994,
+            "evidence_precision": 1.0,
+            "fact_accuracy": 1.0,
+            "input_tokens": 21255,
+            "model_latency_ms": 8866.397959,
+            "output_tokens": 210,
+            "retrieval_latency_ms": 98.596041,
+            "task_success": 1.0,
+            "tool_calls": 0,
+            "tool_output_bytes": 0
+          },
+          "process": {
+            "event_count": 29,
+            "exit_code": 0,
+            "stderr_tail": "10Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-project-researcher.toml: TOML parse error at line 260, column 2\n    |\n260 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:29.344887Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-research-synthesizer.toml must define a non-empty `name`\n2026-07-31T09:58:29.344989Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-roadmapper.toml must define a non-empty `name`\n2026-07-31T09:58:29.345162Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-verifier.toml: TOML parse error at line 214, column 16\n    |\n214 | grep -E \"fetch\\(['\\\"].*$api_path|axios\\.(get|post).*$api_path\" \"$component\" 2>/dev/null\n    |                ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:29.354666Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:29.355824Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:30.126161Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/eval-harness/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:30.126176Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/project-guidelines-example/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:30.126178Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/verification-loop/SKILL.md: missing YAML frontmatter delimited by ---\n"
+          },
+          "response": {
+            "answer": "Run `hsum init --rebuild --dry-run`, then `hsum init --rebuild`. `hsum ingest` is strict and is not the supported repair command.",
+            "confidence": 1.0,
+            "evidence": [
+              {
+                "citation_uri": "hsum://v1/12458f45-0c25-4ed5-8c74-635cf1c58869/09f03823-55cc-5a0f-a9d7-ed54a9bb4d32/b4cfb95b-70c3-4f91-bd5c-5532b9e9323f?rev=f59f40fe70f3f569b1c11590b376ba59f5dc94e18bfbe6abe8d3204887c4fb1c#bytes=4656-5953",
+                "end_line": 123,
+                "path": "CHANGELOG.md",
+                "start_line": 99
+              }
+            ]
+          },
+          "task_id": "pipeline-recovery"
+        },
+        {
+          "agent_mode": "precollected",
+          "condition": "hsum",
+          "metrics": {
+            "citation_validity": 0.5,
+            "context_bytes": 6145,
+            "end_to_end_latency_ms": 10859.293625,
+            "evidence_precision": 0.5,
+            "fact_accuracy": 1.0,
+            "input_tokens": 20750,
+            "model_latency_ms": 10706.154042,
+            "output_tokens": 314,
+            "retrieval_latency_ms": 153.139583,
+            "task_success": 0.0,
+            "tool_calls": 0,
+            "tool_output_bytes": 0
+          },
+          "process": {
+            "event_count": 29,
+            "exit_code": 0,
+            "stderr_tail": "60Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-project-researcher.toml: TOML parse error at line 260, column 2\n    |\n260 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:38.383245Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-research-synthesizer.toml must define a non-empty `name`\n2026-07-31T09:58:38.383349Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-roadmapper.toml must define a non-empty `name`\n2026-07-31T09:58:38.383471Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-verifier.toml: TOML parse error at line 214, column 16\n    |\n214 | grep -E \"fetch\\(['\\\"].*$api_path|axios\\.(get|post).*$api_path\" \"$component\" 2>/dev/null\n    |                ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:38.396973Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:38.398259Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:39.106103Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/eval-harness/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:39.106113Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/project-guidelines-example/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:39.106115Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/verification-loop/SKILL.md: missing YAML frontmatter delimited by ---\n"
+          },
+          "response": {
+            "answer": "The four read-only MCP tools exposed by hSUM are: `evidence_search`, `evidence_get`, `evidence_project`, and `evidence_status`.",
+            "confidence": 1,
+            "evidence": [
+              {
+                "citation_uri": "hsum://v1/12458f45-0c25-4ed5-8c74-635cf1c58869/09f03823-55cc-5a0f-a9d7-ed54a9bb4d32/1ac855a6-9d58-44fa-beb4-faa00ddc1021?rev=c91dd428ada8c97c4c578c1cc4528de65d9b9f01e5003141610d3df28b76773b#bytes=9897-10785",
+                "end_line": 228,
+                "path": "README.md",
+                "start_line": 226
+              },
+              {
+                "citation_uri": "hsum://v1/12458f45-0c25-4ed5-8c74-635cf1c58869/09f03823-55cc-5a0f-a9d7-ed54a9bb4d32/f047d3dd-0ad9-4164-b6c1-bf57ae43f5b6b953bd7a#bytes=1884-2579",
+                "end_line": 72,
+                "path": "tests/mcp_contract.rs",
+                "start_line": 58
+              }
+            ]
+          },
+          "task_id": "mcp-tool-surface"
+        },
+        {
+          "agent_mode": "precollected",
+          "condition": "hsum",
+          "metrics": {
+            "citation_validity": 0.0,
+            "context_bytes": 0,
+            "end_to_end_latency_ms": 6585.566208,
+            "evidence_precision": 0.0,
+            "fact_accuracy": 0.0,
+            "input_tokens": 18945,
+            "model_latency_ms": 6484.869792,
+            "output_tokens": 36,
+            "retrieval_latency_ms": 100.696416,
+            "task_success": 0.0,
+            "tool_calls": 0,
+            "tool_output_bytes": 0
+          },
+          "process": {
+            "event_count": 29,
+            "exit_code": 0,
+            "stderr_tail": "39Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-project-researcher.toml: TOML parse error at line 260, column 2\n    |\n260 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:49.210414Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-research-synthesizer.toml must define a non-empty `name`\n2026-07-31T09:58:49.210529Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-roadmapper.toml must define a non-empty `name`\n2026-07-31T09:58:49.210654Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-verifier.toml: TOML parse error at line 214, column 16\n    |\n214 | grep -E \"fetch\\(['\\\"].*$api_path|axios\\.(get|post).*$api_path\" \"$component\" 2>/dev/null\n    |                ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:49.220154Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:49.221235Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:49.887968Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/eval-harness/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:49.887980Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/project-guidelines-example/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:49.887982Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/verification-loop/SKILL.md: missing YAML frontmatter delimited by ---\n"
+          },
+          "response": {
+            "answer": "The evidence bundle is empty, so it does not support identifying the flag.",
+            "confidence": 1,
+            "evidence": []
+          },
+          "task_id": "semantic-gap"
+        }
+      ]
+    },
+    "native": {
+      "aggregate": {
+        "citation_validity": 1.0,
+        "context_bytes": 1848.25,
+        "end_to_end_latency_ms": 7633.1554587499995,
+        "end_to_end_latency_p95_ms": 9626.8080733,
+        "evidence_precision": 0.25,
+        "fact_accuracy": 0.25,
+        "input_tokens": 19457.25,
+        "model_latency_ms": 7589.91818775,
+        "output_tokens": 68.25,
+        "retrieval_latency_ms": 43.237271,
+        "task_count": 4,
+        "task_success": 0.25,
+        "tool_calls": 0.0,
+        "tool_output_bytes": 0.0
+      },
+      "trials": [
+        {
+          "agent_mode": "precollected",
+          "condition": "native",
+          "metrics": {
+            "citation_validity": 1.0,
+            "context_bytes": 2140,
+            "end_to_end_latency_ms": 6861.6291249999995,
+            "evidence_precision": 1.0,
+            "fact_accuracy": 1.0,
+            "input_tokens": 19557,
+            "model_latency_ms": 6803.894958,
+            "output_tokens": 74,
+            "retrieval_latency_ms": 57.734167,
+            "task_success": 1.0,
+            "tool_calls": 0,
+            "tool_output_bytes": 0
+          },
+          "process": {
+            "event_count": 29,
+            "exit_code": 0,
+            "stderr_tail": "14Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-project-researcher.toml: TOML parse error at line 260, column 2\n    |\n260 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:57:46.188949Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-research-synthesizer.toml must define a non-empty `name`\n2026-07-31T09:57:46.189161Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-roadmapper.toml must define a non-empty `name`\n2026-07-31T09:57:46.189382Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-verifier.toml: TOML parse error at line 214, column 16\n    |\n214 | grep -E \"fetch\\(['\\\"].*$api_path|axios\\.(get|post).*$api_path\" \"$component\" 2>/dev/null\n    |                ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:57:46.200160Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:57:46.201694Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:57:47.437543Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/eval-harness/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:57:47.437553Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/project-guidelines-example/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:57:47.437554Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/verification-loop/SKILL.md: missing YAML frontmatter delimited by ---\n"
+          },
+          "response": {
+            "answer": "The five source-hash verification states are: `unchanged`, `changed`, `missing`, `blocked`, and `unverifiable`.",
+            "confidence": 1,
+            "evidence": [
+              {
+                "citation_uri": null,
+                "end_line": 2454,
+                "path": "src/runtime.rs",
+                "start_line": 2441
+              }
+            ]
+          },
+          "task_id": "exact-verify-source-hash"
+        },
+        {
+          "agent_mode": "precollected",
+          "condition": "native",
+          "metrics": {
+            "citation_validity": 1.0,
+            "context_bytes": 5253,
+            "end_to_end_latency_ms": 9903.113917,
+            "evidence_precision": 0.0,
+            "fact_accuracy": 0.0,
+            "input_tokens": 20458,
+            "model_latency_ms": 9855.64925,
+            "output_tokens": 98,
+            "retrieval_latency_ms": 47.464667,
+            "task_success": 0.0,
+            "tool_calls": 0,
+            "tool_output_bytes": 0
+          },
+          "process": {
+            "event_count": 29,
+            "exit_code": 0,
+            "stderr_tail": "66Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-project-researcher.toml: TOML parse error at line 260, column 2\n    |\n260 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:57:52.990155Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-research-synthesizer.toml must define a non-empty `name`\n2026-07-31T09:57:52.990277Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-roadmapper.toml must define a non-empty `name`\n2026-07-31T09:57:52.990406Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-verifier.toml: TOML parse error at line 214, column 16\n    |\n214 | grep -E \"fetch\\(['\\\"].*$api_path|axios\\.(get|post).*$api_path\" \"$component\" 2>/dev/null\n    |                ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:57:53.002713Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:57:53.003624Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:57:53.717389Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/eval-harness/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:57:53.717399Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/project-guidelines-example/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:57:53.717401Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/verification-loop/SKILL.md: missing YAML frontmatter delimited by ---\n"
+          },
+          "response": {
+            "answer": "The supplied evidence does not identify the supported recovery command for a pipeline fingerprint mismatch. It only shows test/check commands and implementation planning, so the recovery command cannot be determined without guessing.",
+            "confidence": 0.99,
+            "evidence": [
+              {
+                "citation_uri": null,
+                "end_line": 207,
+                "path": "docs/superpowers/plans/2026-07-25-pipeline-fingerprint-recovery.md",
+                "start_line": 193
+              }
+            ]
+          },
+          "task_id": "pipeline-recovery"
+        },
+        {
+          "agent_mode": "precollected",
+          "condition": "native",
+          "metrics": {
+            "citation_validity": 1.0,
+            "context_bytes": 0,
+            "end_to_end_latency_ms": 5706.803833999999,
+            "evidence_precision": 0.0,
+            "fact_accuracy": 0.0,
+            "input_tokens": 18865,
+            "model_latency_ms": 5652.876584,
+            "output_tokens": 63,
+            "retrieval_latency_ms": 53.92725,
+            "task_success": 0.0,
+            "tool_calls": 0,
+            "tool_output_bytes": 0
+          },
+          "process": {
+            "event_count": 29,
+            "exit_code": 0,
+            "stderr_tail": " error at line 226, column 2\n    |\n226 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:03.785753Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-plan-checker.toml must define a non-empty `name`\n2026-07-31T09:58:03.785974Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-planner.toml: TOML parse error at line 484, column 17\n    |\n484 | grep -n \"export\\|interface\\|type\\|class\\|function\" {relevant_source_files} 2>/dev/null | head -50\n    |                 ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:03.786101Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-project-researcher.toml: TOML parse error at line 260, column 2\n    |\n260 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:03.786197Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-research-synthesizer.toml must define a non-empty `name`\n2026-07-31T09:58:03.786310Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-roadmapper.toml must define a non-empty `name`\n2026-07-31T09:58:03.786449Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-verifier.toml: TOML parse error at line 214, column 16\n    |\n214 | grep -E \"fetch\\(['\\\"].*$api_path|axios\\.(get|post).*$api_path\" \"$component\" 2>/dev/null\n    |                ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n"
+          },
+          "response": {
+            "answer": "The provided evidence bundle is empty, so I cannot determine which read-only MCP tools are exposed by hSUM without guessing.",
+            "confidence": 1,
+            "evidence": []
+          },
+          "task_id": "mcp-tool-surface"
+        },
+        {
+          "agent_mode": "precollected",
+          "condition": "native",
+          "metrics": {
+            "citation_validity": 1.0,
+            "context_bytes": 0,
+            "end_to_end_latency_ms": 8061.0749590000005,
+            "evidence_precision": 0.0,
+            "fact_accuracy": 0.0,
+            "input_tokens": 18949,
+            "model_latency_ms": 8047.251959,
+            "output_tokens": 38,
+            "retrieval_latency_ms": 13.823,
+            "task_success": 0.0,
+            "tool_calls": 0,
+            "tool_output_bytes": 0
+          },
+          "process": {
+            "event_count": 29,
+            "exit_code": 0,
+            "stderr_tail": "03Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-project-researcher.toml: TOML parse error at line 260, column 2\n    |\n260 | \\`\\`\\`bash\n    |  ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:08.480709Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-research-synthesizer.toml must define a non-empty `name`\n2026-07-31T09:58:08.480832Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: agent role file at <HOME>/.codex/agents/gsd-roadmapper.toml must define a non-empty `name`\n2026-07-31T09:58:08.480982Z  WARN codex_core::config::agent_roles: Ignoring malformed agent role definition: failed to parse agent role file at <HOME>/.codex/agents/gsd-verifier.toml: TOML parse error at line 214, column 16\n    |\n214 | grep -E \"fetch\\(['\\\"].*$api_path|axios\\.(get|post).*$api_path\" \"$component\" 2>/dev/null\n    |                ^\nmissing escaped value, expected `b`, `e`, `f`, `n`, `r`, `\\`, `\"`, `x`, `u`, `U`\n\n2026-07-31T09:58:08.488245Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:08.489777Z  WARN codex_rollout::list: state db discrepancy during find_thread_path_by_id_str_in_subdir: falling_back\n2026-07-31T09:58:09.169200Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/eval-harness/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:09.169214Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/project-guidelines-example/SKILL.md: missing YAML frontmatter delimited by ---\n2026-07-31T09:58:09.169216Z ERROR codex_core::session::session: failed to load skill <HOME>/.agents/skills/verification-loop/SKILL.md: missing YAML frontmatter delimited by ---\n"
+          },
+          "response": {
+            "answer": "The evidence bundle is empty, so the flag cannot be determined from inspected repository evidence.",
+            "confidence": 1,
+            "evidence": []
+          },
+          "task_id": "semantic-gap"
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "generated_at": "2026-07-31T09:58:55.615670+00:00",
+    "git_sha": "5599dec6a5bd50fed9c18d208741d1d25c22fd36",
+    "hsum": "hsum 0.1.0-alpha.4",
+    "machine": "arm64",
+    "platform": "macOS-26.4.1-arm64-arm-64bit-Mach-O",
+    "python": "3.14.2",
+    "repository": "hSUM"
+  },
+  "protocol": {
+    "agent_mode": "precollected",
+    "conditions": [
+      "native",
+      "hsum"
+    ],
+    "context_budget_bytes": 12288,
+    "hsum_condition": "precollected hSUM evidence bundle",
+    "model": "codex-default",
+    "native_condition": "precollected ripgrep evidence bundle",
+    "same_model": true,
+    "same_repository": true,
+    "same_task_prompts": true
+  },
+  "schema_version": "hsum.benchmark.results.v1"
+}
