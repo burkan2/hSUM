@@ -1,8 +1,9 @@
 # Stable v0.1 canonical completion ledger
 
-**Snapshot:** 2026-10-22 live references pass 77/77, the sustained parser campaign
-passes, and the token/cost pilot is recorded. Q04 misses latency SLOs and Q05
-times out before model workers start; qualification remains open. Retained
+**Snapshot:** through 2026-10-24, live references pass 77/77, the sustained parser
+campaign passes, and the token/cost pilot is recorded. Q04's complete Linux and
+recovered Mac query protocols fail qualification; Linux report-only Q05 passes
+on a separately recorded candidate. Stable qualification remains open. Retained
 2026-08-23 evidence includes the B1-05 through B1-13 native product gate,
 generation crash and multi-process cancellation/replacement qualification,
 same-index lexical determinism qualification, source-package qualification,
@@ -78,7 +79,7 @@ supported without hiding a missing later gate.
 | Q-01 | Generation-boundary fault injection and prior-or-new recovery | Native target evidence passing | yes | yes | yes | yes | yes | no | Six process-death checkpoints prove exact prior-or-next recovery with a fresh Doctor/search process locally and in run `32543715602`; stable-candidate rerun remains open |
 | Q-02 | Multi-process reader/writer and cancellation-versus-timeout qualification | Native target evidence passing | yes | yes | yes | yes | yes | no | Exact commit `e415dba` passes the complete local gate and both CI targets in run `32564056058`; real installed-model workers prove queued timeout, explicit cancellation without late responses, and recovery on both targets in run `32564056061`, while a separate-process vector reader proves bounded replacement refusal, retry, and stale-inode citation rejection |
 | Q-03 | Same-target and cross-target deterministic ordering | Native target evidence passing | yes | yes | yes | yes | yes | no | Exact-head stable lexical qualification run `32662886698` at `f857d48` reuses one frozen index for five fresh CLI and five fresh MCP processes on each supported target; every ordered citation, duplicate set, degradation flag, and explanation matches; independent-build UUID variance remains diagnosed, and hybrid remains beta under EVAL-06 |
-| Q-04 | 100,000-chunk performance and component latency evidence | Focused tests passing | yes | yes | no | no | yes | no | Run `40004812595` at `1ce11d0` completes all 2,250 observations. Identifier p95 129–141 ms and ordinary lexical 283–286 ms fail <100 ms; fallback 147–161 ms and hybrid 264–277 ms pass their unchanged limits. Total-p95 CV passes at 1.411687427%; cold, RSS, storage, artifact digest and all summaries are reviewed. Mac preparation fails with SIGBUS before measurement; lock-loss diagnosis and raw failure are retained. No cross-platform qualification pass. Raw reports and profiling targets: `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md` |
+| Q-04 | 100,000-chunk performance and component latency evidence | Focused tests passing | yes | yes | no | no | yes | no | Linux run `40004812595` at `1ce11d0` completes 2,250 observations: identifier/ordinary latency fail; fallback/hybrid and CV 1.411687427% pass. Mac baseline SIGBUS is retained; descriptor repair `b6591b7` passes both native contributor gates on source-identical `99d51f9`. Its recovered Mac protocol completes 2,250 observations but identifier/ordinary/hybrid latency and CV 18.928468601% fail; fallback passes and fresh setup throughput remains unavailable. All raw observations, cold, RSS, storage and provenance reviewed; no same-candidate cross-platform pass. See `eval/RETRIEVAL_QUALIFICATION_2026-10-23.md` and `eval/RETRIEVAL_SCALE_Q04_DIAGNOSIS.md` |
 | Q-05 | Report-only 1,000,000-chunk stress and cancel storm | Native target evidence passing | yes | yes | yes | no | yes | no | Linux run `40008791029` passes the frozen report-only million-passage workload on `3827248`: 75 scale probes, five final hybrid probes, zero deadlines, four retained old readers, 100 metadata generations, two paused workers, eight cancellations, no late responses and lexical/hybrid recovery. Raw archive and summaries reviewed; no Mac/100k/stable-candidate pass implied. See `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md` |
 | Q-06 | Security, privacy, supply-chain, and recovery reviews | Focused tests passing | yes | yes | no | no | no | no | Commit `67db45d` remediates the six TLS advisories from run `39510521224`; full local contributor/dependency gates and fresh dependency policy run `39535772624` pass. The 1800-second-per-parser campaign passes all six targets (664,006,230 executions) in run `39655481738`; independent semantic/distribution/recovery review remains open |
 | Q-07 | Pinned Codex, Claude Code, and generic cross-client dogfooding | Complete local gate passing | yes | yes | yes | no | yes | no | Protocol v2 passes on macOS arm64 with generic MCP, Codex 0.149.0-alpha.4.1, and Claude Code 2.1.296 against the ba527f9 binary. Both agent streams contain successful search/Get calls and verified body/source hashes; final citations match. V1 failure is retained. See `eval/VERIFICATION_2026_10_21.md` and its raw report/receipt. Linux and stable-candidate qualification remain open |
@@ -133,6 +134,13 @@ historical estimates calculated before this requirement/evidence denominator
 existed; they are not mixed with ledger percentages.
 
 ## Current blocker register
+
+Performance qualification is failed, not awaiting a report or local sudo.
+Linux identifier/ordinary latency and Mac identifier/ordinary/hybrid latency,
+Mac CV, fresh Mac preparation throughput and a same-candidate two-platform
+pass remain open. Reduced Mac profiling isolates repeated WAL-attachment cost
+and remaining broad ranking; no performance fix or release pass is inferred
+from that diagnostic. Independent source review remains outstanding.
 
 No current implementation blocker requires user input. External authority may
 later be required for Developer ID/notarization, stable signing/publication,

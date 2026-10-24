@@ -399,5 +399,47 @@ must not be added twice. The separate adaptive-cursor repair `3827248` targets
 repeated ranking through 500 candidates in stress recovery; it does not prove
 that these 50-candidate Q04 failures are repaired. Preserve all checks and
 ranking while profiling the broad ranking and orchestration before another
-expensive 100k rerun. The Mac protocol and reviewed cross-platform comparison
-remain outstanding; no retrieval-quality or token-cost claim follows.
+expensive 100k rerun. The separate recovered Mac protocol is now complete,
+as recorded below; no retrieval-quality or token-cost claim follows.
+
+## Completed recovered Mac protocol on `b6591b7` — 2026-10-24
+
+After the separately diagnosed WAL descriptor repair, the frozen native M2 /
+16 GB query protocol completes all **2,250 observations** on a recovered index.
+The [review and raw receipts](results/retrieval-scale-macos-recovery-b6591b7/REVIEW.md)
+retain the failed exit and every sample. Identifier p95 522/299/211 ms and
+ordinary lexical 502/400/371 ms fail <100 ms; hybrid 655/549/470 ms fails the
+every-run <500 ms condition. Fallback 322/255/225 ms passes <750 ms.
+Total-p95 CV **18.928468601%** fails <=10%. The explicitly cached recovery
+leaves fresh ingest throughput null, and its frozen setup gate correctly fails.
+Actual cache eviction, separate cold observations, RSS and storage are reviewed.
+
+The [status comparison](RETRIEVAL_QUALIFICATION_2026-10-23.md)
+keeps this `b6591b7` recovery separate from Linux baseline `1ce11d0` and Linux
+stress `3827248`. It is not a causal repair estimate or platform speed result.
+Within-run timing also shifts; no thermal/frequency/background/page-fault
+telemetry establishes why. No warm samples may be removed to close the CV gate.
+
+## Reduced connection-lifetime profile — 2026-10-24
+
+The [native Mac A/B/A diagnostic](results/query-open-profile-b6591b7/REVIEW.md)
+uses the same `b6591b7` binary on a disposable recovered clone, two frozen
+lexical queries and the existing MCP validator. It does not repeat the full
+qualification. With normal connection lifetimes, identifier server p50 is
+121 ms and ordinary lexical 258 ms. Keeping a separate read-only SQLite
+attachment alive reduces these to 42 / 177 ms. Releasing it restores
+122 / 259 ms. Native sample stacks show repeated WAL-index reconstruction in
+`IndexDb::open_existing`/`inspect_connection`; the keeper nearly removes that
+stack and release restores it. This identifies about 80 ms of connection/WAL
+overhead on this fixture. The shared handler closes preflight before opening
+retrieval, even in lexical mode. Expected-schema reconstruction is visible but
+is a smaller sampled branch, so caching it is not justified as the main fix.
+
+Broad FTS5/BM25 ranking remains and ordinary lexical still exceeds 100 ms with
+the keeper. No production keeper, checkpoint, cached validation or threshold
+change is introduced. A future connection-lifetime repair must retain index
+replacement, namespace/snapshot/corruption checks, cancellation, reader/writer
+behavior and final lock cleanup, with focused regression evidence. Native
+Linux attribution remains unmeasured; similar wall-time remainders alone do
+not prove the same mechanism. Preserve this diagnosis before any expensive
+same-candidate two-platform run.

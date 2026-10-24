@@ -24,7 +24,7 @@ Continue in this order:
 
 Optional watch mode and additional integrations are not on the critical path.
 
-## Current release execution queue — 2026-10-23
+## Current release execution queue — 2026-10-24
 
 The feature phases above are implemented. Continue the existing qualification
 plan in this order; the canonical denominator remains
@@ -51,6 +51,13 @@ plan in this order; the canonical denominator remains
    retained in `eval/results/retrieval-scale-40004812595-1ce11d0/REVIEW.md`.
    The offending ordinary query uses 50 candidates; profile broad ranking and
    the unassigned orchestration budget before another expensive 100k rerun.
+   Reduced Mac A/B/A sampling on `b6591b7` identifies about 80 ms of repeated
+   WAL attachment/reconstruction cost: keeping a read-only attachment alive
+   changes identifier median 121 -> 42 -> 122 ms across normal/keeper/released
+   controls, and ordinary lexical 258 -> 177 -> 259 ms. Broad ranking still
+   misses 100 ms. This is a diagnostic control, not a production keeper or
+   native Linux attribution. Preserve snapshot/replacement and lock safety in
+   any repair; see `eval/results/query-open-profile-b6591b7/REVIEW.md`.
 2. **Q-05: resolve vector preflight and prove cancellation at scale.** Keep
    missing/extra/NULL/source-partition and vector-payload integrity checks.
    Block-level validation now reads each referenced payload once and rejects
@@ -64,7 +71,7 @@ plan in this order; the canonical denominator remains
    See `eval/RETRIEVAL_STRESS_Q05_DIAGNOSIS.md`. These are diagnostics, not
    qualification. Demonstrate two active model workers, cancellation without
    late responses, and successful lexical/hybrid recovery on the native
-   million-passage fixture. Latest run `39981593244` at `1ce11d0` reaches
+   million-passage fixture. Prior run `39981593244` at `1ce11d0` reaches
    post-cancellation lexical recovery, then fails its `mcp_tool` deadline.
    Worker setup progressed, but there is no complete stress JSON report.
    The recovery bottleneck is now reproduced: duplicate-heavy paging reran
@@ -96,13 +103,23 @@ plan in this order; the canonical denominator remains
    gate, optimized smoke, paired correctness and small cancellation checks.
    A separate clone passes full Doctor before/after and commits all 100,000
    memberships in 39.651 s using cached inference. Its query-protocol launcher
-   awaits local sudo; fresh ingest/inference throughput deliberately remains
-   unqualified in that recovery setup. Native CI must be rechecked after the
-   stale ledger headline is corrected to 222/316 (70.3%).
+   completes all 2,250 observations: identifier p95 522/299/211 ms, ordinary
+   lexical 502/400/371 ms and hybrid 655/549/470 ms fail their every-run limits;
+   fallback 322/255/225 ms passes. Total-p95 CV 18.928468601% fails, and fresh
+   ingest/inference throughput deliberately remains unqualified in that
+   recovery setup. The actual cold eviction, raw order/counts, summaries, RSS
+   and storage are reviewed in
+   `eval/results/retrieval-scale-macos-recovery-b6591b7/REVIEW.md`.
+   All seven standard workflows pass `99d51f9`, whose production sources match
+   `b6591b7`; both native contributor logs include the passing lock regression.
+   The initial ledger failure remains retained; 222/316 (70.3%) is verified.
    See `eval/MACOS_100K_SIGBUS_DIAGNOSIS.md`. All path/owner/no-follow checks and
-   candidate boundaries remain enforced. Linux has
-   a complete failed 100k report; no Mac report or two-platform comparison
-   exists. These baseline results stay separate from `3827248` stress evidence.
+   candidate boundaries remain enforced. Both available query reports are
+   complete failures; the reviewed status comparison spans different
+   candidates and cannot establish relative platform speed. Fresh setup and
+   a same-candidate two-platform pass remain open. These results stay separate
+   from `3827248` stress evidence. No benchmark remains active or awaiting
+   authentication; diagnose/repair before another expensive qualification run.
    See `eval/RETRIEVAL_QUALIFICATION_2026-10-23.md` for receipts and remaining
    gates. No retrieval-quality or token-cost superiority follows from this work.
 4. **Q-07 and evaluation: finish client and cost evidence.** Run pinned Linux

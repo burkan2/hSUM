@@ -1,13 +1,15 @@
 # Mac 100k preparation SIGBUS — 2026-10-24
 
-**Disposition: preparation failed; no Mac performance measurement exists.**
+**Baseline disposition: preparation failed; no baseline Mac measurement exists.**
+The separate `b6591b7` recovered-index query protocol has since completed and
+failed latency/CV/fresh-throughput gates; see the final section below.
 The M2/16 GB run remains pinned to candidate
 `1ce11d00bf8cad949c12a9c496ab7dba3675717f`. `prepare.exit` is 2 and the retained
 harness error says its child `hsum ingest --reembed` returned **-10**.
 `setup-macos-arm64.json`, `measurement.started`, `measurement.exit`, and
 `macos-arm64-100k.json` are absent. The guarded authenticated launcher correctly
 refused to measure without successful preparation. There is no 2,250-query
-Mac report or legitimate cross-platform comparison to publish.
+baseline Mac report or same-candidate cross-platform comparison to publish.
 
 ## Retained evidence and recovery state
 
@@ -119,8 +121,13 @@ lexical/semantic/hybrid controls preserve ordered citations/scores/hashes and
 verify all 180 returned content windows. Small-model cancellation again pauses
 two workers, cancels eight requests without late responses and recovers both
 lexical and hybrid search. [Logs and source-bound receipts are retained](results/wal-lock-repair-b6591b7/).
-This is author review and local evidence; independent source review and Linux
-execution of the new lock regression are not yet claimed. Initial CI run
+This is author source review; independent source review remains open. The
+subsequent [CI 40040184801](https://github.com/burkan2/hSUM/actions/runs/40040184801)
+passes both Linux and macOS contributor gates, with the new lock regression
+explicitly passing in both retained job logs. All seven standard workflows
+pass at `99d51f9`; production source/configuration has no diff from `b6591b7`.
+[Native receipts and source comparison](results/native-ci-99d51f9/REVIEW.md)
+are retained separately from scale results. Initial CI run
 `40039660073` stopped before Rust tests because the prior Q05 ledger update had
 not recalculated its headline percentage. The correct unchanged evidence count
 is 222/316 (70.3%); the metric and verifier tests are repaired separately.
@@ -145,5 +152,21 @@ This prevents reuse timing from turning into a false full qualification pass.
 The recovered query run still uses the frozen three-process, 2,250-observation
 protocol, original thresholds, actual cache eviction, memory and storage checks.
 Its reports must be labeled `b6591b7` recovery and kept separate from both prior
-candidates. A new Terminal launcher is open and awaiting local sudo authentication;
-no recovered 2,250-observation report exists yet.
+candidates.
+
+## Completed recovered query measurement
+
+The user authenticated the separate recovery launcher locally. It completed
+all three processes and **2,250 measured queries**, then retained exit 1.
+The [complete raw report and assertion-based review](results/retrieval-scale-macos-recovery-b6591b7/REVIEW.md)
+show identifier p95 522/299/211 ms and ordinary lexical 502/400/371 ms
+failing <100 ms. Hybrid 655/549/470 ms fails the every-run <500 ms gate;
+fallback 322/255/225 ms passes <750 ms. Total p95 is 560/423/357 ms and CV
+18.928468601%, above 10%. Fresh setup throughput remains unqualified exactly
+as intended. The query-count, canonical protocol, actual cold eviction and
+RSS flags pass. No failed samples were removed.
+
+This demonstrates completion of the recovered workload after repairing the
+reproduced lock invariant; it does not trace the original truncating process,
+prove a fresh-preparation pass, or establish a performance comparison against
+Linux or the failed baseline. The original crash/index/receipts remain intact.
