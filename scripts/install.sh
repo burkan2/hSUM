@@ -3,6 +3,7 @@
 set -euo pipefail
 
 version="@HSUM_VERSION@"
+minisign_public_key="@HSUM_MINISIGN_PUBLIC_KEY@"
 template_version_marker="@HSUM""_VERSION@"
 repository="burkan2/hSUM"
 activate_path=""
@@ -48,6 +49,26 @@ if [ "$version" = "$template_version_marker" ]; then
   printf '%s\n' \
     "This source template is not an installer." \
     "Download install-hsum.sh from a specific hSUM GitHub Release." >&2
+  exit 2
+fi
+
+stable_release=false
+if [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+  stable_release=true
+  if [ "$allow_unnotarized_alpha" = true ]; then
+    printf 'stable releases cannot bypass macOS notarization\n' >&2
+    exit 2
+  fi
+  if [[ ! "$minisign_public_key" =~ ^RW[A-Za-z0-9+/]{54}$ ]]; then
+    printf 'stable installer has no valid pinned Minisign public key\n' >&2
+    exit 2
+  fi
+  command -v minisign >/dev/null 2>&1 || {
+    printf 'stable installation requires Minisign for signature verification\n' >&2
+    exit 2
+  }
+elif [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-alpha\.[0-9]+$ ]]; then
+  printf 'unsupported release version: %s\n' "$version" >&2
   exit 2
 fi
 
@@ -106,10 +127,35 @@ trap cleanup EXIT HUP INT TERM
 
 archive="$install_tmp/$asset"
 checksum="$install_tmp/$asset.sha256"
+if [ "$stable_release" = true ]; then
+  curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
+    --output "$install_tmp/SHA256SUMS" "$base_url/SHA256SUMS"
+  curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
+    --output "$install_tmp/SHA256SUMS.minisig" "$base_url/SHA256SUMS.minisig"
+  verified_comment=$(minisign -V -H -Q -m "$install_tmp/SHA256SUMS" -P "$minisign_public_key" \
+    -x "$install_tmp/SHA256SUMS.minisig")
+  test "$verified_comment" = "hSUM $tag: SHA256SUMS"
+  # Select exactly one fixed archive name from the authenticated manifest;
+  # never pass arbitrary manifest paths to the checksum tool.
+  awk -v expected="$asset" '
+    $2 == expected {
+      if (NF != 2 || length($1) != 64 || $1 ~ /[^0-9a-f]/) exit 1
+      found++; print $1 "  " expected
+    }
+    END { if (found != 1) exit 1 }
+  ' "$install_tmp/SHA256SUMS" > "$checksum"
+fi
 curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
   --output "$archive" "$base_url/$asset"
-curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
-  --output "$checksum" "$base_url/$asset.sha256"
+if [ "$stable_release" = true ]; then
+  curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
+    --output "$archive.minisig" "$base_url/$asset.minisig"
+  verified_comment=$(minisign -V -H -Q -m "$archive" -P "$minisign_public_key" -x "$archive.minisig")
+  test "$verified_comment" = "hSUM $tag: $asset"
+else
+  curl --proto '=https' --tlsv1.2 --fail --location --silent --show-error \
+    --output "$checksum" "$base_url/$asset.sha256"
+fi
 
 (
   cd "$install_tmp"
@@ -145,6 +191,10 @@ extracted="$extract_dir/hsum"
 chmod 700 "$extracted"
 
 if [ "$(uname -s)" = "Darwin" ] && ! spctl --assess --type execute "$extracted" 2>/dev/null; then
+  if [ "$stable_release" = true ]; then
+    printf 'macOS rejected the stable Developer ID/notarization assessment\n' >&2
+    exit 2
+  fi
   if [ "$allow_unnotarized_alpha" != true ]; then
     printf '%s\n' \
       "The verified macOS alpha is not Developer ID-notarized." \

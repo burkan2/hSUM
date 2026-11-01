@@ -29,6 +29,8 @@ def main():
         parser.error("fresh diagnostic preparation is lexical only")
     home, corpus = args.home.resolve(), args.corpus.resolve()
     baseline, candidate = args.baseline.resolve(), args.candidate.resolve()
+    if h.sha256_file(baseline) == h.sha256_file(candidate):
+        raise h.HarnessError("baseline and candidate binaries are identical; refusing invalid comparison")
     queries = h.load_queries()
     preparation = None
     if args.prepare:

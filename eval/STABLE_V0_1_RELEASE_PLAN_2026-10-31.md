@@ -97,3 +97,10 @@ original Mac crash snapshot, recovered index, and all previous raw evidence.
   implemented locally with real disposable Minisign tests and independent
   review. Production key authority, Apple signing and workflow integration
   remain open; no stable tag or release has been published.
+
+- November 1: initial Linux diagnostic41304545751 is invalid: both builds
+  shared a target directory and all three phase hashes are identical. Independent
+  review caught the reuse; retain the raw run, isolate target directories and
+  reject equal binary hashes before measurement. The new refusal regression
+  fails before the repair and passes after it. No Linux optimization conclusion
+  can be drawn from this run; corrected diagnostic remains required.

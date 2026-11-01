@@ -10,11 +10,11 @@ from benches.retrieval_scale import ranking_diagnostic as diagnostic
 
 
 class DiagnosticEvidenceTests(unittest.TestCase):
-    def run_diagnostic(self, root, *, fail_candidate=False, fail_start=False, wrong_corpus=False):
+    def run_diagnostic(self, root, *, fail_candidate=False, fail_start=False, wrong_corpus=False, identical_binary=False):
         output = root / "report.json"
         binaries = [root / "baseline", root / "candidate"]
         for binary in binaries:
-            binary.write_bytes(binary.name.encode())
+            binary.write_bytes(b"same" if identical_binary else binary.name.encode())
 
         corpus = root / "corpus"
         corpus.mkdir()
@@ -43,7 +43,7 @@ class DiagnosticEvidenceTests(unittest.TestCase):
                 patch.object(diagnostic.h, "git_revision", return_value={}), \
                 patch.object(diagnostic.h, "machine_report", return_value={}), \
                 patch.object(diagnostic.h, "validate_search_packet"), patch("builtins.print"):
-            if fail_candidate or fail_start or wrong_corpus:
+            if fail_candidate or fail_start or wrong_corpus or identical_binary:
                 with self.assertRaises(RuntimeError):
                     diagnostic.main()
             else:
@@ -74,6 +74,10 @@ class DiagnosticEvidenceTests(unittest.TestCase):
         self.assertFalse(failure["completed"])
         self.assertIn("changed", failure["error"])
         self.assertEqual(failure["calls"][0]["failed_packet"]["results"], [{"citation": "changed"}])
+
+    def test_identical_binary_comparison_is_rejected_before_search(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertIsNone(self.run_diagnostic(Path(directory), identical_binary=True))
 
     def test_wrong_corpus_is_rejected_before_search(self):
         with tempfile.TemporaryDirectory() as directory:

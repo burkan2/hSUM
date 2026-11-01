@@ -109,3 +109,20 @@ jobs:
       - name: Recover an index built by the published alpha.1 binary
         shell: bash
         run: bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
+
+  stable-signatures:
+    name: Stable signature and installer contract
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install the detached-signature verifier
+        run: sudo apt-get update && sudo apt-get install --yes minisign
+      - name: Verify real signatures and refuse unsigned installation
+        run: |
+          python3 -W error scripts/test_verify_stable_release.py
+          python3 -W error scripts/test_stable_installer.py

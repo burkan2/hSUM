@@ -1,0 +1,31 @@
+E.......E
+======================================================================
+ERROR: test_draft_validation_cannot_claim_signatures (__main__.StableReleaseTests.test_draft_validation_cannot_claim_signatures)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/b.k./Desktop/hSUM/scripts/test_verify_stable_release.py", line 117, in test_draft_validation_cannot_claim_signatures
+    result=self.verify(unsigned_draft=True)
+  File "/Users/b.k./Desktop/hSUM/scripts/test_verify_stable_release.py", line 61, in verify
+    return contract.verify(self.tag, self.dist, self.key, minisign=MINISIGN, **options)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/b.k./Desktop/hSUM/scripts/verify_stable_release.py", line 10, in verify
+    raise ReleaseError("stable verification is not implemented")
+stable_release.ReleaseError: stable verification is not implemented
+
+======================================================================
+ERROR: test_valid_signed_bundle (__main__.StableReleaseTests.test_valid_signed_bundle)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/b.k./Desktop/hSUM/scripts/test_verify_stable_release.py", line 64, in test_valid_signed_bundle
+    result = self.verify()
+  File "/Users/b.k./Desktop/hSUM/scripts/test_verify_stable_release.py", line 61, in verify
+    return contract.verify(self.tag, self.dist, self.key, minisign=MINISIGN, **options)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/b.k./Desktop/hSUM/scripts/verify_stable_release.py", line 10, in verify
+    raise ReleaseError("stable verification is not implemented")
+stable_release.ReleaseError: stable verification is not implemented
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.190s
+
+FAILED (errors=2)

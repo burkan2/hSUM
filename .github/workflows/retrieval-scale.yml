@@ -120,9 +120,9 @@ jobs:
           test "$(uname -s):$(uname -m)" = Linux:x86_64
           mkdir -p "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
           git archive 41af5c711f2bacfd84f68b28b0d8c4ab47711ca6 | tar -x -C "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
-          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target" cargo +1.91.0 build --locked --release \
+          CARGO_TARGET_DIR="$RUNNER_TEMP/ranking-diagnostic/baseline-target" cargo +1.91.0 build --locked --release \
             --manifest-path "$RUNNER_TEMP/ranking-diagnostic/baseline-source/Cargo.toml" --bin hsum
-          cp target/release/hsum "$RUNNER_TEMP/ranking-diagnostic/baseline-hsum"
+          cp "$RUNNER_TEMP/ranking-diagnostic/baseline-target/release/hsum" "$RUNNER_TEMP/ranking-diagnostic/baseline-hsum"
           cargo +1.91.0 build --locked --release --bin hsum
           cargo +1.91.0 test --locked --release --lib search::
 
