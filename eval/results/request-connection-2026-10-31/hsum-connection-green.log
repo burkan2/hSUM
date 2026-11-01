@@ -1,0 +1,11 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 9.96s
+     Running unittests src/lib.rs (target/debug/deps/hsum-a26a0bf0f6eee433)
+
+running 3 tests
+test app::search_evidence::tests::request_control_stops_before_opening_the_store ... ok
+test app::search_evidence::tests::preflight_installs_request_control_before_reading_the_snapshot ... ok
+test app::search_evidence::tests::one_request_keeps_its_validated_connection_through_preflight_and_retrieval ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 143 filtered out; finished in 0.10s
+

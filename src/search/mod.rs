@@ -1,4 +1,5 @@
 mod get;
+mod ranking;
 mod retrieval;
 
 pub(crate) use get::get_evidence_snapshot;

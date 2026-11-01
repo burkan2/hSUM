@@ -888,6 +888,7 @@ name = "hsum"
 version = "0.1.0-alpha.4"
 dependencies = [
  "aho-corasick",
+ "cc",
  "clap",
  "clap_complete",
  "clap_mangen",

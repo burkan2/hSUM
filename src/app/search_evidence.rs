@@ -187,16 +187,24 @@ impl SearchEvidence {
         request: &SearchEvidenceRequest,
     ) -> Result<SearchEvidenceOutcome, SearchEvidenceError> {
         let started = Instant::now();
+        checkpoint(request)?;
+        // Keep the validated WAL attachment alive for the whole request. Each
+        // preflight statement and retrieval transaction still takes a fresh
+        // snapshot; inference never holds a SQLite read transaction open.
+        let database = IndexDb::open_existing(&request.index_path, OpenMode::ReadOnly)?;
+        if let Some(observer) = request.connection_observer {
+            observer(database.connection());
+        }
         let mut query_embedding_elapsed = Duration::ZERO;
-        let (database, mut response, snapshot, degraded_mode, hints) = loop {
+        let (mut response, snapshot, degraded_mode, hints) = loop {
             checkpoint(request)?;
-            let prepared = prepare_query_embedding(request, started)?;
+            database.verify_live_identity()?;
+            let prepared = prepare_query_embedding(request, &database, started)?;
             query_embedding_elapsed += prepared.embedding_elapsed;
+            #[cfg(test)]
+            tests::after_preflight(&database);
             checkpoint(request)?;
-            let database = IndexDb::open_existing(&request.index_path, OpenMode::ReadOnly)?;
-            if let Some(observer) = request.connection_observer {
-                observer(database.connection());
-            }
+            database.verify_live_identity()?;
 
             checkpoint(request)?;
             let response = match database.search(request.project_id, &prepared.search) {
@@ -220,13 +228,7 @@ impl SearchEvidence {
                 checkpoint(request)?;
                 continue;
             }
-            break (
-                database,
-                response,
-                snapshot,
-                prepared.degraded_mode,
-                prepared.hints,
-            );
+            break (response, snapshot, prepared.degraded_mode, prepared.hints);
         };
         response.degraded_mode = degraded_mode;
         response.hints = hints;
@@ -326,6 +328,7 @@ impl SearchEvidence {
 
 fn prepare_query_embedding(
     request: &SearchEvidenceRequest,
+    preflight: &IndexDb,
     started: Instant,
 ) -> Result<PreparedSearch, SearchEvidenceError> {
     let request_deadline = started
@@ -337,10 +340,6 @@ fn prepare_query_embedding(
             operation.min(request_deadline)
         });
 
-    let preflight = IndexDb::open_existing(&request.index_path, OpenMode::ReadOnly)?;
-    if let Some(observer) = request.connection_observer {
-        observer(preflight.connection());
-    }
     checkpoint(request)?;
     let snapshot = read_snapshot(preflight.connection(), request.project_id)?;
     if let Some(expected) = request.expected_snapshot.as_ref()
@@ -352,7 +351,6 @@ fn prepare_query_embedding(
         });
     }
     if request.search.mode() == SearchMode::Lexical {
-        drop(preflight);
         return Ok(PreparedSearch {
             search: remaining_search_request(request, deadline)?,
             degraded_mode: Vec::new(),
@@ -364,7 +362,6 @@ fn prepare_query_embedding(
     let profile = preflight.embedding_profile()?;
     let vectors_complete = preflight.has_complete_vector_membership()?;
     preflight.verify_live_identity()?;
-    drop(preflight);
 
     let explicit_vector = matches!(
         request.search.mode(),
@@ -654,6 +651,16 @@ fn map_stored_source_root_error(error: StoredSourceRootError) -> SearchEvidenceE
 mod tests {
     use super::*;
 
+    thread_local! {
+        static AFTER_PREFLIGHT: std::cell::Cell<Option<fn(&IndexDb)>> = const { std::cell::Cell::new(None) };
+    }
+
+    pub(super) fn after_preflight(database: &IndexDb) {
+        if let Some(hook) = AFTER_PREFLIGHT.get() {
+            hook(database);
+        }
+    }
+
     fn cancelled() -> bool {
         true
     }
@@ -673,6 +680,205 @@ mod tests {
             connection_observer: None,
             cancelled: None,
         }
+    }
+
+    fn indexed_request() -> (tempfile::TempDir, SearchEvidenceRequest) {
+        use crate::app::prepare_jsonl_snapshot;
+        use crate::domain::SourceId;
+        use crate::store::{DeleteConfirmations, JsonlScope};
+
+        let directory = tempfile::tempdir().unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(directory.path(), std::fs::Permissions::from_mode(0o700))
+                .unwrap();
+        }
+        let mut request = request();
+        request.index_path = directory.path().join("index.sqlite");
+        let scope = JsonlScope {
+            source_id: SourceId::new_v4(),
+            source_name: "fixture".parse().unwrap(),
+            source_logical_uri: "/fixture.jsonl".to_owned(),
+            source_config_json: r#"{"path":"/fixture.jsonl","schema_version":1}"#.to_owned(),
+            project_id: request.project_id,
+            project_name: "fixture".parse().unwrap(),
+        };
+        let prepared = prepare_jsonl_snapshot(
+            br#"{"id":"one","source_uri":"fixture://one","content":"fixture evidence"}
+"#,
+        )
+        .unwrap();
+        let mut writer = IndexDb::create(&request.index_path, IndexId::new_v4()).unwrap();
+        writer
+            .apply_jsonl_snapshot(
+                &scope,
+                &prepared.documents,
+                &[],
+                DeleteConfirmations::default(),
+            )
+            .unwrap();
+        drop(writer);
+        (directory, request)
+    }
+
+    #[test]
+    fn one_request_keeps_its_validated_connection_through_preflight_and_retrieval() {
+        thread_local! {
+            static OPENS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+        }
+        fn observe(connection: &Connection) {
+            assert!(connection.is_autocommit());
+            OPENS.set(OPENS.get() + 1);
+        }
+        let (_directory, mut request) = indexed_request();
+        request.connection_observer = Some(observe);
+
+        for mode in [SearchMode::Lexical, SearchMode::Auto] {
+            OPENS.set(0);
+            request.search = SearchRequest::new("fixture", mode, 10, 3_000, true).unwrap();
+            let outcome = SearchEvidence::execute(&request).unwrap();
+            assert_eq!(outcome.response.results[0].content, "fixture evidence");
+            assert_eq!(
+                OPENS.get(),
+                1,
+                "{mode}: reopening reconstructs the WAL twice"
+            );
+        }
+    }
+
+    #[test]
+    fn preflight_releases_its_snapshot_and_observes_concurrent_scope_changes() {
+        let (_directory, mut request) = indexed_request();
+        let database = IndexDb::open_existing(&request.index_path, OpenMode::ReadOnly).unwrap();
+        let prepared = prepare_query_embedding(&request, &database, Instant::now()).unwrap();
+        assert!(database.connection().is_autocommit());
+        let writer = IndexDb::open_existing(&request.index_path, OpenMode::ReadWrite).unwrap();
+        writer
+            .connection()
+            .execute(
+                "UPDATE projects SET scope_revision = scope_revision + 1 WHERE id = ?1",
+                [request.project_id.as_uuid().as_bytes().as_slice()],
+            )
+            .unwrap();
+        let next = prepare_query_embedding(&request, &database, Instant::now()).unwrap();
+        assert_eq!(
+            next.snapshot.scope_revision,
+            prepared.snapshot.scope_revision + 1
+        );
+        let response = database.search(request.project_id, &next.search).unwrap();
+        assert_eq!(response.scope_revision, next.snapshot.scope_revision);
+        assert!(database.connection().is_autocommit());
+        request.expected_snapshot = Some(prepared.snapshot);
+        assert!(matches!(
+            prepare_query_embedding(&request, &database, Instant::now()),
+            Err(SearchEvidenceError::SnapshotChanged { .. })
+        ));
+        // No idle read transaction prevents checkpointing or later maintenance.
+        let (busy, _, _): (i64, i64, i64) = writer
+            .connection()
+            .query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+            })
+            .unwrap();
+        assert_eq!(busy, 0);
+    }
+
+    #[test]
+    fn execute_retries_a_concurrent_commit_on_the_same_connection() {
+        thread_local! {
+            static OPENS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+            static PREFLIGHTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+        }
+        fn observe(_: &Connection) {
+            OPENS.set(OPENS.get() + 1);
+        }
+        fn commit(database: &IndexDb) {
+            PREFLIGHTS.set(PREFLIGHTS.get() + 1);
+            assert!(database.connection().is_autocommit());
+            if PREFLIGHTS.get() == 1 {
+                let writer = IndexDb::open_existing(database.path(), OpenMode::ReadWrite).unwrap();
+                writer
+                    .connection()
+                    .execute(
+                        "UPDATE projects SET scope_revision = scope_revision + 1",
+                        [],
+                    )
+                    .unwrap();
+            }
+        }
+        let (_directory, mut request) = indexed_request();
+        request.connection_observer = Some(observe);
+        let before = SearchEvidence::execute(&request).unwrap();
+        OPENS.set(0);
+        AFTER_PREFLIGHT.set(Some(commit));
+        let result = SearchEvidence::execute(&request);
+        AFTER_PREFLIGHT.set(None);
+        let after = result.unwrap();
+        assert_eq!(OPENS.get(), 1);
+        assert_eq!(PREFLIGHTS.get(), 2);
+        assert_eq!(
+            after.snapshot.scope_revision,
+            before.snapshot.scope_revision + 1
+        );
+        assert_eq!(after.response.scope_revision, after.snapshot.scope_revision);
+        assert_eq!(after.response.results, before.response.results);
+    }
+
+    #[test]
+    fn cancellation_stops_a_snapshot_retry_on_the_retained_connection() {
+        thread_local! {
+            static PREFLIGHTS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+            static CANCELLED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+        }
+        fn cancelled() -> bool {
+            CANCELLED.get()
+        }
+        fn change_then_cancel(database: &IndexDb) {
+            PREFLIGHTS.set(PREFLIGHTS.get() + 1);
+            if PREFLIGHTS.get() == 1 {
+                let writer = IndexDb::open_existing(database.path(), OpenMode::ReadWrite).unwrap();
+                writer
+                    .connection()
+                    .execute(
+                        "UPDATE projects SET scope_revision = scope_revision + 1",
+                        [],
+                    )
+                    .unwrap();
+            } else {
+                CANCELLED.set(true);
+            }
+        }
+        let (_directory, mut request) = indexed_request();
+        request.cancelled = Some(cancelled);
+        AFTER_PREFLIGHT.set(Some(change_then_cancel));
+        let result = SearchEvidence::execute(&request);
+        AFTER_PREFLIGHT.set(None);
+        CANCELLED.set(false);
+        assert!(matches!(result, Err(SearchEvidenceError::Cancelled)));
+        assert_eq!(PREFLIGHTS.get(), 2);
+        assert!(SearchEvidence::execute(&request).is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn request_refuses_a_database_renamed_after_opening() {
+        thread_local! {
+            static PATH: std::cell::RefCell<PathBuf> = const { std::cell::RefCell::new(PathBuf::new()) };
+        }
+        fn observe(_: &Connection) {
+            PATH.with(|path| {
+                let path = path.borrow();
+                std::fs::rename(&*path, path.with_extension("displaced")).unwrap();
+            });
+        }
+        let (_directory, mut request) = indexed_request();
+        PATH.with(|path| *path.borrow_mut() = request.index_path.clone());
+        request.connection_observer = Some(observe);
+        assert!(matches!(
+            SearchEvidence::execute(&request),
+            Err(SearchEvidenceError::Store(_))
+        ));
     }
 
     #[test]

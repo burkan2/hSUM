@@ -88,7 +88,9 @@ jobs:
 
       - name: Build the candidate binary
         shell: bash
-        run: cargo +1.91.0 build --locked --release
+        run: |
+          cargo +1.91.0 build --locked --release
+          cargo +1.91.0 test --locked --release --lib search::
 
       - name: Reproduce the release binary from an isolated target directory
         shell: bash

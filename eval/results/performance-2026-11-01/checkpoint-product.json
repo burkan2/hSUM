@@ -1,0 +1,23 @@
+{
+  "qualification": false,
+  "kind": "cached reembedding CLI checkpoint integration on disposable clone; not fresh inference throughput",
+  "binary_sha256": "693242b7a89ddb559198aa48503ef942853ea715bcb7483cb2c8eb7c874b42e7",
+  "before_bytes": {
+    "index.sqlite.writer.lock": 0,
+    "index.sqlite": 1188028416,
+    "index.sqlite-wal": 0,
+    "index.sqlite-shm": 32768,
+    "index.sqlite.replacement.lock": 0
+  },
+  "after_bytes": {
+    "index.sqlite.writer.lock": 0,
+    "index.sqlite": 1344602112,
+    "index.sqlite-wal": 0,
+    "index.sqlite-shm": 622592,
+    "index.sqlite.replacement.lock": 0
+  },
+  "seconds": 48.05818637495395,
+  "exit": 0,
+  "stdout": "Semantic re-embedding committed.\nModel: bge-small-en-v1-5-fp32\nModel fingerprint: b01ac36f13dbf65c0ecbd96c0025d20a7442a248704d7f43a553861d93ba833f\nInputs cached: 0\nInputs reused: 100000\nEstimated write bytes: 563265536\nActive passages: 100000\nGeneration: 3\nIndex epoch: 3\nVector slot: 0\n",
+  "stderr": ""
+}

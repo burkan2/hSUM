@@ -1,0 +1,31 @@
+   Compiling ring v0.17.14
+   Compiling rustls v0.23.46
+   Compiling rustls-webpki v0.103.16
+   Compiling ureq v3.3.0
+   Compiling ort-sys v2.0.0-rc.13
+   Compiling ort v2.0.0-rc.13
+   Compiling fastembed v5.17.4
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 16.58s
+     Running unittests src/lib.rs (target/debug/deps/hsum-e461de09bbb04454)
+
+running 1 test
+test search::retrieval::tests::repeated_searches_register_one_ranker_per_connection ... FAILED
+
+failures:
+
+---- search::retrieval::tests::repeated_searches_register_one_ranker_per_connection stdout ----
+
+thread 'search::retrieval::tests::repeated_searches_register_one_ranker_per_connection' (7776587) panicked at src/search/retrieval.rs:2450:9:
+assertion `left == right` failed
+  left: 100
+ right: 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    search::retrieval::tests::repeated_searches_register_one_ranker_per_connection
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 159 filtered out; finished in 0.05s
+
+error: test failed, to rerun pass `--lib`

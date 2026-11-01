@@ -35,6 +35,7 @@ const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 
 pub struct IndexDb {
     connection: Connection,
+    pub(crate) search_ranker_installed: std::cell::Cell<bool>,
     path: PathBuf,
     validated_path: ValidatedIndexPath,
 }
@@ -215,6 +216,7 @@ impl IndexDb {
 
         Ok(Self {
             connection,
+            search_ranker_installed: std::cell::Cell::new(false),
             path: sqlite_path,
             validated_path,
         })
@@ -323,6 +325,7 @@ impl IndexDb {
 
         Ok(Self {
             connection,
+            search_ranker_installed: std::cell::Cell::new(false),
             path: sqlite_path,
             validated_path: identity,
         })
@@ -354,6 +357,7 @@ impl IndexDb {
 
         Ok(Self {
             connection,
+            search_ranker_installed: std::cell::Cell::new(false),
             path: sqlite_path,
             validated_path: identity,
         })
@@ -378,6 +382,50 @@ impl IndexDb {
     #[doc(hidden)]
     pub fn verify_live_identity(&self) -> Result<(), StoreError> {
         self.validated_path.verify_connection(&self.connection)
+    }
+
+    /// Reclaim an idle WAL after a committed write, without waiting for readers.
+    /// A busy checkpoint is normal deferred maintenance, not a failed commit.
+    pub(crate) fn checkpoint_idle_wal(
+        &self,
+        writer_lock: &crate::store::WriterLock,
+    ) -> Result<bool, StoreError> {
+        if !writer_lock.protects(self.path()) {
+            return Err(StoreError::WriterLockMismatch);
+        }
+        if self.is_read_only()? {
+            return Err(StoreError::ReadWriteRequired);
+        }
+        if !self.connection.is_autocommit() {
+            return Err(StoreError::GenerationInvariant(
+                "checkpoint requires autocommit",
+            ));
+        }
+        self.verify_live_identity()?;
+        let prior_timeout: u32 =
+            self.connection
+                .pragma_query_value(None, "busy_timeout", |row| row.get(0))?;
+        self.connection.busy_timeout(Duration::ZERO)?;
+        let outcome =
+            self.connection
+                .query_row("PRAGMA main.wal_checkpoint(TRUNCATE)", [], |row| {
+                    Ok((
+                        row.get::<_, i64>(0)?,
+                        row.get::<_, i64>(1)?,
+                        row.get::<_, i64>(2)?,
+                    ))
+                });
+        // Restore the caller's timeout even when the checkpoint returns an error.
+        self.connection
+            .busy_timeout(Duration::from_millis(u64::from(prior_timeout)))?;
+        self.verify_live_identity()?;
+        match outcome? {
+            (0, 0, 0) => Ok(true),
+            (1, _, _) => Ok(false),
+            _ => Err(StoreError::GenerationInvariant(
+                "unexpected WAL checkpoint result",
+            )),
+        }
     }
 }
 
@@ -1563,6 +1611,110 @@ finally:
         }
         assert_process_record_lock(&path, 1_073_741_826, 510, false);
         assert!(!pinned_descriptors().lock().unwrap().contains_key(&identity));
+    }
+
+    #[test]
+    fn idle_wal_checkpoint_preserves_active_readers_and_later_truncates() {
+        use crate::store::WriterLock;
+        let directory = private_tempdir();
+        let path = directory.path().join("index.sqlite");
+        let writer = IndexDb::create(&path, IndexId::new_v4()).unwrap();
+        let lock = WriterLock::acquire(&path, Duration::ZERO).unwrap();
+        let reader = IndexDb::open_existing(&path, OpenMode::ReadOnly).unwrap();
+        let snapshot = reader.connection().unchecked_transaction().unwrap();
+        let before: Vec<u8> = snapshot
+            .query_row(
+                "SELECT value FROM index_meta WHERE key='index_epoch'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        writer
+            .connection()
+            .execute(
+                "UPDATE index_meta SET value=x'31' WHERE key='index_epoch'",
+                [],
+            )
+            .unwrap();
+        assert!(!writer.checkpoint_idle_wal(&lock).unwrap());
+        let still_before: Vec<u8> = snapshot
+            .query_row(
+                "SELECT value FROM index_meta WHERE key='index_epoch'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(before, still_before);
+        let timeout: u32 = writer
+            .connection()
+            .pragma_query_value(None, "busy_timeout", |row| row.get(0))
+            .unwrap();
+        assert_eq!(timeout, BUSY_TIMEOUT.as_millis() as u32);
+        snapshot.rollback().unwrap();
+        // An attached reader with no transaction does not prevent cleanup.
+        assert!(writer.checkpoint_idle_wal(&lock).unwrap());
+        assert_eq!(
+            std::fs::metadata(sqlite_sidecar_path(&path, "-wal"))
+                .unwrap()
+                .len(),
+            0
+        );
+        reader.verify_live_identity().unwrap();
+        let after: Vec<u8> = reader
+            .connection()
+            .query_row(
+                "SELECT value FROM index_meta WHERE key='index_epoch'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(after, b"1");
+        assert!(matches!(
+            reader.checkpoint_idle_wal(&lock),
+            Err(StoreError::ReadWriteRequired)
+        ));
+    }
+
+    #[test]
+    fn idle_wal_checkpoint_refuses_active_transactions_and_wrong_locks() {
+        use crate::store::WriterLock;
+        let directory = private_tempdir();
+        let path = directory.path().join("index.sqlite");
+        let writer = IndexDb::create(&path, IndexId::new_v4()).unwrap();
+        let wrong_lock =
+            WriterLock::acquire(&directory.path().join("other.sqlite"), Duration::ZERO).unwrap();
+        assert!(matches!(
+            writer.checkpoint_idle_wal(&wrong_lock),
+            Err(StoreError::WriterLockMismatch)
+        ));
+        let lock = WriterLock::acquire(&path, Duration::ZERO).unwrap();
+        let transaction = writer.connection().unchecked_transaction().unwrap();
+        assert!(writer.checkpoint_idle_wal(&lock).is_err());
+        transaction.rollback().unwrap();
+        assert!(writer.checkpoint_idle_wal(&lock).unwrap());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn idle_wal_checkpoint_refuses_replaced_sidecars_before_mutation() {
+        use crate::store::WriterLock;
+        let directory = private_tempdir();
+        let path = directory.path().join("index.sqlite");
+        let writer = IndexDb::create(&path, IndexId::new_v4()).unwrap();
+        let lock = WriterLock::acquire(&path, Duration::ZERO).unwrap();
+        let wal = sqlite_sidecar_path(&path, "-wal");
+        let displaced = directory.path().join("displaced-wal");
+        std::fs::rename(&wal, &displaced).unwrap();
+        let retained = std::fs::read(&displaced).unwrap();
+        let target = directory.path().join("target");
+        std::fs::write(&target, b"must remain untouched").unwrap();
+        std::os::unix::fs::symlink(&target, &wal).unwrap();
+        assert!(writer.checkpoint_idle_wal(&lock).is_err());
+        assert_eq!(std::fs::read(&target).unwrap(), b"must remain untouched");
+        assert_eq!(std::fs::read(&displaced).unwrap(), retained);
+        // Restore the test namespace before SQLite tears down the connection.
+        std::fs::remove_file(&wal).unwrap();
+        std::fs::rename(&displaced, &wal).unwrap();
     }
 
     struct InspectCommittedSchema<'a> {

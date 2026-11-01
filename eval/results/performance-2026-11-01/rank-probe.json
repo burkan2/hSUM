@@ -1,0 +1,174 @@
+{
+  "sqlite_version": "3.50.4",
+  "qualification": false,
+  "reports": [
+    {
+      "query": "immutable AND citation AND evidence",
+      "name": "current",
+      "rows": 500,
+      "ms": [
+        717.2380840056576,
+        188.34620801499113,
+        177.78550001094118,
+        186.35966698639095
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 0:M3",
+        "SEARCH ap USING INTEGER PRIMARY KEY (rowid=?)",
+        "SEARCH ps USING PRIMARY KEY (project_id=? AND source_id=?)",
+        "SEARCH dv USING COVERING INDEX sqlite_autoindex_document_versions_2 (id=? AND document_id=? AND rowid=?)",
+        "SEARCH dh USING INDEX sqlite_autoindex_document_heads_1 (document_id=?)",
+        "SEARCH c USING COVERING INDEX chunks_order_idx (id=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "top500_sha256": "e8df8d41f91f42901cf37e92e71e06ab02312546fd569889697fa51c35d6d549"
+    },
+    {
+      "query": "immutable AND citation AND evidence",
+      "name": "rank_stream",
+      "rows": 4000,
+      "ms": [
+        206.8448750069365,
+        206.43537503201514,
+        256.01100001949817,
+        208.82625004742295
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 32:M3",
+        "SEARCH ap USING INTEGER PRIMARY KEY (rowid=?)",
+        "SEARCH ps USING PRIMARY KEY (project_id=? AND source_id=?)",
+        "SEARCH dv USING COVERING INDEX sqlite_autoindex_document_versions_2 (id=? AND document_id=? AND rowid=?)",
+        "SEARCH dh USING INDEX sqlite_autoindex_document_heads_1 (document_id=?)",
+        "SEARCH c USING COVERING INDEX chunks_order_idx (id=?)"
+      ],
+      "top500_sha256": "e8df8d41f91f42901cf37e92e71e06ab02312546fd569889697fa51c35d6d549"
+    },
+    {
+      "query": "immutable AND citation AND evidence",
+      "name": "fts_only",
+      "rows": 500,
+      "ms": [
+        197.81400001375005,
+        194.19845897937194,
+        204.30733397370204,
+        226.27608303446323
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 32:M3"
+      ],
+      "top500_sha256": "e15b4746f435f70525d347a8aa828dabf21a4fb8729f18437b317d28cdf61440"
+    },
+    {
+      "query": "\"immutable generation\"",
+      "name": "current",
+      "rows": 500,
+      "ms": [
+        198.9235840155743,
+        173.30766702070832,
+        173.05783298797905,
+        174.14691700832918
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 0:M3",
+        "SEARCH ap USING INTEGER PRIMARY KEY (rowid=?)",
+        "SEARCH ps USING PRIMARY KEY (project_id=? AND source_id=?)",
+        "SEARCH dv USING COVERING INDEX sqlite_autoindex_document_versions_2 (id=? AND document_id=? AND rowid=?)",
+        "SEARCH dh USING INDEX sqlite_autoindex_document_heads_1 (document_id=?)",
+        "SEARCH c USING COVERING INDEX chunks_order_idx (id=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "top500_sha256": "eeb9734c5c0638de67fe3af9061b03302af679b32fb0ea3fbb68e92f9c90c68b"
+    },
+    {
+      "query": "\"immutable generation\"",
+      "name": "rank_stream",
+      "rows": 10800,
+      "ms": [
+        211.1455419799313,
+        206.1913750367239,
+        204.85187496524304,
+        213.16174999810755
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 32:M3",
+        "SEARCH ap USING INTEGER PRIMARY KEY (rowid=?)",
+        "SEARCH ps USING PRIMARY KEY (project_id=? AND source_id=?)",
+        "SEARCH dv USING COVERING INDEX sqlite_autoindex_document_versions_2 (id=? AND document_id=? AND rowid=?)",
+        "SEARCH dh USING INDEX sqlite_autoindex_document_heads_1 (document_id=?)",
+        "SEARCH c USING COVERING INDEX chunks_order_idx (id=?)"
+      ],
+      "top500_sha256": "eeb9734c5c0638de67fe3af9061b03302af679b32fb0ea3fbb68e92f9c90c68b"
+    },
+    {
+      "query": "\"immutable generation\"",
+      "name": "fts_only",
+      "rows": 500,
+      "ms": [
+        178.32295800326392,
+        176.60599999362603,
+        175.80704198917374,
+        180.40637503145263
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 32:M3"
+      ],
+      "top500_sha256": "65089941dde880d1a55226401bf4dee63029d6ac0ca606cdd02961cac1821329"
+    },
+    {
+      "query": "IdentifierNeedle00037",
+      "name": "current",
+      "rows": 0,
+      "ms": [
+        0.44254102976992726,
+        0.026708003133535385,
+        0.014792021829634905,
+        0.011958007235080004
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 0:M3",
+        "SEARCH ap USING INTEGER PRIMARY KEY (rowid=?)",
+        "SEARCH ps USING PRIMARY KEY (project_id=? AND source_id=?)",
+        "SEARCH dv USING COVERING INDEX sqlite_autoindex_document_versions_2 (id=? AND document_id=? AND rowid=?)",
+        "SEARCH dh USING INDEX sqlite_autoindex_document_heads_1 (document_id=?)",
+        "SEARCH c USING COVERING INDEX chunks_order_idx (id=?)",
+        "USE TEMP B-TREE FOR ORDER BY"
+      ],
+      "top500_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "query": "IdentifierNeedle00037",
+      "name": "rank_stream",
+      "rows": 0,
+      "ms": [
+        0.041834020521491766,
+        0.02400000812485814,
+        0.020832987502217293,
+        0.018207996618002653
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 32:M3",
+        "SEARCH ap USING INTEGER PRIMARY KEY (rowid=?)",
+        "SEARCH ps USING PRIMARY KEY (project_id=? AND source_id=?)",
+        "SEARCH dv USING COVERING INDEX sqlite_autoindex_document_versions_2 (id=? AND document_id=? AND rowid=?)",
+        "SEARCH dh USING INDEX sqlite_autoindex_document_heads_1 (document_id=?)",
+        "SEARCH c USING COVERING INDEX chunks_order_idx (id=?)"
+      ],
+      "top500_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    {
+      "query": "IdentifierNeedle00037",
+      "name": "fts_only",
+      "rows": 0,
+      "ms": [
+        0.01737498678267002,
+        0.04837499000132084,
+        0.026333029381930828,
+        0.02095900708809495
+      ],
+      "plan": [
+        "SCAN passages_fts VIRTUAL TABLE INDEX 32:M3"
+      ],
+      "top500_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    }
+  ]
+}

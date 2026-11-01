@@ -1248,6 +1248,23 @@ fn run_reembed(
     let outcome = database
         .commit_cached_reembedding_with_lock(&writer_lock)
         .map_err(map_store_error)?;
+    // Maintenance follows the durable commit, under the same writer lock. An
+    // active reader may defer it; neither deferral nor failure rolls back the
+    // generation. Keep that successful outcome visible even if cleanup fails.
+    let checkpoint = database.checkpoint_idle_wal(&writer_lock);
+    let checkpoint_warning = match checkpoint {
+        Ok(true) => None,
+        Ok(false) => Some(
+            "Warning: re-embedding committed; WAL cleanup deferred while readers are active.\n",
+        ),
+        Err(_) => Some(
+            "Warning: re-embedding committed; WAL cleanup failed. Run hsum doctor before further maintenance.\n",
+        ),
+    };
+    if let Some(warning) = checkpoint_warning {
+        // A closed stderr must not turn committed maintenance into a retry.
+        let _ = write_stderr(warning.as_bytes());
+    }
     let mut output = String::new();
     output.push_str("Semantic re-embedding committed.\n");
     push_line(&mut output, "Model", pin.model_id());

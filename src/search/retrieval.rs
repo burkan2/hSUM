@@ -415,6 +415,12 @@ impl IndexDb {
         project_id: ProjectId,
         request: &SearchRequest,
     ) -> Result<SearchResponse, SearchError> {
+        if !self.search_ranker_installed.get() {
+            // FTS5 retains every auxiliary registration until connection close.
+            // IndexDb is not Sync; install once, and retry only after failure.
+            super::ranking::install(self.connection())?;
+            self.search_ranker_installed.set(true);
+        }
         let _value_limit = SearchValueLimit::arm(self.connection())?;
         let materialization = SearchMaterializationProbe::arm();
         let started = Instant::now();
@@ -1714,23 +1720,10 @@ fn fetch_phrase_candidates(
 
 fn lexical_page_sql() -> String {
     let passage_columns = passage_columns();
-    // Keep the FTS cursor outside rowid lookups so BM25 statistics are computed once.
-    // Rank using covering indexes, then load guarded passage bodies only for the selected page.
+    let ranked = lexical_ranked_ctes();
+    // Load guarded passage bodies only after the final scoped candidate limit.
     format!(
-        "WITH ranked AS MATERIALIZED (
-             SELECT ap.id, bm25(passages_fts) AS lexical_score
-             FROM passages_fts
-             CROSS JOIN active_passages AS ap ON ap.id = passages_fts.rowid
-             {PASSAGE_SCOPE_JOINS}
-             JOIN chunks AS c INDEXED BY chunks_order_idx ON c.id = ap.chunk_id
-             WHERE ps.project_id = ?1
-               AND passages_fts MATCH ?2
-             ORDER BY lexical_score ASC,
-                      ap.source_id ASC,
-                      ap.document_id ASC,
-                      c.start_byte ASC
-             LIMIT ?3 OFFSET ?4
-         )
+        "WITH {ranked}
          SELECT {passage_columns}, ranked.lexical_score
          FROM ranked
          CROSS JOIN active_passages AS ap ON ap.id = ranked.id
@@ -1741,6 +1734,58 @@ fn lexical_page_sql() -> String {
                   ap.source_id ASC,
                   ap.document_id ASC,
                   c.start_byte ASC"
+    )
+}
+
+fn lexical_ranked_ctes() -> String {
+    let eligible = |input: &str| {
+        format!(
+            "SELECT ap.id, candidates.lexical_score,
+                ap.source_id AS tie_source, ap.document_id AS tie_document,
+                c.start_byte AS tie_byte
+         FROM {input} AS candidates
+         CROSS JOIN active_passages AS ap ON ap.id = candidates.id
+         {PASSAGE_SCOPE_JOINS}
+         JOIN chunks AS c INDEXED BY chunks_order_idx ON c.id = ap.chunk_id
+         WHERE ps.project_id = ?1"
+        )
+    };
+    let frontier = eligible("frontier");
+    let remainder = eligible("remainder");
+    // Score once without per-match metadata joins. Include every tie at the
+    // global Kth score, then apply full project/head/version/chunk eligibility.
+    // If >=K eligible rows survive, every unseen score is strictly worse.
+    // Otherwise include the entire remaining eligible set before LIMIT/OFFSET.
+    // No boundary (fewer than K matches) means all scores are in the frontier.
+    // Metadata is capped at K; SQLite's score spool still scales with matches.
+    format!(
+        "scores AS MATERIALIZED (
+             SELECT rowid AS id, hsum_bm25(passages_fts) AS lexical_score
+             FROM passages_fts WHERE passages_fts MATCH ?2
+         ), boundary AS (
+             SELECT lexical_score FROM scores ORDER BY lexical_score
+             LIMIT 1 OFFSET (?3 + ?4 - 1)
+         ), frontier AS MATERIALIZED (
+             SELECT * FROM scores
+             WHERE (SELECT lexical_score FROM boundary) IS NULL
+                OR lexical_score <= (SELECT lexical_score FROM boundary)
+         ), eligible_frontier AS MATERIALIZED (
+             {frontier}
+             ORDER BY lexical_score, tie_source, tie_document, tie_byte
+             LIMIT (?3 + ?4)
+         ), remainder AS MATERIALIZED (
+             SELECT * FROM scores
+             WHERE (SELECT count(*) FROM eligible_frontier) < (?3 + ?4)
+               AND lexical_score > (SELECT lexical_score FROM boundary)
+         ), ranked AS MATERIALIZED (
+             SELECT id, lexical_score FROM (
+                 SELECT * FROM eligible_frontier
+                 UNION ALL
+                 {remainder}
+             )
+             ORDER BY lexical_score, tie_source, tie_document, tie_byte
+             LIMIT ?3 OFFSET ?4
+         )"
     )
 }
 
@@ -2397,6 +2442,121 @@ mod tests {
     use tempfile::tempdir;
 
     #[test]
+    fn repeated_searches_register_one_ranker_per_connection() {
+        let directory = private_test_directory();
+        let database =
+            IndexDb::create(&directory.path().join("index.sqlite"), IndexId::new_v4()).unwrap();
+        let before = super::super::ranking::INSTALLATIONS.with(Cell::get);
+        let request = SearchRequest::with_defaults("evidence").unwrap();
+        for _ in 0..100 {
+            // Missing project is intentional: registration must not accumulate
+            // even when the application later refuses a request.
+            let _ = database.search(ProjectId::new_v4(), &request);
+        }
+        assert_eq!(
+            super::super::ranking::INSTALLATIONS.with(Cell::get),
+            before + 1
+        );
+    }
+
+    #[test]
+    fn lexical_frontier_matches_full_scoped_ranking_with_ties_and_offsets() {
+        let connection = Connection::open_in_memory().unwrap();
+        super::super::ranking::install(&connection).unwrap();
+        connection.execute_batch(
+            "CREATE VIRTUAL TABLE passages_fts USING fts5(title, source_uri, content);
+             CREATE TABLE active_passages(id INTEGER PRIMARY KEY, source_id, document_id, document_version_id, chunk_id);
+             CREATE TABLE project_sources(source_id, project_id, removed_at);
+             CREATE TABLE document_heads(document_id PRIMARY KEY, document_version_id, state);
+             CREATE TABLE document_versions(id PRIMARY KEY, document_id);
+             CREATE TABLE chunks(id INTEGER PRIMARY KEY, start_byte);
+             CREATE INDEX chunks_order_idx ON chunks(id,start_byte);
+             INSERT INTO project_sources VALUES(1,1,NULL),(2,2,NULL),(3,1,'removed');
+             BEGIN;",
+        ).unwrap();
+        for id in 1..=1400 {
+            let source = if id <= 700 {
+                2
+            } else if id <= 800 {
+                3
+            } else {
+                1
+            };
+            let document = 1401 - id; // Reverse ids exercise deterministic tie order.
+            let state = if id % 13 == 0 { "inactive" } else { "active" };
+            let head = if id % 17 == 0 { id + 2000 } else { id };
+            let content = if id <= 800 {
+                "shared"
+            } else if id % 23 == 0 {
+                "shared rare extra"
+            } else {
+                "shared extra extra extra"
+            };
+            connection
+                .execute(
+                    "INSERT INTO passages_fts(rowid,content) VALUES(?1,?2)",
+                    params![id, content],
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO active_passages VALUES(?1,?2,?3,?1,?1)",
+                    params![id, source, document],
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO document_heads VALUES(?1,?2,?3)",
+                    params![document, head, state],
+                )
+                .unwrap();
+            connection
+                .execute(
+                    "INSERT INTO document_versions VALUES(?1,?2)",
+                    params![id, document],
+                )
+                .unwrap();
+            connection
+                .execute("INSERT INTO chunks VALUES(?1,?2)", params![id, id % 3])
+                .unwrap();
+        }
+        connection.execute_batch("COMMIT").unwrap();
+        let baseline = format!(
+            "SELECT ap.id,bm25(passages_fts) AS lexical_score
+             FROM passages_fts CROSS JOIN active_passages AS ap ON ap.id=passages_fts.rowid
+             {PASSAGE_SCOPE_JOINS} JOIN chunks AS c ON c.id=ap.chunk_id
+             WHERE ps.project_id=?1 AND passages_fts MATCH ?2
+             ORDER BY lexical_score,ap.source_id,ap.document_id,c.start_byte LIMIT ?3 OFFSET ?4"
+        );
+        let optimized = format!(
+            "WITH {} SELECT id,lexical_score FROM ranked",
+            lexical_ranked_ctes()
+        );
+        for project in [1, 2, 99] {
+            for query in ["shared", "rare", "absent"] {
+                for (limit, offset) in [(500, 0), (50, 300), (500, 800), (50, 0), (1, 0)] {
+                    let collect = |sql: &str| {
+                        connection
+                            .prepare(sql)
+                            .unwrap()
+                            .query_map(params![project, query, limit, offset], |row| {
+                                Ok((row.get::<_, i64>(0)?, row.get::<_, f64>(1)?.to_bits()))
+                            })
+                            .unwrap()
+                            .collect::<Result<Vec<_>, _>>()
+                            .unwrap()
+                    };
+                    assert_eq!(
+                        collect(&baseline),
+                        collect(&optimized),
+                        "project={project} query={query} limit={limit} offset={offset}"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
     fn duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary() {
         use crate::ingest::{ChunkKind, SnapshotRevision, revision_sha256};
         use crate::store::{DeleteConfirmations, FilesystemScope, PreparedChunk, PreparedDocument};
@@ -2495,7 +2655,7 @@ mod tests {
         assert_eq!(actual, expected);
         let sorts = SEARCH_TEST_HOOKS.with(|hooks| hooks.borrow().lexical_sort_operations);
         assert!(
-            sorts <= 2,
+            sorts <= 5,
             "adaptive pages repeated the corpus ranking: {sorts} sorts"
         );
 
@@ -2509,6 +2669,7 @@ mod tests {
                 ],
             )
             .unwrap();
+        super::super::ranking::install(database.connection()).unwrap();
         let mut statement = database.connection().prepare(&lexical_page_sql()).unwrap();
         let mut rows = statement
             .query(params![
@@ -2539,6 +2700,7 @@ mod tests {
         let directory = private_test_directory();
         let database =
             IndexDb::create(&directory.path().join("index.sqlite"), IndexId::new_v4()).unwrap();
+        super::super::ranking::install(database.connection()).unwrap();
         let mut statement = database
             .connection()
             .prepare(&format!("EXPLAIN QUERY PLAN {}", lexical_page_sql()))
@@ -2711,6 +2873,7 @@ mod tests {
         assert_eq!(next.len(), 1);
         assert_eq!(next[0].id, matches[1].id);
 
+        super::super::ranking::install(database.connection()).unwrap();
         let mut statement = database.connection().prepare(&lexical_page_sql()).unwrap();
         let mut rows = statement
             .query(params![
