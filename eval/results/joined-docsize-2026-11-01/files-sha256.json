@@ -1,0 +1,13 @@
+{
+  "REVIEW.md": "cdecbfc1196003ff6424ced15f110de8ba2c8964b2b40b43ecc1d6709cda773d",
+  "hsum-joined-release-build.log": "062939b7d33bfa951ef8bf76a361fcdbbdabb98c5b3909f67cacb06d24acc9e7",
+  "hsum-joined-release-smoke.log": "17fd5c885977cb24dfc8cfabeb990ef884f74348a14ecf5e18f65f4e9617dacf",
+  "hsum-joined-release-tests.log": "b66386bc6b966163e4d0d7b9746601a170266c3965bbc3ddb9235dd3f36963b1",
+  "hsum-joined-sizes-green.log": "3d2925e6be8a0fdc168441ee74222fdb98c806a1ece0e9af640a54b76ff2048e",
+  "hsum-joined-sizes-red.log": "1f6a0871d9c1e9b63205de57da10d85cd22b454e43da1ef2503bf6f9aafb3d89",
+  "hsum-joined-xtask.log": "e900d5656e1996e8db779c7cb67cc9c4ec21a976e980b42cc37751eb1ab50569",
+  "hsum-ranking-diagnostic-tests.log": "e12137efc563f4465212fba471d7b78357f22786d4b5499b5a1e7b9a75714cac",
+  "joined-sizes-product-ab.json": "b53ed39cbfc6f344fb23d0c8a5249e859780770259b0aaca1ef5d2f735b03492",
+  "joined-sizes-product-ab.log": "6d154ebbb6ad5a1085c9ff0b5d287a260182633d1c3f3ff5a8b02c34975e419d",
+  "receipt.json": "794723306434a1df45e3b55ee87052716dd45469343cfe537ef1bf9810682025"
+}

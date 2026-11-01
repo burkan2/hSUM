@@ -1,4 +1,39 @@
-# Performance qualification checkpoint — 2026-10-23
+# Performance qualification checkpoints — 2026-10-23 through 2026-11-01
+
+## Latest: same-candidate results on November 1
+
+**Mac 100k passes; Linux ordinary lexical remains 104 ms against <100 ms.**
+Both platforms completed all 2,250 observations on
+`41af5c711f2bacfd84f68b28b0d8c4ab47711ca6`, using fresh indexes and uncached
+embedding inputs. All raw summaries and qualification flags were recomputed.
+
+| Gate | Mac M2 / 16 GB | Linux x86_64 |
+| --- | --- | --- |
+| Identifier p95, three runs | 39 / 39 / 39 ms: pass | 53 / 53 / 53 ms: pass |
+| Ordinary lexical p95 | 84 / 85 / 84 ms: pass | 104 / 104 / 104 ms: **fail** |
+| Fallback p95 | 47 / 49 / 47 ms: pass | 85 / 85 / 84 ms: pass |
+| Hybrid p95 | 182 / 184 / 180 ms: pass | 213 / 214 / 212 ms: pass |
+| Total-p95 population CV | 0.269%: pass | 0.233%: pass |
+| Fresh ingest/inference, cold cache, RSS | recorded | recorded |
+
+The [Mac report and audit](results/retrieval-scale-macos-41af5c7/REVIEW.md)
+include fresh lexical ingest (25.62 seconds), re-embedding (9,725.92 seconds),
+all cold measurements and a maximum measured search RSS of 783.34 MiB.
+The [Linux failure and audit](results/retrieval-scale-41267701304-41af5c7/REVIEW.md)
+remain retained. The next optimization must address the broad lexical query;
+no SLO is relaxed and no resampling is used to replace these results.
+
+Same-candidate Linux million-passage stress passed in
+[41267703086](https://github.com/burkan2/hSUM/actions/runs/41267703086), including
+old snapshots, cancellation recovery and no observed deadlines. Eight workflows
+passed in total, including stress: CI, clean-machine trials, dependency policy,
+retrieval determinism, model/vector portability, parser fuzz smoke and stress.
+Independent AI source review approved the
+connection, checkpoint and ranking changes before candidate freeze; this is
+not an external security audit. Apple and offline signing authority remain
+outstanding. There is still no same-candidate cross-platform 100k pass.
+
+## Historical checkpoint through October 24
 
 **Q04 remains failed; Linux report-only Q05 passes on `3827248`.**
 Reviewed through 2026-10-24: both Linux baseline and Mac recovered-index runs
@@ -134,7 +169,7 @@ launch/setup/recovery receipts and logs are copied unchanged into the linked
 Mac review folder. No duplicate launcher or missing-cold-cache override ran.
 No future sudo authorization is assumed.
 
-## Remaining work
+## Historical remaining work — October 24
 
 1. Independent source review of the cursor and descriptor repairs remains
    required. Both native contributor gates now execute and pass the descriptor

@@ -1,0 +1,48 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 10.75s
+     Running unittests src/lib.rs (target/debug/deps/hsum-e461de09bbb04454)
+
+running 5 tests
+test search::ranking::tests::token_lengths_validate_all_varint_boundaries ... ok
+test search::ranking::tests::scores_match_builtin_for_small_and_large_indexes ... FAILED
+test search::ranking::tests::interrupted_auxiliary_phases_release_state_and_allow_next_query ... FAILED
+test search::ranking::tests::sparse_and_large_row_ids_preserve_native_scores ... FAILED
+test search::ranking::tests::malformed_joined_sizes_fall_back_to_native_row_validation ... FAILED
+
+failures:
+
+---- search::ranking::tests::scores_match_builtin_for_small_and_large_indexes stdout ----
+
+thread 'search::ranking::tests::scores_match_builtin_for_small_and_large_indexes' (8175871) panicked at src/search/ranking.rs:465:61:
+called `Result::unwrap()` on an `Err` value: SqliteFailure(Error { code: ApiMisuse, extended_code: 21 }, Some("bad parameter or other API misuse"))
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- search::ranking::tests::interrupted_auxiliary_phases_release_state_and_allow_next_query stdout ----
+
+thread 'search::ranking::tests::interrupted_auxiliary_phases_release_state_and_allow_next_query' (8175869) panicked at src/search/ranking.rs:516:13:
+assertion `left == right` failed
+  left: Some(ApiMisuse)
+ right: Some(OperationInterrupted)
+
+---- search::ranking::tests::sparse_and_large_row_ids_preserve_native_scores stdout ----
+
+thread 'search::ranking::tests::sparse_and_large_row_ids_preserve_native_scores' (8175872) panicked at src/search/ranking.rs:465:61:
+called `Result::unwrap()` on an `Err` value: SqliteFailure(Error { code: ApiMisuse, extended_code: 21 }, Some("bad parameter or other API misuse"))
+
+---- search::ranking::tests::malformed_joined_sizes_fall_back_to_native_row_validation stdout ----
+
+thread 'search::ranking::tests::malformed_joined_sizes_fall_back_to_native_row_validation' (8175870) panicked at src/search/ranking.rs:557:21:
+assertion `left == right` failed
+  left: Some(DatabaseCorrupt)
+ right: Some(ApiMisuse)
+
+
+failures:
+    search::ranking::tests::interrupted_auxiliary_phases_release_state_and_allow_next_query
+    search::ranking::tests::malformed_joined_sizes_fall_back_to_native_row_validation
+    search::ranking::tests::scores_match_builtin_for_small_and_large_indexes
+    search::ranking::tests::sparse_and_large_row_ids_preserve_native_scores
+
+test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 155 filtered out; finished in 0.07s
+
+error: test failed, to rerun pass `--lib`

@@ -1760,8 +1760,13 @@ fn lexical_ranked_ctes() -> String {
     // Metadata is capped at K; SQLite's score spool still scales with matches.
     format!(
         "scores AS MATERIALIZED (
-             SELECT rowid AS id, hsum_bm25(passages_fts) AS lexical_score
-             FROM passages_fts WHERE passages_fts MATCH ?2
+             SELECT passages_fts.rowid AS id,
+                    hsum_bm25(passages_fts,
+                        CASE WHEN typeof(sizes.sz)='blob' AND length(sizes.sz)<=27
+                             THEN sizes.sz ELSE NULL END) AS lexical_score
+             FROM passages_fts
+             LEFT JOIN main.passages_fts_docsize AS sizes ON sizes.id=passages_fts.rowid
+             WHERE passages_fts MATCH ?2
          ), boundary AS (
              SELECT lexical_score FROM scores ORDER BY lexical_score
              LIMIT 1 OFFSET (?3 + ?4 - 1)

@@ -2,15 +2,20 @@ name: Retrieval scale
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - .github/workflows/retrieval-scale.yml
+    inputs:
+      mode:
+        description: Full qualification or reduced lexical A/B/A diagnostic
+        type: choice
+        options:
+          - qualification
+          - ranking-diagnostic
+        default: qualification
 
 permissions:
   contents: read
 
 concurrency:
-  group: retrieval-scale-${{ github.ref }}
+  group: retrieval-scale-${{ github.ref }}-${{ inputs.mode || 'qualification' }}
   cancel-in-progress: true
 
 env:
@@ -20,6 +25,7 @@ env:
 jobs:
   linux-x86_64:
     name: Linux x86_64 100k qualification
+    if: inputs.mode != 'ranking-diagnostic'
     runs-on: ubuntu-24.04
     timeout-minutes: 300
     steps:
@@ -88,3 +94,57 @@ jobs:
             ${{ runner.temp }}/retrieval-scale/linux-x86_64-100k.json
           if-no-files-found: warn
           compression-level: 9
+
+  ranking-diagnostic:
+    name: Linux lexical diagnostic (not qualification)
+    if: inputs.mode == 'ranking-diagnostic'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the retained baseline and current candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -s):$(uname -m)" = Linux:x86_64
+          mkdir -p "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
+          git archive 41af5c711f2bacfd84f68b28b0d8c4ab47711ca6 | tar -x -C "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
+          CARGO_TARGET_DIR="$GITHUB_WORKSPACE/target" cargo +1.91.0 build --locked --release \
+            --manifest-path "$RUNNER_TEMP/ranking-diagnostic/baseline-source/Cargo.toml" --bin hsum
+          cp target/release/hsum "$RUNNER_TEMP/ranking-diagnostic/baseline-hsum"
+          cargo +1.91.0 build --locked --release --bin hsum
+          cargo +1.91.0 test --locked --release --lib search::
+
+      - name: Compare complete lexical results and warm timings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -W error -m unittest benches.retrieval_scale.test_ranking_diagnostic
+          python3 benches/retrieval_scale/ranking_diagnostic.py \
+            --baseline "$RUNNER_TEMP/ranking-diagnostic/baseline-hsum" \
+            --candidate "$PWD/target/release/hsum" \
+            --home "$RUNNER_TEMP/ranking-diagnostic/home" \
+            --corpus "$RUNNER_TEMP/ranking-diagnostic/corpus" \
+            --output "$RUNNER_TEMP/ranking-diagnostic/report.json" --prepare \
+            2>&1 | tee "$RUNNER_TEMP/ranking-diagnostic/diagnostic.log"
+
+      - name: Retain all diagnostic observations
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ranking-diagnostic-linux-x86_64
+          path: |
+            ${{ runner.temp }}/ranking-diagnostic/report.json
+            ${{ runner.temp }}/ranking-diagnostic/diagnostic.log
+          if-no-files-found: warn

@@ -3,25 +3,17 @@
 //! Uses SQLite's documented FTS5 extension API and docsize format:
 //! <https://www.sqlite.org/fts5.html>. The formula and operation order match
 //! SQLite's public-domain fts5_aux.c. Phrase-local iteration avoids merging
-//! positions, and a bounded, query-local token-length array avoids random
-//! docsize lookups. Nothing is cached across snapshots or connections.
+//! positions. SQL supplies the matching row's guarded docsize blob, avoiding
+//! a second lookup or a whole-index token-length cache. Query statistics remain
+//! local to the FTS cursor and its snapshot.
 
 use std::ffi::c_void;
 use std::ptr;
 
 use rusqlite::{Connection, ffi};
 
-const MAX_CACHED_ROWID: i64 = 2_000_000; // At most 8 MB per active FTS cursor.
-const MIN_CACHED_ROWS: i64 = 4_096;
-
 fn sqlite_error(code: i32) -> rusqlite::Error {
     rusqlite::Error::SqliteFailure(ffi::Error::new(code), None)
-}
-
-fn code(error: rusqlite::Error) -> i32 {
-    error
-        .sqlite_error()
-        .map_or(ffi::SQLITE_CORRUPT, |error| error.extended_code)
 }
 
 fn check(code: i32) -> Result<(), i32> {
@@ -33,7 +25,7 @@ fn check(code: i32) -> Result<(), i32> {
 }
 
 // Each docsize blob has precisely three SQLite varints. Reject truncated,
-// overflowing and extra counts before installing any cache. Never truncate ids.
+// overflowing and extra counts before using a supplied length.
 fn token_total(bytes: &[u8]) -> Result<i32, i32> {
     let mut offset = 0;
     let mut total = 0_i32;
@@ -61,65 +53,9 @@ fn token_total(bytes: &[u8]) -> Result<i32, i32> {
     Ok(total)
 }
 
-fn load_lengths(
-    connection: &Connection,
-    rows: i64,
-    mut poll: impl FnMut() -> Result<(), i32>,
-) -> Result<Vec<i32>, i32> {
-    if rows < MIN_CACHED_ROWS {
-        return Ok(Vec::new());
-    }
-    let maximum: Option<i64> = connection
-        .query_row("SELECT max(id) FROM main.passages_fts_docsize", [], |row| {
-            row.get(0)
-        })
-        .map_err(code)?;
-    let Some(maximum) = maximum else {
-        return Ok(Vec::new());
-    };
-    if !(1..=MAX_CACHED_ROWID).contains(&maximum) || maximum / 4 > rows {
-        return Ok(Vec::new());
-    }
-    let size = usize::try_from(maximum + 1).map_err(|_| ffi::SQLITE_TOOBIG)?;
-    let mut lengths = Vec::new();
-    lengths
-        .try_reserve_exact(size)
-        .map_err(|_| ffi::SQLITE_NOMEM)?;
-    lengths.resize(size, -1);
-    let mut statement = connection
-        .prepare(
-            "SELECT id, CASE WHEN typeof(sz)='blob' AND length(sz)<=27 THEN sz ELSE NULL END
-         FROM main.passages_fts_docsize",
-        )
-        .map_err(code)?;
-    let mut cursor = statement.query([]).map_err(code)?;
-    while let Some(row) = cursor.next().map_err(code)? {
-        poll()?;
-        let id: i64 = row.get(0).map_err(code)?;
-        // Negative rowids can be valid FTS rows; they use xColumnSize below.
-        if id < 0 {
-            continue;
-        }
-        let id = usize::try_from(id).map_err(|_| ffi::SQLITE_CORRUPT)?;
-        let value = row.get_ref(1).map_err(code)?;
-        // An unrelated malformed row must not poison a selective query. Leave
-        // its sentinel in place so SQLite validates it if it is actually scored.
-        let length = value
-            .as_blob()
-            .ok()
-            .and_then(|bytes| token_total(bytes).ok())
-            .unwrap_or(-1);
-        *lengths.get_mut(id).ok_or(ffi::SQLITE_CORRUPT)? = length;
-    }
-    Ok(lengths)
-}
-
 struct QueryData {
     average_length: f64,
     idf: Vec<f64>,
-    lengths: Option<Vec<i32>>,
-    scored: usize,
-    rows: i64,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -261,12 +197,12 @@ mod extension {
         api: &ffi::Fts5ExtensionApi,
         fts: *mut ffi::Fts5Context,
         db: *mut ffi::sqlite3,
+        supplied_length: Option<i32>,
     ) -> Result<f64, i32> {
         // SAFETY: all calls are synchronous on SQLite's callback thread. The
-        // temporary rusqlite wrapper is nonowning; it and its statements are
-        // dropped before the callback returns. It never changes connection
-        // settings or acquires an interrupt handle. Auxdata belongs to this
-        // FTS cursor and cannot escape its snapshot.
+        // supplied length has already been decoded, so no borrowed SQLite value
+        // survives these reentrant calls. Auxdata belongs to this FTS cursor
+        // and cannot escape its snapshot.
         unsafe {
             if api.iVersion < 2 {
                 return Err(ffi::SQLITE_ERROR);
@@ -310,28 +246,11 @@ mod extension {
                 data = Box::into_raw(Box::new(QueryData {
                     average_length: tokens as f64 / rows as f64,
                     idf,
-                    lengths: None,
-                    scored: 0,
-                    rows,
                 }));
                 check(set(fts, data.cast(), Some(destroy)))?;
             }
             let data = &mut *data;
-            // Only a broad query pays for the length cache. Exact phrase paging
-            // and selective identifiers continue using native per-row lookups.
-            if data.scored == MIN_CACHED_ROWS as usize && data.lengths.is_none() {
-                let borrowed = Connection::from_handle(db).map_err(code)?;
-                data.lengths = Some(load_lengths(&borrowed, data.rows, || {
-                    poll(db, Phase::Lengths)
-                })?);
-            }
-            data.scored = data.scored.saturating_add(1);
-            let rowid = api.xRowid.ok_or(ffi::SQLITE_ERROR)?(fts);
-            let mut length = usize::try_from(rowid)
-                .ok()
-                .and_then(|id| data.lengths.as_ref().and_then(|lengths| lengths.get(id)))
-                .copied()
-                .unwrap_or(-1);
+            let mut length = supplied_length.unwrap_or(-1);
             if length < 0 {
                 check(api.xColumnSize.ok_or(ffi::SQLITE_ERROR)?(
                     fts,
@@ -391,16 +310,36 @@ mod extension {
         fts: *mut ffi::Fts5Context,
         context: *mut ffi::sqlite3_context,
         argc: i32,
-        _argv: *mut *mut ffi::sqlite3_value,
+        argv: *mut *mut ffi::sqlite3_value,
     ) {
         // SAFETY: SQLite supplies these live pointers for the duration of the
         // callback. No Rust panic is allowed to cross the C boundary.
         unsafe {
             let result = std::panic::catch_unwind(|| {
-                if argc != 0 {
+                if argc != 1 || argv.is_null() || (*argv).is_null() {
                     return Err(ffi::SQLITE_MISUSE);
                 }
-                score(&*api, fts, ffi::sqlite3_context_db_handle(context))
+                let db = ffi::sqlite3_context_db_handle(context);
+                poll(db, Phase::Lengths)?;
+                // Consume the bounded BLOB before any further SQLite API call.
+                // Invalid/missing sizes use native xColumnSize validation;
+                // an unrelated corrupt row never participates in this join.
+                let value = *argv;
+                let supplied_length = if ffi::sqlite3_value_type(value) == ffi::SQLITE_BLOB {
+                    let size = ffi::sqlite3_value_bytes(value);
+                    if (1..=27).contains(&size) {
+                        let bytes = ffi::sqlite3_value_blob(value).cast::<u8>();
+                        if bytes.is_null() {
+                            return Err(ffi::SQLITE_NOMEM);
+                        }
+                        token_total(std::slice::from_raw_parts(bytes, size as usize)).ok()
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                score(&*api, fts, db, supplied_length)
             })
             .unwrap_or(Err(ffi::SQLITE_ERROR));
             match result {
@@ -475,7 +414,15 @@ mod tests {
     ) -> rusqlite::Result<Vec<(i64, u64)>> {
         // Separate statements: evaluating native bm25 first on a shared FTS
         // cursor could mask a custom iterator bug by populating native caches.
-        connection.prepare(&format!("SELECT rowid,{function}(passages_fts) FROM passages_fts WHERE passages_fts MATCH ?1"))?
+        let (argument, join) = if function == "hsum_bm25" {
+            (
+                ", CASE WHEN typeof(sizes.sz)='blob' AND length(sizes.sz)<=27 THEN sizes.sz ELSE NULL END",
+                "LEFT JOIN main.passages_fts_docsize AS sizes ON sizes.id=passages_fts.rowid",
+            )
+        } else {
+            ("", "")
+        };
+        connection.prepare(&format!("SELECT passages_fts.rowid,{function}(passages_fts{argument}) FROM passages_fts {join} WHERE passages_fts MATCH ?1"))?
             .query_map([expression], |row| Ok((row.get(0)?, row.get::<_,f64>(1)?.to_bits())))?
             .collect()
     }
@@ -522,7 +469,7 @@ mod tests {
     }
 
     #[test]
-    fn malformed_cached_sizes_fall_back_to_native_row_validation() {
+    fn malformed_joined_sizes_fall_back_to_native_row_validation() {
         let connection = fixture(4500);
         let original: Vec<u8> = connection
             .query_row(
@@ -532,12 +479,15 @@ mod tests {
             )
             .unwrap();
         for value in [
-            vec![],
-            vec![0x80],
-            vec![1, 2],
-            vec![1, 2, 3, 4],
-            vec![0xff; 9],
-            vec![1; 28],
+            rusqlite::types::Value::Null,
+            rusqlite::types::Value::Integer(3),
+            rusqlite::types::Value::Text("not a size".into()),
+            rusqlite::types::Value::Blob(vec![]),
+            rusqlite::types::Value::Blob(vec![0x80]),
+            rusqlite::types::Value::Blob(vec![1, 2]),
+            rusqlite::types::Value::Blob(vec![1, 2, 3, 4]),
+            rusqlite::types::Value::Blob(vec![0xff; 9]),
+            rusqlite::types::Value::Blob(vec![1; 28]),
         ] {
             connection
                 .execute(
@@ -580,7 +530,7 @@ mod tests {
     }
 
     #[test]
-    fn scores_match_builtin_for_small_and_cached_indexes() {
+    fn scores_match_builtin_for_small_and_large_indexes() {
         for count in [100, 4500] {
             let connection = fixture(count);
             assert_scores(&connection);
@@ -598,7 +548,7 @@ mod tests {
     }
 
     #[test]
-    fn sparse_and_large_row_ids_use_builtin_lengths() {
+    fn sparse_and_large_row_ids_preserve_native_scores() {
         let connection = fixture(4096);
         connection
             .execute(
@@ -606,6 +556,7 @@ mod tests {
                 [i64::MAX],
             )
             .unwrap();
+        connection.execute("INSERT INTO passages_fts(rowid,content) VALUES(-1,'evidence citation'),(0,'evidence citation')", []).unwrap();
         assert_scores(&connection);
     }
 }

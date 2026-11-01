@@ -1,6 +1,6 @@
 # Stable v0.1 release execution plan — 2026-10-31
 
-Status: implementation in progress; stable publication blocked. Starting commit
+Status: Linux latency optimization in progress; stable publication blocked. Starting commit
 `83b4d4c`. Preserve the existing `benches/agent_ab/benchmark.py` isolation fix,
 original Mac crash snapshot, recovered index, and all previous raw evidence.
 
@@ -45,7 +45,7 @@ original Mac crash snapshot, recovered index, and all previous raw evidence.
   protected artifact-signing authority are **still outstanding**. GitHub lists
   no Actions secrets. This blocks stable publication, not implementation.
 - `.github/workflows/release.yml` explicitly accepts alpha tags only.
-- November 1: the user freed disk space; approximately 15 GiB is available.
+- November 1: the user freed disk space; approximately 12 GiB is now available.
   Original crash evidence and recovered index remain intact. Recheck capacity
   before fresh native qualification; compact development builds remain enabled.
 - Mac cold-cache eviction requires local operator authentication. Prepare the
@@ -80,3 +80,20 @@ original Mac crash snapshot, recovered index, and all previous raw evidence.
   pass. Reduced all-25-query product A/B/A preserves results/explanations and
   reduces the broad lexical query median from 182 to 88 ms on the checkpointed
   disposable fixture. Cross-platform qualification is still outstanding.
+
+- November 1: frozen `41af5c7` completes fresh setup and all 2,250 queries on
+  both platforms. Mac passes every gate (ordinary p95 84/85/84 ms; total-p95
+  CV 0.269%); Linux ordinary p95 104/104/104 ms fails <100 ms, with all other
+  gates passing. Raw results and provenance independently audited. Eight
+  workflows pass in total, including Linux million-passage stress. See the
+  qualification report for retained raw evidence and fresh throughput.
+- November 1: joined per-row docsize replaces the whole-index token-length
+  cache, preserving native score bits, corruption checks and cancellation.
+  Focused debug/release tests and independent review pass. Reduced Mac
+  all-25-query A/B/A preserves every result/explanation; broad-query median
+  is 85 -> 84 -> 85 ms. This small product gain is not a qualification pass.
+  A fresh lexical-only Linux diagnostic is required before a new full run.
+- November 1: stable signature verifier and installer authentication are
+  implemented locally with real disposable Minisign tests and independent
+  review. Production key authority, Apple signing and workflow integration
+  remain open; no stable tag or release has been published.

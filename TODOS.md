@@ -24,7 +24,19 @@ Continue in this order:
 
 Optional watch mode and additional integrations are not on the critical path.
 
-## Current release execution queue — 2026-10-24
+## Current release execution queue — 2026-11-01
+
+Follow `eval/STABLE_V0_1_RELEASE_PLAN_2026-10-31.md`. Candidate `41af5c7`
+passes fresh Mac 100k qualification and Linux million-passage stress. Same-
+candidate Linux 100k ordinary lexical p95 is 104 ms in all three runs, so
+cross-platform qualification remains open. All 4,500 observations and fresh
+setup metrics are reviewed; previous failures remain retained. Independent
+AI review approved connection/checkpoint/ranking repairs. Next: measure the
+reviewed joined-docsize optimization on Linux before selecting a new candidate
+for full native reruns. Stable distribution implementation continues; Apple
+and protected offline signing authority are still outstanding.
+
+## Historical release execution queue — 2026-10-24
 
 The feature phases above are implemented. Continue the existing qualification
 plan in this order; the canonical denominator remains
