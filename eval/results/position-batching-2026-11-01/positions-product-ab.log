@@ -1,0 +1,3 @@
+baseline-before: ordinary-02 {'n': 10, 'p50': 88, 'p95': 245, 'worst': 245}
+candidate: ordinary-02 {'n': 10, 'p50': 73, 'p95': 208, 'worst': 208}
+baseline-after: ordinary-02 {'n': 10, 'p50': 96, 'p95': 235, 'worst': 235}

@@ -1,0 +1,198 @@
+   Compiling libc v0.2.186
+   Compiling cfg-if v1.0.4
+   Compiling typenum v1.20.1
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.9
+   Compiling getrandom v0.3.4
+   Compiling bitflags v2.13.1
+   Compiling vcpkg v0.2.15
+   Compiling cc v1.3.0
+   Compiling pkg-config v0.3.33
+   Compiling const-oid v0.10.2
+   Compiling rustix v1.1.4
+   Compiling getrandom v0.4.3
+   Compiling hybrid-array v0.4.13
+   Compiling zerocopy v0.8.54
+   Compiling autocfg v1.5.1
+   Compiling num-traits v0.2.19
+   Compiling crypto-common v0.2.2
+   Compiling block-buffer v0.12.1
+   Compiling once_cell v1.21.4
+   Compiling fastrand v2.5.0
+   Compiling libsqlite3-sys v0.37.0
+   Compiling errno v0.3.14
+   Compiling rand_core v0.9.5
+   Compiling digest v0.11.3
+   Compiling wait-timeout v0.2.1
+   Compiling bit-vec v0.8.0
+   Compiling cpufeatures v0.3.0
+   Compiling sha2 v0.11.0
+   Compiling smallvec v1.15.2
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling fallible-iterator v0.3.0
+   Compiling quick-error v1.2.3
+   Compiling fnv v1.0.7
+   Compiling bit-set v0.8.0
+   Compiling rand_xorshift v0.4.0
+   Compiling rand v0.9.5
+   Compiling unarray v0.1.4
+   Compiling regex-syntax v0.8.11
+   Compiling hsum-position-asan v0.0.0 (/tmp/hsum-position-asan-oxu3ly4c)
+   Compiling tempfile v3.27.0
+   Compiling rusty-fork v0.3.1
+   Compiling ppv-lite86 v0.2.21
+   Compiling rand_chacha v0.9.0
+   Compiling proptest v1.11.0
+   Compiling rusqlite v0.39.0
+warning: unused import: `extension::install`
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:426:16
+    |
+426 | pub(super) use extension::install;
+    |                ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `SOURCE_ID` is never used
+ --> /Users/b.k./Desktop/hSUM/src/search/positions.rs:3:18
+  |
+3 | pub(super) const SOURCE_ID: &[u8] =
+  |                  ^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `source_matches` is never used
+ --> /Users/b.k./Desktop/hSUM/src/search/positions.rs:6:15
+  |
+6 | pub(super) fn source_matches(source: &[u8]) -> bool {
+  |               ^^^^^^^^^^^^^^
+
+warning: function `safe_tail_bound` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/positions.rs:10:15
+   |
+10 | pub(super) fn safe_tail_bound(initial_offset: i32, bytes: usize) -> bool {
+   |               ^^^^^^^^^^^^^^^
+
+warning: function `tail_length` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/positions.rs:16:15
+   |
+16 | pub(super) fn tail_length(start: usize, end: usize, initial_offset: i32) -> Option<usize> {
+   |               ^^^^^^^^^^^
+
+warning: function `single_byte_frequency` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/positions.rs:27:15
+   |
+27 | pub(super) fn single_byte_frequency(
+   |               ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `sqlite_error` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:17:4
+   |
+17 | fn sqlite_error(code: i32) -> rusqlite::Error {
+   |    ^^^^^^^^^^^^
+
+warning: function `check` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:21:4
+   |
+21 | fn check(code: i32) -> Result<(), i32> {
+   |    ^^^^^
+
+warning: function `token_total` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:31:4
+   |
+31 | fn token_total(bytes: &[u8]) -> Result<i32, i32> {
+   |    ^^^^^^^^^^^
+
+warning: struct `QueryData` is never constructed
+  --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:58:8
+   |
+58 | struct QueryData {
+   |        ^^^^^^^^^
+
+warning: enum `Phase` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:65:6
+   |
+65 | enum Phase {
+   |      ^^^^^
+
+warning: function `install` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:98:30
+   |
+98 |     pub(in crate::search) fn install(connection: &Connection) -> rusqlite::Result<()> {
+   |                              ^^^^^^^
+
+warning: function `destroy` is never used
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:148:26
+    |
+148 |     unsafe extern "C" fn destroy(data: *mut c_void) {
+    |                          ^^^^^^^
+
+warning: struct `HitCount` is never constructed
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:156:12
+    |
+156 |     struct HitCount {
+    |            ^^^^^^^^
+
+warning: function `poll` is never used
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:161:15
+    |
+161 |     unsafe fn poll(db: *mut ffi::sqlite3, _phase: Phase) -> Result<(), i32> {
+    |               ^^^^
+
+warning: function `count_hit` is never used
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:179:26
+    |
+179 |     unsafe extern "C" fn count_hit(
+    |                          ^^^^^^^^^
+
+warning: function `source_supports_positions` is never used
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:202:15
+    |
+202 |     unsafe fn source_supports_positions() -> bool {
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `fast_frequency` is never used
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:212:15
+    |
+212 |     unsafe fn fast_frequency(
+    |               ^^^^^^^^^^^^^^
+
+warning: function `score` is never used
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:233:15
+    |
+233 |     unsafe fn score(
+    |               ^^^^^
+
+warning: function `rank` is never used
+   --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:381:26
+    |
+381 |     unsafe extern "C" fn rank(
+    |                          ^^^^
+
+warning: function `hsum_bm25_idf` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:88:12
+   |
+88 |         fn hsum_bm25_idf(rows: i64, hits: i64) -> f64;
+   |            ^^^^^^^^^^^^^
+
+warning: function `hsum_bm25_accumulate` is never used
+  --> /Users/b.k./Desktop/hSUM/src/search/ranking.rs:89:12
+   |
+89 |         fn hsum_bm25_accumulate(
+   |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: `hsum-position-asan` (lib) generated 22 warnings (run `cargo fix --lib -p hsum-position-asan` to apply 1 suggestion)
+error: linking with `cc` failed: exit status: 1
+  |
+  = note:  "cc" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/hsum-position-asan/ecda5edef17aab41/out/rustcspG9WQ/symbols.o" "-Wl,-rpath,<sysroot>/lib/rustlib/aarch64-apple-darwin/lib" "-lrustc-nightly_rt.asan" "<6 object files omitted>" "-lhsum_bm25_math" "<sysroot>/lib/rustlib/aarch64-apple-darwin/lib/{libtest-*,libgetopts-*,librustc_std_workspace_std-*}.rlib" "/private/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/rusqlite/4769ee7455b4d711/out/librusqlite-4769ee7455b4d711.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/smallvec/f8ec8153089b8343/out/libsmallvec-f8ec8153089b8343.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/libsqlite3-sys/4204995bce32e619/out/liblibsqlite3_sys-4204995bce32e619.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/fallible-streaming-iterator/db26bb45631df262/out/libfallible_streaming_iterator-db26bb45631df262.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/fallible-iterator/2d0f4532743e6941/out/libfallible_iterator-2d0f4532743e6941.rlib" "/private/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/proptest/9b52fee5c7ff4e55/out/libproptest-9b52fee5c7ff4e55.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/unarray/d3500ec8e0d8f737/out/libunarray-d3500ec8e0d8f737.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/regex-syntax/e0ecb272bdd34b95/out/libregex_syntax-e0ecb272bdd34b95.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/rand_xorshift/cfe9ce32b77f4128/out/librand_xorshift-cfe9ce32b77f4128.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/rand_chacha/b251ae929477204b/out/librand_chacha-b251ae929477204b.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/ppv-lite86/8a30ca8a8d7fb3a8/out/libppv_lite86-8a30ca8a8d7fb3a8.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/zerocopy/00914a07efb54de7/out/libzerocopy-00914a07efb54de7.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/rand/0bdbdb24465dd1ee/out/librand-0bdbdb24465dd1ee.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/rand_core/28b0c3fbd87cf104/out/librand_core-28b0c3fbd87cf104.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/getrandom/3e4fa63b41d7ce06/out/libgetrandom-3e4fa63b41d7ce06.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/rusty-fork/95a1856038b012c1/out/librusty_fork-95a1856038b012c1.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/wait-timeout/7019a023128ac739/out/libwait_timeout-7019a023128ac739.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/tempfile/b77694e439105cb4/out/libtempfile-b77694e439105cb4.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/getrandom/8342d7722071d64a/out/libgetrandom-8342d7722071d64a.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/cfg-if/51ccd88d849c051f/out/libcfg_if-51ccd88d849c051f.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/fastrand/a3c912ce0432ed8e/out/libfastrand-a3c912ce0432ed8e.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/once_cell/3e683ae0dbd07d70/out/libonce_cell-3e683ae0dbd07d70.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/rustix/af34c0c3ae510b79/out/librustix-af34c0c3ae510b79.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/errno/b1ed0c59588722d5/out/liberrno-b1ed0c59588722d5.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/libc/60ee35479547615f/out/liblibc-60ee35479547615f.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/fnv/ea29cddc6dae194c/out/libfnv-ea29cddc6dae194c.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/quick-error/e29191b0294c7cc0/out/libquick_error-e29191b0294c7cc0.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/bit-set/d71d16dbb4b82f31/out/libbit_set-d71d16dbb4b82f31.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/bit-vec/0aaaf0c4c6fbcde2/out/libbit_vec-0aaaf0c4c6fbcde2.rlib" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/bitflags/8a20d21c8e0f7eac/out/libbitflags-8a20d21c8e0f7eac.rlib" "<sysroot>/lib/rustlib/aarch64-apple-darwin/lib/{libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-liconv" "-lSystem" "-lc" "-lm" "-arch" "arm64" "-mmacosx-version-min=11.0.0" "-L" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/hsum-position-asan/08aa88eeed340b18/out" "-L" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/libsqlite3-sys/c2e161141116f50c/out" "-L" "<sysroot>/lib/rustlib/aarch64-apple-darwin/lib" "-o" "/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/hsum-position-asan/ecda5edef17aab41/out/hsum_position_asan-ecda5edef17aab41" "-Wl,-dead_strip" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: ld: warning: object file (/private/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/hsum-position-asan/08aa88eeed340b18/out/libhsum_bm25_math.a[2](325b738a4996a4ac-bm25_math.o)) was built for newer 'macOS' version (26.5) than being linked (11.0)
+          ld: warning: object file (/private/tmp/hsum-position-asan-oxu3ly4c/target/aarch64-apple-darwin/debug/build/libsqlite3-sys/4204995bce32e619/out/liblibsqlite3_sys-4204995bce32e619.rlib[5](c877a2978823c39d-sqlite3.o)) was built for newer 'macOS' version (26.5) than being linked (11.0)
+          Undefined symbols for architecture arm64:
+            "___asan_version_mismatch_check_apple_clang_2100", referenced from:
+                _asan.module_ctor in libhsum_bm25_math.a[2](325b738a4996a4ac-bm25_math.o)
+                _asan.module_ctor in liblibsqlite3_sys-4204995bce32e619.rlib[5](c877a2978823c39d-sqlite3.o)
+          ld: symbol(s) not found for architecture arm64
+          clang: error: linker command failed with exit code 1 (use -v to see invocation)
+          
+
+error: could not compile `hsum-position-asan` (lib test) due to 1 previous error

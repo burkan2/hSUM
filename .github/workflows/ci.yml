@@ -126,3 +126,28 @@ jobs:
         run: |
           python3 -W error scripts/test_verify_stable_release.py
           python3 -W error scripts/test_stable_installer.py
+
+  ranking-sanitizer:
+    name: Ranking memory-safety boundary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install the pinned sanitizer toolchain
+        run: rustup toolchain install nightly-2026-08-20 --profile minimal
+      - name: Fetch the locked graph and check enabled/native fallback paths
+        run: |
+          cargo +nightly-2026-08-20 fetch --locked
+          bash scripts/ranking-sanitizer-smoke.sh "$RUNNER_TEMP/ranking-sanitizer"
+      - name: Retain sanitizer evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ranking-sanitizer-linux-x86_64
+          path: ${{ runner.temp }}/ranking-sanitizer/
+          if-no-files-found: warn

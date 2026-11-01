@@ -1,7 +1,10 @@
 //! Unit-weight BM25 for the fixed, three-column `passages_fts` schema.
 //!
-//! Uses SQLite's documented FTS5 extension API and docsize format:
-//! <https://www.sqlite.org/fts5.html>. The formula and operation order match
+//! Uses SQLite's FTS5 extension API and docsize format:
+//! <https://www.sqlite.org/fts5.html>. A narrowly restricted position counter
+//! also reads private iterator bytes, gated by an audited bundled-source hash
+//! and exact runtime source ID; every unsupported case uses the public API.
+//! The formula and operation order match
 //! SQLite's public-domain fts5_aux.c. Phrase-local iteration avoids merging
 //! positions. SQL supplies the matching row's guarded docsize blob, avoiding
 //! a second lookup or a whole-index token-length cache. Query statistics remain
@@ -11,6 +14,8 @@ use std::ffi::c_void;
 use std::ptr;
 
 use rusqlite::{Connection, ffi};
+
+use super::positions;
 
 fn sqlite_error(code: i32) -> rusqlite::Error {
     rusqlite::Error::SqliteFailure(ffi::Error::new(code), None)
@@ -56,6 +61,7 @@ fn token_total(bytes: &[u8]) -> Result<i32, i32> {
 struct QueryData {
     average_length: f64,
     idf: Vec<f64>,
+    fast_positions: bool,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -68,6 +74,9 @@ enum Phase {
 #[cfg(test)]
 thread_local! {
     static INTERRUPT_PHASE: std::cell::Cell<Option<Phase>> = const { std::cell::Cell::new(None) };
+    static FORCE_NATIVE_POSITIONS: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    static FAST_PHRASES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    static NATIVE_PHRASES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     pub(super) static INSTALLATIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
@@ -193,6 +202,37 @@ mod extension {
         }
     }
 
+    unsafe fn source_supports_positions() -> bool {
+        // SAFETY: sqlite3_sourceid returns a static NUL-terminated string.
+        let source = unsafe { std::ffi::CStr::from_ptr(ffi::sqlite3_sourceid()) };
+        #[cfg(test)]
+        if FORCE_NATIVE_POSITIONS.with(|value| value.get()) {
+            return false;
+        }
+        positions::source_matches(source.to_bytes())
+    }
+
+    unsafe fn fast_frequency(
+        iterator: &ffi::Fts5PhraseIter,
+        offset: i32,
+        db: *mut ffi::sqlite3,
+    ) -> Result<Option<u64>, i32> {
+        // SAFETY: called only after the build hash and runtime source-ID gates.
+        // In that audited amalgamation, fts5ApiPhraseFirst obtains a..b from
+        // fts5CsrPoslist, a cursor-owned buffer. The successful first call has
+        // consumed the first hit; the remainder is in the same live allocation.
+        // No cursor-advancing/reentrant API is called while this slice exists.
+        // poll only reads/sets SQLite's interrupt flag and cannot free buffers.
+        let Some(length) = positions::tail_length(iterator.a as usize, iterator.b as usize, offset)
+        else {
+            return Ok(None);
+        };
+        unsafe {
+            let bytes = std::slice::from_raw_parts(iterator.a, length);
+            positions::single_byte_frequency(bytes, offset, || poll(db, Phase::Positions))
+        }
+    }
+
     unsafe fn score(
         api: &ffi::Fts5ExtensionApi,
         fts: *mut ffi::Fts5Context,
@@ -245,6 +285,7 @@ mod extension {
                 let set = api.xSetAuxdata.ok_or(ffi::SQLITE_ERROR)?;
                 data = Box::into_raw(Box::new(QueryData {
                     average_length: tokens as f64 / rows as f64,
+                    fast_positions: source_supports_positions(),
                     idf,
                 }));
                 check(set(fts, data.cast(), Some(destroy)))?;
@@ -277,17 +318,52 @@ mod extension {
                     &mut column,
                     &mut offset,
                 ))?;
-                while column >= 0 {
-                    if frequency.is_multiple_of(256) {
-                        poll(db, Phase::Positions)?;
+                let fast = if data.fast_positions && column >= 0 {
+                    fast_frequency(&iterator, offset, db)?
+                } else {
+                    None
+                };
+                if let Some(count) = fast {
+                    frequency = count;
+                    #[cfg(test)]
+                    {
+                        // Differential check against the public iterator for
+                        // every accepted tail in tests. The original is intact.
+                        let mut native = ffi::Fts5PhraseIter {
+                            a: iterator.a,
+                            b: iterator.b,
+                        };
+                        let mut native_column = column;
+                        let mut native_offset = offset;
+                        let mut native_count = 0_u64;
+                        while native_column >= 0 {
+                            native_count += 1;
+                            api.xPhraseNext.ok_or(ffi::SQLITE_ERROR)?(
+                                fts,
+                                &mut native,
+                                &mut native_column,
+                                &mut native_offset,
+                            );
+                        }
+                        assert_eq!(count, native_count);
                     }
-                    frequency += 1;
-                    api.xPhraseNext.ok_or(ffi::SQLITE_ERROR)?(
-                        fts,
-                        &mut iterator,
-                        &mut column,
-                        &mut offset,
-                    );
+                    #[cfg(test)]
+                    FAST_PHRASES.with(|value| value.set(value.get() + 1));
+                } else {
+                    #[cfg(test)]
+                    NATIVE_PHRASES.with(|value| value.set(value.get() + 1));
+                    while column >= 0 {
+                        if frequency.is_multiple_of(256) {
+                            poll(db, Phase::Positions)?;
+                        }
+                        frequency += 1;
+                        api.xPhraseNext.ok_or(ffi::SQLITE_ERROR)?(
+                            fts,
+                            &mut iterator,
+                            &mut column,
+                            &mut offset,
+                        );
+                    }
                 }
                 let frequency = frequency as f64;
                 score = hsum_bm25_accumulate(
@@ -425,6 +501,38 @@ mod tests {
         connection.prepare(&format!("SELECT passages_fts.rowid,{function}(passages_fts{argument}) FROM passages_fts {join} WHERE passages_fts MATCH ?1"))?
             .query_map([expression], |row| Ok((row.get(0)?, row.get::<_,f64>(1)?.to_bits())))?
             .collect()
+    }
+
+    #[test]
+    #[cfg(hsum_verified_sqlite_positions)]
+    fn fast_and_forced_native_positions_match_builtin_bits_and_cover_fallbacks() {
+        let connection = fixture(100);
+        connection
+            .execute(
+                "INSERT INTO passages_fts(rowid,title,content) VALUES(999,'rare',?1)",
+                [format!("rare {}rare", "padding ".repeat(300))],
+            )
+            .unwrap();
+        FAST_PHRASES.with(|value| value.set(0));
+        NATIVE_PHRASES.with(|value| value.set(0));
+        for expression in [
+            "café",
+            "evidence",
+            "rare",
+            "evidence AND citation",
+            "\"alpha beta\"",
+            "missing",
+        ] {
+            let expected = scores(&connection, "bm25", expression).unwrap();
+            let fast = scores(&connection, "hsum_bm25", expression).unwrap();
+            FORCE_NATIVE_POSITIONS.with(|value| value.set(true));
+            let native = scores(&connection, "hsum_bm25", expression);
+            FORCE_NATIVE_POSITIONS.with(|value| value.set(false));
+            assert_eq!(fast, expected, "fast {expression}");
+            assert_eq!(native.unwrap(), expected, "native {expression}");
+        }
+        FAST_PHRASES.with(|value| assert!(value.get() > 0));
+        NATIVE_PHRASES.with(|value| assert!(value.get() > 0));
     }
 
     #[test]

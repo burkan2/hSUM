@@ -896,6 +896,7 @@ dependencies = [
  "fastembed",
  "hex",
  "ignore",
+ "libsqlite3-sys",
  "ort",
  "proptest",
  "reqwest",

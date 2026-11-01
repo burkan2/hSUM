@@ -1,0 +1,10 @@
+  PID  %CPU COMM
+23702  76.1 /System/Library/ExtensionKit/Extensions/Storage.appex/Contents/MacOS/Storage
+23704  63.5 /System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/StorageManagementService
+  419  35.7 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+23718  32.3 /System/Library/PrivateFrameworks/StorageManagement.framework/PlugIns/ApplicationsStorageExtension.appex/Contents/MacOS/ApplicationsStorageExtension
+35625  28.3 /Applications/ChatGPT.app/Contents/Frameworks/Codex Framework.framework/Versions/156.0.8078.48/Helpers/Codex (Renderer).app/Contents/MacOS/Codex (Renderer)
+  507   7.7 /usr/libexec/syspolicyd
+99358   7.5 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.79/Helpers/Google Chrome Helper (Aperitif).app/Contents/MacOS/Google Chrome Helper (Aperitif)
+ 6609   7.2 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/156.0.8078.79/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)
+53326   6.9 /usr/libexec/trustd

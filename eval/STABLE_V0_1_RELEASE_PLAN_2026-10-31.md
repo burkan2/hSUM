@@ -98,9 +98,31 @@ original Mac crash snapshot, recovered index, and all previous raw evidence.
   review. Production key authority, Apple signing and workflow integration
   remain open; no stable tag or release has been published.
 
-- November 1: initial Linux diagnostic41304545751 is invalid: both builds
+- November 1: initial Linux diagnostic 41304545751 is invalid: both builds
   shared a target directory and all three phase hashes are identical. Independent
   review caught the reuse; retain the raw run, isolate target directories and
   reject equal binary hashes before measurement. The new refusal regression
   fails before the repair and passes after it. No Linux optimization conclusion
   can be drawn from this run; corrected diagnostic remains required.
+
+- November 1: corrected diagnostic 41319532732 uses distinct isolated binaries
+  and retains all 684 result digests. Broad-query median 81 ->79 ->80ms shows
+  only a small within-run benefit; cross-run runner-speed differences are not
+  an optimization claim. Stable signature/installer CI passes on Ubuntu's
+  Minisign 0.11 in run 41319536850 (local tests use 0.12).
+- November 1: a restricted one-byte phrase-position counter is under final
+  review. It uses private SQLite iterator bytes only after exact bundled-source
+  hash/runtime-source checks, with bounded offset arithmetic, cancellation and
+  native fallback for every unsupported case. A SQL-only prototype improves
+  ~74ms to~59ms with identical result IDs and score bits.28 release search tests
+  pass. Rust AddressSanitizer passes all12 focused counter/ranker tests; the
+  earlier combined Rust/Apple-Clang ASan attempt failed to link due to runtime
+  incompatibility and is retained as a toolchain failure, not a memory result.
+  Full product timing, disabled-build validation and native qualification remain.
+
+- November 1: full contributor gate, release smoke and reviewed sanitizer
+  script pass. The script checks both the enabled 12-test path and disabled
+  11-test path on macOS. Product A/B/A preserves all 900 complete result digests;
+  broad-query medians 88 ->73 ->96ms improve, but high tail outliers and active
+  macOS storage-management processes make this diagnostic only. Freeze for
+  Linux diagnostic/combined Rust+C sanitizer CI next; full qualification waits.

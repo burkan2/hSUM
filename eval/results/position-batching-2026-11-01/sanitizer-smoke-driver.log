@@ -1,0 +1,372 @@
+   Compiling libc v0.2.186
+   Compiling cfg-if v1.0.4
+   Compiling typenum v1.20.1
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.9
+   Compiling getrandom v0.3.4
+   Compiling bitflags v2.13.1
+   Compiling vcpkg v0.2.15
+   Compiling cc v1.3.0
+   Compiling pkg-config v0.3.33
+   Compiling rustix v1.1.4
+   Compiling hybrid-array v0.4.13
+   Compiling zerocopy v0.8.54
+   Compiling const-oid v0.10.2
+   Compiling getrandom v0.4.3
+   Compiling crypto-common v0.2.2
+   Compiling block-buffer v0.12.1
+   Compiling autocfg v1.5.1
+   Compiling libsqlite3-sys v0.37.0
+   Compiling digest v0.11.3
+   Compiling num-traits v0.2.19
+   Compiling once_cell v1.21.4
+   Compiling fastrand v2.5.0
+   Compiling bit-vec v0.8.0
+   Compiling cpufeatures v0.3.0
+   Compiling sha2 v0.11.0
+   Compiling smallvec v1.15.2
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling fallible-iterator v0.3.0
+   Compiling errno v0.3.14
+   Compiling rand_core v0.9.5
+   Compiling wait-timeout v0.2.1
+   Compiling hsum-ranking-asan v0.0.0 (/var/folders/_1/t15r_skj51qcmkjy9bfz6z3h0000gn/T/hsum-ranking-asan.gHW7MK)
+   Compiling quick-error v1.2.3
+   Compiling fnv v1.0.7
+   Compiling rand v0.9.5
+   Compiling rand_xorshift v0.4.0
+   Compiling bit-set v0.8.0
+   Compiling unarray v0.1.4
+   Compiling regex-syntax v0.8.11
+   Compiling tempfile v3.27.0
+   Compiling rusty-fork v0.3.1
+   Compiling ppv-lite86 v0.2.21
+   Compiling rand_chacha v0.9.0
+   Compiling proptest v1.11.0
+   Compiling rusqlite v0.39.0
+warning: unused import: `extension::install`
+   --> src/search/ranking.rs:429:16
+    |
+429 | pub(super) use extension::install;
+    |                ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `SOURCE_ID` is never used
+ --> src/search/positions.rs:3:18
+  |
+3 | pub(super) const SOURCE_ID: &[u8] =
+  |                  ^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `source_matches` is never used
+ --> src/search/positions.rs:6:15
+  |
+6 | pub(super) fn source_matches(source: &[u8]) -> bool {
+  |               ^^^^^^^^^^^^^^
+
+warning: function `safe_tail_bound` is never used
+  --> src/search/positions.rs:10:15
+   |
+10 | pub(super) fn safe_tail_bound(initial_offset: i32, bytes: usize) -> bool {
+   |               ^^^^^^^^^^^^^^^
+
+warning: function `tail_length` is never used
+  --> src/search/positions.rs:16:15
+   |
+16 | pub(super) fn tail_length(start: usize, end: usize, initial_offset: i32) -> Option<usize> {
+   |               ^^^^^^^^^^^
+
+warning: function `single_byte_frequency` is never used
+  --> src/search/positions.rs:27:15
+   |
+27 | pub(super) fn single_byte_frequency(
+   |               ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `sqlite_error` is never used
+  --> src/search/ranking.rs:20:4
+   |
+20 | fn sqlite_error(code: i32) -> rusqlite::Error {
+   |    ^^^^^^^^^^^^
+
+warning: function `check` is never used
+  --> src/search/ranking.rs:24:4
+   |
+24 | fn check(code: i32) -> Result<(), i32> {
+   |    ^^^^^
+
+warning: function `token_total` is never used
+  --> src/search/ranking.rs:34:4
+   |
+34 | fn token_total(bytes: &[u8]) -> Result<i32, i32> {
+   |    ^^^^^^^^^^^
+
+warning: struct `QueryData` is never constructed
+  --> src/search/ranking.rs:61:8
+   |
+61 | struct QueryData {
+   |        ^^^^^^^^^
+
+warning: enum `Phase` is never used
+  --> src/search/ranking.rs:68:6
+   |
+68 | enum Phase {
+   |      ^^^^^
+
+warning: function `install` is never used
+   --> src/search/ranking.rs:101:30
+    |
+101 |     pub(in crate::search) fn install(connection: &Connection) -> rusqlite::Result<()> {
+    |                              ^^^^^^^
+
+warning: function `destroy` is never used
+   --> src/search/ranking.rs:151:26
+    |
+151 |     unsafe extern "C" fn destroy(data: *mut c_void) {
+    |                          ^^^^^^^
+
+warning: struct `HitCount` is never constructed
+   --> src/search/ranking.rs:159:12
+    |
+159 |     struct HitCount {
+    |            ^^^^^^^^
+
+warning: function `poll` is never used
+   --> src/search/ranking.rs:164:15
+    |
+164 |     unsafe fn poll(db: *mut ffi::sqlite3, _phase: Phase) -> Result<(), i32> {
+    |               ^^^^
+
+warning: function `count_hit` is never used
+   --> src/search/ranking.rs:182:26
+    |
+182 |     unsafe extern "C" fn count_hit(
+    |                          ^^^^^^^^^
+
+warning: function `source_supports_positions` is never used
+   --> src/search/ranking.rs:205:15
+    |
+205 |     unsafe fn source_supports_positions() -> bool {
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `fast_frequency` is never used
+   --> src/search/ranking.rs:215:15
+    |
+215 |     unsafe fn fast_frequency(
+    |               ^^^^^^^^^^^^^^
+
+warning: function `score` is never used
+   --> src/search/ranking.rs:236:15
+    |
+236 |     unsafe fn score(
+    |               ^^^^^
+
+warning: function `rank` is never used
+   --> src/search/ranking.rs:384:26
+    |
+384 |     unsafe extern "C" fn rank(
+    |                          ^^^^
+
+warning: function `hsum_bm25_idf` is never used
+  --> src/search/ranking.rs:91:12
+   |
+91 |         fn hsum_bm25_idf(rows: i64, hits: i64) -> f64;
+   |            ^^^^^^^^^^^^^
+
+warning: function `hsum_bm25_accumulate` is never used
+  --> src/search/ranking.rs:92:12
+   |
+92 |         fn hsum_bm25_accumulate(
+   |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: `hsum-ranking-asan` (lib) generated 22 warnings (run `cargo fix --lib -p hsum-ranking-asan` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 7.40s
+     Running unittests src/lib.rs (/var/folders/_1/t15r_skj51qcmkjy9bfz6z3h0000gn/T//hsum-ranking-asan.gHW7MK/target/aarch64-apple-darwin/debug/build/hsum-ranking-asan/9b02f7e32f26c6f5/out/hsum_ranking_asan-9b02f7e32f26c6f5)
+
+running 12 tests
+test search::positions::tests::every_unsupported_byte_and_offset_bound_uses_native_fallback ... ok
+test search::positions::tests::empty_and_single_byte_tails_count_the_already_consumed_first_hit ... ok
+test search::positions::tests::null_reversed_and_oversized_ranges_are_rejected_before_borrowing ... ok
+test search::positions::tests::cancellation_is_checked_before_empty_tails_and_every_256_bytes ... ok
+test search::positions::tests::unknown_sqlite_source_never_enables_the_fast_path ... ok
+test search::ranking::tests::token_lengths_validate_all_varint_boundaries ... ok
+test search::ranking::tests::fast_and_forced_native_positions_match_builtin_bits_and_cover_fallbacks ... ok
+test search::ranking::tests::interrupted_auxiliary_phases_release_state_and_allow_next_query ... ok
+test search::ranking::tests::sparse_and_large_row_ids_preserve_native_scores ... ok
+test search::ranking::tests::malformed_joined_sizes_fall_back_to_native_row_validation ... ok
+test search::ranking::tests::scores_match_builtin_for_small_and_large_indexes ... ok
+test search::positions::tests::all_supported_bytes_count_exactly_once ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.22s
+
+   Doc-tests hsum_ranking_asan
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Compiling libsqlite3-sys v0.37.0
+   Compiling hsum-ranking-asan v0.0.0 (/var/folders/_1/t15r_skj51qcmkjy9bfz6z3h0000gn/T/hsum-ranking-asan.gHW7MK)
+   Compiling rusqlite v0.39.0
+warning: unused import: `extension::install`
+   --> src/search/ranking.rs:429:16
+    |
+429 | pub(super) use extension::install;
+    |                ^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: constant `SOURCE_ID` is never used
+ --> src/search/positions.rs:3:18
+  |
+3 | pub(super) const SOURCE_ID: &[u8] =
+  |                  ^^^^^^^^^
+  |
+  = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `source_matches` is never used
+ --> src/search/positions.rs:6:15
+  |
+6 | pub(super) fn source_matches(source: &[u8]) -> bool {
+  |               ^^^^^^^^^^^^^^
+
+warning: function `safe_tail_bound` is never used
+  --> src/search/positions.rs:10:15
+   |
+10 | pub(super) fn safe_tail_bound(initial_offset: i32, bytes: usize) -> bool {
+   |               ^^^^^^^^^^^^^^^
+
+warning: function `tail_length` is never used
+  --> src/search/positions.rs:16:15
+   |
+16 | pub(super) fn tail_length(start: usize, end: usize, initial_offset: i32) -> Option<usize> {
+   |               ^^^^^^^^^^^
+
+warning: function `single_byte_frequency` is never used
+  --> src/search/positions.rs:27:15
+   |
+27 | pub(super) fn single_byte_frequency(
+   |               ^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `sqlite_error` is never used
+  --> src/search/ranking.rs:20:4
+   |
+20 | fn sqlite_error(code: i32) -> rusqlite::Error {
+   |    ^^^^^^^^^^^^
+
+warning: function `check` is never used
+  --> src/search/ranking.rs:24:4
+   |
+24 | fn check(code: i32) -> Result<(), i32> {
+   |    ^^^^^
+
+warning: function `token_total` is never used
+  --> src/search/ranking.rs:34:4
+   |
+34 | fn token_total(bytes: &[u8]) -> Result<i32, i32> {
+   |    ^^^^^^^^^^^
+
+warning: struct `QueryData` is never constructed
+  --> src/search/ranking.rs:61:8
+   |
+61 | struct QueryData {
+   |        ^^^^^^^^^
+
+warning: enum `Phase` is never used
+  --> src/search/ranking.rs:68:6
+   |
+68 | enum Phase {
+   |      ^^^^^
+
+warning: function `install` is never used
+   --> src/search/ranking.rs:101:30
+    |
+101 |     pub(in crate::search) fn install(connection: &Connection) -> rusqlite::Result<()> {
+    |                              ^^^^^^^
+
+warning: function `destroy` is never used
+   --> src/search/ranking.rs:151:26
+    |
+151 |     unsafe extern "C" fn destroy(data: *mut c_void) {
+    |                          ^^^^^^^
+
+warning: struct `HitCount` is never constructed
+   --> src/search/ranking.rs:159:12
+    |
+159 |     struct HitCount {
+    |            ^^^^^^^^
+
+warning: function `poll` is never used
+   --> src/search/ranking.rs:164:15
+    |
+164 |     unsafe fn poll(db: *mut ffi::sqlite3, _phase: Phase) -> Result<(), i32> {
+    |               ^^^^
+
+warning: function `count_hit` is never used
+   --> src/search/ranking.rs:182:26
+    |
+182 |     unsafe extern "C" fn count_hit(
+    |                          ^^^^^^^^^
+
+warning: function `source_supports_positions` is never used
+   --> src/search/ranking.rs:205:15
+    |
+205 |     unsafe fn source_supports_positions() -> bool {
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: function `fast_frequency` is never used
+   --> src/search/ranking.rs:215:15
+    |
+215 |     unsafe fn fast_frequency(
+    |               ^^^^^^^^^^^^^^
+
+warning: function `score` is never used
+   --> src/search/ranking.rs:236:15
+    |
+236 |     unsafe fn score(
+    |               ^^^^^
+
+warning: function `rank` is never used
+   --> src/search/ranking.rs:384:26
+    |
+384 |     unsafe extern "C" fn rank(
+    |                          ^^^^
+
+warning: function `hsum_bm25_idf` is never used
+  --> src/search/ranking.rs:91:12
+   |
+91 |         fn hsum_bm25_idf(rows: i64, hits: i64) -> f64;
+   |            ^^^^^^^^^^^^^
+
+warning: function `hsum_bm25_accumulate` is never used
+  --> src/search/ranking.rs:92:12
+   |
+92 |         fn hsum_bm25_accumulate(
+   |            ^^^^^^^^^^^^^^^^^^^^
+
+warning: `hsum-ranking-asan` (lib) generated 22 warnings (run `cargo fix --lib -p hsum-ranking-asan` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.61s
+     Running unittests src/lib.rs (/var/folders/_1/t15r_skj51qcmkjy9bfz6z3h0000gn/T//hsum-ranking-asan.gHW7MK/target/aarch64-apple-darwin/debug/build/hsum-ranking-asan/9b02f7e32f26c6f5/out/hsum_ranking_asan-9b02f7e32f26c6f5)
+
+running 11 tests
+test search::positions::tests::null_reversed_and_oversized_ranges_are_rejected_before_borrowing ... ok
+test search::positions::tests::cancellation_is_checked_before_empty_tails_and_every_256_bytes ... ok
+test search::positions::tests::empty_and_single_byte_tails_count_the_already_consumed_first_hit ... ok
+test search::positions::tests::unknown_sqlite_source_never_enables_the_fast_path ... ok
+test search::positions::tests::every_unsupported_byte_and_offset_bound_uses_native_fallback ... ok
+test search::ranking::tests::token_lengths_validate_all_varint_boundaries ... ok
+test search::ranking::tests::interrupted_auxiliary_phases_release_state_and_allow_next_query ... ok
+test search::ranking::tests::sparse_and_large_row_ids_preserve_native_scores ... ok
+test search::ranking::tests::malformed_joined_sizes_fall_back_to_native_row_validation ... ok
+test search::ranking::tests::scores_match_builtin_for_small_and_large_indexes ... ok
+test search::positions::tests::all_supported_bytes_count_exactly_once ... ok
+
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.32s
+
+   Doc-tests hsum_ranking_asan
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
