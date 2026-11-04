@@ -1,0 +1,24 @@
+==> generated references
+==> fmt
+==> clippy
+   Compiling ring v0.17.14
+   Compiling rustls v0.23.46
+   Compiling rustls-webpki v0.103.16
+   Compiling ureq v3.3.0
+   Compiling ort-sys v2.0.0-rc.13
+    Checking ort v2.0.0-rc.13
+    Checking fastembed v5.17.4
+    Checking hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+error: very complex type used. Consider factoring parts into `type` definitions
+   --> src/search/frontier.rs:161:6
+    |
+161 | ) -> Result<Option<(Vec<ScoredRow>, Option<Score>)>, SearchError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.91.0/index.html#type_complexity
+    = note: `-D clippy::type-complexity` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::type_complexity)]`
+
+error: could not compile `hsum` (lib) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `hsum` (lib test) due to 1 previous error

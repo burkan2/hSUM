@@ -1,0 +1,16 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+error: linking with `cc` failed: exit status: 1
+  |
+  = note:  "cc" "/var/folders/_1/t15r_skj51qcmkjy9bfz6z3h0000gn/T/rustcrh4fRw/symbols.o" "<6 object files omitted>" "/Users/b.k./Desktop/hSUM/target/release/deps/{librusqlite-f167ed5fc7fc06e1,libbitflags-2c7138a497bbdae4,libsmallvec-9c78616996de770f,liblibsqlite3_sys-cd8591c1e1183205,libfallible_streaming_iterator-39b35e6afd865aee,libfallible_iterator-133bf2d31501df5b}.rlib" "<sysroot>/lib/rustlib/aarch64-apple-darwin/lib/{libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-lSystem" "-lc" "-lm" "-arch" "arm64" "-mmacosx-version-min=11.0.0" "-L" "/Users/b.k./Desktop/hSUM/target/release/build/hsum-ed498f8d7ad760dc/out" "-L" "/Users/b.k./Desktop/hSUM/target/release/build/onig_sys-39bda7f34663e7e3/out" "-L" "/Users/b.k./Desktop/hSUM/target/release/build/libsqlite3-sys-0d210542607602ba/out" "-L" "/Users/b.k./Desktop/hSUM/target/release/build/aws-lc-sys-b35db0c9dda398ac/out" "-L" "/Users/b.k./Desktop/hSUM/target/release/build/sqlite-vec-102ca6d559e5aef9/out" "-L" "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/clang/21/lib/darwin" "-L" "/Users/b.k./Library/Caches/ort.pyke.io/dfbin/aarch64-apple-darwin/6934874e2e953576d9c1db47ff1af39c62c4f4220dbe6f988e131f72879674c7" "-o" "/Users/b.k./Desktop/hSUM/target/release/examples/lexical_cache_probe-a468f7571228aa69" "-Wl,-dead_strip" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: ld: warning: object file (/Users/b.k./Desktop/hSUM/target/release/deps/liblibsqlite3_sys-cd8591c1e1183205.rlib[4](c877a2978823c39d-sqlite3.o)) was built for newer 'macOS' version (26.5) than being linked (11.0)
+          Undefined symbols for architecture arm64:
+            "_hsum_bm25_accumulate", referenced from:
+                lexical_cache_probe::search::ranking::extension::rank::h5d63f1ee82515af9 in lexical_cache_probe-a468f7571228aa69.lexical_cache_probe.99ac4eb99e6e48fa-cgu.3.rcgu.o
+            "_hsum_bm25_idf", referenced from:
+                lexical_cache_probe::search::ranking::extension::rank::h5d63f1ee82515af9 in lexical_cache_probe-a468f7571228aa69.lexical_cache_probe.99ac4eb99e6e48fa-cgu.3.rcgu.o
+          ld: symbol(s) not found for architecture arm64
+          clang: error: linker command failed with exit code 1 (use -v to see invocation)
+          
+
+error: could not compile `hsum` (example "lexical-cache-probe") due to 1 previous error

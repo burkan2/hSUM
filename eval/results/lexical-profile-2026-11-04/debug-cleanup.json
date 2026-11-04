@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-04",
+  "removed_rebuildable_paths": [
+    "/Users/b.k./Desktop/hSUM/target/debug/deps",
+    "/Users/b.k./Desktop/hSUM/target/debug/build",
+    "/Users/b.k./Desktop/hSUM/target/debug/.fingerprint",
+    "/Users/b.k./Desktop/hSUM/target/debug/examples",
+    "/Users/b.k./Desktop/hSUM/target/debug/incremental"
+  ],
+  "preserved_debug_binary": "/Users/b.k./Desktop/hSUM/target/debug/hsum",
+  "preserved_debug_binary_sha256": "234da974903fdcc0c6fa2b8696cfde26636547b38565cf9e067cebb914995b27",
+  "validation": "full contributor gate and release tests already complete"
+}

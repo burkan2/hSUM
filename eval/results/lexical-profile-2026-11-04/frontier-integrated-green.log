@@ -1,0 +1,41 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 11.32s
+     Running unittests src/lib.rs (target/debug/deps/hsum-b4bfea2851d51d35)
+
+running 33 tests
+test search::get::tests::chunk_layout_validation_requires_monotonic_contiguous_spans ... ok
+test search::positions::tests::cancellation_is_checked_before_empty_tails_and_every_256_bytes ... ok
+test search::positions::tests::empty_and_single_byte_tails_count_the_already_consumed_first_hit ... ok
+test search::positions::tests::every_unsupported_byte_and_offset_bound_uses_native_fallback ... ok
+test search::positions::tests::null_reversed_and_oversized_ranges_are_rejected_before_borrowing ... ok
+test search::positions::tests::unknown_sqlite_source_never_enables_the_fast_path ... ok
+test search::get::tests::chunk_layout_cardinality_is_rejected_before_collection ... ok
+test search::frontier::tests::malformed_tie_and_ambiguous_complete_keys_fall_back ... ok
+test search::frontier::tests::row_limit_boundary_falls_back_without_truncating ... ok
+test search::ranking::tests::fast_and_forced_native_positions_match_builtin_bits_and_cover_fallbacks ... ok
+test search::frontier::tests::persistent_cancellation_in_each_phase_propagates_and_recovers ... ok
+test search::ranking::tests::token_lengths_validate_all_varint_boundaries ... ok
+test search::retrieval::tests::deadline_guard_interrupts_a_running_sqlite_operation ... ok
+test search::frontier::tests::foreign_removed_inactive_and_replaced_heads_match_scope ... ok
+test search::positions::tests::all_supported_bytes_count_exactly_once ... ok
+test search::retrieval::tests::fusion_rounding_is_integer_and_matches_the_frozen_example ... ok
+test search::retrieval::tests::hybrid_dedupe_and_equal_unit_ties_are_stable_and_explanations_are_bounded ... ok
+test search::retrieval::tests::lexical_compiler_treats_fts_operators_as_quoted_terms ... ok
+test search::ranking::tests::interrupted_auxiliary_phases_release_state_and_allow_next_query ... ok
+test search::frontier::tests::cardinalities_and_cutoff_ties_match_native_bits_and_order ... ok
+test search::retrieval::tests::materialization_probe_is_nested_and_search_scoped ... ok
+test search::retrieval::tests::overlap_threshold_is_inclusive_at_one_half ... ok
+test search::retrieval::tests::lexical_ranking_uses_covered_chunk_order_before_loading_the_page ... ok
+test search::retrieval::tests::repeated_searches_register_one_ranker_per_connection ... ok
+test search::ranking::tests::sparse_and_large_row_ids_preserve_native_scores ... ok
+test search::ranking::tests::malformed_joined_sizes_fall_back_to_native_row_validation ... ok
+test search::retrieval::tests::vector_knn_boundary_ties_use_exact_rowid_order ... ok
+test search::retrieval::tests::search_maps_exact_sqlite_timeout_and_skips_lexical_retrieval ... ok
+test search::retrieval::tests::vector_knn_filters_by_source_before_applying_k ... ok
+test search::ranking::tests::scores_match_builtin_for_small_and_large_indexes ... ok
+test search::retrieval::tests::lexical_frontier_matches_full_scoped_ranking_with_ties_and_offsets ... ok
+test search::retrieval::tests::duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary ... ok
+test search::retrieval::tests::exact_pages_seek_scoped_candidates_without_scanning_the_whole_project ... ok
+
+test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 139 filtered out; finished in 2.59s
+

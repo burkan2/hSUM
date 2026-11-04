@@ -1,0 +1,102 @@
+   Compiling ring v0.17.14
+   Compiling rustls v0.23.46
+   Compiling rustls-webpki v0.103.16
+   Compiling ureq v3.3.0
+   Compiling ort-sys v2.0.0-rc.13
+   Compiling ort v2.0.0-rc.13
+   Compiling fastembed v5.17.4
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+error[E0425]: cannot find function `rank` in this scope
+   --> src/search/frontier.rs:52:9
+    |
+ 52 |         rank(c, &PROJECT, "shared", 500, &mut |_| Ok(())).unwrap()
+    |         ^^^^ not found in this scope
+    |
+note: function `crate::search::ranking::extension::rank` exists but is inaccessible
+   --> src/search/ranking.rs:384:5
+    |
+384 | /     unsafe extern "C" fn rank(
+385 | |         api: *const ffi::Fts5ExtensionApi,
+386 | |         fts: *mut ffi::Fts5Context,
+387 | |         context: *mut ffi::sqlite3_context,
+...   |
+426 | |     }
+    | |_____^ not accessible
+
+error[E0433]: failed to resolve: use of undeclared type `Phase`
+  --> src/search/frontier.rs:98:22
+   |
+98 |         for stop in [Phase::Scoring,Phase::Selection,Phase::Metadata] {
+   |                      ^^^^^ use of undeclared type `Phase`
+   |
+note: enum `crate::search::ranking::Phase` exists but is inaccessible
+  --> src/search/ranking.rs:68:1
+   |
+68 | enum Phase {
+   | ^^^^^^^^^^ not accessible
+
+error[E0433]: failed to resolve: use of undeclared type `Phase`
+  --> src/search/frontier.rs:98:37
+   |
+98 |         for stop in [Phase::Scoring,Phase::Selection,Phase::Metadata] {
+   |                                     ^^^^^ use of undeclared type `Phase`
+   |
+note: enum `crate::search::ranking::Phase` exists but is inaccessible
+  --> src/search/ranking.rs:68:1
+   |
+68 | enum Phase {
+   | ^^^^^^^^^^ not accessible
+
+error[E0433]: failed to resolve: use of undeclared type `Phase`
+  --> src/search/frontier.rs:98:54
+   |
+98 |         for stop in [Phase::Scoring,Phase::Selection,Phase::Metadata] {
+   |                                                      ^^^^^ use of undeclared type `Phase`
+   |
+note: enum `crate::search::ranking::Phase` exists but is inaccessible
+  --> src/search/ranking.rs:68:1
+   |
+68 | enum Phase {
+   | ^^^^^^^^^^ not accessible
+
+error[E0425]: cannot find function `rank` in this scope
+   --> src/search/frontier.rs:99:24
+    |
+ 99 |             let result=rank(&c,&PROJECT,"shared",500,&mut |phase| {
+    |                        ^^^^ not found in this scope
+    |
+note: function `crate::search::ranking::extension::rank` exists but is inaccessible
+   --> src/search/ranking.rs:384:5
+    |
+384 | /     unsafe extern "C" fn rank(
+385 | |         api: *const ffi::Fts5ExtensionApi,
+386 | |         fts: *mut ffi::Fts5Context,
+387 | |         context: *mut ffi::sqlite3_context,
+...   |
+426 | |     }
+    | |_____^ not accessible
+
+warning: unused import: `super::*`
+ --> src/search/frontier.rs:5:9
+  |
+5 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `rank_with_limit` in this scope
+  --> src/search/frontier.rs:89:20
+   |
+89 |         let result=rank_with_limit(&c,&PROJECT,"shared",50,50,&mut |_| Ok(())).unwrap();
+   |                    ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `rank_with_limit` in this scope
+  --> src/search/frontier.rs:91:20
+   |
+91 |         let result=rank_with_limit(&c,&PROJECT,"shared",50,51,&mut |_| Ok(())).unwrap().unwrap();
+   |                    ^^^^^^^^^^^^^^^ not found in this scope
+
+Some errors have detailed explanations: E0425, E0433.
+For more information about an error, try `rustc --explain E0425`.
+warning: `hsum` (lib test) generated 1 warning
+error: could not compile `hsum` (lib test) due to 7 previous errors; 1 warning emitted

@@ -1,0 +1,25 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+error[E0277]: the trait bound `usize: FromSql` is not satisfied
+   --> src/search/frontier.rs:158:36
+    |
+158 |             let index: usize = row.get(0)?;
+    |                                    ^^^ the trait `FromSql` is not implemented for `usize`
+    |
+    = help: the following other types implement trait `FromSql`:
+              f32
+              f64
+              i16
+              i32
+              i64
+              i8
+              isize
+              u16
+            and 2 others
+note: required by a bound in `Row::<'_>::get`
+   --> /Users/b.k./.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/rusqlite-0.39.0/src/row.rs:285:32
+    |
+285 |     pub fn get<I: RowIndex, T: FromSql>(&self, idx: I) -> Result<T> {
+    |                                ^^^^^^^ required by this bound in `Row::<'_>::get`
+
+For more information about this error, try `rustc --explain E0277`.
+error: could not compile `hsum` (lib test) due to 1 previous error

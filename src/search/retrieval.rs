@@ -415,6 +415,15 @@ impl IndexDb {
         project_id: ProjectId,
         request: &SearchRequest,
     ) -> Result<SearchResponse, SearchError> {
+        self.search_with_cancellation(project_id, request, None)
+    }
+
+    pub(crate) fn search_with_cancellation(
+        &self,
+        project_id: ProjectId,
+        request: &SearchRequest,
+        cancelled: Option<fn() -> bool>,
+    ) -> Result<SearchResponse, SearchError> {
         if !self.search_ranker_installed.get() {
             // FTS5 retains every auxiliary registration until connection close.
             // IndexDb is not Sync; install once, and retry only after failure.
@@ -426,7 +435,7 @@ impl IndexDb {
         let started = Instant::now();
         let deadline = started + Duration::from_millis(request.deadline_ms);
         let interrupt = DeadlineInterrupt::arm(self.connection(), deadline);
-        let result = execute_search(self, project_id, request, started, deadline);
+        let result = execute_search(self, project_id, request, started, deadline, cancelled);
         drop(interrupt);
 
         let mut result = match result {
@@ -477,6 +486,7 @@ fn execute_search(
     request: &SearchRequest,
     started: Instant,
     deadline: Instant,
+    cancelled: Option<fn() -> bool>,
 ) -> Result<SearchResponse, SearchError> {
     let transaction = database.connection().unchecked_transaction()?;
     let context = load_search_context(&transaction, project_id)?;
@@ -542,19 +552,28 @@ fn execute_search(
 
     let lexical_expression = compile_lexical_expression(request.query.original());
     let lexical_started = Instant::now();
-    let mut lexical_statement = transaction.prepare(&lexical_page_sql())?;
+    let (lexical_sql, lexical_values) = if !exact.deadline && Instant::now() < deadline {
+        if let Some(expression) = lexical_expression.as_deref() {
+            prepare_lexical_query(&transaction, project_id, expression, deadline, cancelled)?
+        } else {
+            (lexical_page_sql(), Vec::new())
+        }
+    } else {
+        (
+            lexical_page_sql(),
+            lexical_query_values(
+                project_id,
+                lexical_expression.as_deref().unwrap_or_default(),
+            ),
+        )
+    };
+    let mut lexical_statement = transaction.prepare(&lexical_sql)?;
     // Keep one bounded ranking cursor while fusion reveals 50 candidates at a time.
     let mut lexical_rows = lexical_expression
         .as_deref()
-        .map(|expression| {
+        .map(|_| {
             lexical_statement
-                .query(params![
-                    uuid_bytes(project_id).as_slice(),
-                    expression,
-                    i64::try_from(MAX_CANDIDATES_PER_LIST)
-                        .map_err(|_| SearchError::Corrupt("candidate limit overflow"))?,
-                    0,
-                ])
+                .query(params_from_iter(lexical_values.iter()))
                 .map_err(SearchError::from)
         })
         .transpose()?;
@@ -1719,8 +1738,72 @@ fn fetch_phrase_candidates(
 }
 
 fn lexical_page_sql() -> String {
+    lexical_body_sql(&lexical_ranked_ctes())
+}
+
+fn lexical_query_values(project_id: ProjectId, expression: &str) -> Vec<Value> {
+    vec![
+        Value::Blob(uuid_bytes(project_id).to_vec()),
+        Value::Text(expression.to_owned()),
+        Value::Integer(MAX_CANDIDATES_PER_LIST as i64),
+        Value::Integer(0),
+    ]
+}
+
+fn prepare_lexical_query(
+    connection: &Connection,
+    project_id: ProjectId,
+    expression: &str,
+    deadline: Instant,
+    cancelled: Option<fn() -> bool>,
+) -> Result<(String, Vec<Value>), SearchError> {
+    let mut check = |_| {
+        if Instant::now() >= deadline
+            || cancelled.is_some_and(|check| check())
+            || connection.is_interrupted()
+        {
+            Err(SearchError::DeadlineExceeded)
+        } else {
+            Ok(())
+        }
+    };
+    let ranked = super::frontier::rank(
+        connection,
+        uuid_bytes(project_id).as_slice(),
+        expression,
+        MAX_CANDIDATES_PER_LIST,
+        &mut check,
+    )?;
+    check(super::frontier::Phase::Selection)?;
+    let Some(ranked) = ranked else {
+        return Ok((
+            lexical_page_sql(),
+            lexical_query_values(project_id, expression),
+        ));
+    };
+    let mut values = vec![Value::Blob(uuid_bytes(project_id).to_vec())];
+    let cte = if ranked.is_empty() {
+        "ranked(id,lexical_score) AS (SELECT NULL,NULL WHERE 0)".to_owned()
+    } else {
+        let mut placeholders = Vec::with_capacity(ranked.len());
+        for (id, score) in ranked {
+            let next = values.len() + 1;
+            placeholders.push(format!("(?{next},?{})", next + 1));
+            values.extend([Value::Integer(id), Value::Real(score)]);
+        }
+        format!(
+            "ranked(id,lexical_score) AS (VALUES {})",
+            placeholders.join(",")
+        )
+    };
+    // Scores bind as f64 values, avoiding JSON decimal conversion. At most
+    // 500 rows + project use 1001 variables, within the connection's 1024 cap.
+    // The body query and its lazy Rows cursor remain the same on both paths.
+    Ok((lexical_body_sql(&cte), values))
+}
+
+fn lexical_body_sql(ranked: &str) -> String {
     let passage_columns = passage_columns();
-    let ranked = lexical_ranked_ctes();
     // Load guarded passage bodies only after the final scoped candidate limit.
     format!(
         "WITH {ranked}
@@ -1978,7 +2061,7 @@ fn passage_columns() -> String {
         dh.generation_id"
     )
 }
-const PASSAGE_SCOPE_JOINS: &str = "
+pub(super) const PASSAGE_SCOPE_JOINS: &str = "
     JOIN project_sources AS ps
       ON ps.source_id = ap.source_id
      AND ps.removed_at IS NULL
@@ -2675,16 +2758,18 @@ mod tests {
             )
             .unwrap();
         super::super::ranking::install(database.connection()).unwrap();
-        let mut statement = database.connection().prepare(&lexical_page_sql()).unwrap();
-        let mut rows = statement
-            .query(params![
-                uuid_bytes(project_id).as_slice(),
-                "shared AND lexical AND evidence",
-                500,
-                0,
-            ])
-            .unwrap();
         let deadline = Instant::now() + Duration::from_secs(10);
+        let (sql, values) = prepare_lexical_query(
+            database.connection(),
+            project_id,
+            "shared AND lexical AND evidence",
+            deadline,
+            None,
+        )
+        .unwrap();
+        assert!(sql.contains("ranked(id,lexical_score) AS (VALUES"));
+        let mut statement = database.connection().prepare(&sql).unwrap();
+        let mut rows = statement.query(params_from_iter(values.iter())).unwrap();
         assert_eq!(
             fetch_lexical_page(&mut rows, 50, deadline)
                 .unwrap()

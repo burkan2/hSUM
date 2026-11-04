@@ -58,6 +58,7 @@ jobs:
         shell: bash
         run: |
           mkdir -m 700 "$RUNNER_TEMP/retrieval-scale"
+          lscpu --json > "$RUNNER_TEMP/retrieval-scale/runner-cpu.json"
           mkdir -m 700 "$RUNNER_TEMP/retrieval-scale/home"
           HSUM_HOME="$RUNNER_TEMP/retrieval-scale/home" \
             target/release/hsum --no-color --no-progress \
@@ -92,6 +93,7 @@ jobs:
           path: |
             ${{ runner.temp }}/retrieval-scale/setup-linux-x86_64.json
             ${{ runner.temp }}/retrieval-scale/linux-x86_64-100k.json
+            ${{ runner.temp }}/retrieval-scale/runner-cpu.json
           if-no-files-found: warn
           compression-level: 9
 
@@ -119,7 +121,8 @@ jobs:
           set -euo pipefail
           test "$(uname -s):$(uname -m)" = Linux:x86_64
           mkdir -p "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
-          git archive 41af5c711f2bacfd84f68b28b0d8c4ab47711ca6 | tar -x -C "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
+          lscpu --json > "$RUNNER_TEMP/ranking-diagnostic/runner-cpu.json"
+          git archive 5ca552ccac73a8e989c2a3a21347e5f6acc5cf8d | tar -x -C "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
           CARGO_TARGET_DIR="$RUNNER_TEMP/ranking-diagnostic/baseline-target" cargo +1.91.0 build --locked --release \
             --manifest-path "$RUNNER_TEMP/ranking-diagnostic/baseline-source/Cargo.toml" --bin hsum
           cp "$RUNNER_TEMP/ranking-diagnostic/baseline-target/release/hsum" "$RUNNER_TEMP/ranking-diagnostic/baseline-hsum"
@@ -147,4 +150,5 @@ jobs:
           path: |
             ${{ runner.temp }}/ranking-diagnostic/report.json
             ${{ runner.temp }}/ranking-diagnostic/diagnostic.log
+            ${{ runner.temp }}/ranking-diagnostic/runner-cpu.json
           if-no-files-found: warn

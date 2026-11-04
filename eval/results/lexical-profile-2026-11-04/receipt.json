@@ -1,0 +1,1693 @@
+{
+  "qualification": false,
+  "scope": "12-second repeated ordinary-02 stack sample on disposable existing index; timings are perturbed by profiling",
+  "binary_sha256": "8f6867f4ede78ae89c6baa6e5183910a8a260908d7ca2f642dda1ba10ad40b59",
+  "query": {
+    "id": "ordinary-02",
+    "class": "ordinary_lexical",
+    "mode": "lexical",
+    "query": "immutable citation evidence",
+    "corpus_phrase": "immutable citation evidence"
+  },
+  "calls": [
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 72,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.54312499816297
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 304,
+        "query_embedding": 0,
+        "total": 317,
+        "vector": 0
+      },
+      "client_ms": 322.3482080065878
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 78,
+        "query_embedding": 0,
+        "total": 87,
+        "vector": 0
+      },
+      "client_ms": 90.2804159995867
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 88.25562499987427
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 78,
+        "query_embedding": 0,
+        "total": 86,
+        "vector": 0
+      },
+      "client_ms": 89.37387500191107
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 104,
+        "query_embedding": 0,
+        "total": 112,
+        "vector": 0
+      },
+      "client_ms": 116.1658340060967
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 92,
+        "query_embedding": 0,
+        "total": 99,
+        "vector": 0
+      },
+      "client_ms": 102.43925000395393
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.0060000011581
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.17025000037393
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 85.99262500501936
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 85.76679100224283
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 78,
+        "query_embedding": 0,
+        "total": 86,
+        "vector": 0
+      },
+      "client_ms": 88.81720799399773
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 87.48008400289109
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 79,
+        "query_embedding": 0,
+        "total": 86,
+        "vector": 0
+      },
+      "client_ms": 89.01412499835715
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.5738330030581
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.02479200635571
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 85.02004100591876
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 99,
+        "query_embedding": 0,
+        "total": 106,
+        "vector": 0
+      },
+      "client_ms": 109.3269170014537
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 84.97020899812924
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 85.04712500143796
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 72,
+        "query_embedding": 0,
+        "total": 80,
+        "vector": 0
+      },
+      "client_ms": 82.90116699936334
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.50408399949083
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 78,
+        "query_embedding": 0,
+        "total": 85,
+        "vector": 0
+      },
+      "client_ms": 88.0720829954953
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.17337500234134
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.37174999946728
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.38899999600835
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 78,
+        "query_embedding": 0,
+        "total": 85,
+        "vector": 0
+      },
+      "client_ms": 88.57170899864286
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 78,
+        "query_embedding": 0,
+        "total": 86,
+        "vector": 0
+      },
+      "client_ms": 88.83958299702499
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.03037499415223
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 95.25008300261106
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 101,
+        "query_embedding": 0,
+        "total": 109,
+        "vector": 0
+      },
+      "client_ms": 111.97358399658697
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 85,
+        "vector": 0
+      },
+      "client_ms": 88.48929099622183
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 85.65791600267403
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 86.8272910011001
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.73275000182912
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.33258300303714
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.1823340015253
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.01387499907287
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 83.96108400484081
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 87.59512499818811
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 200,
+        "query_embedding": 0,
+        "total": 207,
+        "vector": 0
+      },
+      "client_ms": 211.00329200271517
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 170,
+        "query_embedding": 0,
+        "total": 177,
+        "vector": 0
+      },
+      "client_ms": 180.81700000038836
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 83,
+        "query_embedding": 0,
+        "total": 91,
+        "vector": 0
+      },
+      "client_ms": 94.2751659968053
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 87.66179100348381
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 85,
+        "vector": 0
+      },
+      "client_ms": 88.28095799981384
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 88.53512499626959
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 267,
+        "query_embedding": 0,
+        "total": 275,
+        "vector": 0
+      },
+      "client_ms": 278.5400000066147
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 128,
+        "query_embedding": 0,
+        "total": 136,
+        "vector": 0
+      },
+      "client_ms": 143.0927499968675
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 139,
+        "query_embedding": 0,
+        "total": 147,
+        "vector": 0
+      },
+      "client_ms": 149.9093329985044
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.36325000022771
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 97,
+        "query_embedding": 0,
+        "total": 105,
+        "vector": 0
+      },
+      "client_ms": 107.87216699827695
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.62283300125273
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.11408299475443
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 87.07412499643397
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 87.1827500013751
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 85,
+        "vector": 0
+      },
+      "client_ms": 89.08195800177054
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 78,
+        "query_embedding": 0,
+        "total": 85,
+        "vector": 0
+      },
+      "client_ms": 88.35854200151516
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 85.7057499961229
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.74633400369203
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.36337500502123
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.20062499539927
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 78,
+        "query_embedding": 0,
+        "total": 86,
+        "vector": 0
+      },
+      "client_ms": 88.95287499763072
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 102,
+        "query_embedding": 0,
+        "total": 110,
+        "vector": 0
+      },
+      "client_ms": 113.49529099970823
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 87.01633299642708
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.36370799993165
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.72208300413331
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.34408299985807
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 86.41620800335659
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.47537499928148
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 85,
+        "vector": 0
+      },
+      "client_ms": 88.71433299646014
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.13512499869103
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.68100000411505
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 85.56645799399121
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.09604199591558
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.05216699995799
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 98,
+        "query_embedding": 0,
+        "total": 105,
+        "vector": 0
+      },
+      "client_ms": 108.60820900416002
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.02783299970906
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.59829100320349
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.12875000067288
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 73,
+        "query_embedding": 0,
+        "total": 80,
+        "vector": 0
+      },
+      "client_ms": 83.3490829973016
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.3087499999674
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.26150000013877
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.07954099675408
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.68104199710069
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.59129200491589
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.44366700516548
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.29666699905647
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 97,
+        "query_embedding": 0,
+        "total": 104,
+        "vector": 0
+      },
+      "client_ms": 107.17620800278382
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 77,
+        "query_embedding": 0,
+        "total": 84,
+        "vector": 0
+      },
+      "client_ms": 87.42479200009257
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.63575000537094
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 76,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 87.2144169989042
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.16599999711616
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.36458399955882
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 80,
+        "vector": 0
+      },
+      "client_ms": 83.7034579963074
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 73,
+        "query_embedding": 0,
+        "total": 80,
+        "vector": 0
+      },
+      "client_ms": 83.28983299725223
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 84.58250000694534
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.63491699896986
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 83,
+        "vector": 0
+      },
+      "client_ms": 86.14662499894621
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.15800000168383
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 87,
+        "vector": 0
+      },
+      "client_ms": 90.67041700473055
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 140,
+        "query_embedding": 0,
+        "total": 147,
+        "vector": 0
+      },
+      "client_ms": 149.9568340004771
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 81,
+        "query_embedding": 0,
+        "total": 88,
+        "vector": 0
+      },
+      "client_ms": 91.79387499898439
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.50341700174613
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.41241600323701
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 75,
+        "query_embedding": 0,
+        "total": 82,
+        "vector": 0
+      },
+      "client_ms": 85.72420800192049
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 74,
+        "query_embedding": 0,
+        "total": 81,
+        "vector": 0
+      },
+      "client_ms": 83.97737499763025
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 77.3714579991065
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 67,
+        "query_embedding": 0,
+        "total": 74,
+        "vector": 0
+      },
+      "client_ms": 77.20762499957345
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 74,
+        "vector": 0
+      },
+      "client_ms": 77.62945899594342
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 69,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 77.87166599882767
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 69,
+        "query_embedding": 0,
+        "total": 76,
+        "vector": 0
+      },
+      "client_ms": 78.89933399565052
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 69,
+        "query_embedding": 0,
+        "total": 76,
+        "vector": 0
+      },
+      "client_ms": 78.75187500030734
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 69,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 79.47829100157833
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 80,
+        "query_embedding": 0,
+        "total": 97,
+        "vector": 0
+      },
+      "client_ms": 100.36387500440469
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 70,
+        "query_embedding": 0,
+        "total": 76,
+        "vector": 0
+      },
+      "client_ms": 78.96662499842932
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 69,
+        "query_embedding": 0,
+        "total": 76,
+        "vector": 0
+      },
+      "client_ms": 78.71916700241854
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 69,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 78.22820900037186
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 69,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 78.55737500358373
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 74,
+        "vector": 0
+      },
+      "client_ms": 77.50591700460063
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 77.55612499749986
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 77.57537499855971
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 74,
+        "vector": 0
+      },
+      "client_ms": 77.12291600182652
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 77.66345799609553
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 74,
+        "vector": 0
+      },
+      "client_ms": 77.15762500447454
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 78.09954100230243
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 74,
+        "vector": 0
+      },
+      "client_ms": 77.16862500092248
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 90,
+        "query_embedding": 0,
+        "total": 97,
+        "vector": 0
+      },
+      "client_ms": 99.87600000022212
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 2,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 69,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 78.0670829990413
+    },
+    {
+      "timing_ms": {
+        "body_materialization": 3,
+        "exact": 0,
+        "exact_fallback": 0,
+        "fusion": 0,
+        "lexical": 68,
+        "query_embedding": 0,
+        "total": 75,
+        "vector": 0
+      },
+      "client_ms": 77.41037500090897
+    }
+  ],
+  "peak_rss_kib": 27888,
+  "rss_error": null
+}

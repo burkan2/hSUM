@@ -207,9 +207,14 @@ impl SearchEvidence {
             database.verify_live_identity()?;
 
             checkpoint(request)?;
-            let response = match database.search(request.project_id, &prepared.search) {
+            let response = match database.search_with_cancellation(
+                request.project_id,
+                &prepared.search,
+                request.cancelled,
+            ) {
                 Ok(response) => response,
                 Err(error) => {
+                    checkpoint(request)?;
                     let actual = read_snapshot(database.connection(), request.project_id)?;
                     if actual != prepared.snapshot {
                         checkpoint(request)?;
@@ -857,6 +862,37 @@ mod tests {
         CANCELLED.set(false);
         assert!(matches!(result, Err(SearchEvidenceError::Cancelled)));
         assert_eq!(PREFLIGHTS.get(), 2);
+        assert!(SearchEvidence::execute(&request).is_ok());
+    }
+
+    #[test]
+    fn persistent_cancellation_at_each_search_checkpoint_keeps_cancelled_identity() {
+        thread_local! {
+            static CALLS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+            static STOP: std::cell::Cell<usize> = const { std::cell::Cell::new(usize::MAX) };
+        }
+        fn cancellation() -> bool {
+            CALLS.set(CALLS.get() + 1);
+            CALLS.get() >= STOP.get()
+        }
+        let (_directory, mut request) = indexed_request();
+        request.cancelled = Some(cancellation);
+        assert!(SearchEvidence::execute(&request).is_ok());
+        let checkpoints = CALLS.get();
+        assert!(checkpoints > 0);
+        for stop in 1..=checkpoints {
+            CALLS.set(0);
+            STOP.set(stop);
+            assert!(
+                matches!(
+                    SearchEvidence::execute(&request),
+                    Err(SearchEvidenceError::Cancelled)
+                ),
+                "checkpoint={stop}"
+            );
+        }
+        STOP.set(usize::MAX);
+        CALLS.set(0);
         assert!(SearchEvidence::execute(&request).is_ok());
     }
 
