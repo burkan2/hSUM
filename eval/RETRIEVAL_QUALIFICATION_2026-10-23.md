@@ -1,6 +1,33 @@
-# Performance qualification checkpoints — 2026-10-23 through 2026-11-01
+# Performance qualification checkpoints — 2026-10-23 through 2026-11-03
 
-## Latest: same-candidate results on November 1
+## Latest: candidate `5ca552c`, reviewed November 3
+
+**Linux 100k still fails ordinary lexical latency; million-passage stress passes.**
+Candidate `5ca552ccac73a8e989c2a3a21347e5f6acc5cf8d` completed all 2,250 Linux
+observations with ordinary lexical p95 **118/117/116 ms**, against the unchanged
+strict <100 ms limit. Identifier 71/70/68 ms, fallback 102/102/101 ms, hybrid
+274/274/272 ms and total-p95 CV 0.9494% pass. Author and independent AI review
+recomputed all raw summaries and qualification flags. The
+[full failure evidence](results/retrieval-scale-41410428972-5ca552c/REVIEW.md)
+is retained; no resampling or threshold changes replace it.
+
+Same-candidate [million-passage stress](results/retrieval-stress-41410432393-5ca552c/REVIEW.md)
+passes all ten report-only checks and 80 probes, with no deadlines.
+[Paired ranking diagnostics](results/ranking-diagnostic-linux-41321716787-5ca552c/REVIEW.md)
+show an approximately 11.5% within-run reduction in ordinary lexical mean,
+but do not qualify the release. [Linux Rust/C sanitizer evidence](results/ranking-sanitizer-linux-41321721032-5ca552c/REVIEW.md)
+and both native standard contributor gates pass.
+
+Fresh [Mac qualification passes](results/retrieval-scale-macos-5ca552c/REVIEW.md)
+on the same candidate: identifier p95 40/70/50 ms, ordinary lexical 71/77/74 ms,
+fallback 49/62/51 ms, hybrid 184/248/200 ms and CV 3.7506%. All 2,250
+observations were retained and recomputed. Lexical ingest took 35.890087 seconds
+and fresh re-embedding 9,708.027323 seconds. The earlier Mac pass below belongs
+to `41af5c7`. Signing authority and protected
+release environment setup remain open. There is no same-candidate cross-platform
+100k pass and stable publication remains blocked.
+
+## Previous: same-candidate results on November 1
 
 **Mac 100k passes; Linux ordinary lexical remains 104 ms against <100 ms.**
 Both platforms completed all 2,250 observations on

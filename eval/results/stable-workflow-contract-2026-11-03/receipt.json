@@ -1,0 +1,23 @@
+{
+  "reviewed_on": "2026-11-04",
+  "independent_review": "Independent AI code-reviewer approved final implementation; no remaining critical/high findings. Not stable publication approval.",
+  "stable_publication": "blocked: Linux ordinary lexical SLO, production signing authority, protected release setup",
+  "release_contract_tests_passed": 33,
+  "source_sha256": {
+    ".github/workflows/ci.yml": "da4853ff3fcc16500246676f3b7f48770af9568f9adeea0956b326e6ae8c088b",
+    ".github/workflows/release-stable.yml": "698bda3f83d58ce17ffc7146dace1c5bfbac146f00a132e1c1ba01c026ff4a6d",
+    "scripts/verify_stable_authority.py": "e69ee52bd089d3b20d735a067f1e54c10f00eaff8294dca19f452da8040c5a16",
+    "scripts/test_verify_stable_authority.py": "356052c8919e2a18bf6e4299fc2ec4a62648689ba8772424278aa10873c99e57",
+    "scripts/verify_stable_controls.py": "53c95e675830216d26fd7fef508ebd027664ca90d4552dab83ab945758b2540b",
+    "scripts/test_verify_stable_controls.py": "f0bf24de3cac851e127a3a708a4ffc0f16ae6631aff9e632eb43e0dd4f993225",
+    "scripts/verify_stable_release.py": "129da94a1ea1c58bbbc3991127b480ad0d55426c8f2d977e0741cb5dc60df387",
+    "scripts/test_verify_stable_release.py": "0173d4ead35483efdbfdb98d1d1fc8d122fb605ea4cfd9627f8de9beedb51f3d",
+    "scripts/installer-smoke.sh": "e3da2f455642ce5faceb32769130b3253ceb875d3e1195edc1ee410780af844c",
+    "scripts/no-network-smoke.sh": "f742f27fbc7acb52e7f154de7fa9eddb1d45f1a3869fb42ca57c74e8b9e654dc",
+    "scripts/released-alpha1-upgrade-smoke.sh": "25027746f86a118875d10dffd853a504f47da7afda16e83be886b76dff772253",
+    "scripts/test_release_smoke_routing.py": "ce884fcc88e2aa8993dfb9fec20a3d544df25b0afa0d0caea16bc44bd913a71e",
+    "scripts/install-release-gh.sh": "25d9a11858e2f80b1f7caa3893de74b892751c0148d8bd1fe107818d79ef4dc3",
+    "docs/stable-release-signing.md": "e916cc94b12317ac4863cb3f2f07d9c288e45cc2f3e2a866c55dfa8b47d176c5"
+  },
+  "minisign_binary_sha256": "d41cde458303d45c95b00473e2455a7f45f95b550931f1f0cc98ef1f61b2a8ff"
+}

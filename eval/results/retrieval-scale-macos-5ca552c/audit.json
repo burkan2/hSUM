@@ -1,0 +1,49 @@
+{
+  "reviewed_on": "2026-11-03",
+  "candidate": "5ca552ccac73a8e989c2a3a21347e5f6acc5cf8d",
+  "binary_sha256": "8f6867f4ede78ae89c6baa6e5183910a8a260908d7ca2f642dda1ba10ad40b59",
+  "observations_recomputed": 2250,
+  "source_setup_helper_manifest_binding": "verified",
+  "qualification": {
+    "checks": {
+      "all_class_slos": true,
+      "at_least_750_observations_per_run": true,
+      "canonical_parameters": true,
+      "cold_os_cache_method_recorded": true,
+      "rss_complete": true,
+      "setup_and_ingest_throughput_recorded": true,
+      "three_fresh_processes": true,
+      "total_p95_cv_at_most_10_percent": true
+    },
+    "maximum_cv_percent": 10.0,
+    "pass": true,
+    "run_level_total_p95_ms": [
+      177,
+      194,
+      187
+    ],
+    "total_p95_coefficient_of_variation_percent": 3.7506181964975536
+  },
+  "class_p95_ms": {
+    "exact_fallback": [
+      49,
+      62,
+      51
+    ],
+    "hybrid_no_fallback": [
+      184,
+      248,
+      200
+    ],
+    "identifier": [
+      40,
+      70,
+      50
+    ],
+    "ordinary_lexical": [
+      71,
+      77,
+      74
+    ]
+  }
+}

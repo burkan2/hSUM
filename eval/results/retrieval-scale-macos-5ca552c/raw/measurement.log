@@ -1,0 +1,4 @@
+run 1/3: starting fresh MCP process
+run 2/3: starting fresh MCP process
+run 3/3: starting fresh MCP process
+qualification=PASS; report: /Users/b.k./.cache/hsum-qualification/2026-11-02-5ca552c-macos-fresh/macos-arm64-100k.json

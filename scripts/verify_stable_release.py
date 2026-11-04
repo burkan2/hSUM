@@ -103,7 +103,8 @@ def verify(tag, dist, public_key, *, minisign="minisign", unsigned_draft=False):
             "signatures_verified": not unsigned_draft,
             "signed_files": 0 if unsigned_draft else len(signed),
             "public_key_sha256": hashlib.sha256(decoded).hexdigest(),
-            "sha256sums_sha256": digest(dist / "SHA256SUMS")}
+            "sha256sums_sha256": digest(dist / "SHA256SUMS"),
+            "assets_sha256": {name: digest(dist / name) for name in sorted(expected)}}
 
 
 def main():

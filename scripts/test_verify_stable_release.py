@@ -65,6 +65,16 @@ class StableReleaseTests(unittest.TestCase):
         self.assertTrue(result["signatures_verified"])
         self.assertEqual(result["signed_files"], 4)
 
+    def test_receipt_binds_unsigned_signature_comments_too(self):
+        before = self.verify()
+        signature = self.dist / "SHA256SUMS.minisig"
+        original = signature.read_bytes()
+        signature.write_bytes(b"untrusted comment: replaced\n" + original.split(b"\n", 1)[1])
+        after = self.verify()
+        self.assertEqual(before["sha256sums_sha256"], after["sha256sums_sha256"])
+        self.assertNotEqual(before["assets_sha256"], after["assets_sha256"])
+        self.assertEqual(len(after["assets_sha256"]), 13)
+
     def test_rejects_missing_and_wrong_authority(self):
         with self.assertRaises(contract.ReleaseError):
             contract.verify(self.tag, self.dist, "", minisign=MINISIGN)

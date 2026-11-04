@@ -1,0 +1,14 @@
+..F
+======================================================================
+FAIL: test_stable_requires_bundle_and_real_gatekeeper_success (__main__.SmokeRoutingTests.test_stable_requires_bundle_and_real_gatekeeper_success)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/b.k./Desktop/hSUM/scripts/test_release_smoke_routing.py", line 112, in test_stable_requires_bundle_and_real_gatekeeper_success
+    self.assertIn("Gatekeeper", result.stderr)
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'Gatekeeper' not found in 'macOS rejected the stable Developer ID/notarization assessment\n'
+
+----------------------------------------------------------------------
+Ran 3 tests in 10.631s
+
+FAILED (failures=1)

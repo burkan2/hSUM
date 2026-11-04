@@ -1,0 +1,11 @@
+gh_2.103.3_macOS_arm64.zip: OK
+gh version 2.103.3 (2026-10-26)
+https://github.com/cli/cli/releases/tag/v2.103.3
+`--predicate-type` flag.
+`--signer-workflow` or `--cert-identity` flags.
+In this situation, you must use either the `--signer-workflow` or
+See above re: `--signer-workflow`.
+      --predicate-type string        Enforce that verified attestations' predicate type matches the provided value (default "https://slsa.dev/provenance/v1")
+      --signer-workflow string       Enforce that the workflow that signed the attestation matches the provided value ([host/]<owner>/<repo>/<path>/<to>/<workflow>)
+      --source-digest string         Enforce that the digest associated with the source repository matches the provided value
+      --source-ref string            Enforce that the git ref associated with the source repository matches the provided value

@@ -1,0 +1,5 @@
+first_init_seconds=0
+first_cli_citation_seconds=1
+mcp_round_trip_seconds=1
+release smoke passed
+installer smoke passed

@@ -15,13 +15,13 @@ if [ ! -x "$current_binary" ]; then
   exit 2
 fi
 
-case "$("$current_binary" --version)" in
-  "hsum 0.1.0-alpha.4") ;;
-  *)
-    echo "upgrade smoke requires an hsum 0.1.0-alpha.4 candidate" >&2
-    exit 2
-    ;;
-esac
+repository_root=$(cd "$(dirname "$0")/.." && pwd)
+expected_version=$(awk -F '"' '$1 ~ /^version = / { print $2; exit }' "$repository_root/Cargo.toml")
+test -n "$expected_version"
+if [ "$("$current_binary" --version)" != "hsum $expected_version" ]; then
+  echo "upgrade smoke candidate does not match Cargo.toml version $expected_version" >&2
+  exit 2
+fi
 
 require_contains() {
   local pattern="$1"

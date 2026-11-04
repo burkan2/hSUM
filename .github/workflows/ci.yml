@@ -124,8 +124,11 @@ jobs:
         run: sudo apt-get update && sudo apt-get install --yes minisign
       - name: Verify real signatures and refuse unsigned installation
         run: |
+          python3 -W error scripts/test_verify_stable_authority.py
+          python3 -W error scripts/test_verify_stable_controls.py
           python3 -W error scripts/test_verify_stable_release.py
           python3 -W error scripts/test_stable_installer.py
+          python3 -W error scripts/test_release_smoke_routing.py
 
   ranking-sanitizer:
     name: Ranking memory-safety boundary

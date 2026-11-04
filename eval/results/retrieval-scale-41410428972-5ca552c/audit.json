@@ -1,0 +1,49 @@
+{
+  "reviewed_on": "2026-11-03",
+  "candidate": "5ca552ccac73a8e989c2a3a21347e5f6acc5cf8d",
+  "binary_sha256": "6b922d22c578e1d76a02ac279abb77356ffb5ad004b86fbb9fba5832681e025c",
+  "observations_recomputed": 2250,
+  "qualification": {
+    "checks": {
+      "all_class_slos": false,
+      "at_least_750_observations_per_run": true,
+      "canonical_parameters": true,
+      "cold_os_cache_method_recorded": true,
+      "rss_complete": true,
+      "setup_and_ingest_throughput_recorded": true,
+      "three_fresh_processes": true,
+      "total_p95_cv_at_most_10_percent": true
+    },
+    "maximum_cv_percent": 10.0,
+    "pass": false,
+    "run_level_total_p95_ms": [
+      261,
+      258,
+      255
+    ],
+    "total_p95_coefficient_of_variation_percent": 0.9494146289857279
+  },
+  "class_p95_ms": {
+    "exact_fallback": [
+      102,
+      102,
+      101
+    ],
+    "hybrid_no_fallback": [
+      274,
+      274,
+      272
+    ],
+    "identifier": [
+      71,
+      70,
+      68
+    ],
+    "ordinary_lexical": [
+      118,
+      117,
+      116
+    ]
+  },
+  "independent_review": "Independent AI code-reviewer also recomputed all observations, summaries, qualification flags, source/setup/binary bindings; confirmed failure."
+}
