@@ -1,0 +1,10 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 10.71s
+     Running unittests src/lib.rs (target/debug/deps/hsum-e461de09bbb04454)
+
+running 2 tests
+test search::ranking::tests::sparse_and_large_row_ids_use_builtin_lengths ... ok
+test search::ranking::tests::scores_match_builtin_for_small_and_cached_indexes ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.21s
+

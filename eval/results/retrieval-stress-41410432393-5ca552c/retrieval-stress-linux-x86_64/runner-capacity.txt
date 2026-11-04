@@ -1,0 +1,14 @@
+Linux runnervm48cm3 7.0.0-1017-azure #17~24.04.1-Ubuntu SMP PREEMPT Thu Sep 24 18:46:57 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+               total        used        free      shared  buff/cache   available
+Mem:     16764674048  1024684032 15079706624    44810240  1003892736 15739990016
+Swap:     3221221376           0  3221221376
+Filesystem        1B-blocks        Used   Available Use% Mounted on
+/dev/root      154894188544 63035682816 91841728512  41% /
+65536
+Filesystem        1B-blocks        Used   Available Use% Mounted on
+/dev/root      154894188544 64129073152 90748338176  42% /
+               total        used        free      shared  buff/cache   available
+Mem:     16764674048  1552642048  6945771520    55459840  8685084672 15212032000
+Swap:     3221221376           0  3221221376
+Filesystem        1B-blocks        Used   Available Use% Mounted on
+/dev/root      154894188544 70115753984 84761657344  46% /

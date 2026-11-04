@@ -1,3 +1,2 @@
 [alias]
-xtask = "run --quiet --bin xtask --"
-
+xtask = "run --quiet --features xtask --bin xtask --"

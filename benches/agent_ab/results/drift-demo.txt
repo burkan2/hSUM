@@ -1,0 +1,4 @@
+BEFORE: RETRY_LIMIT = 3 (uncommitted)
+EDIT: RETRY_LIMIT = 9
+WITHOUT hSUM: current = 9; previous value = unknown
+WITH hSUM: previous = 3; current = 9; source = changed

@@ -1,0 +1,1308 @@
+{
+  "qualification": false,
+  "purpose": "Real-model runtime controls after Tokio 1.53.0 to 1.53.3 patch; comparisons use recorded b01a3a6 results.",
+  "source_commit_before_patch": "b01a3a6e8d90bb1c2fa616b1843d23adf2f05024",
+  "binary_sha256": "3950d403159dcbba704951f4d698f29cf10a26f148968c8121de65e4e47738e3",
+  "cargo_toml_sha256": "951921c7959499da12b6692d1c4956641e2fcb7d330766125883e9de967c357b",
+  "cargo_lock_sha256": "ab9db211fae7939471edb2a2da88de9c15a5516ae61356d4cbd0dfd2612d0e46",
+  "controls": [
+    {
+      "mode": "lexical",
+      "argv": [
+        "/Users/b.k./Desktop/hSUM/target/release/hsum",
+        "search",
+        "duplicate bounded evidence archive",
+        "--mode",
+        "lexical",
+        "--limit",
+        "10",
+        "--timeout-ms",
+        "10000",
+        "--json",
+        "--explain"
+      ],
+      "packet": {
+        "schema_version": "hsum.api.v1",
+        "request_id": "e8173c5b-80e3-485b-beb1-dfd2897a7455",
+        "generation": 2,
+        "index_epoch": 2,
+        "project": "default",
+        "project_id": "b7c8f3bb-a484-4417-a066-397303179361",
+        "scope_revision": 0,
+        "requested_mode": "lexical",
+        "effective_mode": "lexical",
+        "retrievers": [
+          "exact",
+          "lexical"
+        ],
+        "degraded_mode": [],
+        "hints": [],
+        "results": [
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=12960-14760",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 12960,
+              "end_byte": 14760,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "ue duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLi",
+            "content_sha256": "21798a35059267a1dee31ba83e26ecf972e222326b2d284b4841e2b2aa2a3e61",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.016393442623,
+              "fusion_units": 16393442623,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 1,
+                  "contribution_units": 16393442623,
+                  "backend_score": -8.24705575771657e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=8100-9900",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 8100,
+              "end_byte": 9900,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  Stres",
+            "content_sha256": "c511ea65d0006edfce5d617173ed2318b8561082b07f76792e292efd659f333d",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.016129032258,
+              "fusion_units": 16129032258,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 2,
+                  "contribution_units": 16129032258,
+                  "backend_score": -8.24472602976211e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=1620-3420",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 1620,
+              "end_byte": 3420,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "ate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral str",
+            "content_sha256": "358a00103bdbb022017d593d53e850a927fe16eb1c7d68762a7b546ccb2cd07a",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015873015873,
+              "fusion_units": 15873015873,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 3,
+                  "contribution_units": 15873015873,
+                  "backend_score": -8.239883569087479e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=3240-5040",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 3240,
+              "end_byte": 5040,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "on|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence arch",
+            "content_sha256": "00f3940fcec25842580c9c3f92538a0435991b44a714687bc67fb0100ad065d4",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015625,
+              "fusion_units": 15625000000,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 4,
+                  "contribution_units": 15625000000,
+                  "backend_score": -8.235169305745083e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=6480-8280",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 6480,
+              "end_byte": 8280,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "d evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punct",
+            "content_sha256": "5ccddf7381d66bde1e022e40e1d2e2430b524862f51faeebf67d4c10bd4b9011",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015384615385,
+              "fusion_units": 15384615385,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 5,
+                  "contribution_units": 15384615385,
+                  "backend_score": -8.235098650046389e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=11340-13140",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 11340,
+              "end_byte": 13140,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": " archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quo",
+            "content_sha256": "e45fdaabc2dfaac0460c0ec6395cc5545ade95bab082acdebf11d16ea6490db4",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015151515152,
+              "fusion_units": 15151515152,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 6,
+                  "contribution_units": 15151515152,
+                  "backend_score": -8.230371375243314e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=0-1800",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": " StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]",
+            "content_sha256": "c83b20db2ac0fb1678688c76c8bcc565c909815c6fcff498a1d70b68c2040149",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014925373134,
+              "fusion_units": 14925373134,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 7,
+                  "contribution_units": 14925373134,
+                  "backend_score": -8.223255445073411e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=9720-11520",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 9720,
+              "end_byte": 11520,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "l stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bo",
+            "content_sha256": "72d7747bb684e1cf1c65a98092d8ace15ee63fb7953075aecbba795d1d275d39",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014705882353,
+              "fusion_units": 14705882353,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 8,
+                  "contribution_units": 14705882353,
+                  "backend_score": -8.22312522828323e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=4860-6660",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 4860,
+              "end_byte": 6660,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "tingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value du",
+            "content_sha256": "5d46539fb82d48503ad2fbd439967c065d6854b321a3a0399d7444997d9c948c",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014492753623,
+              "fusion_units": 14492753623,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 9,
+                  "contribution_units": 14492753623,
+                  "backend_score": -8.218367003200206e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=14580-15000",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 14580,
+              "end_byte": 15000,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value ",
+            "content_sha256": "953813ec09c44de277d1303202a8bcaa8fa878613008133eb93706c568819966",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014285714286,
+              "fusion_units": 14285714286,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 10,
+                  "contribution_units": 14285714286,
+                  "backend_score": -7.752260524581891e-06
+                }
+              ]
+            },
+            "duplicate_citations": []
+          }
+        ],
+        "next_cursor": null,
+        "stop_reason": "unique_exhausted",
+        "examined": {
+          "exact": 0,
+          "exact_fallback": 0,
+          "lexical": 10,
+          "vector": 0
+        },
+        "timing_ms": {
+          "query_embedding": 0,
+          "exact": 0,
+          "exact_fallback": 0,
+          "lexical": 1,
+          "vector": 0,
+          "fusion": 0,
+          "body_materialization": 0,
+          "total": 14
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "mode": "semantic",
+      "argv": [
+        "/Users/b.k./Desktop/hSUM/target/release/hsum",
+        "search",
+        "duplicate bounded evidence archive",
+        "--mode",
+        "semantic",
+        "--limit",
+        "10",
+        "--timeout-ms",
+        "10000",
+        "--json",
+        "--explain"
+      ],
+      "packet": {
+        "schema_version": "hsum.api.v1",
+        "request_id": "73eb1dab-c7d2-48aa-9f42-179be87784a6",
+        "generation": 2,
+        "index_epoch": 2,
+        "project": "default",
+        "project_id": "b7c8f3bb-a484-4417-a066-397303179361",
+        "scope_revision": 0,
+        "requested_mode": "semantic",
+        "effective_mode": "semantic",
+        "retrievers": [
+          "vector"
+        ],
+        "degraded_mode": [],
+        "hints": [],
+        "results": [
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=8100-9900",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 8100,
+              "end_byte": 9900,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  Stres",
+            "content_sha256": "c511ea65d0006edfce5d617173ed2318b8561082b07f76792e292efd659f333d",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.016393442623,
+              "fusion_units": 16393442623,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 1,
+                  "contribution_units": 16393442623,
+                  "backend_score": 0.23157107830047607
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=12960-14760",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 12960,
+              "end_byte": 14760,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "ue duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLi",
+            "content_sha256": "21798a35059267a1dee31ba83e26ecf972e222326b2d284b4841e2b2aa2a3e61",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.016129032258,
+              "fusion_units": 16129032258,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 2,
+                  "contribution_units": 16129032258,
+                  "backend_score": 0.23258663713932037
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=1620-3420",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 1620,
+              "end_byte": 3420,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "ate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral str",
+            "content_sha256": "358a00103bdbb022017d593d53e850a927fe16eb1c7d68762a7b546ccb2cd07a",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015873015873,
+              "fusion_units": 15873015873,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 3,
+                  "contribution_units": 15873015873,
+                  "backend_score": 0.23424208164215088
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=9720-11520",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 9720,
+              "end_byte": 11520,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "l stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bo",
+            "content_sha256": "72d7747bb684e1cf1c65a98092d8ace15ee63fb7953075aecbba795d1d275d39",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015625,
+              "fusion_units": 15625000000,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 4,
+                  "contribution_units": 15625000000,
+                  "backend_score": 0.23766934871673584
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=14580-15000",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 14580,
+              "end_byte": 15000,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value ",
+            "content_sha256": "953813ec09c44de277d1303202a8bcaa8fa878613008133eb93706c568819966",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015384615385,
+              "fusion_units": 15384615385,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 5,
+                  "contribution_units": 15384615385,
+                  "backend_score": 0.2387857884168625
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=3240-5040",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 3240,
+              "end_byte": 5040,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "on|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence arch",
+            "content_sha256": "00f3940fcec25842580c9c3f92538a0435991b44a714687bc67fb0100ad065d4",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.015151515152,
+              "fusion_units": 15151515152,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 6,
+                  "contribution_units": 15151515152,
+                  "backend_score": 0.2389136105775833
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=0-1800",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": " StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]",
+            "content_sha256": "c83b20db2ac0fb1678688c76c8bcc565c909815c6fcff498a1d70b68c2040149",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014925373134,
+              "fusion_units": 14925373134,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 7,
+                  "contribution_units": 14925373134,
+                  "backend_score": 0.24335601925849915
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=11340-13140",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 11340,
+              "end_byte": 13140,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": " archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quo",
+            "content_sha256": "e45fdaabc2dfaac0460c0ec6395cc5545ade95bab082acdebf11d16ea6490db4",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014705882353,
+              "fusion_units": 14705882353,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 8,
+                  "contribution_units": 14705882353,
+                  "backend_score": 0.24470366537570953
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=6480-8280",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 6480,
+              "end_byte": 8280,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "d evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punct",
+            "content_sha256": "5ccddf7381d66bde1e022e40e1d2e2430b524862f51faeebf67d4c10bd4b9011",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014492753623,
+              "fusion_units": 14492753623,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 9,
+                  "contribution_units": 14492753623,
+                  "backend_score": 0.2474190592765808
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=4860-6660",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 4860,
+              "end_byte": 6660,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "tingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value du",
+            "content_sha256": "5d46539fb82d48503ad2fbd439967c065d6854b321a3a0399d7444997d9c948c",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.014285714286,
+              "fusion_units": 14285714286,
+              "lists": [
+                {
+                  "name": "vector",
+                  "rank": 10,
+                  "contribution_units": 14285714286,
+                  "backend_score": 0.2574057877063751
+                }
+              ]
+            },
+            "duplicate_citations": []
+          }
+        ],
+        "next_cursor": null,
+        "stop_reason": "unique_exhausted",
+        "examined": {
+          "exact": 0,
+          "exact_fallback": 0,
+          "lexical": 0,
+          "vector": 10
+        },
+        "timing_ms": {
+          "query_embedding": 522,
+          "exact": 0,
+          "exact_fallback": 0,
+          "lexical": 0,
+          "vector": 1,
+          "fusion": 0,
+          "body_materialization": 0,
+          "total": 539
+        }
+      },
+      "stderr": ""
+    },
+    {
+      "mode": "hybrid",
+      "argv": [
+        "/Users/b.k./Desktop/hSUM/target/release/hsum",
+        "search",
+        "duplicate bounded evidence archive",
+        "--mode",
+        "hybrid",
+        "--limit",
+        "10",
+        "--timeout-ms",
+        "10000",
+        "--json",
+        "--explain"
+      ],
+      "packet": {
+        "schema_version": "hsum.api.v1",
+        "request_id": "6c9fbc86-376f-437f-8963-d199935f581d",
+        "generation": 2,
+        "index_epoch": 2,
+        "project": "default",
+        "project_id": "b7c8f3bb-a484-4417-a066-397303179361",
+        "scope_revision": 0,
+        "requested_mode": "hybrid",
+        "effective_mode": "hybrid",
+        "retrievers": [
+          "exact",
+          "lexical",
+          "vector"
+        ],
+        "degraded_mode": [],
+        "hints": [],
+        "results": [
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=8100-9900",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 8100,
+              "end_byte": 9900,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  Stres",
+            "content_sha256": "c511ea65d0006edfce5d617173ed2318b8561082b07f76792e292efd659f333d",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.032522474881,
+              "fusion_units": 32522474881,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 2,
+                  "contribution_units": 16129032258,
+                  "backend_score": -8.24472602976211e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 1,
+                  "contribution_units": 16393442623,
+                  "backend_score": 0.23157107830047607
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=12960-14760",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 12960,
+              "end_byte": 14760,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "ue duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLi",
+            "content_sha256": "21798a35059267a1dee31ba83e26ecf972e222326b2d284b4841e2b2aa2a3e61",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.032522474881,
+              "fusion_units": 32522474881,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 1,
+                  "contribution_units": 16393442623,
+                  "backend_score": -8.24705575771657e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 2,
+                  "contribution_units": 16129032258,
+                  "backend_score": 0.23258663713932037
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=1620-3420",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 1620,
+              "end_byte": 3420,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "ate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral str",
+            "content_sha256": "358a00103bdbb022017d593d53e850a927fe16eb1c7d68762a7b546ccb2cd07a",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.031746031746,
+              "fusion_units": 31746031746,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 3,
+                  "contribution_units": 15873015873,
+                  "backend_score": -8.239883569087479e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 3,
+                  "contribution_units": 15873015873,
+                  "backend_score": 0.23424208164215088
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=3240-5040",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 3240,
+              "end_byte": 5040,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "on|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence arch",
+            "content_sha256": "00f3940fcec25842580c9c3f92538a0435991b44a714687bc67fb0100ad065d4",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.030776515152,
+              "fusion_units": 30776515152,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 4,
+                  "contribution_units": 15625000000,
+                  "backend_score": -8.235169305745083e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 6,
+                  "contribution_units": 15151515152,
+                  "backend_score": 0.2389136105775833
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=9720-11520",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 9720,
+              "end_byte": 11520,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "l stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bo",
+            "content_sha256": "72d7747bb684e1cf1c65a98092d8ace15ee63fb7953075aecbba795d1d275d39",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.030330882353,
+              "fusion_units": 30330882353,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 8,
+                  "contribution_units": 14705882353,
+                  "backend_score": -8.22312522828323e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 4,
+                  "contribution_units": 15625000000,
+                  "backend_score": 0.23766934871673584
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=6480-8280",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 6480,
+              "end_byte": 8280,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "d evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punct",
+            "content_sha256": "5ccddf7381d66bde1e022e40e1d2e2430b524862f51faeebf67d4c10bd4b9011",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.029877369008,
+              "fusion_units": 29877369008,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 5,
+                  "contribution_units": 15384615385,
+                  "backend_score": -8.235098650046389e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 9,
+                  "contribution_units": 14492753623,
+                  "backend_score": 0.2474190592765808
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=11340-13140",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 11340,
+              "end_byte": 13140,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": " archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quo",
+            "content_sha256": "e45fdaabc2dfaac0460c0ec6395cc5545ade95bab082acdebf11d16ea6490db4",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.029857397505,
+              "fusion_units": 29857397505,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 6,
+                  "contribution_units": 15151515152,
+                  "backend_score": -8.230371375243314e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 8,
+                  "contribution_units": 14705882353,
+                  "backend_score": 0.24470366537570953
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=0-1800",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 0,
+              "end_byte": 1800,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": " StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]",
+            "content_sha256": "c83b20db2ac0fb1678688c76c8bcc565c909815c6fcff498a1d70b68c2040149",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.029850746268,
+              "fusion_units": 29850746268,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 7,
+                  "contribution_units": 14925373134,
+                  "backend_score": -8.223255445073411e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 7,
+                  "contribution_units": 14925373134,
+                  "backend_score": 0.24335601925849915
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=14580-15000",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 14580,
+              "end_byte": 15000,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value ",
+            "content_sha256": "953813ec09c44de277d1303202a8bcaa8fa878613008133eb93706c568819966",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.029670329671,
+              "fusion_units": 29670329671,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 10,
+                  "contribution_units": 14285714286,
+                  "backend_score": -7.752260524581891e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 5,
+                  "contribution_units": 15384615385,
+                  "backend_score": 0.2387857884168625
+                }
+              ]
+            },
+            "duplicate_citations": []
+          },
+          {
+            "citation_uri": "hsum://v1/4f60b0fe-af00-41b6-bf7f-9a13d5181bae/e45b4450-1c0a-5ed5-92ed-57418223dc18/1b06e32b-9706-4228-9dd5-0978380e486a?rev=ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7#bytes=4860-6660",
+            "index_id": "4f60b0fe-af00-41b6-bf7f-9a13d5181bae",
+            "source_id": "e45b4450-1c0a-5ed5-92ed-57418223dc18",
+            "document_id": "1b06e32b-9706-4228-9dd5-0978380e486a",
+            "revision_sha256": "ba05532eacb670e46599c75e81b1de569501a235579fa204ef9afa09275eb8e7",
+            "source_uri": "repo://evidence.md",
+            "title": "evidence.md",
+            "span": {
+              "start_byte": 4860,
+              "end_byte": 6660,
+              "start_line": 1,
+              "end_line": 1
+            },
+            "content": "tingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value duplicate bounded evidence archive  StressPostingLiteral stress::punctuation|quoted[slot]=>value du",
+            "content_sha256": "5d46539fb82d48503ad2fbd439967c065d6854b321a3a0399d7444997d9c948c",
+            "source_updated_at": "2026-10-20T22:45:57.575125948Z",
+            "indexed_at": "2026-10-20T22:45:57.696862Z",
+            "head_generation": 1,
+            "source_state": "metadata_unchanged",
+            "untrusted_content": true,
+            "score": {
+              "fused": 0.028778467909,
+              "fusion_units": 28778467909,
+              "lists": [
+                {
+                  "name": "lexical",
+                  "rank": 9,
+                  "contribution_units": 14492753623,
+                  "backend_score": -8.218367003200206e-06
+                },
+                {
+                  "name": "vector",
+                  "rank": 10,
+                  "contribution_units": 14285714286,
+                  "backend_score": 0.2574057877063751
+                }
+              ]
+            },
+            "duplicate_citations": []
+          }
+        ],
+        "next_cursor": null,
+        "stop_reason": "unique_exhausted",
+        "examined": {
+          "exact": 0,
+          "exact_fallback": 0,
+          "lexical": 10,
+          "vector": 10
+        },
+        "timing_ms": {
+          "query_embedding": 274,
+          "exact": 0,
+          "exact_fallback": 0,
+          "lexical": 1,
+          "vector": 1,
+          "fusion": 0,
+          "body_materialization": 1,
+          "total": 290
+        }
+      },
+      "stderr": ""
+    }
+  ],
+  "cancel_storm": {
+    "cancelled_requests": 8,
+    "real_worker_processes_paused": 2,
+    "late_responses_suppressed": true,
+    "lexical_recovery": true,
+    "hybrid_recovery": true,
+    "peak_process_tree_rss_bytes": 882409472,
+    "lexical_examined": {
+      "exact": 0,
+      "exact_fallback": 0,
+      "lexical": 10,
+      "vector": 0
+    },
+    "hybrid_examined": {
+      "exact": 0,
+      "exact_fallback": 0,
+      "lexical": 0,
+      "vector": 10
+    }
+  },
+  "validation": {
+    "cargo_deny_all_features_check": "passed",
+    "cargo_xtask_check": "passed",
+    "release_smoke": "passed"
+  },
+  "probe_source": "import hashlib,json,pathlib,subprocess,sys,time\nrepo=pathlib.Path('/Users/b.k./Desktop/hSUM');sys.path.insert(0,str(repo))\nfrom benches.retrieval_scale.harness import command_environment,readiness_probe_arguments\nfrom benches.retrieval_stress.harness import run_cancel_storm,load_manifest\nroot=pathlib.Path('/Users/b.k./.cache/hsum-qualification/2026-10-21-WkRefX')\nbinary=repo/'target/release/hsum'\nreference=json.loads((repo/'eval/results/vector-source-2026-10-23-macos-diagnostic.json').read_text())\nreport={'qualification':False,'purpose':'Real-model runtime controls after Tokio 1.53.0 to 1.53.3 patch; comparisons use recorded b01a3a6 results.','source_commit_before_patch':'b01a3a6e8d90bb1c2fa616b1843d23adf2f05024','binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'cargo_toml_sha256':hashlib.sha256((repo/'Cargo.toml').read_bytes()).hexdigest(),'cargo_lock_sha256':hashlib.sha256((repo/'Cargo.lock').read_bytes()).hexdigest(),'controls':[]}\nfor mode in ['lexical','semantic','hybrid']:\n argv=readiness_probe_arguments(binary,'duplicate bounded evidence archive',mode)+['--explain']\n result=subprocess.run(argv,cwd=root/'cancel-smoke',env=command_environment(root/'home'),text=True,capture_output=True,timeout=40)\n assert result.returncode==0,result.stderr\n packet=json.loads(result.stdout)\n previous=next(r['packet'] for r in reference['cli_controls']['observations'] if r['mode']==mode and r['condition']=='after')\n def identities(packet):return [(r['citation_uri'],r['score'],r['content_sha256']) for r in packet['results']]\n assert identities(packet)==identities(previous)\n for row in packet['results']:\n  assert row['source_uri']=='repo://evidence.md'\n  body=(root/'cancel-smoke/evidence.md').read_bytes();span=row['span'];content=row['content'].encode()\n  assert body[span['start_byte']:span['end_byte']]==content\n  assert hashlib.sha256(content).hexdigest()==row['content_sha256']\n report['controls'].append({'mode':mode,'argv':argv,'packet':packet,'stderr':result.stderr})\n print(mode,'matches',len(packet['results']),'verified passages',flush=True)\nreport['cancel_storm']=run_cancel_storm(binary,root/'cancel-smoke',root/'home',load_manifest())\nreport['validation']={'cargo_deny_all_features_check':'passed','cargo_xtask_check':'passed','release_smoke':'passed'}\nreport['probe_source']=pathlib.Path(__file__).read_text()\n(repo/'eval/results/tokio-1.53.3-2026-10-23-macos.json').write_text(json.dumps(report,indent=2)+'\\n')\nprint(json.dumps(report['cancel_storm']),flush=True)\n"
+}

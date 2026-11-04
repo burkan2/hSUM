@@ -1,0 +1,14 @@
+.........F.
+======================================================================
+FAIL: test_rejects_wrong_trusted_comment_and_unsigned_control_injection (__main__.StableReleaseTests.test_rejects_wrong_trusted_comment_and_unsigned_control_injection)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/b.k./Desktop/hSUM/scripts/test_verify_stable_release.py", line 100, in test_rejects_wrong_trusted_comment_and_unsigned_control_injection
+    with self.assertRaises(contract.ReleaseError):self.verify()
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ReleaseError not raised
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.365s
+
+FAILED (failures=1)

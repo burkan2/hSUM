@@ -1,0 +1,70 @@
+{
+  "binary_sha256": "6964929e91d764437a30cb92035056038c14a23c83ff7c64595d5b16166d0a09",
+  "corpus": {
+    "bytes": 150000000,
+    "bytes_per_document": 15000,
+    "documents": 10000,
+    "expected_chunks_per_document": 10,
+    "expected_passages": 100000,
+    "fingerprint_sha256": "635a942d1cacf9e195a7f697ba6bffb471ab850680dcb6abca1c48ea7364c45f",
+    "generation_seconds": 0.7813586679999958,
+    "schema_version": "hsum.retrieval-scale-corpus.v1"
+  },
+  "created_at_unix_seconds": 1792611477.8640227,
+  "hsum_version": "hsum 0.1.0-alpha.4",
+  "index_name": "retrieval-scale-100k",
+  "ingest": {
+    "passages_per_second": 1227.804155105961,
+    "seconds": 81.446214027
+  },
+  "model_id": "bge-small-en-v1-5-fp32",
+  "project_name": "default",
+  "query_manifest_sha256": "694cb5665f947d8c54d98ba98c638408b9424b1a04fa9c8849c81c1c8f1fda5a",
+  "reembed": {
+    "passages_per_second": 10.433851382503049,
+    "seconds": 9584.188650386
+  },
+  "schema_version": "hsum.retrieval-scale-setup.v1",
+  "status": {
+    "active_documents": 10000,
+    "active_generation": 1,
+    "active_passages": 100000,
+    "database_read_only": true,
+    "index": "retrieval-scale-100k",
+    "index_epoch": 1,
+    "index_id": "fd066268-bb6c-4f58-96a6-a1bccd449eb1",
+    "index_quota_bytes": null,
+    "problems": [],
+    "problems_only": false,
+    "project": "default",
+    "project_id": "bb792e17-0733-463b-8889-19fc4b81bda4",
+    "query_only": true,
+    "request_id": "75637de0-a518-427f-8463-bf982fdc5d12",
+    "schema_version": "hsum.api.v1",
+    "sources": [
+      {
+        "active_documents": 10000,
+        "active_passages": 100000,
+        "last_error_at": null,
+        "last_error_code": null,
+        "last_error_detail": null,
+        "last_success_at": "2026-10-21T16:55:41.365593321Z",
+        "name": "workspace",
+        "source_id": "4d7a743c-4ae1-53c3-a818-8654112ed907",
+        "state": "healthy"
+      }
+    ],
+    "storage": {
+      "available_bytes": 87416573952,
+      "filesystem": {
+        "filesystem_type": "magic:0x0000ef53",
+        "locality": "local",
+        "sync_root": null
+      },
+      "managed_index_bytes": 1621333032,
+      "quota_bytes": null,
+      "reclaimable_bytes": 0,
+      "reserve_bytes": 162133304
+    }
+  }
+}

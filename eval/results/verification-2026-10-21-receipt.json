@@ -1,0 +1,82 @@
+{
+  "schema_version": "hsum.verification-receipt.v1",
+  "source_commit": "ba527f96d583724a0cb9c1635f1c93ff0d33b6cf",
+  "candidate_sha256": "1e770f1348321d19e5f0cf4c0a1273d8df47abac1ed44a08e55634ffff924170",
+  "reports": {
+    "client-dogfood-v2-2026-10-21-macos-arm64.json": "7c37020d23378580c74072700f47e89147be29eeedfd9a0e95d35c063cc7a695",
+    "lexical-control-2026-10-21-macos-arm64.json": "e9ef96861fb19f99a62d16c0265685b5e4da1e397425cb1595d4a2c9b76867ac"
+  },
+  "raw_client_evidence": {
+    "client-dogfood-v2-answer.schema.json": "cc50a0258e03c8c3adedac5f0b316587c443d12f1c918b4c99af3d0461c574b1",
+    "client-dogfood-v2-claude-mcp.json": "47379271cdffbc57f8d4ae692d0641683214fc8cc1cecfc47c425cea9bc4a828",
+    "client-dogfood-v2-claude.jsonl": "cee8f86bf468db51c8fe262d9f21c8569fc23e55c21e2660840c57dc89f745f6",
+    "client-dogfood-v2-claude.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "client-dogfood-v2-codex-answer.json": "0a8f9a4640bf9920fe7d61f92fa39fc3e6e5b614840dc91b6f533ca832307993",
+    "client-dogfood-v2-codex.jsonl": "8eee01980f961c52921cc7bc5a4d9ddb672d57fb89f75d6a055f53c442d5f1e9",
+    "client-dogfood-v2-codex.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "client-dogfood-v2.json": "7c37020d23378580c74072700f47e89147be29eeedfd9a0e95d35c063cc7a695"
+  },
+  "accepted_get_packets": {
+    "codex": {
+      "body_sha256": "453bac8f1dbaf648e180eea636d7074390e518a2114a1692e000eb7e345c4720",
+      "content": "# hSUM client dogfood fixture\n\nThe immutable qualification token is HSUM_CLIENT_DOGFOOD_7F3A91.\n",
+      "freshness": {
+        "policy": "manual",
+        "problem": null,
+        "state": "not_managed"
+      },
+      "indexed_at": "2026-10-21T17:18:44.801768Z",
+      "metadata": {},
+      "request_id": "b071d794-e6a3-44d7-825c-c532b724c45f",
+      "requested_citation_uri": "hsum://v1/5b779d43-0d87-4405-9127-3d38311cd6b3/96963540-4db2-50e1-b8c7-b0d1682437c6/4dbc8e01-4e89-4a71-bb2b-ea7c52b4f743?rev=3bbd9f93b05bf5e9729feb9b1afd0f03e0754d21fc1b1a61f216a000268d802e#bytes=0-96",
+      "requested_line_span": {
+        "end": 3,
+        "start": 1
+      },
+      "returned_citation_uri": "hsum://v1/5b779d43-0d87-4405-9127-3d38311cd6b3/96963540-4db2-50e1-b8c7-b0d1682437c6/4dbc8e01-4e89-4a71-bb2b-ea7c52b4f743?rev=3bbd9f93b05bf5e9729feb9b1afd0f03e0754d21fc1b1a61f216a000268d802e#bytes=0-96",
+      "returned_line_span": {
+        "end": 3,
+        "start": 1
+      },
+      "schema_version": "hsum.api.v1",
+      "source_hash_verification": "unchanged",
+      "source_state": "content_unchanged",
+      "source_updated_at": "2026-10-21T17:18:44.653898152Z",
+      "source_uri": "repo://README.md",
+      "title": "README.md",
+      "untrusted_content": true
+    },
+    "claude_code": {
+      "body_sha256": "453bac8f1dbaf648e180eea636d7074390e518a2114a1692e000eb7e345c4720",
+      "content": "# hSUM client dogfood fixture\n\nThe immutable qualification token is HSUM_CLIENT_DOGFOOD_7F3A91.\n",
+      "freshness": {
+        "policy": "manual",
+        "problem": null,
+        "state": "not_managed"
+      },
+      "indexed_at": "2026-10-21T17:18:44.801768Z",
+      "metadata": {},
+      "request_id": "7f6567a6-2e2f-4a4d-affe-b2ec034baf9d",
+      "requested_citation_uri": "hsum://v1/5b779d43-0d87-4405-9127-3d38311cd6b3/96963540-4db2-50e1-b8c7-b0d1682437c6/4dbc8e01-4e89-4a71-bb2b-ea7c52b4f743?rev=3bbd9f93b05bf5e9729feb9b1afd0f03e0754d21fc1b1a61f216a000268d802e#bytes=0-96",
+      "requested_line_span": {
+        "end": 3,
+        "start": 1
+      },
+      "returned_citation_uri": "hsum://v1/5b779d43-0d87-4405-9127-3d38311cd6b3/96963540-4db2-50e1-b8c7-b0d1682437c6/4dbc8e01-4e89-4a71-bb2b-ea7c52b4f743?rev=3bbd9f93b05bf5e9729feb9b1afd0f03e0754d21fc1b1a61f216a000268d802e#bytes=0-96",
+      "returned_line_span": {
+        "end": 3,
+        "start": 1
+      },
+      "schema_version": "hsum.api.v1",
+      "source_hash_verification": "unchanged",
+      "source_state": "content_unchanged",
+      "source_updated_at": "2026-10-21T17:18:44.653898152Z",
+      "source_uri": "repo://README.md",
+      "title": "README.md",
+      "untrusted_content": true
+    }
+  },
+  "lexical_harness_sha256": "ac1fd0edd6ad735395546e2e11104bbfc437c9df39ac43e523a8f8adb2a36b2c",
+  "lexical_harness_worktree_difference": "Pre-existing uncommitted change only in run_drift: HSUM_HOME replaces XDG_CONFIG_HOME. The stability path is unchanged.",
+  "stable_release_qualified": false
+}

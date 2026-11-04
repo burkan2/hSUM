@@ -1,0 +1,25 @@
+{
+  "candidate": "5ca552ccac73a8e989c2a3a21347e5f6acc5cf8d",
+  "source_checkout": "/Users/b.k./.codex/worktrees/hsum-qualification-5ca552c/hSUM",
+  "source_checkout_clean": true,
+  "binary_sha256": "8f6867f4ede78ae89c6baa6e5183910a8a260908d7ca2f642dda1ba10ad40b59",
+  "source_sha256": {
+    "Cargo.toml": "46c834148b2e368713f2c6654b2759c388aa2e0b842cd90b9fd603e5de190f20",
+    "Cargo.lock": "3d9ffdef40b054cb7558bb8b975918e5ff0c58295a77a26ba73b770e29c5abf6",
+    "build.rs": "540010d957236e3b879e2d0fc70c3d469cccb42728c6bad964552a397c50ebc1",
+    "src/app/search_evidence.rs": "70792912de288d50d20abf0864eb22203f3359ec318d8caf6ea64fcc382494b5",
+    "src/store/open.rs": "4acf26ffab1ce16a6fd66eb02db604f5343a196236b51955e9b160fd9ed57b85",
+    "src/runtime.rs": "509284f7987ee8bd8414797000d9d7ebb7bbb67b2b652c311677244bbd81d315",
+    "src/search/mod.rs": "a540025995ec4dbd31e43aa6a9c7330c92ad4bfdb95725145a60d3008b8057e5",
+    "src/search/retrieval.rs": "6c20ed6a477645c1ec7b18f2d6dd3f9206244cd6888ee6aaa90104666df60134",
+    "src/search/ranking.rs": "7309748e6abbbbd2c6c7e91b15b12d2c8c575cb06e34db6752ae31396420c3a0",
+    "src/search/bm25_math.c": "dcba9bc5622e621a321f22ec596d811a4442d60f9af8c1e4136f5f36538f0db4",
+    "src/search/positions.rs": "043d3ffdf5748b3a49cf49c14d2545ca9d47478c43aebeda388dbcf7699ea1b1"
+  },
+  "home": "/Users/b.k./.cache/hsum-qualification/2026-11-02-5ca552c-macos-fresh/home",
+  "corpus": "/Users/b.k./.cache/hsum-qualification/2026-11-02-5ca552c-macos-fresh/corpus",
+  "free_disk_bytes_at_launch": 10813521920,
+  "preparation_kind": "fresh corpus and fresh index, no cached chunk embeddings; verified pinned model files APFS-cloned outside timed preparation",
+  "python": "3.14.2 (v3.14.2:df793163d58, Dec  5 2025, 12:18:06) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "created_at_unix_seconds": 1793606877.964449
+}

@@ -1,0 +1,3407 @@
+{
+  "candidate": "b6591b7405320c924dc341111006d8d87b1e0c8a",
+  "binary_sha256": "84fe650dbf03c3b2755f5d586277ee949b8e0ae84a7c55d8d597c9e0688483de",
+  "scope": "Reduced Mac native CPU sampling on a disposable APFS-cloned recovered 100k index; two lexical queries, five warmups, 60 repetitions, no cold eviction. Diagnostic only; not Linux evidence or frozen qualification. Sampling can perturb latency.",
+  "observations": [
+    {
+      "pass": 1,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 48.795250011608005,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 28,
+        "exact_fallback": 0,
+        "lexical": 8,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 46
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 1,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 203.19845800986513,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 190,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 200
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 2,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 46.122459054458886,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 26,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 2,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 183.81379201309755,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 171,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 181
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 3,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.204457964748144,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 3,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.81487499875948,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 4,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 42.35537501517683,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 4,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.23787502897903,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 5,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 42.7512499736622,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 5,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.8675000211224,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 6,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.50920900469646,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 6,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.92137499479577,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 7,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.72187500121072,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 7,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.8983749942854,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 8,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.417541997972876,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 8,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.75445900810882,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 9,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 45.581124955788255,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 9,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.4182499870658,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 10,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.89545803517103,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 10,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 188.3729170076549,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 175,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 185
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 11,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 50.04779202863574,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 28,
+        "exact_fallback": 0,
+        "lexical": 8,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 10,
+        "total": 47
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 11,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 183.58825001632795,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 171,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 181
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 12,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 47.90487501304597,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 26,
+        "exact_fallback": 0,
+        "lexical": 8,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 45
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 12,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 189.4305000314489,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 176,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 186
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 13,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.632915989495814,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 13,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 181.38145800912753,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 169,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 179
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 14,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 45.55049998452887,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 8,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 14,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.01991702476516,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 15,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.89954200107604,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 15,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.9199579982087,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 16,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.35579100390896,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 16,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.6711659883149,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 17,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.0993329975754,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 17,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.2984579806216,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 18,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.569874997250736,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 18,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.22970797028393,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 19,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.32154196547344,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 19,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.05420896224678,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 20,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.966874993406236,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 20,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 183.1101250136271,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 170,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 180
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 21,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 45.71208398556337,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 21,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 182.3459580191411,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 169,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 179
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 22,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 45.014791016001254,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 22,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.90154096717015,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 23,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.17145799379796,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 23,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.7918749982491,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 24,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.18845899635926,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 24,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.81695801811293,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 25,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.74629199830815,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 25,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.7943339808844,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 26,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 46.591042017098516,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 8,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 26,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.45658397022635,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 27,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 45.92041700379923,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 27,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 183.29433299368247,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 171,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 180
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 28,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 42.545000032987446,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 6,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 28,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.7605419997126,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 1,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 29,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.082040956709534,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 8,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 29,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 181.71724997228011,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 169,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 179
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 30,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 47.525874979328364,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 26,
+        "exact_fallback": 0,
+        "lexical": 8,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 45
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 30,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.14291604049504,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 31,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 46.44304100656882,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 26,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 44
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 31,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.03141700662673,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 32,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.08041702117771,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 32,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.34900003112853,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 33,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 45.37454200908542,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 33,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.05108297802508,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 34,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 42.20650001661852,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 6,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 34,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 184.4444159651175,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 172,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 181
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 35,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.11145899211988,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 35,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 182.35279101645574,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 170,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 179
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 36,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.110791001003236,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 36,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 181.3304999959655,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 169,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 179
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 37,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 45.74154096189886,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 8,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 9,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 37,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 186.38016702607274,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 174,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 184
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 38,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 45.25454202666879,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 9,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 38,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.2062500026077,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 39,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 42.87141701206565,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 39,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.27854200731963,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 175
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 40,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 42.5219580065459,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 40,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.88541601132601,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 41,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.044667050708085,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 41,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.47549996804446,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 42,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 42.0115829911083,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 42,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.6016669939272,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 43,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.23158401530236,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 40
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 43,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.06824999954551,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 44,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.21500001242384,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 44,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.31454197969288,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 45,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.08337495988235,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 23,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 45,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.0100410473533,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 46,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.59033301100135,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 46,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.5957079846412,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 47,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.956957990303636,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 47,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.17162500089034,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 167,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 48,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 46.80912499316037,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 26,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 44
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 48,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 180.21800002316013,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 49,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.17316598119214,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 49,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 183.64900001324713,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 171,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 181
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 50,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.69870898174122,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 50,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.55970899108797,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 3,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 51,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.68233401328325,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 51,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 181.70404201373458,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 170,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 179
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 52,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 47.44370904518291,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 27,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 44
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 52,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.09533298714086,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 175
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 53,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 43.79504203097895,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 53,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 186.02633400587365,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 174,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 183
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 54,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 46.10358295030892,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 26,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 43
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 54,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 181.8983749835752,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 170,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 179
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 55,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.85283402027562,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 55,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.5214170231484,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 56,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.84104103175923,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 56,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.89308294979855,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 57,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.777416973374784,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 42
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 57,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.50375000853091,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 58,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.529875041916966,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 25,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 58,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 178.8224580232054,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 176
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 59,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 44.127458008006215,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 24,
+        "exact_fallback": 0,
+        "lexical": 6,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 7,
+        "total": 41
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 59,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 181.19999999180436,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 168,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 178
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 60,
+      "query_id": "identifier-01",
+      "class": "identifier",
+      "client_round_trip_ms": 46.93595797289163,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 26,
+        "exact_fallback": 0,
+        "lexical": 7,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 8,
+        "total": 44
+      },
+      "examined": {
+        "exact": 50,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    },
+    {
+      "pass": 60,
+      "query_id": "ordinary-02",
+      "class": "ordinary_lexical",
+      "client_round_trip_ms": 179.63674996281043,
+      "timing_ms": {
+        "query_embedding": 0,
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 166,
+        "vector": 0,
+        "fusion": 0,
+        "body_materialization": 2,
+        "total": 177
+      },
+      "examined": {
+        "exact": 0,
+        "exact_fallback": 0,
+        "lexical": 50,
+        "vector": 0
+      },
+      "retrievers": [
+        "exact",
+        "lexical"
+      ],
+      "stop_reason": "limit_reached",
+      "result_count": 10
+    }
+  ],
+  "summary": {
+    "identifier-01": {
+      "server_total_ms": {
+        "n": 60,
+        "p50": 42,
+        "p95": 45,
+        "worst": 47
+      },
+      "client_ms": {
+        "n": 60,
+        "p50": 44.529875041916966,
+        "p95": 47.525874979328364,
+        "worst": 50.04779202863574
+      }
+    },
+    "ordinary-02": {
+      "server_total_ms": {
+        "n": 60,
+        "p50": 177,
+        "p95": 184,
+        "worst": 200
+      },
+      "client_ms": {
+        "n": 60,
+        "p50": 180.23787502897903,
+        "p95": 186.38016702607274,
+        "worst": 203.19845800986513
+      }
+    }
+  },
+  "peak_process_tree_rss_bytes": 24240,
+  "sample_exit": 0,
+  "sample_sha256": "a1dcfc15ab7ba3b3b0bd981c193aaee2d7a34759722ebeb0125eda83100ced6e",
+  "external_read_only_attachment": true,
+  "keeper_sqlite_version": "3.50.4",
+  "source_sha256": {
+    "src/store/doctor.rs": "65477a722d06ed3ff631855fa02b2af780332bb956c7c29289dc6e1ffc806cc3",
+    "src/store/open.rs": "8176dd92c1da538a2839b7f93ec3ce2cdec402ff18d76ed93acdeef067925c9e",
+    "src/app/search_evidence.rs": "118f2854b8a0222f4746dafe52a9748c20e9f0cdb074400ebcdb88c653722157"
+  }
+}

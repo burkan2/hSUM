@@ -1,0 +1,14 @@
+.E..........
+======================================================================
+ERROR: test_receipt_binds_unsigned_signature_comments_too (__main__.StableReleaseTests.test_receipt_binds_unsigned_signature_comments_too)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/b.k./Desktop/hSUM/scripts/test_verify_stable_release.py", line 75, in test_receipt_binds_unsigned_signature_comments_too
+    self.assertNotEqual(before["assets_sha256"], after["assets_sha256"])
+                        ~~~~~~^^^^^^^^^^^^^^^^^
+KeyError: 'assets_sha256'
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.339s
+
+FAILED (errors=1)

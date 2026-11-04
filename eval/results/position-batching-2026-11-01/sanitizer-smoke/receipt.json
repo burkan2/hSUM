@@ -1,0 +1,13 @@
+{
+  "toolchain": "nightly-2026-08-20",
+  "target": "aarch64-apple-darwin",
+  "rust_sanitizer": "address",
+  "c_sanitizer": null,
+  "scope": "actual counter/ranker source modules; excludes full application/model runtime; leak checks disabled",
+  "files_sha256": {
+    "build.rs": "540010d957236e3b879e2d0fc70c3d469cccb42728c6bad964552a397c50ebc1",
+    "src/search/bm25_math.c": "dcba9bc5622e621a321f22ec596d811a4442d60f9af8c1e4136f5f36538f0db4",
+    "src/search/positions.rs": "043d3ffdf5748b3a49cf49c14d2545ca9d47478c43aebeda388dbcf7699ea1b1",
+    "src/search/ranking.rs": "7309748e6abbbbd2c6c7e91b15b12d2c8c575cb06e34db6752ae31396420c3a0"
+  }
+}

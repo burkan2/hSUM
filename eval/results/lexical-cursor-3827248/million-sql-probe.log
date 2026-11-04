@@ -1,0 +1,19 @@
+setup PRAGMA journal_mode=OFF 0.0
+setup PRAGMA synchronous=OFF 0.0
+setup CREATE TABLE active_passages(id INTEGER PRIMARY KEY,source_id BLO 0.0
+setup CREATE TABLE project_sources(project_id BLOB,source_id BLOB,remov 0.0
+setup CREATE TABLE document_heads(document_id BLOB PRIMARY KEY,document 0.0
+setup CREATE TABLE document_versions(id BLOB PRIMARY KEY,document_id BL 0.0
+setup CREATE TABLE chunks(id INTEGER PRIMARY KEY,start_byte INTEGER) 0.0
+setup CREATE INDEX chunks_order_idx ON chunks(id,start_byte) 0.0
+setup CREATE VIRTUAL TABLE passages_fts USING fts5(body) 0.0
+setup WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHE 0.0
+setup WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHE 0.092
+setup INSERT INTO document_versions SELECT document_id,document_id FROM 0.058
+setup WITH RECURSIVE n(i) AS (VALUES(1) UNION ALL SELECT i+1 FROM n WHE 0.0
+setup INSERT INTO active_passages SELECT (row_number() OVER (ORDER BY d 1.314
+setup INSERT INTO passages_fts(rowid,body) SELECT id,'duplicate bounded 1.762
+paged 0 20.280779583001276 439040420 10
+one_cursor 0 1.8036101250036154 43909801 1
+one_cursor 1 1.9405715409957338 43909801 1
+paged 1 22.488972790015396 439040420 10

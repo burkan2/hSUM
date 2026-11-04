@@ -3,7 +3,7 @@ use std::fs;
 use super::{
     FilesystemIngestError, FilesystemIngestPolicy, FilesystemSourceConfig, ingest_filesystem,
     ingest_filesystem_with_policy, ingest_filesystem_with_timeout,
-    plan_filesystem_ingest_with_timeout, prepare_filesystem_snapshot,
+    plan_filesystem_ingest_with_timeout, prepare_filesystem_snapshot, prepare_jsonl_snapshot,
 };
 use crate::domain::{IndexId, ProjectId, SafeSlug, SourceId};
 use crate::ingest::{DiscoveryOptions, QuoteBloom};
@@ -24,6 +24,44 @@ fn private_tempdir() -> TempDir {
         fs::set_permissions(directory.path(), fs::Permissions::from_mode(0o700)).unwrap();
     }
     directory
+}
+
+#[test]
+fn jsonl_preparation_uses_decoded_content_as_the_citation_coordinate_space() {
+    let prepared = prepare_jsonl_snapshot(
+        br#"{"id":"stable","source_uri":"runbook://payments","content":"a\n\u03b2","metadata":{"z":2,"a":1}}
+"#,
+    )
+    .unwrap();
+    assert_eq!(prepared.documents.len(), 1);
+    assert!(prepared.explicit_deletions.is_empty());
+    let document = &prepared.documents[0];
+    assert_eq!(document.connector_key, b"stable");
+    assert_eq!(document.body, "a\nβ".as_bytes());
+    assert_eq!(document.metadata_json, r#"{"a":1,"z":2}"#);
+    assert_eq!(document.chunks[0].byte_span.start(), 0);
+    assert_eq!(document.chunks[0].byte_span.end(), 4);
+    assert_eq!(document.chunks[0].body_text, "a\nβ");
+}
+
+#[test]
+fn jsonl_preparation_is_order_independent_and_keeps_explicit_deletions_separate() {
+    let prepared = prepare_jsonl_snapshot(
+        br#"{"id":"z","source_uri":"runbook://z","deleted":true}
+{"id":"b","source_uri":"runbook://b","content":"beta"}
+{"id":"a","source_uri":"runbook://a","content":"alpha"}
+"#,
+    )
+    .unwrap();
+    assert_eq!(
+        prepared
+            .documents
+            .iter()
+            .map(|document| document.connector_key.as_slice())
+            .collect::<Vec<_>>(),
+        [b"a".as_slice(), b"b".as_slice()]
+    );
+    assert_eq!(prepared.explicit_deletions, [b"z".to_vec()]);
 }
 
 fn scope(root: &std::path::Path) -> FilesystemScope {

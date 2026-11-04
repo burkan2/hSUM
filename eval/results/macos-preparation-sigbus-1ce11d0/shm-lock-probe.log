@@ -1,0 +1,33 @@
+native connection holds WAL DMS lock {'label': 'native connection holds WAL DMS lock', 'shm_bytes': 65536, 'type': 1, 'pid': 40216, 'shared_lock': True, 'unlocked': False}
+after external validation open/fstat/close of same SHM inode {'label': 'after external validation open/fstat/close of same SHM inode', 'shm_bytes': 65536, 'type': 2, 'pid': 0, 'shared_lock': False, 'unlocked': True}
+{
+  "qualification": false,
+  "scope": "Small isolated native SQLite 3.51.3 WAL lock diagnostic, no product index mutation",
+  "library_sha256": "b633dc7730a039d7ca79bc11f74230f0dc269c73dd7ac7d05664f10fe4e98716",
+  "sqlite_version": "3.51.3",
+  "observations": [
+    {
+      "label": "native connection holds WAL DMS lock",
+      "shm_bytes": 65536,
+      "type": 1,
+      "pid": 40216,
+      "shared_lock": true,
+      "unlocked": false
+    },
+    {
+      "label": "after external validation open/fstat/close of same SHM inode",
+      "shm_bytes": 65536,
+      "type": 2,
+      "pid": 0,
+      "shared_lock": false,
+      "unlocked": true
+    }
+  ],
+  "other_reader": {
+    "exit": 0,
+    "stdout": "1\n",
+    "stderr": "",
+    "shm_bytes_after": 65536
+  },
+  "cause": "Closing a non-SQLite descriptor for the WAL SHM inode releases that process's POSIX record locks, including SQLite's shared DMS lock. Another process can then treat the shared mapping as unowned and truncate/rebuild it."
+}

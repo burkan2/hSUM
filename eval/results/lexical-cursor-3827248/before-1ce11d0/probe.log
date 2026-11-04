@@ -1,0 +1,6 @@
+ingesting reduced lexical diagnostic: 10k documents, 100k passages, 64 sources; no model or cancellation
+Traceback (most recent call last):
+  File "/Users/b.k./.cache/hsum-qualification/2026-10-23-q05-recovery/probe.py", line 27, in <module>
+    span=item['byte_span']; body=stress.shared_body()[span['start']:span['end']]
+         ~~~~^^^^^^^^^^^^^
+KeyError: 'byte_span'

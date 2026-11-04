@@ -1,0 +1,2079 @@
+﻿2026-10-23T23:31:48.2823310Z Current runner version: '2.338.0'
+2026-10-23T23:31:48.2869210Z ##[group]Runner Image Provisioner
+2026-10-23T23:31:48.2870360Z Hosted Compute Agent
+2026-10-23T23:31:48.2870950Z Version: 20260828.587
+2026-10-23T23:31:48.2871610Z Commit: abac92662cab4cc7352de4f9f9d2e2419aad9c29
+2026-10-23T23:31:48.2872330Z Build Date: 2026-08-28T16:44:25Z
+2026-10-23T23:31:48.2873090Z Worker ID: {20481175-cc1e-4529-a4da-838408f9e985}
+2026-10-23T23:31:48.2873990Z Azure Region: westus
+2026-10-23T23:31:48.2874550Z ##[endgroup]
+2026-10-23T23:31:48.2875990Z ##[group]Operating System
+2026-10-23T23:31:48.2877950Z macOS
+2026-10-23T23:31:48.2878720Z 15.7.9
+2026-10-23T23:31:48.2879400Z 24G830
+2026-10-23T23:31:48.2880690Z ##[endgroup]
+2026-10-23T23:31:48.2881380Z ##[group]Runner Image
+2026-10-23T23:31:48.2882600Z Image: macos-15-arm64
+2026-10-23T23:31:48.2883460Z Version: 20260907.0337.1
+2026-10-23T23:31:48.2885710Z Included Software: https://github.com/actions/runner-images/blob/macos-15-arm64/20260907.0337/images/macos/macos-15-arm64-Readme.md
+2026-10-23T23:31:48.2888510Z Image Release: https://github.com/actions/runner-images/releases/tag/macos-15-arm64%2F20260907.0337
+2026-10-23T23:31:48.2890650Z ##[endgroup]
+2026-10-23T23:31:48.2892050Z ##[group]GITHUB_TOKEN Permissions
+2026-10-23T23:31:48.2896010Z Contents: read
+2026-10-23T23:31:48.2897580Z Metadata: read
+2026-10-23T23:31:48.2898180Z ##[endgroup]
+2026-10-23T23:31:48.2904430Z Secret source: Actions
+2026-10-23T23:31:48.2908400Z Cache mode: write
+2026-10-23T23:31:48.2910250Z Prepare workflow directory
+2026-10-23T23:31:48.3441080Z Prepare all required actions
+2026-10-23T23:31:48.3484620Z Getting action download info
+2026-10-23T23:31:48.8324510Z Download action repository 'actions/checkout@v6' (SHA:d23441a48e516b6c34aea4fa41551a30e30af803)
+2026-10-23T23:31:49.2929070Z Download action repository 'actions/setup-python@v6' (SHA:ece7cb06caefa5fff74198d8649806c4678c61a1)
+2026-10-23T23:31:49.6631160Z Complete job name: macOS arm64
+2026-10-23T23:31:49.7321630Z ##[group]Run actions/checkout@v6
+2026-10-23T23:31:49.7322490Z with:
+2026-10-23T23:31:49.7322840Z   fetch-depth: 0
+2026-10-23T23:31:49.7323210Z   persist-credentials: false
+2026-10-23T23:31:49.7323730Z   repository: burkan2/hSUM
+2026-10-23T23:31:49.7326780Z   token: ***
+2026-10-23T23:31:49.7327200Z   ssh-strict: true
+2026-10-23T23:31:49.7327600Z   ssh-user: git
+2026-10-23T23:31:49.7327970Z   clean: true
+2026-10-23T23:31:49.7328390Z   sparse-checkout-cone-mode: true
+2026-10-23T23:31:49.7328850Z   fetch-tags: false
+2026-10-23T23:31:49.7329260Z   show-progress: true
+2026-10-23T23:31:49.7329630Z   lfs: false
+2026-10-23T23:31:49.7329980Z   submodules: false
+2026-10-23T23:31:49.7330540Z   set-safe-directory: true
+2026-10-23T23:31:49.7330980Z   allow-unsafe-pr-checkout: false
+2026-10-23T23:31:49.7331610Z ##[endgroup]
+2026-10-23T23:31:50.2556590Z Syncing repository: burkan2/hSUM
+2026-10-23T23:31:50.2558770Z ##[group]Getting Git version info
+2026-10-23T23:31:50.2560550Z Working directory is '/Users/runner/work/hSUM/hSUM'
+2026-10-23T23:31:50.2561870Z [command]/opt/homebrew/bin/git version
+2026-10-23T23:31:50.3153470Z git version 2.55.0
+2026-10-23T23:31:50.3222920Z ##[endgroup]
+2026-10-23T23:31:50.3229630Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/2bb09125-7c79-4b73-a247-31bf1b33e7a6/.gitconfig'
+2026-10-23T23:31:50.3231750Z Temporarily overriding HOME='/Users/runner/work/_temp/2bb09125-7c79-4b73-a247-31bf1b33e7a6' before making global git config changes
+2026-10-23T23:31:50.3233810Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-23T23:31:50.3235570Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/hSUM/hSUM
+2026-10-23T23:31:50.3359070Z Deleting the contents of '/Users/runner/work/hSUM/hSUM'
+2026-10-23T23:31:50.3365480Z ##[group]Determining repository object format
+2026-10-23T23:31:50.3370130Z ##[endgroup]
+2026-10-23T23:31:50.3373590Z ##[group]Initializing the repository
+2026-10-23T23:31:50.3376780Z [command]/opt/homebrew/bin/git init /Users/runner/work/hSUM/hSUM
+2026-10-23T23:31:50.3626690Z hint: Using 'master' as the name for the initial branch. This default branch name
+2026-10-23T23:31:50.3628990Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+2026-10-23T23:31:50.3630960Z hint: to use in all of your new repositories, which will suppress this warning,
+2026-10-23T23:31:50.3632640Z hint: call:
+2026-10-23T23:31:50.3633650Z hint:
+2026-10-23T23:31:50.3634790Z hint: 	git config --global init.defaultBranch <name>
+2026-10-23T23:31:50.3636040Z hint:
+2026-10-23T23:31:50.3637270Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2026-10-23T23:31:50.3639160Z hint: 'development'. The just-created branch can be renamed via this command:
+2026-10-23T23:31:50.3640700Z hint:
+2026-10-23T23:31:50.3641560Z hint: 	git branch -m <name>
+2026-10-23T23:31:50.3642530Z hint:
+2026-10-23T23:31:50.3643890Z hint: Disable this message with "git config set advice.defaultBranchName false"
+2026-10-23T23:31:50.3645800Z Initialized empty Git repository in /Users/runner/work/hSUM/hSUM/.git/
+2026-10-23T23:31:50.3653580Z [command]/opt/homebrew/bin/git remote add origin https://github.com/burkan2/hSUM
+2026-10-23T23:31:50.3752930Z ##[endgroup]
+2026-10-23T23:31:50.3757840Z ##[group]Disabling automatic garbage collection
+2026-10-23T23:31:50.3761460Z [command]/opt/homebrew/bin/git config --local gc.auto 0
+2026-10-23T23:31:50.3877630Z ##[endgroup]
+2026-10-23T23:31:50.3880830Z ##[group]Setting up auth
+2026-10-23T23:31:50.3883280Z Removing SSH command configuration
+2026-10-23T23:31:50.3885290Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-23T23:31:50.4015580Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-23T23:31:50.5779070Z Removing HTTP extra header
+2026-10-23T23:31:50.5856320Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-23T23:31:50.6007530Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-23T23:31:50.7499260Z Removing includeIf entries pointing to credentials config files
+2026-10-23T23:31:50.7566460Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-23T23:31:50.7576540Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-23T23:31:50.9046520Z [command]/opt/homebrew/bin/git config --file /Users/runner/work/_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2026-10-23T23:31:50.9230450Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/hSUM/hSUM/.git.path /Users/runner/work/_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:50.9238360Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/Users/runner/work/hSUM/hSUM/.git/worktrees/*.path /Users/runner/work/_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:50.9243650Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:50.9250150Z [command]/opt/homebrew/bin/git config --local includeIf.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:50.9343650Z ##[endgroup]
+2026-10-23T23:31:50.9349470Z ##[group]Fetching the repository
+2026-10-23T23:31:50.9356530Z [command]/opt/homebrew/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/* +473b98be543293f66b225086ad443d8b91ceafb3:refs/remotes/pull/9/merge
+2026-10-23T23:31:52.6902270Z From https://github.com/burkan2/hSUM
+2026-10-23T23:31:52.6904870Z  * [new branch]      codex/canonical-alpha2-beta1-groundwork  -> origin/codex/canonical-alpha2-beta1-groundwork
+2026-10-23T23:31:52.6907350Z  * [new branch]      codex/fix-releasing-codesign-verification -> origin/codex/fix-releasing-codesign-verification
+2026-10-23T23:31:52.7073060Z  * [new branch]      codex/release-v0.1.0-alpha.3             -> origin/codex/release-v0.1.0-alpha.3
+2026-10-23T23:31:52.7074100Z  * [new branch]      fix/fingerprint-recovery                 -> origin/fix/fingerprint-recovery
+2026-10-23T23:31:52.7074910Z  * [new branch]      fix/refuse-unenforceable-private-permissions -> origin/fix/refuse-unenforceable-private-permissions
+2026-10-23T23:31:52.7075510Z  * [new branch]      main                                     -> origin/main
+2026-10-23T23:31:52.7076060Z  * [new tag]         v0.1.0-alpha.1                           -> v0.1.0-alpha.1
+2026-10-23T23:31:52.7076530Z  * [new tag]         v0.1.0-alpha.2                           -> v0.1.0-alpha.2
+2026-10-23T23:31:52.7076980Z  * [new tag]         v0.1.0-alpha.3                           -> v0.1.0-alpha.3
+2026-10-23T23:31:52.7077380Z  * [new tag]         v0.1.0-alpha.4                           -> v0.1.0-alpha.4
+2026-10-23T23:31:52.7077870Z  * [new ref]         473b98be543293f66b225086ad443d8b91ceafb3 -> pull/9/merge
+2026-10-23T23:31:52.7082140Z ##[endgroup]
+2026-10-23T23:31:52.7082940Z ##[group]Determining the checkout info
+2026-10-23T23:31:52.7083660Z ##[endgroup]
+2026-10-23T23:31:52.7084310Z [command]/opt/homebrew/bin/git sparse-checkout disable
+2026-10-23T23:31:52.7122930Z [command]/opt/homebrew/bin/git config --local --unset-all extensions.worktreeConfig
+2026-10-23T23:31:52.7207940Z ##[group]Checking out the ref
+2026-10-23T23:31:52.7211550Z [command]/opt/homebrew/bin/git checkout --progress --force refs/remotes/pull/9/merge
+2026-10-23T23:31:53.7155490Z HEAD is now at 473b98b Merge 99d51f9f928c790a4f968dbc0f33e95e10bc13f0 into 5599dec6a5bd50fed9c18d208741d1d25c22fd36
+2026-10-23T23:31:53.7177360Z ##[endgroup]
+2026-10-23T23:31:53.7311030Z [command]/opt/homebrew/bin/git log -1 --format=%H
+2026-10-23T23:31:53.7403150Z 473b98be543293f66b225086ad443d8b91ceafb3
+2026-10-23T23:31:53.7414590Z ##[group]Removing auth
+2026-10-23T23:31:53.7415710Z Removing SSH command configuration
+2026-10-23T23:31:53.7420580Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-23T23:31:53.7499360Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-23T23:31:53.8903850Z Removing HTTP extra header
+2026-10-23T23:31:53.9004600Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-23T23:31:53.9312310Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-23T23:31:54.1133270Z Removing includeIf entries pointing to credentials config files
+2026-10-23T23:31:54.1235010Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-23T23:31:54.1336630Z includeif.gitdir:/Users/runner/work/hSUM/hSUM/.git.path
+2026-10-23T23:31:54.1438080Z includeif.gitdir:/Users/runner/work/hSUM/hSUM/.git/worktrees/*.path
+2026-10-23T23:31:54.1555120Z includeif.gitdir:/github/workspace/.git.path
+2026-10-23T23:31:54.1656610Z includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-10-23T23:31:54.1861530Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/Users/runner/work/hSUM/hSUM/.git.path
+2026-10-23T23:31:54.1963950Z /Users/runner/work/_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:54.2270520Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/Users/runner/work/hSUM/hSUM/.git.path /Users/runner/work/_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:54.2487040Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/Users/runner/work/hSUM/hSUM/.git/worktrees/*.path
+2026-10-23T23:31:54.2490540Z /Users/runner/work/_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:54.2494340Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/Users/runner/work/hSUM/hSUM/.git/worktrees/*.path /Users/runner/work/_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:54.2498140Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git.path
+2026-10-23T23:31:54.2499890Z /github/runner_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:54.2503180Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/github/workspace/.git.path /github/runner_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:54.2506270Z [command]/opt/homebrew/bin/git config --local --get-all includeif.gitdir:/github/workspace/.git/worktrees/*.path
+2026-10-23T23:31:54.2507720Z /github/runner_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:54.2509170Z [command]/opt/homebrew/bin/git config --local --unset includeif.gitdir:/github/workspace/.git/worktrees/*.path /github/runner_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config
+2026-10-23T23:31:54.2510470Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-23T23:31:54.3512030Z Removing credentials config '/Users/runner/work/_temp/git-credentials-33cbedbe-24ba-4076-9460-46556534daf9.config'
+2026-10-23T23:31:54.3514980Z ##[endgroup]
+2026-10-23T23:31:54.3807010Z ##[group]Run test "$(uname -m)" = "arm64"
+2026-10-23T23:31:54.3807460Z [36;1mtest "$(uname -m)" = "arm64"[0m
+2026-10-23T23:31:54.3947110Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:31:54.3947590Z ##[endgroup]
+2026-10-23T23:31:54.4926420Z ##[group]Run actions/setup-python@v6
+2026-10-23T23:31:54.4926780Z with:
+2026-10-23T23:31:54.4926930Z   python-version: 3.13
+2026-10-23T23:31:54.4927300Z   check-latest: false
+2026-10-23T23:31:54.4929570Z   token: ***
+2026-10-23T23:31:54.4929760Z   update-environment: true
+2026-10-23T23:31:54.4930050Z   allow-prereleases: false
+2026-10-23T23:31:54.4930300Z   freethreaded: false
+2026-10-23T23:31:54.4930570Z ##[endgroup]
+2026-10-23T23:31:54.6781790Z ##[group]Installed versions
+2026-10-23T23:31:54.6841520Z Successfully set up CPython (3.13.15)
+2026-10-23T23:31:54.6842160Z ##[endgroup]
+2026-10-23T23:31:54.6961680Z ##[group]Run rustup toolchain install 1.91.0 --profile minimal --component clippy,rustfmt
+2026-10-23T23:31:54.6962350Z [36;1mrustup toolchain install 1.91.0 --profile minimal --component clippy,rustfmt[0m
+2026-10-23T23:31:54.7038930Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:31:54.7039250Z env:
+2026-10-23T23:31:54.7039570Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:31:54.7040100Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:31:54.7040540Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:31:54.7040940Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:31:54.7041320Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:31:54.7041630Z ##[endgroup]
+2026-10-23T23:31:54.7912320Z info: syncing channel updates for 1.91.0-aarch64-apple-darwin
+2026-10-23T23:31:54.9466010Z info: latest update on 2025-10-30 for version 1.91.0 (f8297e351 2025-10-28)
+2026-10-23T23:31:54.9469860Z info: downloading 5 components
+2026-10-23T23:32:04.5975000Z 
+2026-10-23T23:32:05.0711200Z   1.91.0-aarch64-apple-darwin installed - rustc 1.91.0 (f8297e351 2025-10-28)
+2026-10-23T23:32:05.0727350Z info: self-update is disabled for this build of rustup
+2026-10-23T23:32:05.0728070Z 
+2026-10-23T23:32:05.0738300Z info: any updates to rustup will need to be fetched with your system package manager
+2026-10-23T23:32:05.1153560Z ##[group]Run python3 benches/client_dogfood/harness.py validate
+2026-10-23T23:32:05.1154380Z [36;1mpython3 benches/client_dogfood/harness.py validate[0m
+2026-10-23T23:32:05.1154820Z [36;1mpython3 -W error benches/client_dogfood/test_harness.py[0m
+2026-10-23T23:32:05.1155620Z [36;1mpython3 -W error benches/agent_ab/test_benchmark.py[0m
+2026-10-23T23:32:05.1156150Z [36;1mpython3 -W error benches/agent_ab/test_token_cost.py[0m
+2026-10-23T23:32:05.1156830Z [36;1mpython3 scripts/verify_readme_contract.py[0m
+2026-10-23T23:32:05.1157350Z [36;1mpython3 scripts/verify_completion_ledger.py[0m
+2026-10-23T23:32:05.1157930Z [36;1mpython3 scripts/verify_binstall_metadata.py[0m
+2026-10-23T23:32:05.1158530Z [36;1mpython3 -W error scripts/test_verify_readme_contract.py[0m
+2026-10-23T23:32:05.1222810Z [36;1mpython3 -W error scripts/test_verify_completion_ledger.py[0m
+2026-10-23T23:32:05.1224750Z [36;1mpython3 -W error scripts/test_verify_binstall_metadata.py[0m
+2026-10-23T23:32:05.1227780Z [36;1mpython3 -W error scripts/test_verify_binstall_evidence.py[0m
+2026-10-23T23:32:05.1228880Z [36;1mpython3 -W error scripts/test_verify_clean_machine_evidence.py[0m
+2026-10-23T23:32:05.1229980Z [36;1mpython3 -W error scripts/test_verify_cargo_publish_policy.py[0m
+2026-10-23T23:32:05.1230880Z [36;1mpython3 -W error scripts/test_verify_release_assets.py[0m
+2026-10-23T23:32:05.1383370Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:32:05.1383790Z env:
+2026-10-23T23:32:05.1384330Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:32:05.1386010Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:32:05.1386710Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:32:05.1387240Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:32:05.1387980Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:32:05.1388480Z ##[endgroup]
+2026-10-23T23:32:05.8276400Z {"manifest_sha256":"5605ee6af83018606801d3de1d0bbcb431aa4e5a036c0e4790a6ead09f5fc727","protocol_id":"cross-client-citation-round-trip-v2","status":"valid"}
+2026-10-23T23:32:06.1493510Z ........
+2026-10-23T23:32:06.1493940Z ----------------------------------------------------------------------
+2026-10-23T23:32:06.1494610Z Ran 8 tests in 0.010s
+2026-10-23T23:32:06.1494740Z 
+2026-10-23T23:32:06.1494830Z OK
+2026-10-23T23:32:06.5300750Z .....................
+2026-10-23T23:32:06.5301330Z ----------------------------------------------------------------------
+2026-10-23T23:32:06.5305780Z Ran 21 tests in 0.216s
+2026-10-23T23:32:06.5306080Z 
+2026-10-23T23:32:06.5306250Z OK
+2026-10-23T23:32:06.6648740Z ........
+2026-10-23T23:32:06.6649980Z ----------------------------------------------------------------------
+2026-10-23T23:32:06.6651600Z Ran 8 tests in 0.005s
+2026-10-23T23:32:06.6652210Z 
+2026-10-23T23:32:06.6652650Z OK
+2026-10-23T23:32:06.7534910Z {"allowed_statuses":["available","beta","planned","unsupported"],"capability_count":27,"package_version":"0.1.0-alpha.4","passed":true,"schema_version":"hsum.readme-contract.v1"}
+2026-10-23T23:32:06.8819410Z {"applicable_evidence_cells":316,"canonical_rows":54,"earned_evidence_cells":222,"implementation_count":49,"passed":true,"release_qualified_count":0,"schema_version":"hsum.completion-ledger-contract.v1"}
+2026-10-23T23:32:06.9828770Z {"compile_fallback_preserved":true,"passed":true,"quick_install_disabled":true,"schema_version":"hsum.binstall-metadata-contract.v1","targets":["aarch64-apple-darwin","x86_64-unknown-linux-gnu"]}
+2026-10-23T23:32:07.0742570Z ......
+2026-10-23T23:32:07.0743770Z ----------------------------------------------------------------------
+2026-10-23T23:32:07.0747240Z Ran 6 tests in 0.002s
+2026-10-23T23:32:07.0747710Z 
+2026-10-23T23:32:07.0747920Z OK
+2026-10-23T23:32:07.1635800Z ...
+2026-10-23T23:32:07.1636640Z ----------------------------------------------------------------------
+2026-10-23T23:32:07.1639810Z Ran 3 tests in 0.001s
+2026-10-23T23:32:07.1640130Z 
+2026-10-23T23:32:07.1640590Z OK
+2026-10-23T23:32:07.2537040Z ...
+2026-10-23T23:32:07.2538900Z ----------------------------------------------------------------------
+2026-10-23T23:32:07.2540580Z Ran 3 tests in 0.002s
+2026-10-23T23:32:07.2541460Z 
+2026-10-23T23:32:07.2542300Z OK
+2026-10-23T23:32:07.3599540Z ...
+2026-10-23T23:32:07.3600170Z ----------------------------------------------------------------------
+2026-10-23T23:32:07.3600570Z Ran 3 tests in 0.014s
+2026-10-23T23:32:07.3600760Z 
+2026-10-23T23:32:07.3600880Z OK
+2026-10-23T23:32:07.4417040Z ...
+2026-10-23T23:32:07.4418780Z ----------------------------------------------------------------------
+2026-10-23T23:32:07.4421270Z Ran 3 tests in 0.001s
+2026-10-23T23:32:07.4422000Z 
+2026-10-23T23:32:07.4422500Z OK
+2026-10-23T23:32:07.8092360Z ...
+2026-10-23T23:32:07.8093620Z ----------------------------------------------------------------------
+2026-10-23T23:32:07.8095090Z Ran 3 tests in 0.259s
+2026-10-23T23:32:07.8095810Z 
+2026-10-23T23:32:07.8096360Z OK
+2026-10-23T23:32:08.9213370Z ......
+2026-10-23T23:32:08.9215040Z ----------------------------------------------------------------------
+2026-10-23T23:32:08.9217130Z Ran 6 tests in 1.025s
+2026-10-23T23:32:08.9217750Z 
+2026-10-23T23:32:08.9218470Z OK
+2026-10-23T23:32:08.9382480Z ##[group]Run cargo +1.91.0 xtask check
+2026-10-23T23:32:08.9382900Z [36;1mcargo +1.91.0 xtask check[0m
+2026-10-23T23:32:08.9477130Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:32:08.9477540Z env:
+2026-10-23T23:32:08.9477890Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:32:08.9478450Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:32:08.9479000Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:32:08.9479430Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:32:08.9480080Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:32:08.9480460Z ##[endgroup]
+2026-10-23T23:34:26.7208620Z ==> generated references
+2026-10-23T23:34:26.7506220Z ==> fmt
+2026-10-23T23:34:27.5078180Z ==> clippy
+2026-10-23T23:34:27.9239820Z  Downloading crates ...
+2026-10-23T23:34:28.2489760Z   Downloaded unarray v0.1.4
+2026-10-23T23:34:28.2527340Z   Downloaded wait-timeout v0.2.1
+2026-10-23T23:34:28.2556310Z   Downloaded rusty-fork v0.3.1
+2026-10-23T23:34:28.2583030Z   Downloaded rand_xorshift v0.4.0
+2026-10-23T23:34:28.2599580Z   Downloaded bit-vec v0.8.0
+2026-10-23T23:34:28.2634900Z   Downloaded bit-set v0.8.0
+2026-10-23T23:34:28.2656990Z   Downloaded quick-error v1.2.3
+2026-10-23T23:34:28.4448910Z    Compiling libc v0.2.186
+2026-10-23T23:34:28.4528010Z     Checking memchr v2.8.3
+2026-10-23T23:34:28.7517830Z     Checking serde_core v1.0.229
+2026-10-23T23:34:28.9355290Z    Compiling jobserver v0.1.35
+2026-10-23T23:34:28.9508150Z     Checking once_cell v1.21.4
+2026-10-23T23:34:29.0550610Z     Checking itoa v1.0.18
+2026-10-23T23:34:29.1372420Z    Compiling cc v1.3.0
+2026-10-23T23:34:29.1944860Z     Checking cfg-if v1.0.4
+2026-10-23T23:34:29.2335040Z     Checking bitflags v2.13.1
+2026-10-23T23:34:29.3506280Z     Checking zerofrom v0.1.8
+2026-10-23T23:34:29.4257470Z     Checking stable_deref_trait v1.2.1
+2026-10-23T23:34:29.4515050Z     Checking pin-project-lite v0.2.17
+2026-10-23T23:34:29.4946310Z     Checking yoke v0.8.3
+2026-10-23T23:34:29.5983620Z     Checking smallvec v1.15.2
+2026-10-23T23:34:29.7140730Z     Checking futures-core v0.3.33
+2026-10-23T23:34:29.7755610Z    Compiling strsim v0.11.1
+2026-10-23T23:34:29.9773870Z     Checking bytes v1.12.1
+2026-10-23T23:34:30.2699870Z    Compiling cmake v0.1.58
+2026-10-23T23:34:30.3144890Z     Checking zerovec v0.11.6
+2026-10-23T23:34:30.4806540Z     Checking futures-sink v0.3.33
+2026-10-23T23:34:30.5125980Z    Compiling aws-lc-sys v0.46.0
+2026-10-23T23:34:30.5167120Z     Checking serde v1.0.229
+2026-10-23T23:34:30.6715140Z    Compiling ring v0.17.14
+2026-10-23T23:34:30.9063430Z     Checking futures-channel v0.3.33
+2026-10-23T23:34:31.0894810Z     Checking socket2 v0.6.5
+2026-10-23T23:34:31.3607440Z     Checking mio v1.2.2
+2026-10-23T23:34:31.7021740Z     Checking core-foundation-sys v0.8.7
+2026-10-23T23:34:31.8688600Z    Compiling zeroize v1.9.0
+2026-10-23T23:34:31.9938330Z    Compiling getrandom v0.2.17
+2026-10-23T23:34:32.0550400Z    Compiling rustls-pki-types v1.15.1
+2026-10-23T23:34:32.3723290Z     Checking tokio v1.53.3
+2026-10-23T23:34:34.7537440Z     Checking num-traits v0.2.19
+2026-10-23T23:34:35.1190600Z     Checking tinystr v0.8.3
+2026-10-23T23:34:35.2268220Z     Checking futures-io v0.3.33
+2026-10-23T23:34:35.2718060Z     Checking futures-task v0.3.33
+2026-10-23T23:34:35.3296720Z     Checking writeable v0.6.3
+2026-10-23T23:34:35.4033790Z     Checking slab v0.4.12
+2026-10-23T23:34:35.4768120Z     Checking litemap v0.8.2
+2026-10-23T23:34:35.5664520Z    Compiling untrusted v0.9.0
+2026-10-23T23:34:35.6338710Z     Checking icu_locale_core v2.2.0
+2026-10-23T23:34:36.1097780Z     Checking futures-util v0.3.33
+2026-10-23T23:34:37.2487100Z     Checking crossbeam-utils v0.8.22
+2026-10-23T23:34:37.4920000Z     Checking getrandom v0.3.4
+2026-10-23T23:34:37.5792830Z     Checking potential_utf v0.1.5
+2026-10-23T23:34:37.6389430Z     Checking zerotrie v0.2.4
+2026-10-23T23:34:37.9438280Z     Checking utf8_iter v1.0.4
+2026-10-23T23:34:38.0230900Z    Compiling log v0.4.33
+2026-10-23T23:34:38.1121660Z    Compiling rustls v0.23.46
+2026-10-23T23:34:38.1283850Z     Checking icu_collections v2.2.0
+2026-10-23T23:34:38.3711750Z    Compiling http v1.5.0
+2026-10-23T23:34:38.4014650Z    Compiling darling_core v0.20.11
+2026-10-23T23:34:39.2071580Z     Checking icu_provider v2.2.0
+2026-10-23T23:34:39.3470780Z     Checking crossbeam-epoch v0.9.20
+2026-10-23T23:34:39.5102770Z     Checking zerocopy v0.8.54
+2026-10-23T23:34:40.4401100Z    Compiling rustls-webpki v0.103.16
+2026-10-23T23:34:41.1292360Z     Checking zmij v1.0.23
+2026-10-23T23:34:41.7676430Z    Compiling base64 v0.22.1
+2026-10-23T23:34:41.9719610Z     Checking regex-syntax v0.8.11
+2026-10-23T23:34:42.1639960Z    Compiling subtle v2.6.1
+2026-10-23T23:34:43.6136090Z    Compiling socks v0.3.4
+2026-10-23T23:34:43.8081740Z    Compiling ureq-proto v0.6.0
+2026-10-23T23:34:44.3170740Z     Checking http-body v1.1.0
+2026-10-23T23:34:44.3680050Z     Checking serde_json v1.0.150
+2026-10-23T23:34:45.0105580Z    Compiling darling_macro v0.20.11
+2026-10-23T23:34:45.3185090Z     Checking crossbeam-deque v0.8.7
+2026-10-23T23:34:45.4402620Z     Checking icu_normalizer_data v2.2.0
+2026-10-23T23:34:45.4758400Z     Checking icu_properties_data v2.2.0
+2026-10-23T23:34:45.5913540Z     Checking getrandom v0.4.3
+2026-10-23T23:34:45.8418590Z     Checking rand_core v0.9.5
+2026-10-23T23:34:45.9180310Z    Compiling webpki-roots v1.0.10
+2026-10-23T23:34:45.9873070Z     Checking errno v0.3.14
+2026-10-23T23:34:46.0334290Z     Checking aho-corasick v1.1.4
+2026-10-23T23:34:46.5481860Z     Checking utf8parse v0.2.2
+2026-10-23T23:34:46.7160910Z     Checking percent-encoding v2.3.2
+2026-10-23T23:34:46.8611010Z     Checking anstyle-parse v1.0.0
+2026-10-23T23:34:46.8947720Z    Compiling ureq v3.3.0
+2026-10-23T23:34:46.9409300Z     Checking regex-automata v0.4.16
+2026-10-23T23:34:48.2148480Z     Checking rustix v1.1.4
+2026-10-23T23:34:48.3310430Z     Checking icu_properties v2.2.0
+2026-10-23T23:34:49.1773100Z     Checking icu_normalizer v2.2.0
+2026-10-23T23:34:49.2175300Z    Compiling darling v0.20.11
+2026-10-23T23:34:49.2779480Z     Checking ppv-lite86 v0.2.21
+2026-10-23T23:34:49.4116730Z    Compiling onig_sys v69.9.3
+2026-10-23T23:34:49.4466500Z     Checking tracing-core v0.1.36
+2026-10-23T23:34:49.6079260Z     Checking fastrand v2.5.0
+2026-10-23T23:34:49.7023180Z     Checking anstyle-query v1.1.5
+2026-10-23T23:34:49.7067880Z     Checking tower-service v0.3.3
+2026-10-23T23:34:49.7352370Z     Checking colorchoice v1.0.5
+2026-10-23T23:34:49.7680140Z     Checking either v1.17.0
+2026-10-23T23:34:49.8004910Z     Checking typenum v1.20.1
+2026-10-23T23:34:49.8898010Z     Checking is_terminal_polyfill v1.70.2
+2026-10-23T23:34:49.9415500Z     Checking try-lock v0.2.5
+2026-10-23T23:34:49.9714950Z     Checking anstyle v1.0.14
+2026-10-23T23:34:50.0608090Z     Checking anstream v1.0.0
+2026-10-23T23:34:50.1868920Z     Checking want v0.3.1
+2026-10-23T23:34:50.2303580Z    Compiling ort-sys v2.0.0-rc.13
+2026-10-23T23:34:50.4080650Z     Checking hybrid-array v0.4.13
+2026-10-23T23:34:50.8247040Z     Checking tracing v0.1.44
+2026-10-23T23:34:50.9394200Z     Checking tempfile v3.27.0
+2026-10-23T23:34:51.0814830Z     Checking rand_chacha v0.9.0
+2026-10-23T23:34:51.1533630Z     Checking idna_adapter v1.2.2
+2026-10-23T23:34:51.1990840Z    Compiling derive_builder_core v0.20.2
+2026-10-23T23:34:51.8546340Z     Checking httparse v1.10.1
+2026-10-23T23:34:51.9508040Z     Checking rayon-core v1.13.0
+2026-10-23T23:34:52.1586960Z     Checking system-configuration-sys v0.6.0
+2026-10-23T23:34:52.1976000Z     Checking core-foundation v0.9.4
+2026-10-23T23:34:52.3693600Z    Compiling darling_core v0.23.0
+2026-10-23T23:34:54.2088890Z     Checking minimal-lexical v0.2.1
+2026-10-23T23:34:54.3793990Z     Checking atomic-waker v1.1.2
+2026-10-23T23:34:54.4104610Z     Checking rawpointer v0.2.1
+2026-10-23T23:34:54.4411350Z     Checking clap_lex v1.1.0
+2026-10-23T23:34:54.5775960Z     Checking clap_builder v4.6.2
+2026-10-23T23:34:55.5589550Z    Compiling libsqlite3-sys v0.37.0
+2026-10-23T23:34:55.7568840Z     Checking matrixmultiply v0.3.11
+2026-10-23T23:34:55.9144750Z     Checking hyper v1.11.0
+2026-10-23T23:34:56.3039360Z     Checking nom v7.1.3
+2026-10-23T23:34:57.1421680Z     Checking thiserror v2.0.19
+2026-10-23T23:34:57.1734550Z    Compiling darling_macro v0.23.0
+2026-10-23T23:34:57.3566150Z     Checking system-configuration v0.7.0
+2026-10-23T23:34:57.4507770Z     Checking castaway v0.2.4
+2026-10-23T23:34:57.4906110Z     Checking rayon v1.12.0
+2026-10-23T23:34:58.5718500Z    Compiling derive_builder_macro v0.20.2
+2026-10-23T23:34:58.7285070Z     Checking idna v1.1.0
+2026-10-23T23:34:58.8527620Z     Checking rand v0.9.5
+2026-10-23T23:34:59.2208640Z     Checking itertools v0.14.0
+2026-10-23T23:35:00.2981770Z     Checking form_urlencoded v1.2.2
+2026-10-23T23:35:00.3516770Z     Checking num-integer v0.1.46
+2026-10-23T23:35:00.4980900Z     Checking num-complex v0.4.6
+2026-10-23T23:35:00.5769710Z     Checking core-foundation v0.10.1
+2026-10-23T23:35:00.7347110Z     Checking security-framework-sys v2.17.0
+2026-10-23T23:35:00.8475770Z     Checking sync_wrapper v1.0.2
+2026-10-23T23:35:00.8780170Z     Checking allocator-api2 v0.2.21
+2026-10-23T23:35:00.9965310Z     Checking unicode-segmentation v1.13.3
+2026-10-23T23:35:01.0660520Z     Checking equivalent v1.0.2
+2026-10-23T23:35:01.0917010Z     Checking ryu v1.0.23
+2026-10-23T23:35:01.1644600Z     Checking static_assertions v1.1.0
+2026-10-23T23:35:01.1933740Z     Checking base64 v0.13.1
+2026-10-23T23:35:01.3104280Z     Checking ipnet v2.12.0
+2026-10-23T23:35:01.3676600Z     Checking foldhash v0.2.0
+2026-10-23T23:35:01.4240140Z     Checking tower-layer v0.3.3
+2026-10-23T23:35:01.4437490Z     Checking hyper-util v0.1.20
+2026-10-23T23:35:01.5062500Z     Checking tower v0.5.3
+2026-10-23T23:35:01.8762620Z     Checking hashbrown v0.16.1
+2026-10-23T23:35:02.2487720Z     Checking macro_rules_attribute v0.2.3
+2026-10-23T23:35:02.5117980Z     Checking spm_precompiled v0.1.4
+2026-10-23T23:35:02.6522640Z     Checking compact_str v0.9.1
+2026-10-23T23:35:02.9904510Z     Checking monostate v0.1.18
+2026-10-23T23:35:03.1555700Z     Checking ref-cast v1.0.26
+2026-10-23T23:35:03.1973450Z     Checking security-framework v3.7.0
+2026-10-23T23:35:03.4021630Z     Checking ndarray v0.17.2
+2026-10-23T23:35:03.7741300Z     Checking onig v6.5.3
+2026-10-23T23:35:04.1815080Z     Checking url v2.5.8
+2026-10-23T23:35:04.5015120Z     Checking rayon-cond v0.4.0
+2026-10-23T23:35:04.9063530Z     Checking ahash v0.8.12
+2026-10-23T23:35:05.0499060Z     Checking derive_builder v0.20.2
+2026-10-23T23:35:05.0983590Z    Compiling darling v0.23.0
+2026-10-23T23:35:06.2371840Z     Checking clap v4.6.2
+2026-10-23T23:35:06.2789480Z     Checking esaxx-rs v0.1.10
+2026-10-23T23:35:06.3744290Z     Checking block-buffer v0.12.1
+2026-10-23T23:35:06.4576590Z     Checking crypto-common v0.2.2
+2026-10-23T23:35:07.1135940Z     Checking regex v1.13.1
+2026-10-23T23:35:07.3885620Z     Checking futures-executor v0.3.33
+2026-10-23T23:35:07.4737140Z     Checking chrono v0.4.45
+2026-10-23T23:35:08.1272760Z     Checking dary_heap v0.3.9
+2026-10-23T23:35:08.1797130Z    Compiling sqlite-vec v0.1.7
+2026-10-23T23:35:08.2211680Z     Checking unicode-normalization-alignments v0.1.12
+2026-10-23T23:35:08.3708430Z     Checking bstr v1.13.0
+2026-10-23T23:35:08.6667250Z     Checking option-ext v0.2.0
+2026-10-23T23:35:08.6825850Z     Checking dyn-clone v1.0.20
+2026-10-23T23:35:08.7192670Z     Checking unicode_categories v0.1.1
+2026-10-23T23:35:08.7386940Z     Checking const-oid v0.10.2
+2026-10-23T23:35:08.8463410Z     Checking winnow v1.0.4
+2026-10-23T23:35:08.8473670Z     Checking tinyvec_macros v0.1.1
+2026-10-23T23:35:08.8783810Z     Checking same-file v1.0.6
+2026-10-23T23:35:08.9299430Z     Checking walkdir v2.5.0
+2026-10-23T23:35:09.0166800Z     Checking tinyvec v1.12.0
+2026-10-23T23:35:09.1122740Z     Checking toml_parser v1.1.2+spec-1.1.0
+2026-10-23T23:35:09.2630330Z     Checking tokenizers v0.22.2
+2026-10-23T23:35:09.4572160Z     Checking digest v0.11.3
+2026-10-23T23:35:09.5343360Z     Checking schemars v1.2.1
+2026-10-23T23:35:10.0019290Z     Checking dirs-sys v0.5.0
+2026-10-23T23:35:10.0485650Z     Checking globset v0.4.19
+2026-10-23T23:35:10.8370730Z     Checking futures v0.3.33
+2026-10-23T23:35:10.8753360Z     Checking ort v2.0.0-rc.13
+2026-10-23T23:35:11.7418410Z    Compiling rmcp-macros v2.2.0
+2026-10-23T23:35:11.7927260Z     Checking tower-http v0.6.11
+2026-10-23T23:35:12.0446870Z     Checking safetensors v0.8.0
+2026-10-23T23:35:12.2478010Z     Checking anyhow v1.0.104
+2026-10-23T23:35:12.3640300Z     Checking http-body-util v0.1.4
+2026-10-23T23:35:12.5226790Z     Checking tokio-util v0.7.18
+2026-10-23T23:35:12.6678710Z     Checking toml_datetime v1.1.1+spec-1.1.0
+2026-10-23T23:35:12.8081990Z     Checking serde_spanned v1.1.1
+2026-10-23T23:35:12.8342550Z     Checking cpufeatures v0.3.0
+2026-10-23T23:35:12.8673900Z     Checking deranged v0.5.8
+2026-10-23T23:35:12.8770120Z     Checking time-core v0.1.9
+2026-10-23T23:35:12.9999820Z     Checking roff v1.1.1
+2026-10-23T23:35:13.0614120Z     Checking fallible-streaming-iterator v0.1.9
+2026-10-23T23:35:13.1157770Z     Checking fallible-iterator v0.3.0
+2026-10-23T23:35:13.3016210Z     Checking toml_writer v1.1.2+spec-1.1.0
+2026-10-23T23:35:13.3882020Z    Compiling hsum v0.1.0-alpha.4 (/Users/runner/work/hSUM/hSUM)
+2026-10-23T23:35:13.5737160Z     Checking powerfmt v0.2.0
+2026-10-23T23:35:13.6161120Z     Checking num-conv v0.2.2
+2026-10-23T23:35:13.6717070Z     Checking ryu-js v1.0.3
+2026-10-23T23:35:13.6905630Z     Checking time v0.3.53
+2026-10-23T23:35:13.7665810Z     Checking serde_json_canonicalizer v0.3.2
+2026-10-23T23:35:13.8364030Z     Checking toml v1.1.3+spec-1.1.0
+2026-10-23T23:35:14.3146350Z     Checking rusqlite v0.39.0
+2026-10-23T23:35:14.8336030Z     Checking clap_mangen v0.3.0
+2026-10-23T23:35:14.9217500Z     Checking rmcp v2.2.0
+2026-10-23T23:35:14.9452400Z     Checking sha2 v0.11.0
+2026-10-23T23:35:15.3312990Z     Checking fastembed v5.17.4
+2026-10-23T23:35:15.7720150Z     Checking ignore v0.4.30
+2026-10-23T23:35:16.2958560Z     Checking directories v6.0.0
+2026-10-23T23:35:16.3760950Z     Checking unicode-normalization v0.1.25
+2026-10-23T23:35:16.7092320Z     Checking clap_complete v4.6.7
+2026-10-23T23:35:16.9489640Z     Checking uuid v1.24.0
+2026-10-23T23:35:17.1959740Z     Checking uzers v0.12.2
+2026-10-23T23:35:17.2759760Z     Checking hex v0.4.3
+2026-10-23T23:35:17.4184310Z     Checking wait-timeout v0.2.1
+2026-10-23T23:35:17.4657480Z     Checking quick-error v1.2.3
+2026-10-23T23:35:17.4987250Z     Checking bit-vec v0.8.0
+2026-10-23T23:35:17.5969740Z     Checking fnv v1.0.7
+2026-10-23T23:35:17.6231010Z     Checking rusty-fork v0.3.1
+2026-10-23T23:35:17.7270200Z     Checking bit-set v0.8.0
+2026-10-23T23:35:17.7998950Z     Checking rand_xorshift v0.4.0
+2026-10-23T23:35:17.8420720Z     Checking unarray v0.1.4
+2026-10-23T23:35:17.8754710Z     Checking proptest v1.11.0
+2026-10-23T23:35:31.9079890Z    Compiling aws-lc-rs v1.18.2
+2026-10-23T23:35:35.5190400Z     Checking tokio-rustls v0.26.4
+2026-10-23T23:35:35.5191660Z     Checking rustls-platform-verifier v0.7.0
+2026-10-23T23:35:35.6596050Z     Checking hyper-rustls v0.27.9
+2026-10-23T23:35:35.7596330Z     Checking reqwest v0.13.4
+2026-10-23T23:35:52.9675860Z     Finished `dev` profile [unoptimized + debuginfo] target(s) in 1m 25s
+2026-10-23T23:35:53.0178920Z ==> test
+2026-10-23T23:35:53.9525020Z    Compiling ring v0.17.14
+2026-10-23T23:35:53.9598340Z    Compiling fnv v1.0.7
+2026-10-23T23:35:54.0218740Z    Compiling hsum v0.1.0-alpha.4 (/Users/runner/work/hSUM/hSUM)
+2026-10-23T23:35:54.0394600Z    Compiling darling_core v0.20.11
+2026-10-23T23:35:54.3332750Z    Compiling wait-timeout v0.2.1
+2026-10-23T23:35:54.5956350Z    Compiling bit-vec v0.8.0
+2026-10-23T23:35:54.7641760Z    Compiling quick-error v1.2.3
+2026-10-23T23:35:54.8289000Z    Compiling rusty-fork v0.3.1
+2026-10-23T23:35:55.1391090Z    Compiling bit-set v0.8.0
+2026-10-23T23:35:55.2336400Z    Compiling rand_xorshift v0.4.0
+2026-10-23T23:35:55.3200010Z    Compiling unarray v0.1.4
+2026-10-23T23:35:55.3989270Z    Compiling proptest v1.11.0
+2026-10-23T23:35:56.2275520Z    Compiling darling_macro v0.20.11
+2026-10-23T23:35:56.5127140Z    Compiling darling v0.20.11
+2026-10-23T23:35:56.5593740Z    Compiling derive_builder_core v0.20.2
+2026-10-23T23:35:57.2095490Z    Compiling derive_builder_macro v0.20.2
+2026-10-23T23:35:57.4003630Z    Compiling derive_builder v0.20.2
+2026-10-23T23:35:57.4578280Z    Compiling tokenizers v0.22.2
+2026-10-23T23:35:59.4824190Z    Compiling rustls v0.23.46
+2026-10-23T23:36:00.7443900Z    Compiling rustls-webpki v0.103.16
+2026-10-23T23:36:05.2900390Z    Compiling ureq v3.3.0
+2026-10-23T23:36:06.7120820Z    Compiling ort-sys v2.0.0-rc.13
+2026-10-23T23:36:07.6500320Z    Compiling ort v2.0.0-rc.13
+2026-10-23T23:36:08.9760470Z    Compiling fastembed v5.17.4
+2026-10-23T23:37:23.6235920Z     Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 30s
+2026-10-23T23:37:23.7131190Z      Running unittests src/lib.rs (target/debug/deps/hsum-aa04cd4df2540022)
+2026-10-23T23:37:23.7240770Z 
+2026-10-23T23:37:23.7244420Z running 145 tests
+2026-10-23T23:37:23.7276390Z test app::evidence::tests::source_state_and_hash_verification_share_one_mapping ... ok
+2026-10-23T23:37:23.7282360Z test app::evidence::tests::stored_root_reader_keeps_legacy_evidence_readable ... ok
+2026-10-23T23:37:23.7336890Z test app::init::tests::rebuild_fault_helper ... ok
+2026-10-23T23:37:23.7352960Z test app::context::tests::copied_source_storage_classes_are_checked_before_row_decoding ... ok
+2026-10-23T23:37:23.7359700Z test app::search_evidence::tests::request_control_stops_before_opening_the_store ... ok
+2026-10-23T23:37:23.7362460Z test app::status_evidence::tests::health_detail_truncation_preserves_utf8_boundaries ... ok
+2026-10-23T23:37:23.9494730Z test app::search_evidence::tests::preflight_installs_request_control_before_reading_the_snapshot ... ok
+2026-10-23T23:37:24.0119060Z test app::tests::a_bom_only_file_is_an_active_document_with_no_searchable_passages ... ok
+2026-10-23T23:37:24.0632090Z 
+2026-10-23T23:37:24.0748800Z running 1 test
+2026-10-23T23:37:24.0859610Z test app::tests::bound_scope_rejects_root_options_and_quota_overrides_before_mutation ... ok
+2026-10-23T23:37:24.1604780Z test app::tests::an_unchanged_filesystem_snapshot_does_not_create_a_generation ... ok
+2026-10-23T23:37:24.2791420Z test app::tests::dry_run_plan_reports_exact_deltas_without_database_mutation ... ok
+2026-10-23T23:37:24.3195060Z test app::tests::index_quota_refusal_includes_staging_peak_before_scope_or_generation_mutation ... ok
+2026-10-23T23:37:24.3877860Z test app::tests::ingest_acquires_the_writer_lock_before_discovery ... ok
+2026-10-23T23:37:24.4007800Z test app::tests::jsonl_preparation_is_order_independent_and_keeps_explicit_deletions_separate ... ok
+2026-10-23T23:37:24.4111590Z test app::tests::jsonl_preparation_uses_decoded_content_as_the_citation_coordinate_space ... ok
+2026-10-23T23:37:24.4213440Z test app::tests::preparation_preserves_bytes_and_builds_complete_passage_evidence ... ok
+2026-10-23T23:37:24.4519250Z 
+2026-10-23T23:37:24.4620490Z running 1 test
+2026-10-23T23:37:24.6305160Z test app::tests::source_level_failure_keeps_heads_and_epoch_but_advances_error_status ... ok
+2026-10-23T23:37:24.6992460Z test app::tests::identical_bytes_with_different_source_kinds_use_distinct_chunk_layouts ... ok
+2026-10-23T23:37:24.7098360Z test config::trust::tests::registry_size_accepts_the_exact_limit_and_rejects_one_byte_more ... ok
+2026-10-23T23:37:24.7234540Z test domain::citation::tests::citation_round_trips_exactly ... ok
+2026-10-23T23:37:24.7428090Z test domain::citation::tests::malformed_variants_fail_closed ... ok
+2026-10-23T23:37:24.7530840Z test domain::digest::tests::hashes_and_renders_a_known_fixture ... ok
+2026-10-23T23:37:24.7641130Z test domain::digest::tests::parse_requires_canonical_lowercase_hex ... ok
+2026-10-23T23:37:24.7846210Z test domain::error::tests::every_frozen_subcode_has_cli_json_mcp_ready_metadata ... ok
+2026-10-23T23:37:24.7947750Z test domain::error::tests::every_frozen_subcode_has_self_contained_offline_help ... ok
+2026-10-23T23:37:24.8111300Z test domain::error::tests::human_error_has_the_locked_four_line_shape ... ok
+2026-10-23T23:37:24.8209770Z test domain::error::tests::json_uses_the_same_code_subcode_and_action_metadata ... ok
+2026-10-23T23:37:24.8310860Z test domain::error::tests::pipeline_fingerprint_subcode_names_the_pipeline_not_the_schema ... ok
+2026-10-23T23:37:24.8412340Z test domain::error::tests::process_exit_mapping_is_stable_at_public_code_boundary ... ok
+2026-10-23T23:37:24.8512440Z test domain::ids::tests::every_identity_round_trips_through_lowercase_text_and_json ... ok
+2026-10-23T23:37:24.8614020Z test domain::ids::tests::identity_input_must_be_canonical_lowercase_hyphenated_text ... ok
+2026-10-23T23:37:24.8715610Z test app::tests::strict_mode_refuses_all_database_mutation_before_a_generation ... ok
+2026-10-23T23:37:24.8822960Z test domain::slug::tests::accepts_the_locked_slug_alphabet ... ok
+2026-10-23T23:37:24.8923670Z test domain::slug::tests::rejects_empty_long_dot_unicode_uppercase_and_separators ... ok
+2026-10-23T23:37:24.9026040Z test domain::span::tests::byte_spans_are_zero_based_start_inclusive_end_exclusive ... ok
+2026-10-23T23:37:24.9129860Z test domain::span::tests::byte_spans_reject_reversal_bounds_and_utf8_splits ... ok
+2026-10-23T23:37:24.9232580Z test domain::span::tests::line_spans_are_one_based_and_end_inclusive ... ok
+2026-10-23T23:37:24.9333920Z test domain::slug::tests::accepted_slugs_round_trip ... ok
+2026-10-23T23:37:24.9435810Z test ingest::filesystem::unix::tests::directory_snapshot_rejects_name_changes_even_when_metadata_is_identical ... ok
+2026-10-23T23:37:24.9543900Z test ingest::filesystem::unix::tests::ignore_file_changed_after_matcher_load_invalidates_the_walk ... ok
+2026-10-23T23:37:24.9647460Z test ingest::filesystem::unix::tests::recursive_walk_rejects_a_parent_directory_mutated_while_visiting_a_child ... ok
+2026-10-23T23:37:24.9750560Z test ingest::filesystem::unix::tests::regular_candidate_replaced_by_fifo_is_rejected_without_blocking ... ok
+2026-10-23T23:37:24.9852190Z test ingest::filesystem::unix::tests::regular_candidate_replaced_by_non_regular_entry_is_rejected ... ok
+2026-10-23T23:37:24.9953800Z test ingest::filesystem::unix::tests::regular_candidate_replaced_by_symlink_is_rejected_without_following_it ... ok
+2026-10-23T23:37:25.0060040Z test ingest::filesystem::unix::tests::source_root_component_swap_cannot_redirect_the_walk ... ok
+2026-10-23T23:37:25.0161670Z test ingest::filesystem::unix::tests::staging_fault_preserves_storage_full_for_public_error_mapping ... ok
+2026-10-23T23:37:25.0265660Z test domain::span::tests::valid_ascii_spans_slice_without_panicking ... ok
+2026-10-23T23:37:25.0366440Z 
+2026-10-23T23:37:25.0384460Z running 1 test
+2026-10-23T23:37:25.1663520Z test ingest::jsonl::tests::enforces_every_field_and_metadata_limit ... ok
+2026-10-23T23:37:25.1765890Z test ingest::jsonl::tests::enforces_nesting_and_collection_limits ... ok
+2026-10-23T23:37:25.1788890Z test ingest::jsonl::tests::rejects_duplicate_ids_keys_unknown_fields_and_bad_json ... ok
+2026-10-23T23:37:25.1790210Z test ingest::jsonl::tests::rejects_missing_empty_wrong_types_controls_nul_and_invalid_timestamp ... ok
+2026-10-23T23:37:25.1791500Z test ingest::jsonl::tests::valid_snapshot_preserves_decoded_content_and_skips_blank_lines ... ok
+2026-10-23T23:37:25.1792990Z test ingest::pipeline::tests::body_hash_ignores_metadata ... ok
+2026-10-23T23:37:25.1803200Z test ingest::pipeline::tests::equivalent_offsets_normalize_to_the_same_revision_identity ... ok
+2026-10-23T23:37:25.1810740Z test ingest::pipeline::tests::every_snapshot_input_changes_revision_identity ... ok
+2026-10-23T23:37:25.1811560Z test ingest::pipeline::tests::invalid_timestamp_is_rejected ... ok
+2026-10-23T23:37:25.1812290Z test ingest::pipeline::tests::metadata_key_order_does_not_change_revision_identity ... ok
+2026-10-23T23:37:25.1813340Z test ingest::pipeline::tests::metadata_must_be_an_object ... ok
+2026-10-23T23:37:25.1815980Z test ingest::pipeline::tests::snapshot_v1_hash_matches_the_frozen_bom_crlf_unicode_fixture ... ok
+2026-10-23T23:37:25.1820580Z test integration::agent_policy::tests::effective_global_file_obeys_codex_override_precedence ... ok
+2026-10-23T23:37:25.1821670Z test integration::agent_policy::tests::install_update_and_uninstall_preserve_unmanaged_bytes ... ok
+2026-10-23T23:37:25.1872700Z test integration::agent_policy::tests::valid_stale_policy_updates_but_modified_or_duplicate_markers_refuse ... ok
+2026-10-23T23:37:25.1880570Z test integration::codex::tests::add_uses_codex_supported_stdio_separator_without_repository_scope ... ok
+2026-10-23T23:37:25.1920630Z test integration::codex::tests::current_registration_requires_dynamic_scope_and_no_overrides ... ok
+2026-10-23T23:37:25.2625210Z 
+2026-10-23T23:37:25.2726310Z running 1 test
+2026-10-23T23:37:25.3030140Z test integration::codex::tests::executable_busy_is_retried_but_other_launch_errors_are_not ... ok
+2026-10-23T23:37:25.3131560Z test integration::codex::tests::legacy_hsum_is_migratable_but_foreign_name_conflicts ... ok
+2026-10-23T23:37:25.3238830Z test integration::workspace_policy::tests::authorization_is_canonical_sorted_idempotent_and_root_bounded ... ok
+2026-10-23T23:37:25.3346040Z test integration::workspace_policy::tests::policy_round_trips_and_rejects_a_git_root_as_workspace ... ok
+2026-10-23T23:37:25.3447660Z test mcp::tests::client_cancellation_uses_the_full_public_error_contract ... ok
+2026-10-23T23:37:25.3549050Z test mcp::tests::schema_age_preserves_migration_and_upgrade_distinction ... ok
+2026-10-23T23:37:25.3626250Z test mcp::tests::trimming_never_returns_an_empty_page_with_a_nonprogress_cursor ... ok
+2026-10-23T23:37:25.3648680Z test model::cache::tests::import_rejects_symlinked_model_files ... ok
+2026-10-23T23:37:25.3659790Z test model::cache::tests::import_rejects_wrong_dimension_checksum_and_extra_files ... ok
+2026-10-23T23:37:25.3661200Z test model::cache::tests::import_verify_idempotency_and_remove_share_one_contract ... ok
+2026-10-23T23:37:25.3662000Z test model::download::tests::retry_statuses_are_narrow_and_explicit ... ok
+2026-10-23T23:37:25.3662720Z test model::inference::tests::output_contract_rejects_wrong_shape_nonfinite_and_nonunit_vectors ... ok
+2026-10-23T23:37:25.3663430Z test model::inference::tests::provenance_binds_exact_artifact_runtime_and_preprocessing_contract ... ok
+2026-10-23T23:37:25.3913200Z test model::inference::tests::read_rejects_same_size_tampering_after_full_verification ... ok
+2026-10-23T23:37:25.4137460Z test model::inference::tests::verified_artifact_rereads_and_rehashes_every_fastembed_input ... ok
+2026-10-23T23:37:25.4240100Z test model::manifest::tests::embedded_manifest_is_exact_and_fastembed_compatible ... ok
+2026-10-23T23:37:25.4344350Z test model::manifest::tests::traversal_and_insecure_sources_are_rejected ... ok
+2026-10-23T23:37:25.4547920Z test model::worker::tests::caller_cancellation_and_deadline_discard_late_results ... ok
+2026-10-23T23:37:25.4627170Z test app::init::tests::interrupted_rebuilds_leave_plain_init_recoverable ... ok
+2026-10-23T23:37:25.4663640Z test model::worker::tests::failed_worker_is_replaced_before_the_next_job ... ok
+2026-10-23T23:37:25.4865990Z test model::worker::tests::identical_inflight_queries_coalesce_without_consuming_queue_slots ... ok
+2026-10-23T23:37:25.5799470Z test model::worker::tests::overdue_process_is_killed_after_the_grace_period ... ok
+2026-10-23T23:37:25.5901850Z test model::worker::tests::query_and_worker_outputs_are_bounded_and_validated ... ok
+2026-10-23T23:37:25.6008100Z test model::worker::tests::cancel_storm_leaves_lexical_sqlite_service_available ... ok
+2026-10-23T23:37:25.6117470Z test protocol::cursor::tests::cursor_integrity_and_query_shape_fail_distinctly ... ok
+2026-10-23T23:37:25.6219000Z test protocol::cursor::tests::execution_fingerprint_binds_effective_retrievers_and_degradation ... ok
+2026-10-23T23:37:25.6322210Z test protocol::cursor::tests::frozen_alpha_four_cursor_bytes_remain_compatible ... ok
+2026-10-23T23:37:25.6324720Z test runtime::tests::confirmations_and_occupied_paths_have_specific_public_subcodes ... ok
+2026-10-23T23:37:25.6427300Z test runtime::tests::maintenance_failures_have_operation_specific_recovery_subcodes ... ok
+2026-10-23T23:37:25.6530370Z test runtime::tests::malformed_authority_and_storage_failures_do_not_collapse ... ok
+2026-10-23T23:37:25.6632850Z test runtime::tests::schema_age_maps_to_migrate_upgrade_or_downgrade_guidance ... ok
+2026-10-23T23:37:25.6735340Z test runtime::tests::sqlite_capacity_io_and_corruption_failures_stay_distinct ... ok
+2026-10-23T23:37:25.6836860Z test search::get::tests::chunk_layout_cardinality_is_rejected_before_collection ... ok
+2026-10-23T23:37:25.6942180Z test search::get::tests::chunk_layout_validation_requires_monotonic_contiguous_spans ... ok
+2026-10-23T23:37:25.7111850Z test model::worker::tests::two_workers_and_eight_pending_jobs_are_hard_admission_bounds ... ok
+2026-10-23T23:37:25.7217460Z test search::retrieval::tests::deadline_guard_interrupts_a_running_sqlite_operation ... ok
+2026-10-23T23:37:26.4036040Z test search::retrieval::tests::duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary ... ok
+2026-10-23T23:37:26.4137830Z test search::retrieval::tests::fusion_rounding_is_integer_and_matches_the_frozen_example ... ok
+2026-10-23T23:37:26.4238250Z test search::retrieval::tests::hybrid_dedupe_and_equal_unit_ties_are_stable_and_explanations_are_bounded ... ok
+2026-10-23T23:37:26.4339630Z test search::retrieval::tests::lexical_compiler_treats_fts_operators_as_quoted_terms ... ok
+2026-10-23T23:37:26.4440210Z test search::retrieval::tests::lexical_ranking_uses_covered_chunk_order_before_loading_the_page ... ok
+2026-10-23T23:37:26.4541530Z test search::retrieval::tests::materialization_probe_is_nested_and_search_scoped ... ok
+2026-10-23T23:37:26.4642220Z test search::retrieval::tests::overlap_threshold_is_inclusive_at_one_half ... ok
+2026-10-23T23:37:26.6890590Z test search::retrieval::tests::search_maps_exact_sqlite_timeout_and_skips_lexical_retrieval ... ok
+2026-10-23T23:37:26.7624910Z test search::retrieval::tests::vector_knn_boundary_ties_use_exact_rowid_order ... ok
+2026-10-23T23:37:26.8546860Z test search::retrieval::tests::vector_knn_filters_by_source_before_applying_k ... ok
+2026-10-23T23:37:26.9506700Z test status::tests::a_blocked_probe_worker_cannot_extend_the_callers_deadline ... ok
+2026-10-23T23:37:26.9611680Z test status::tests::cited_drift_target_applies_the_same_field_bounds ... ok
+2026-10-23T23:37:26.9713430Z test status::tests::drift_targets_reject_an_aggregate_connector_budget_overrun ... ok
+2026-10-23T23:37:26.9814960Z test status::tests::drift_targets_reject_cap_plus_one_before_loading_rows ... ok
+2026-10-23T23:37:26.9917610Z test status::tests::drift_targets_reject_invalid_fields_before_loading_rows ... ok
+2026-10-23T23:37:27.0018990Z test status::tests::queued_probe_submission_stops_at_its_deadline ... ok
+2026-10-23T23:37:27.1686130Z test status::tests::queued_probe_submission_waits_for_capacity_within_its_deadline ... ok
+2026-10-23T23:37:27.1812220Z test status::tests::source_status_accepts_multiple_sources_and_rejects_cap_plus_one ... ok
+2026-10-23T23:37:27.1940270Z test status::tests::source_status_rejects_oversized_materialized_fields ... ok
+2026-10-23T23:37:27.2077370Z test store::capacity::tests::arithmetic_overflow_refuses_preflight ... ok
+2026-10-23T23:37:27.2179490Z test store::capacity::tests::checked_preflight_preserves_reserve_and_quota_headroom ... ok
+2026-10-23T23:37:27.2308830Z test store::capacity::tests::common_sync_roots_are_warnings ... ok
+2026-10-23T23:37:27.2434830Z test store::capacity::tests::insufficient_capacity_and_quota_are_distinct ... ok
+2026-10-23T23:37:27.2537720Z test store::capacity::tests::known_network_magic_and_names_are_classified_conservatively ... ok
+2026-10-23T23:37:27.2637670Z test store::capacity::tests::managed_bytes_include_sqlite_wal_and_shared_memory ... ok
+2026-10-23T23:37:27.2737980Z test store::capacity::tests::managed_bytes_refuse_symlinked_sqlite_files ... ok
+2026-10-23T23:37:27.2839190Z test store::capacity::tests::reserve_is_64_mib_or_rounded_up_ten_percent ... ok
+2026-10-23T23:37:27.2940280Z test store::doctor::tests::body_scan_tracker_measures_nested_retention_instead_of_assuming_one ... ok
+2026-10-23T23:37:27.3040680Z test store::doctor::tests::tolerant_doctor_rejects_a_missing_or_malformed_fingerprint ... ok
+2026-10-23T23:37:27.3141360Z test store::doctor::tests::tolerant_doctor_reports_a_coherent_stored_fingerprint ... ok
+2026-10-23T23:37:27.3644460Z test store::doctor::tests::tolerant_doctor_requires_every_generation_to_match_the_stored_fingerprint ... ok
+2026-10-23T23:37:27.3745780Z test store::forget_ledger::tests::interior_hash_corruption_fails_closed ... ok
+2026-10-23T23:37:27.3847460Z test store::forget_ledger::tests::missing_final_newline_discards_only_the_trailing_record ... ok
+2026-10-23T23:37:27.3947660Z test store::forget_ledger::tests::prepared_record_suppresses_by_source_and_connector_hash ... ok
+2026-10-23T23:37:27.4048730Z test store::generation::generation_crash_tests::generation_fault_helper ... ok
+2026-10-23T23:37:27.4149770Z 
+2026-10-23T23:37:27.4250530Z running 1 test
+2026-10-23T23:37:27.5657220Z 
+2026-10-23T23:37:27.5758210Z running 1 test
+2026-10-23T23:37:27.7130360Z 
+2026-10-23T23:37:27.7231430Z running 1 test
+2026-10-23T23:37:27.8621110Z 
+2026-10-23T23:37:27.8722570Z running 1 test
+2026-10-23T23:37:27.9774030Z 
+2026-10-23T23:37:27.9874910Z running 1 test
+2026-10-23T23:37:28.0076460Z test ingest::jsonl::tests::arbitrary_bytes_never_panic_or_return_duplicate_ids ... ok
+2026-10-23T23:37:28.0642530Z test store::open::tests::creation_crosses_the_durability_boundary_after_commit ... ok
+2026-10-23T23:37:28.1020650Z test store::open::tests::failed_durability_does_not_publish_the_reserved_index ... ok
+2026-10-23T23:37:28.1655160Z 
+2026-10-23T23:37:28.1655800Z running 1 test
+2026-10-23T23:37:28.2957010Z test store::generation::generation_crash_tests::process_death_at_every_generation_boundary_exposes_only_prior_or_next ... ok
+2026-10-23T23:37:28.3059820Z test store::schema::tests::alpha_2_pipeline_fingerprint_is_frozen ... ok
+2026-10-23T23:37:28.3110800Z test store::schema::tests::layout_fingerprints_are_kind_specific_and_recognized ... ok
+2026-10-23T23:37:28.3111570Z test store::schema::tests::previous_vector_schema_checksum_is_frozen ... ok
+2026-10-23T23:37:28.3112320Z test store::schema::tests::published_alpha_1_schema_checksum_is_frozen ... ok
+2026-10-23T23:37:28.8023360Z test store::open::tests::validation_preserves_wal_locks_across_overlapping_connections ... ok
+2026-10-23T23:37:30.1010800Z test search::retrieval::tests::exact_pages_seek_scoped_candidates_without_scanning_the_whole_project ... ok
+2026-10-23T23:37:30.1013270Z 
+2026-10-23T23:37:30.1016380Z test result: ok. 145 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.37s
+2026-10-23T23:37:30.1025220Z 
+2026-10-23T23:37:30.1042680Z      Running unittests src/main.rs (target/debug/deps/hsum-ba136bcf05b86d05)
+2026-10-23T23:37:30.1115750Z 
+2026-10-23T23:37:30.1116060Z running 0 tests
+2026-10-23T23:37:30.1116320Z 
+2026-10-23T23:37:30.1117500Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-23T23:37:30.1118650Z 
+2026-10-23T23:37:30.1126840Z      Running unittests src/bin/xtask.rs (target/debug/deps/xtask-7fa09329d083cb82)
+2026-10-23T23:37:30.1195230Z 
+2026-10-23T23:37:30.1197660Z running 4 tests
+2026-10-23T23:37:30.1467480Z test reference_docs::tests::cli_and_mcp_surfaces_come_from_runtime_contracts ... ok
+2026-10-23T23:37:30.1503070Z test reference_docs::tests::unsafe_or_missing_internal_links_fail_closed ... ok
+2026-10-23T23:37:30.1513610Z test reference_docs::tests::every_public_error_has_a_generated_heading_and_url ... ok
+2026-10-23T23:37:30.1715820Z test reference_docs::tests::reference_set_and_links_are_deterministic ... ok
+2026-10-23T23:37:30.1716430Z 
+2026-10-23T23:37:30.1716950Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+2026-10-23T23:37:30.1717440Z 
+2026-10-23T23:37:30.1722000Z      Running tests/chunking.rs (target/debug/deps/chunking-77053b94a0063605)
+2026-10-23T23:37:30.1830070Z 
+2026-10-23T23:37:30.1832520Z running 10 tests
+2026-10-23T23:37:30.1833920Z test approved_default_chunk_settings_are_frozen ... ok
+2026-10-23T23:37:30.1834490Z test bom_is_stored_but_the_first_searchable_span_starts_at_byte_three ... ok
+2026-10-23T23:37:30.1836950Z test a_long_indivisible_line_splits_at_utf8_safe_hard_boundaries ... ok
+2026-10-23T23:37:30.1839150Z test crlf_bytes_are_never_normalized_or_rewritten ... ok
+2026-10-23T23:37:30.1843360Z test empty_and_bom_only_documents_have_no_searchable_chunks ... ok
+2026-10-23T23:37:30.1843950Z test content_kinds_prefer_their_approved_structural_boundaries ... ok
+2026-10-23T23:37:30.1844430Z test every_chunk_kind_has_a_distinct_layout_fingerprint ... ok
+2026-10-23T23:37:30.1844910Z test line_spans_are_derived_from_original_crlf_coordinates ... ok
+2026-10-23T23:37:30.1845380Z test shell_and_sql_chunk_at_paragraph_boundaries_without_declaration_keywords ... ok
+2026-10-23T23:37:32.1319250Z test chunks_cover_original_utf8_without_gaps_or_excess_overlap ... ok
+2026-10-23T23:37:32.1319950Z      Running tests/cli_contract.rs (target/debug/deps/cli_contract-bf5fe51953a807cd)
+2026-10-23T23:37:32.1337030Z 
+2026-10-23T23:37:32.1383360Z test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.95s
+2026-10-23T23:37:32.1414300Z 
+2026-10-23T23:37:32.1419370Z 
+2026-10-23T23:37:32.1529240Z running 26 tests
+2026-10-23T23:37:32.1636020Z test client_and_mcp_shapes_are_tag_gated_and_project_safe ... ok
+2026-10-23T23:37:32.1737380Z test alpha4_command_inventory_is_exact_and_ordered ... ok
+2026-10-23T23:37:32.1842430Z test defaults_keep_stable_retrieval_lexical ... ok
+2026-10-23T23:37:32.1944840Z test configuration_migration_requires_a_backup_plan_and_exact_hash ... ok
+2026-10-23T23:37:32.1971140Z test generated_help_has_only_alpha4_capabilities ... ok
+2026-10-23T23:37:32.1980650Z test get_rejects_noncanonical_citations_at_the_argument_boundary ... ok
+2026-10-23T23:37:32.1988110Z test help_version_and_global_flags_are_available_at_nested_commands ... ok
+2026-10-23T23:37:32.1991990Z test human_terminal_rendering_neutralizes_controls_and_preserves_printable_text ... ok
+2026-10-23T23:37:32.2007420Z test ingest_exposes_two_independent_deletion_guards ... ok
+2026-10-23T23:37:32.2009140Z test init_and_trust_signatures_enforce_explicit_confirmation ... ok
+2026-10-23T23:37:32.2015680Z test escaped_byte_output_never_contains_terminal_control_characters ... ok
+2026-10-23T23:37:32.2018100Z test jsonl_source_management_is_explicit_and_confirmed ... ok
+2026-10-23T23:37:32.2019500Z test integration_shapes_require_confirmation_for_repository_and_client_mutations ... ok
+2026-10-23T23:37:32.2021830Z test man_page_is_deterministic_and_derived_from_alpha4_command ... ok
+2026-10-23T23:37:32.2024410Z test maintenance_ceremonies_require_plans_backups_and_exact_hashes ... ok
+2026-10-23T23:37:32.2025290Z test named_project_management_is_explicit_and_confirmed ... ok
+2026-10-23T23:37:32.2025710Z test model_lifecycle_grammar_keeps_network_explicit ... ok
+2026-10-23T23:37:32.2026140Z test process_exit_mapping_is_complete_and_stable ... ok
+2026-10-23T23:37:32.2027650Z test numeric_bounds_are_rejected_by_the_parser_with_exit_two ... ok
+2026-10-23T23:37:32.2028390Z test semantic_and_hybrid_search_parse_without_adding_an_embedding_mutation_flag ... ok
+2026-10-23T23:37:32.2028900Z test verbose_version_detection_matches_the_documented_grammar ... ok
+2026-10-23T23:37:32.2029470Z test verbose_version_report_is_golden_and_tag_gated ... ok
+2026-10-23T23:37:32.2030300Z test status_context_artifact_and_server_signatures_parse ... ok
+2026-10-23T23:37:32.2030840Z test whole_index_deletion_is_name_targeted_and_confirmed ... ok
+2026-10-23T23:37:32.2590500Z test completions_are_nonempty_deterministic_and_derived_from_alpha4_command ... ok
+2026-10-23T23:37:32.3071510Z test version_verbose_process_output_matches_the_golden_report ... ok
+2026-10-23T23:37:32.3090530Z      Running tests/config_migration.rs (target/debug/deps/config_migration-5c839e94b2085f3f)
+2026-10-23T23:37:32.3090970Z 
+2026-10-23T23:37:32.3092570Z test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+2026-10-23T23:37:32.3093490Z 
+2026-10-23T23:37:32.3173250Z 
+2026-10-23T23:37:32.3174390Z running 4 tests
+2026-10-23T23:37:32.3212120Z test plan_binds_both_exact_sources_without_mutating_or_backing_up ... ok
+2026-10-23T23:37:32.3261050Z test a_rehashed_plan_cannot_redirect_an_artifact_or_understate_capacity ... ok
+2026-10-23T23:37:32.3586880Z test wrong_confirmation_and_stale_sources_refuse_before_backup_or_mutation ... ok
+2026-10-23T23:37:32.3760380Z test apply_backs_up_exact_bytes_validates_targets_and_resumes_mixed_state ... ok
+2026-10-23T23:37:32.3761050Z 
+2026-10-23T23:37:32.3761610Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+2026-10-23T23:37:32.3762130Z 
+2026-10-23T23:37:32.3764100Z      Running tests/config_migration_cli.rs (target/debug/deps/config_migration_cli-5c428e40bb36a57a)
+2026-10-23T23:37:32.3867790Z 
+2026-10-23T23:37:32.3868050Z running 1 test
+2026-10-23T23:37:32.6080760Z test process_migration_diagnoses_n_minus_one_and_preserves_exact_backups ... ok
+2026-10-23T23:37:32.6081420Z 
+2026-10-23T23:37:32.6082060Z      Running tests/config_paths.rs (target/debug/deps/config_paths-ad5dbb0b2a956986)
+2026-10-23T23:37:32.6082710Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.22s
+2026-10-23T23:37:32.6083000Z 
+2026-10-23T23:37:32.6190110Z      Running tests/context_resolution.rs (target/debug/deps/context_resolution-b7a92db5d899fdb4)
+2026-10-23T23:37:32.6190650Z 
+2026-10-23T23:37:32.6194260Z running 8 tests
+2026-10-23T23:37:32.6295530Z test logical_selection_requires_both_safe_names ... ok
+2026-10-23T23:37:32.6301600Z test managed_index_database_is_never_inside_the_repository ... ok
+2026-10-23T23:37:32.6312690Z test hsum_home_places_config_data_and_cache_under_one_root ... ok
+2026-10-23T23:37:32.6327240Z test ordinary_locations_are_the_directories_crate_project_locations ... ok
+2026-10-23T23:37:32.6334540Z test pointer_alone_never_selects_or_authorizes_an_index ... ok
+2026-10-23T23:37:32.6336890Z test pointer_accepts_only_versioned_portable_logical_names ... ok
+2026-10-23T23:37:32.6337760Z test pointer_rejects_unknown_schema_and_unsafe_names ... ok
+2026-10-23T23:37:32.6338380Z test pointer_rejects_authorizing_or_machine_local_fields ... ok
+2026-10-23T23:37:32.6341820Z 
+2026-10-23T23:37:32.6353770Z test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-23T23:37:32.6360230Z 
+2026-10-23T23:37:32.6365820Z 
+2026-10-23T23:37:32.6377670Z running 17 tests
+2026-10-23T23:37:32.8034310Z test a_strict_configured_default_selects_direct_cli_from_an_unrelated_directory ... ok
+2026-10-23T23:37:32.8135580Z test a_tampered_index_rejects_a_bounded_but_unsafe_source_name ... ok
+2026-10-23T23:37:32.8961540Z test a_copied_pointer_is_a_hint_for_trust_but_never_authority ... ok
+2026-10-23T23:37:32.9448880Z test a_tampered_index_rejects_a_second_project_source_before_loading_rows ... ok
+2026-10-23T23:37:33.0083880Z test a_trusted_binding_rejects_a_tampered_source_config_root ... ok
+2026-10-23T23:37:33.0657700Z test a_trusted_binding_rejects_a_tampered_source_logical_root ... ok
+2026-10-23T23:37:33.1243110Z test a_trusted_binding_rejects_malformed_source_configuration ... ok
+2026-10-23T23:37:33.1607130Z test a_trusted_binding_rejects_matching_source_roots_that_redirect_away_from_the_binding ... ok
+2026-10-23T23:37:33.1973730Z test a_tampered_index_rejects_oversized_source_fields_before_loading_them ... ok
+2026-10-23T23:37:33.2366200Z test effective_context_carries_persisted_discovery_limits ... ok
+2026-10-23T23:37:33.2373050Z test managed_data_and_cache_overrides_must_be_absolute ... ok
+2026-10-23T23:37:33.2744350Z test environment_selection_does_not_read_a_malformed_pointer ... ok
+2026-10-23T23:37:33.2977650Z test n_minus_one_user_config_is_diagnosed_before_v2_fields_are_required ... ok
+2026-10-23T23:37:33.2978640Z test user_config_is_bounded_before_toml_deserialization ... ok
+2026-10-23T23:37:33.2994650Z test user_config_rejects_symlinks_and_nonprivate_permissions ... ok
+2026-10-23T23:37:33.2995880Z test explicit_trust_names_do_not_read_a_malformed_pointer ... ok
+2026-10-23T23:37:33.3459250Z test trusted_root_and_explicit_binding_materialize_the_same_scope ... ok
+2026-10-23T23:37:33.3459960Z 
+2026-10-23T23:37:33.3462360Z test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.71s
+2026-10-23T23:37:33.3462860Z 
+2026-10-23T23:37:33.3464830Z      Running tests/extension_coverage.rs (target/debug/deps/extension_coverage-66e3d753f2bb23ac)
+2026-10-23T23:37:33.3543700Z 
+2026-10-23T23:37:33.3544480Z running 1 test
+2026-10-23T23:37:33.3607890Z test discovery_chunking_and_pipeline_descriptor_agree_on_the_extension_set ... ok
+2026-10-23T23:37:33.3608350Z 
+2026-10-23T23:37:33.3608620Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+2026-10-23T23:37:33.3608950Z 
+2026-10-23T23:37:33.3613980Z      Running tests/filesystem_ingest.rs (target/debug/deps/filesystem_ingest-22df34f5cae65aef)
+2026-10-23T23:37:33.3678360Z 
+2026-10-23T23:37:33.3680630Z running 15 tests
+2026-10-23T23:37:33.3729110Z test a_symlink_cannot_be_used_as_the_source_root ... ok
+2026-10-23T23:37:33.3732590Z test a_symlinked_ancestor_cannot_be_used_as_source_root ... ok
+2026-10-23T23:37:33.3743830Z test accepted_file_carries_the_post_read_source_timestamp ... ok
+2026-10-23T23:37:33.3744840Z test file_limit_configuration_is_bounded_by_the_hard_ceiling ... ok
+2026-10-23T23:37:33.3747770Z test hard_links_remain_indistinguishable_from_ordinary_regular_files ... ok
+2026-10-23T23:37:33.3749280Z test intermediate_and_final_symlinks_are_never_discovered ... ok
+2026-10-23T23:37:33.3756600Z test explicit_include_and_exclude_filters_are_deterministic_and_exclude_wins ... ok
+2026-10-23T23:37:33.3759590Z test discovery_is_sorted_and_applies_supported_hidden_build_sensitive_and_gitignore_rules ... ok
+2026-10-23T23:37:33.3762430Z test invalid_utf8_nul_and_oversized_files_are_present_failed_not_absent ... ok
+2026-10-23T23:37:33.3763170Z test repo_uri_percent_encodes_raw_bytes_with_uppercase_hex ... ok
+2026-10-23T23:37:33.3773840Z test irrelevant_entries_are_bounded_before_per_directory_sorting ... ok
+2026-10-23T23:37:33.3775210Z test nested_gitignore_rules_apply_relative_to_their_directory ... ok
+2026-10-23T23:37:33.3775700Z test source_budget_refuses_large_discovery_before_returning_a_partial_snapshot ... ok
+2026-10-23T23:37:33.3776260Z test sensitive_directories_require_both_explicit_include_and_allowance ... ok
+2026-10-23T23:37:33.3777370Z test spooled_discovery_keeps_bodies_out_of_the_manifest_and_unlinks_staging ... ok
+2026-10-23T23:37:33.3777730Z 
+2026-10-23T23:37:33.3778030Z test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+2026-10-23T23:37:33.3778340Z 
+2026-10-23T23:37:33.3780140Z      Running tests/filesystem_source_cli.rs (target/debug/deps/filesystem_source_cli-7cd07d85625102ab)
+2026-10-23T23:37:33.3822440Z 
+2026-10-23T23:37:33.3822770Z running 1 test
+2026-10-23T23:37:34.7181280Z test filesystem_registration_is_safe_idempotent_and_reused_on_activation ... ok
+2026-10-23T23:37:34.7181700Z 
+2026-10-23T23:37:34.7182100Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.34s
+2026-10-23T23:37:34.7182460Z 
+2026-10-23T23:37:34.7183320Z      Running tests/fingerprint_recovery.rs (target/debug/deps/fingerprint_recovery-d479582ad8ab9935)
+2026-10-23T23:37:34.7248320Z 
+2026-10-23T23:37:34.7250880Z running 2 tests
+2026-10-23T23:37:34.8130720Z test a_stale_fingerprint_is_rejected_by_the_public_store_api ... ok
+2026-10-23T23:37:34.8137010Z test schema_corruption_precedes_a_pipeline_fingerprint_mismatch ... ok
+2026-10-23T23:37:34.8137480Z 
+2026-10-23T23:37:34.8137940Z test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+2026-10-23T23:37:34.8138370Z 
+2026-10-23T23:37:34.8141390Z      Running tests/get_contract.rs (target/debug/deps/get_contract-ae22da6a3fe49523)
+2026-10-23T23:37:34.8205500Z 
+2026-10-23T23:37:34.8206500Z running 7 tests
+2026-10-23T23:37:34.9365380Z test get_expands_whole_chunks_left_then_right_within_the_bound ... ok
+2026-10-23T23:37:34.9467330Z test composite_citation_rejects_non_chunk_boundaries_and_small_bounds ... ok
+2026-10-23T23:37:35.0073350Z test get_rejects_a_bound_smaller_than_the_cited_passage_and_foreign_scope ... ok
+2026-10-23T23:37:35.0174680Z test get_rejects_oversized_version_fields_before_materialization ... ok
+2026-10-23T23:37:35.0716720Z test get_uses_the_immutable_revision_after_the_head_changes ... ok
+2026-10-23T23:37:35.0969140Z test returned_expanded_citation_resolves_to_the_same_immutable_window ... ok
+2026-10-23T23:37:35.1403760Z test get_binds_a_historical_shared_body_to_its_frozen_source_kind_layout ... ok
+2026-10-23T23:37:35.1404680Z 
+2026-10-23T23:37:35.1405250Z test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.32s
+2026-10-23T23:37:35.1405550Z 
+2026-10-23T23:37:35.1407190Z      Running tests/index_delete_cli.rs (target/debug/deps/index_delete_cli-e3a781eb136ad604)
+2026-10-23T23:37:35.1478430Z 
+2026-10-23T23:37:35.1479050Z running 2 tests
+2026-10-23T23:37:35.2675400Z test a_fixed_quarantine_makes_interrupted_directory_cleanup_resumable ... ok
+2026-10-23T23:37:35.4915720Z test confirmed_deletion_clears_authority_but_preserves_other_indexes_and_pointer_hints ... ok
+2026-10-23T23:37:35.4916080Z 
+2026-10-23T23:37:35.4916350Z test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+2026-10-23T23:37:35.4916780Z 
+2026-10-23T23:37:35.4918680Z      Running tests/ingest_generations.rs (target/debug/deps/ingest_generations-d5f405f368654bea)
+2026-10-23T23:37:35.4984010Z 
+2026-10-23T23:37:35.4988710Z running 13 tests
+2026-10-23T23:37:35.6751730Z test a_failed_new_file_is_not_counted_as_carried_forward ... ok
+2026-10-23T23:37:35.7041650Z test a_reader_spanning_commit_sees_the_complete_old_snapshot_then_the_new_snapshot ... ok
+2026-10-23T23:37:35.7736620Z test a_failed_new_file_cannot_bypass_the_independent_empty_snapshot_guard ... ok
+2026-10-23T23:37:35.8302390Z test all_failed_snapshot_keeps_generation_epoch_and_last_success ... ok
+2026-10-23T23:37:35.9270070Z test deletion_guards_are_separate_and_exactly_twenty_five_percent_is_allowed ... ok
+2026-10-23T23:37:35.9675160Z test editing_one_document_writes_only_its_delta ... ok
+2026-10-23T23:37:36.0179770Z test failed_present_file_carries_its_prior_head_forward ... ok
+2026-10-23T23:37:36.0281080Z test first_ingest_builds_immutable_history_and_active_indexes ... ok
+2026-10-23T23:37:36.0483420Z test prepared_evidence_semantics_are_recomputed_before_any_write ... ok
+2026-10-23T23:37:36.1404390Z test mutation_refuses_a_corrupt_active_search_baseline ... ok
+2026-10-23T23:37:36.1811540Z test unchanged_ingest_adds_no_generation_or_index_rows ... ok
+2026-10-23T23:37:36.2173140Z test unique_same_body_rename_retains_document_identity_and_reuses_chunks ... ok
+2026-10-23T23:37:39.7817710Z test sqlite_full_rolls_back_the_generation_and_a_fresh_reader_recovers_the_prior_snapshot ... ok
+2026-10-23T23:37:39.7819250Z 
+2026-10-23T23:37:39.7820300Z test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.28s
+2026-10-23T23:37:39.7821140Z 
+2026-10-23T23:37:39.7823090Z      Running tests/init_smoke.rs (target/debug/deps/init_smoke-8bb1d4f5641e3407)
+2026-10-23T23:37:39.7930060Z 
+2026-10-23T23:37:39.7931710Z running 24 tests
+2026-10-23T23:37:39.7995770Z test an_occupied_database_path_keeps_its_original_bytes_on_failure ... ok
+2026-10-23T23:37:39.9203040Z test an_empty_source_still_initializes_exactly_one_source_and_project ... ok
+2026-10-23T23:37:39.9606950Z test bare_init_creates_managed_scope_and_ingests_without_writing_a_pointer ... ok
+2026-10-23T23:37:40.0083040Z test an_existing_pointer_does_not_block_or_authorize_bare_init ... ok
+2026-10-23T23:37:40.0477290Z test configured_index_quota_is_preflighted_before_creation_and_persisted ... ok
+2026-10-23T23:37:40.0890730Z test explicit_trust_enforces_alpha_source_cardinality ... ok
+2026-10-23T23:37:40.2333960Z test explicit_trust_refuses_a_database_whose_source_config_targets_another_root ... ok
+2026-10-23T23:37:40.2770200Z test explicit_trust_refuses_a_project_id_that_is_not_in_the_database ... ok
+2026-10-23T23:37:40.4045850Z test explicit_trust_is_required_idempotent_and_conflict_safe ... ok
+2026-10-23T23:37:40.4448760Z test explicit_trust_refuses_to_bind_a_source_database_to_another_root ... ok
+2026-10-23T23:37:40.4851150Z test large_source_confirmation_is_checked_before_database_creation ... ok
+2026-10-23T23:37:40.4952610Z test pointer_collision_refuses_before_managed_storage_is_created ... ok
+2026-10-23T23:37:40.5053240Z test forced_pointer_rerun_changes_only_the_pointer ... ok
+2026-10-23T23:37:40.5675540Z test no_ingest_configures_the_source_without_claiming_a_successful_scan ... ok
+2026-10-23T23:37:40.6928270Z test rebuild_refuses_corruption_without_changing_database_or_trust ... ok
+2026-10-23T23:37:40.7245710Z test rebuild_dry_run_validates_but_writes_nothing ... ok
+2026-10-23T23:37:40.7312660Z test rebuild_requires_an_existing_binding_and_an_initial_ingest ... ok
+2026-10-23T23:37:40.8785040Z test rebuild_also_replaces_a_healthy_index_when_explicitly_requested ... ok
+2026-10-23T23:37:40.9324180Z test rerun_refuses_a_binding_whose_exact_project_tuple_is_absent ... ok
+2026-10-23T23:37:41.0577180Z test root_home_and_above_git_roots_need_the_exact_broad_root_confirmation ... ok
+2026-10-23T23:37:41.1126550Z test rerun_refuses_a_binding_whose_source_logical_uri_targets_another_root ... ok
+2026-10-23T23:37:41.1797390Z test rebuild_replaces_one_coherent_stale_index_and_preserves_other_bindings ... ok
+2026-10-23T23:37:41.1918250Z test truly_bare_init_selects_the_enclosing_git_root_and_collision_safe_names ... ok
+2026-10-23T23:37:41.2788590Z test schema_4_rebuild_keeps_the_pinned_profile_and_refuses_a_lexical_downgrade ... ok
+2026-10-23T23:37:41.2790800Z 
+2026-10-23T23:37:41.2791330Z test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.49s
+2026-10-23T23:37:41.2791770Z 
+2026-10-23T23:37:41.2794320Z      Running tests/integration_codex.rs (target/debug/deps/integration_codex-9d15595d4b2a029b)
+2026-10-23T23:37:41.2850970Z 
+2026-10-23T23:37:41.2851840Z running 7 tests
+2026-10-23T23:37:41.3676710Z test conflict_requires_an_explicit_override_and_uninstall_never_removes_it ... ok
+2026-10-23T23:37:41.3955510Z test malformed_write_failed_and_readback_mismatch_states_fail_closed ... ok
+2026-10-23T23:37:41.4845370Z test status_distinguishes_absent_exact_legacy_stale_and_conflicting_entries ... ok
+2026-10-23T23:37:41.5364140Z test install_is_idempotent_and_migrates_owned_entries ... ok
+2026-10-23T23:37:41.5556980Z test uninstall_is_owned_only_idempotent_and_keeps_external_state_out_of_output ... ok
+2026-10-23T23:37:41.6287230Z test verification_retries_once_after_a_concurrent_rewrite ... ok
+2026-10-23T23:37:42.2240290Z test real_hsum_process_onboards_two_repositories_with_one_global_registration ... ok
+2026-10-23T23:37:42.2240700Z 
+2026-10-23T23:37:42.2241030Z test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.94s
+2026-10-23T23:37:42.2241340Z 
+2026-10-23T23:37:42.2243450Z      Running tests/jsonl_cli.rs (target/debug/deps/jsonl_cli-62d521bd4cb4da9c)
+2026-10-23T23:37:42.2288180Z 
+2026-10-23T23:37:42.2288770Z running 1 test
+2026-10-23T23:37:44.1237500Z test source_commands_drive_atomic_default_strict_and_removal_lifecycle ... ok
+2026-10-23T23:37:44.1238360Z 
+2026-10-23T23:37:44.1238950Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.89s
+2026-10-23T23:37:44.1239890Z 
+2026-10-23T23:37:44.1245600Z      Running tests/jsonl_connector.rs (target/debug/deps/jsonl_connector-185a96429df4af4a)
+2026-10-23T23:37:44.1325610Z 
+2026-10-23T23:37:44.1328770Z running 11 tests
+2026-10-23T23:37:44.3798880Z test decoded_content_is_stored_with_exact_chunk_and_citation_offsets ... ok
+2026-10-23T23:37:44.4365350Z test absent_ids_are_authoritative_only_after_success_and_reuse_deletion_guards ... ok
+2026-10-23T23:37:44.5037550Z test default_multi_source_ingest_commits_success_and_carries_failed_source_heads ... ok
+2026-10-23T23:37:44.6306650Z test explicit_tombstones_do_not_consume_the_absence_budget ... ok
+2026-10-23T23:37:44.6704970Z test invalid_file_never_applies_a_valid_prefix_and_default_records_failure ... ok
+2026-10-23T23:37:44.7167400Z test jsonl_get_uses_immutable_bytes_and_reports_snapshot_only_verification ... ok
+2026-10-23T23:37:44.7369270Z test jsonl_quota_refusal_precedes_scope_and_generation_mutation ... ok
+2026-10-23T23:37:44.8170490Z test jsonl_only_status_preserves_the_configured_index_quota ... ok
+2026-10-23T23:37:44.9982080Z test stable_id_preserves_document_identity_across_reordering_and_uri_changes ... ok
+2026-10-23T23:37:45.0035390Z test strict_multi_source_ingest_aborts_before_any_head_or_diagnostic_changes ... ok
+2026-10-23T23:37:45.0497160Z test successful_multi_source_batch_uses_one_generation_and_one_epoch_switch ... ok
+2026-10-23T23:37:45.0499390Z 
+2026-10-23T23:37:45.0501660Z test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.92s
+2026-10-23T23:37:45.0502750Z      Running tests/literals.rs (target/debug/deps/literals-a955034c7a558554)
+2026-10-23T23:37:45.0505370Z 
+2026-10-23T23:37:45.0573870Z 
+2026-10-23T23:37:45.0630440Z running 5 tests
+2026-10-23T23:37:45.0632940Z test caps_each_passage_at_the_first_sixty_four_unique_literals ... ok
+2026-10-23T23:37:45.0634300Z test extracts_only_case_sensitive_identifier_like_ascii_runs ... ok
+2026-10-23T23:37:45.0635030Z test preserves_first_occurrence_order_and_deduplicates_exact_bytes ... ok
+2026-10-23T23:37:45.0636550Z test rejects_literals_outside_the_inclusive_byte_bounds_without_truncating ... ok
+2026-10-23T23:37:45.4445550Z      Running tests/maintenance.rs (target/debug/deps/maintenance-942bcc967232413b)
+2026-10-23T23:37:45.4447060Z test extraction_is_deterministic_bounded_and_uses_only_the_frozen_alphabet ... ok
+2026-10-23T23:37:45.4554790Z 
+2026-10-23T23:37:45.4655890Z test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.38s
+2026-10-23T23:37:45.4757090Z 
+2026-10-23T23:37:45.4857620Z 
+2026-10-23T23:37:45.4958810Z running 11 tests
+2026-10-23T23:37:45.5059910Z test forget_fault_helper ... ok
+2026-10-23T23:37:46.0817740Z test backup_is_verified_and_preserves_the_live_index_identity ... ok
+2026-10-23T23:37:46.3036760Z 
+2026-10-23T23:37:46.3139620Z running 1 test
+2026-10-23T23:37:46.7745660Z test forget_suppresses_new_revisions_and_restore_refuses_other_state_changes ... ok
+2026-10-23T23:37:47.2391930Z test prune_apply_rejects_a_stale_plan_before_creating_a_backup ... ok
+2026-10-23T23:37:47.6894640Z 
+2026-10-23T23:37:47.6996830Z running 1 test
+2026-10-23T23:37:48.1916860Z test prune_plan_enumerates_citation_impact_and_apply_keeps_a_valid_baseline ... ok
+2026-10-23T23:37:48.7255330Z test forget_physically_rewrites_tombstones_copies_and_restores_exact_state ... ok
+2026-10-23T23:37:48.9183220Z test prune_removes_abandoned_history_from_an_empty_index_without_zeroing_the_floor ... ok
+2026-10-23T23:37:49.4239640Z 
+2026-10-23T23:37:49.4338440Z running 1 test
+2026-10-23T23:37:49.4752210Z test released_n_minus_one_fixture_migrates_only_after_plan_hash_confirmation ... ok
+2026-10-23T23:37:49.9644380Z test prune_requires_both_the_cutoff_and_per_document_retention_conditions ... ok
+2026-10-23T23:37:50.3405180Z test replaying_the_pre_forget_backup_cannot_reenable_forgotten_evidence ... ok
+2026-10-23T23:37:50.4452660Z 
+2026-10-23T23:37:50.4453200Z running 1 test
+2026-10-23T23:37:51.0625620Z 
+2026-10-23T23:37:51.0626060Z running 1 test
+2026-10-23T23:37:51.6235990Z 
+2026-10-23T23:37:51.6236680Z running 1 test
+2026-10-23T23:37:52.1169060Z test physical_forget_crash_boundaries_leave_one_doctor_valid_database ... ok
+2026-10-23T23:37:52.1174970Z 
+2026-10-23T23:37:52.1176000Z test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.66s
+2026-10-23T23:37:52.1178000Z 
+2026-10-23T23:37:52.1212540Z      Running tests/maintenance_cli.rs (target/debug/deps/maintenance_cli-0a1e1a0c9ec29480)
+2026-10-23T23:37:52.1299400Z 
+2026-10-23T23:37:52.1301390Z running 3 tests
+2026-10-23T23:37:52.5403220Z test process_migration_ceremony_upgrades_a_managed_n_minus_one_index ... ok
+2026-10-23T23:37:52.8995410Z test process_backup_and_prune_ceremony_invalidates_the_manifested_revision ... ok
+2026-10-23T23:37:53.2646310Z test process_forget_and_immediate_restore_ceremony_round_trips_one_citation ... ok
+2026-10-23T23:37:53.2660250Z      Running tests/managed_backup_cli.rs (target/debug/deps/managed_backup_cli-433b4c5c336a5e20)
+2026-10-23T23:37:53.2661340Z 
+2026-10-23T23:37:53.2662320Z test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.13s
+2026-10-23T23:37:53.2663280Z 
+2026-10-23T23:37:53.2837880Z 
+2026-10-23T23:37:53.2979040Z running 4 tests
+2026-10-23T23:37:53.4739610Z test occupied_unmanaged_output_is_not_adopted_into_the_registry ... ok
+2026-10-23T23:37:54.2678430Z test changed_backup_blocks_purge_before_forget_but_can_be_explicitly_retained ... ok
+2026-10-23T23:37:54.4991700Z test forget_requires_an_explicit_keep_choice_and_reports_every_managed_backup ... ok
+2026-10-23T23:37:54.6002920Z test purge_removes_only_unchanged_managed_backups_and_clears_the_inventory ... ok
+2026-10-23T23:37:54.6003750Z 
+2026-10-23T23:37:54.6004210Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.32s
+2026-10-23T23:37:54.6004580Z 
+2026-10-23T23:37:54.6009210Z      Running tests/mcp_contract.rs (target/debug/deps/mcp_contract-2dee418ef8fe4570)
+2026-10-23T23:37:54.6151020Z 
+2026-10-23T23:37:54.6152120Z running 32 tests
+2026-10-23T23:37:54.6423860Z test approved_workspace_still_requires_explicit_activation ... ok
+2026-10-23T23:37:55.0607620Z test evidence_get_returned_citation_round_trips_across_multiple_chunks ... ok
+2026-10-23T23:37:55.0709820Z test framing_rejects_size_depth_duplicates_and_bounded_container_abuse ... ok
+2026-10-23T23:37:55.2682490Z test cursor_is_opaque_and_distinguishes_malformed_query_and_state_changes ... ok
+2026-10-23T23:37:55.2937040Z test get_rejects_oversized_source_config_before_materializing_it ... ok
+2026-10-23T23:37:55.6924750Z test get_source_hash_probe_runs_after_the_stored_read_and_reports_drift ... ok
+2026-10-23T23:37:55.7500380Z test handlers_use_hardened_readers_and_keep_foreign_citations_non_disclosing ... ok
+2026-10-23T23:37:56.0841160Z test first_passage_over_aggregate_body_cap_returns_resource_error_without_cursor ... ok
+2026-10-23T23:37:56.0949750Z test mcp_auto_reports_install_capability_and_explicit_vector_modes_fail_typed ... ok
+2026-10-23T23:37:56.1047700Z test omitted_mcp_search_mode_keeps_stable_retrieval_lexical ... ok
+2026-10-23T23:37:56.4634710Z test incomplete_cursor_rerun_returns_retryable_deadline_and_can_retry_same_cursor ... ok
+2026-10-23T23:37:56.9492630Z test pagination_slices_one_stable_top_fifty_ordering ... ok
+2026-10-23T23:37:56.9693540Z test response_and_body_caps_are_fixed_protocol_constants ... ok
+2026-10-23T23:37:56.9795370Z test retrieval_config_fingerprint_is_frozen_for_the_beta_retriever_set ... ok
+2026-10-23T23:37:56.9895110Z test serde_inputs_reject_project_index_and_other_unknown_overrides ... ok
+2026-10-23T23:37:57.1022830Z test server_advertises_exactly_four_read_only_project_bound_tools ... ok
+2026-10-23T23:37:57.2535640Z test server_instructions_state_when_to_use_hsum_and_keep_the_untrusted_boundary ... ok
+2026-10-23T23:37:57.5363790Z test status_accepts_legal_persisted_error_detail_and_bounds_the_wire_value ... ok
+2026-10-23T23:37:57.8508780Z test status_includes_shared_actionable_index_problems ... ok
+2026-10-23T23:37:58.5419080Z test oversized_nonwinning_candidate_is_rejected_before_unbounded_materialization ... ok
+2026-10-23T23:38:00.2104880Z test stdio_deadline_cancel_and_disconnect_release_blocking_capacity ... ok
+2026-10-23T23:38:00.6685000Z test stdio_protocol_recovers_after_duplicate_key_and_exits_cleanly_on_disconnect ... ok
+2026-10-23T23:38:00.8945890Z test stdio_store_open_failures_preserve_their_public_taxonomy ... ok
+2026-10-23T23:38:01.0511620Z test tool_descriptions_say_when_to_reach_for_each_tool ... ok
+2026-10-23T23:38:03.3741860Z test stdio_escape_heavy_search_at_full_window_stays_within_wire_response_cap ... ok
+2026-10-23T23:38:03.5656080Z test workspace_search_never_applies_source_deletions ... ok
+2026-10-23T23:38:03.8987240Z test workspace_search_uses_the_last_explicit_generation_without_refresh ... ok
+2026-10-23T23:38:04.2455870Z test workspace_server_can_activate_and_retry_without_restart ... ok
+2026-10-23T23:38:04.2560890Z test workspace_server_teaches_agents_when_and_how_to_activate_hsum ... ok
+2026-10-23T23:38:04.6626400Z test workspace_servers_isolate_repositories_under_one_user_home ... ok
+2026-10-23T23:38:06.1881240Z test wire_response_cap_paginates_real_content_without_empty_or_repeated_pages ... ok
+2026-10-23T23:38:06.7890590Z test project_and_status_packets_each_come_from_one_wal_snapshot ... ok
+2026-10-23T23:38:06.7896390Z 
+2026-10-23T23:38:06.7896730Z test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.17s
+2026-10-23T23:38:06.7897200Z 
+2026-10-23T23:38:06.7928790Z      Running tests/model_cli.rs (target/debug/deps/model_cli-9a01c377bd239b9b)
+2026-10-23T23:38:06.7996130Z 
+2026-10-23T23:38:06.7998780Z running 4 tests
+2026-10-23T23:38:06.8290200Z test airgapped_import_rejects_manifest_dimension_drift_before_copying ... ok
+2026-10-23T23:38:06.8320450Z test list_is_local_and_reports_the_exact_embedded_profile ... ok
+2026-10-23T23:38:06.8432220Z test offline_install_fails_before_creating_a_partial_artifact ... ok
+2026-10-23T23:38:07.2706580Z test init_pins_without_downloading_and_reembed_requires_the_exact_artifact ... ok
+2026-10-23T23:38:07.2706990Z 
+2026-10-23T23:38:07.2707360Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.47s
+2026-10-23T23:38:07.2707760Z 
+2026-10-23T23:38:07.2708360Z      Running tests/model_worker.rs (target/debug/deps/model_worker-777d084c3aaa7897)
+2026-10-23T23:38:07.2768760Z 
+2026-10-23T23:38:07.2769050Z running 1 test
+2026-10-23T23:38:07.2873010Z test private_worker_is_offline_framed_and_reports_a_missing_verified_artifact ... ok
+2026-10-23T23:38:07.2873530Z 
+2026-10-23T23:38:07.2874020Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+2026-10-23T23:38:07.2874720Z 
+2026-10-23T23:38:07.2877520Z      Running tests/multiprocess.rs (target/debug/deps/multiprocess-1ac23d1da1c83fc0)
+2026-10-23T23:38:07.2966110Z 
+2026-10-23T23:38:07.2967650Z running 8 tests
+2026-10-23T23:38:07.2969870Z test reader_lease_holder_helper ... ok
+2026-10-23T23:38:07.3007500Z test replacement_fence_refuses_a_symlink_sidecar_without_touching_its_target ... ok
+2026-10-23T23:38:07.3037100Z test sqlite_full_generation_helper ... ok
+2026-10-23T23:38:07.3066570Z 
+2026-10-23T23:38:07.3070380Z running 1 test
+2026-10-23T23:38:07.3074750Z 
+2026-10-23T23:38:07.3074980Z running 1 test
+2026-10-23T23:38:07.4376270Z test writer_lock_holder_helper ... ok
+2026-10-23T23:38:07.4377580Z 
+2026-10-23T23:38:07.4377940Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.13s
+2026-10-23T23:38:07.4378350Z 
+2026-10-23T23:38:07.4380320Z test second_process_receives_a_bounded_writer_lock_busy_error ... ok
+2026-10-23T23:38:07.4381020Z test writer_lock_holder_helper ... ok
+2026-10-23T23:38:07.4386000Z test writer_lock_refuses_a_symlink_sidecar_without_touching_its_target ... ok
+2026-10-23T23:38:07.4494670Z test reader_lease_holder_helper ... ok
+2026-10-23T23:38:07.4505590Z 
+2026-10-23T23:38:07.4506750Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 7 filtered out; finished in 0.14s
+2026-10-23T23:38:07.4507210Z 
+2026-10-23T23:38:07.4507590Z test replacement_waits_for_readers_and_shared_readers_remain_concurrent ... ok
+2026-10-23T23:38:12.3050340Z test subprocess_sqlite_full_recovers_the_prior_generation_without_build_leaks ... ok
+2026-10-23T23:38:12.3051050Z 
+2026-10-23T23:38:12.3051350Z test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.01s
+2026-10-23T23:38:12.3051740Z 
+2026-10-23T23:38:12.3065050Z      Running tests/project_cli.rs (target/debug/deps/project_cli-91cf889cbce7f0cc)
+2026-10-23T23:38:12.3140170Z 
+2026-10-23T23:38:12.3141780Z running 1 test
+2026-10-23T23:38:14.5885610Z test named_projects_isolate_membership_switch_roots_and_preserve_history ... ok
+2026-10-23T23:38:14.5886300Z 
+2026-10-23T23:38:14.5886650Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.27s
+2026-10-23T23:38:14.5887040Z 
+2026-10-23T23:38:14.5892090Z      Running tests/query_contract.rs (target/debug/deps/query_contract-6f335bac39da4441)
+2026-10-23T23:38:14.5980520Z 
+2026-10-23T23:38:14.5986420Z running 10 tests
+2026-10-23T23:38:14.5990030Z test enforces_the_original_utf8_byte_budget ... ok
+2026-10-23T23:38:14.5995250Z test extracts_quotes_and_identifier_tokens_in_first_occurrence_order ... ok
+2026-10-23T23:38:14.5996000Z test duplicate_atoms_do_not_consume_the_sixteen_atom_budget ... ok
+2026-10-23T23:38:14.5996660Z test overlong_identifier_atom_is_rejected_as_a_whole ... ok
+2026-10-23T23:38:14.5997260Z test punctuation_only_quotes_need_at_least_three_bytes ... ok
+2026-10-23T23:38:14.5998180Z test quoted_identifiers_are_not_also_derived_as_identifier_atoms ... ok
+2026-10-23T23:38:14.5998810Z test quoted_span_offsets_are_half_open_original_byte_offsets ... ok
+2026-10-23T23:38:14.5999710Z      Running tests/quote_bloom.rs (target/debug/deps/quote_bloom-6a6310216fd84b9b)
+2026-10-23T23:38:14.6000310Z test rejects_blank_nul_empty_quotes_and_unmatched_quotes ... ok
+2026-10-23T23:38:14.6001050Z test unquoted_punctuation_only_input_is_valid_and_has_no_exact_atoms ... ok
+2026-10-23T23:38:14.6001680Z test quoted_atom_lengths_are_measured_in_utf8_bytes_without_truncation ... ok
+2026-10-23T23:38:14.6002250Z 
+2026-10-23T23:38:14.6002590Z test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-23T23:38:14.6003120Z 
+2026-10-23T23:38:14.6065740Z 
+2026-10-23T23:38:14.6066040Z running 6 tests
+2026-10-23T23:38:14.6074880Z test content_and_queries_shorter_than_a_trigram_are_vacuous ... ok
+2026-10-23T23:38:14.6189070Z test construction_is_deterministic_and_byte_sensitive ... ok
+2026-10-23T23:38:14.6333850Z test every_raw_byte_quote_from_the_content_survives_candidate_pruning ... ok
+2026-10-23T23:38:14.6334920Z test frozen_abc_fixture_commits_hash_endianness_double_hashing_and_bit_order ... ok
+2026-10-23T23:38:16.2804320Z test every_contained_byte_slice_survives_pruning ... ok
+2026-10-23T23:38:16.9657950Z      Running tests/runtime_process.rs (target/debug/deps/runtime_process-6b4e21920c275871)
+2026-10-23T23:38:16.9659990Z test every_inserted_trigram_is_a_possible_member ... ok
+2026-10-23T23:38:16.9727310Z 
+2026-10-23T23:38:16.9751290Z test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.35s
+2026-10-23T23:38:16.9752690Z 
+2026-10-23T23:38:16.9762100Z 
+2026-10-23T23:38:16.9768420Z running 13 tests
+2026-10-23T23:38:17.2233210Z test broad_root_confirmation_and_persisted_quota_are_process_visible ... ok
+2026-10-23T23:38:17.2411020Z test all_source_failure_exits_one_without_activating_a_generation ... ok
+2026-10-23T23:38:17.6103180Z test artifacts_trust_and_client_config_keep_output_channels_clean ... ok
+2026-10-23T23:38:17.8514670Z test cli_json_and_mcp_return_equivalent_evidence_on_one_shared_fixture ... ok
+2026-10-23T23:38:17.8899400Z test cli_cursor_pages_one_stable_window_and_round_trips_through_mcp ... ok
+2026-10-23T23:38:18.0071790Z test cli_returned_citation_round_trips_across_multiple_chunks ... ok
+2026-10-23T23:38:18.1631550Z test dry_runs_plan_real_changes_without_advancing_the_index ... ok
+2026-10-23T23:38:18.1754570Z test doctor_integrity_repair_and_body_free_report_are_process_complete ... ok
+2026-10-23T23:38:18.2260070Z test errors_use_stderr_stable_exits_and_mcp_stdout_contains_only_frames ... ok
+2026-10-23T23:38:18.3310930Z test offline_error_help_is_self_contained_and_linked_from_real_failures ... ok
+2026-10-23T23:38:18.4512590Z test lock_timeout_partial_exit_and_terminal_escaping_are_enforced_by_the_process ... ok
+2026-10-23T23:38:18.6428620Z test init_search_get_status_context_and_doctor_are_process_complete ... ok
+2026-10-23T23:38:18.8683660Z test stale_index_recovery_is_strict_dry_runnable_and_end_to_end ... ok
+2026-10-23T23:38:18.8684740Z 
+2026-10-23T23:38:18.8685650Z test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.89s
+2026-10-23T23:38:18.8686780Z 
+2026-10-23T23:38:18.8689500Z      Running tests/search_contract.rs (target/debug/deps/search_contract-f894ff1e4c6a7ff0)
+2026-10-23T23:38:18.8753990Z 
+2026-10-23T23:38:18.8754870Z running 17 tests
+2026-10-23T23:38:19.0302990Z test ascii_phrase_uses_exact_verification_and_raw_quote_uses_bloom_verification ... ok
+2026-10-23T23:38:19.0405380Z test auto_and_lexical_have_identical_alpha_ranking_without_vector_surface ... ok
+2026-10-23T23:38:19.1639300Z test content_hash_dedupe_retains_duplicate_citations_and_adapts_past_depth_fifty ... ok
+2026-10-23T23:38:19.1944170Z test exact_candidates_adapt_from_fifty_to_the_unique_exhaustion_point ... ok
+2026-10-23T23:38:19.2045930Z test exact_literal_and_bm25_fuse_into_versioned_immutable_evidence ... ok
+2026-10-23T23:38:19.2155620Z test library_search_defaults_keep_stable_retrieval_lexical ... ok
+2026-10-23T23:38:19.2459940Z test exact_matching_is_byte_sensitive_across_canonical_unicode_forms ... ok
+2026-10-23T23:38:19.2720240Z test literal_postings_are_only_hints_and_cannot_manufacture_exact_evidence ... ok
+2026-10-23T23:38:19.3277410Z test long_and_post_cap_identifiers_use_the_byte_verified_scan_path ... ok
+2026-10-23T23:38:19.3711700Z test project_membership_is_applied_before_any_result_limit ... ok
+2026-10-23T23:38:19.4224760Z test search_rejects_a_tampered_quote_bloom_before_using_it_as_a_negative_gate ... ok
+2026-10-23T23:38:19.4736480Z test search_rejects_an_oversized_nonwinning_candidate_before_materialization ... ok
+2026-10-23T23:38:19.4845450Z test search_request_enforces_alpha_bounds_before_touching_sqlite ... ok
+2026-10-23T23:38:19.5151270Z test user_fts_operators_are_compiled_as_data_and_never_leak_sql_errors ... ok
+2026-10-23T23:38:19.5452340Z test valid_punctuation_only_query_returns_an_empty_success ... ok
+2026-10-23T23:38:19.7966530Z test raw_exact_fallback_stops_at_the_five_hundred_candidate_budget ... ok
+2026-10-23T23:38:31.2878640Z test common_term_and_phrase_searches_finish_with_deterministic_scoped_ties ... ok
+2026-10-23T23:38:31.2881210Z 
+2026-10-23T23:38:31.2882010Z test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.41s
+2026-10-23T23:38:31.2882930Z 
+2026-10-23T23:38:31.2926040Z      Running tests/source_drift.rs (target/debug/deps/source_drift-1b848d843c165adb)
+2026-10-23T23:38:31.3088720Z 
+2026-10-23T23:38:31.3098640Z running 4 tests
+2026-10-23T23:38:31.5531120Z test expired_drift_deadline_is_unknown_without_touching_the_source ... ok
+2026-10-23T23:38:31.5533360Z test drift_probe_blocks_a_symlinked_source_root_ancestor ... ok
+2026-10-23T23:38:31.6137800Z test drift_reports_edit_delete_and_block_without_changing_stored_evidence ... ok
+2026-10-23T23:38:31.6477210Z test status_is_read_only_authoritative_and_terminal_safe ... ok
+2026-10-23T23:38:31.6482310Z 
+2026-10-23T23:38:31.6483910Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.34s
+2026-10-23T23:38:31.6485000Z 
+2026-10-23T23:38:31.6485920Z      Running tests/store_doctor.rs (target/debug/deps/store_doctor-f8eba097fae737a7)
+2026-10-23T23:38:31.6563910Z 
+2026-10-23T23:38:31.6564990Z running 23 tests
+2026-10-23T23:38:31.6572000Z test doctor_churn_heap_helper ... ok
+2026-10-23T23:38:31.6603500Z test doctor_does_not_create_a_missing_index ... ok
+2026-10-23T23:38:31.7734420Z test doctor_rejects_a_newer_schema_version ... ok
+2026-10-23T23:38:31.8251350Z test doctor_accepts_a_fresh_index_without_logical_mutation ... ok
+2026-10-23T23:38:31.9105180Z test doctor_rejects_a_tampered_schema_checksum ... ok
+2026-10-23T23:38:31.9409230Z test doctor_rejects_a_tampered_quote_bloom ... ok
+2026-10-23T23:38:31.9513020Z test doctor_rejects_a_wrong_application_id_before_trusting_the_schema ... ok
+2026-10-23T23:38:32.0518590Z test doctor_rejects_an_active_generation_pointer_that_is_not_latest_committed ... ok
+2026-10-23T23:38:32.0922350Z test doctor_rejects_an_epoch_that_disagrees_with_two_committed_generations ... ok
+2026-10-23T23:38:32.1023210Z test doctor_rejects_an_unidentified_sqlite_database ... ok
+2026-10-23T23:38:32.1125570Z test doctor_rejects_an_extra_schema_object_before_hashing_rows ... ok
+2026-10-23T23:38:32.1732300Z test doctor_rejects_live_schema_drift_with_unchanged_metadata ... ok
+2026-10-23T23:38:32.2337080Z test doctor_rejects_deleted_changes_from_the_first_of_two_generations ... ok
+2026-10-23T23:38:32.2841420Z test doctor_rejects_missing_active_fts_rows ... ok
+2026-10-23T23:38:32.3245060Z test doctor_rejects_oversized_schema_sql_before_materializing_it ... ok
+2026-10-23T23:38:32.3346630Z test doctor_rejects_missing_active_literal_rows ... ok
+2026-10-23T23:38:32.5559560Z test doctor_rejects_tampered_content_and_revision_hashes ... ok
+2026-10-23T23:38:32.5965640Z test doctor_repair_removes_only_abandoned_generations_and_is_idempotent ... ok
+2026-10-23T23:38:32.6581550Z test doctor_support_report_is_body_free_and_query_free ... ok
+2026-10-23T23:38:32.7164790Z test doctor_validates_an_indexed_active_snapshot ... ok
+2026-10-23T23:38:32.7175590Z test schema_checksum_is_a_frozen_migration_fixture ... ok
+2026-10-23T23:38:33.7994350Z test doctor_bounds_replay_heap_across_churn_heavy_history ... ok
+2026-10-23T23:38:35.6259290Z test doctor_streams_a_large_corpus_one_original_body_at_a_time ... ok
+2026-10-23T23:38:35.6260730Z 
+2026-10-23T23:38:35.6262740Z test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.97s
+2026-10-23T23:38:35.6264510Z 
+2026-10-23T23:38:35.6266250Z      Running tests/store_foundation.rs (target/debug/deps/store_foundation-7e6165bda37dcbbd)
+2026-10-23T23:38:35.6479900Z 
+2026-10-23T23:38:35.6591020Z running 18 tests
+2026-10-23T23:38:35.7581100Z test ancestor_aba_during_create_cannot_substitute_or_mutate_database_b ... ok
+2026-10-23T23:38:35.7637830Z test bundled_sqlite_supports_required_fts5_and_identifier_tokens ... ok
+2026-10-23T23:38:35.8136760Z test a_live_sqlite_handle_reports_main_file_rename_and_replacement ... ok
+2026-10-23T23:38:35.8286130Z test create_refuses_to_replace_an_existing_path ... ok
+2026-10-23T23:38:35.8317490Z test create_requires_all_sqlite_sidecars_to_be_absent ... ok
+2026-10-23T23:38:35.8530990Z test ancestor_aba_during_existing_open_cannot_substitute_or_mutate_database_b ... ok
+2026-10-23T23:38:35.8579980Z test creating_an_index_in_a_non_private_parent_is_refused_without_a_partial_file ... ok
+2026-10-23T23:38:35.8669310Z test create_index_stamps_identity_schema_and_lexical_profile ... ok
+2026-10-23T23:38:35.8828520Z test created_index_is_private_to_its_owner ... ok
+2026-10-23T23:38:35.9116130Z test failed_create_rollback_never_deletes_a_replaced_sidecar ... ok
+2026-10-23T23:38:35.9219940Z test fixed_macos_var_alias_is_normalized_without_permitting_user_symlinks ... ok
+2026-10-23T23:38:35.9843540Z test opening_a_symlink_never_reaches_or_changes_its_target ... ok
+2026-10-23T23:38:35.9945150Z test existing_indexes_reopen_only_in_the_requested_validated_mode ... ok
+2026-10-23T23:38:36.0598930Z test opening_a_hard_link_is_refused_until_the_index_is_single_link_again ... ok
+2026-10-23T23:38:36.0600780Z test opening_through_a_user_created_ancestor_symlink_is_refused ... ok
+2026-10-23T23:38:36.0716310Z test opening_an_index_with_group_or_world_permissions_is_refused ... ok
+2026-10-23T23:38:36.1604680Z test valid_private_wal_and_shm_sidecars_are_accepted ... ok
+2026-10-23T23:38:36.2353320Z test unsafe_sidecars_are_refused_before_sqlite_can_touch_their_targets ... ok
+2026-10-23T23:38:36.2356460Z      Running tests/trust_registry.rs (target/debug/deps/trust_registry-2b2be58cdb4cef71)
+2026-10-23T23:38:36.2356820Z 
+2026-10-23T23:38:36.2357230Z test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+2026-10-23T23:38:36.2357790Z 
+2026-10-23T23:38:36.2439830Z 
+2026-10-23T23:38:36.2470040Z running 14 tests
+2026-10-23T23:38:36.2565720Z test ambiguous_trusted_root_state_is_rejected_before_selection ... ok
+2026-10-23T23:38:36.2653190Z test conflicting_root_registration_fails_without_mutating_the_registry ... ok
+2026-10-23T23:38:36.2654170Z test direct_selection_obeys_fixed_precedence ... ok
+2026-10-23T23:38:36.2654910Z test index_binding_removal_is_identity_checked_atomic_and_idempotent ... ok
+2026-10-23T23:38:36.2655640Z test mcp_requires_a_trusted_binding_and_ignores_direct_cli_sources ... ok
+2026-10-23T23:38:36.2656390Z test a_deleted_registered_root_does_not_invalidate_other_bindings ... ok
+2026-10-23T23:38:36.2657000Z test parsed_bindings_reject_duplicate_roots_and_identity_aliases ... ok
+2026-10-23T23:38:36.2657610Z test public_trust_mutations_advance_the_config_epoch_only_when_state_changes ... ok
+2026-10-23T23:38:36.2658820Z test registration_is_randomly_bound_and_matching_reruns_are_idempotent ... ok
+2026-10-23T23:38:36.2659540Z test registration_is_in_memory_until_explicit_atomic_save ... ok
+2026-10-23T23:38:36.2660090Z test retargeting_preserves_binding_identity_and_rejects_root_collisions ... ok
+2026-10-23T23:38:36.2660810Z test stored_roots_reject_every_noncanonical_lexical_spelling ... ok
+2026-10-23T23:38:36.2661460Z test trust_toml_rejects_unknown_fields_noncanonical_ids_and_roots ... ok
+2026-10-23T23:38:36.4037150Z test atomic_save_refuses_to_write_a_registry_its_loader_cannot_read ... ok
+2026-10-23T23:38:36.4139470Z      Running tests/vector_storage.rs (target/debug/deps/vector_storage-64750737f4c9a05b)
+2026-10-23T23:38:36.4139890Z 
+2026-10-23T23:38:36.4241230Z test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+2026-10-23T23:38:36.4343780Z 
+2026-10-23T23:38:36.4447200Z 
+2026-10-23T23:38:36.4571830Z running 29 tests
+2026-10-23T23:38:36.7348530Z test compatible_cross_target_provenance_reuses_the_first_audited_vector ... ok
+2026-10-23T23:38:36.7450320Z test doctor_rejects_tampered_embedding_provenance ... ok
+2026-10-23T23:38:36.8578650Z test cached_reembedding_builds_and_atomically_flips_the_shadow_slot ... ok
+2026-10-23T23:38:36.8679900Z test embedding_input_is_nfc_and_lf_normalized ... ok
+2026-10-23T23:38:36.9030220Z test embedding_cache_obeys_the_single_writer_lease ... ok
+2026-10-23T23:38:36.9030860Z test five_state_model_lifecycle_is_derived_from_durable_facts ... ok
+2026-10-23T23:38:36.9802770Z test fresh_lexical_index_has_empty_native_vector_storage ... ok
+2026-10-23T23:38:36.9905220Z test doctor_rejects_tampered_embedding_vectors ... ok
+2026-10-23T23:38:37.0582870Z test exact_embedding_cache_is_immutable_reusable_and_doctor_validated ... ok
+2026-10-23T23:38:37.2193550Z test hybrid_search_fuses_exact_lexical_and_vector_ranks_without_weakening_explicit_modes ... ok
+2026-10-23T23:38:37.2397750Z test incomplete_reembedding_cache_rolls_back_without_a_generation_or_slot_flip ... ok
+2026-10-23T23:38:37.2499800Z test model_pin_rejects_noncanonical_or_unsupported_identity ... ok
+2026-10-23T23:38:37.4310300Z test model_pin_discovery_reads_the_exact_structured_index_profile ... ok
+2026-10-23T23:38:37.4412980Z test later_lexical_ingest_atomically_invalidates_complete_vector_membership ... ok
+2026-10-23T23:38:37.4515200Z test provenance_rejects_noncanonical_files_targets_and_worker_configuration ... ok
+2026-10-23T23:38:37.4617160Z test provenance_separates_exact_target_identity_from_cache_compatibility ... ok
+2026-10-23T23:38:37.5323070Z test pinned_profile_is_exact_immutable_and_reopens ... ok
+2026-10-23T23:38:38.4706330Z test prune_reclaims_only_historical_embedding_cache_and_preserves_active_vectors ... ok
+2026-10-23T23:38:38.4807820Z test semantic_query_embedding_rejects_wrong_shape_nonfinite_and_unnormalized_input ... ok
+2026-10-23T23:38:38.6756570Z test semantic_search_requires_validated_complete_vectors_and_returns_guarded_evidence ... ok
+2026-10-23T23:38:39.6217200Z 
+2026-10-23T23:38:39.6333370Z running 1 test
+2026-10-23T23:38:39.6440260Z test schema_4_migration_preserves_semantic_evidence_and_rejects_corruption ... ok
+2026-10-23T23:38:39.8899430Z test vector_membership_checks_each_source_partition ... ok
+2026-10-23T23:38:40.1017860Z test vector_membership_reads_entire_payload_blocks ... ok
+2026-10-23T23:38:40.3008750Z test physical_forget_removes_vector_evidence_and_restore_recovers_it_exactly ... ok
+2026-10-23T23:38:41.1659010Z test vector_reader_lease_holder_helper ... ok
+2026-10-23T23:38:41.1695860Z 
+2026-10-23T23:38:41.1697500Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 28 filtered out; finished in 1.55s
+2026-10-23T23:38:41.1698950Z 
+2026-10-23T23:38:41.2910590Z test separate_process_vector_reader_blocks_forget_and_cannot_serve_the_replaced_inode ... ok
+2026-10-23T23:38:41.3012050Z test vector_reader_lease_holder_helper ... ok
+2026-10-23T23:38:42.0300200Z test verified_backup_preserves_complete_vector_membership_and_cache_evidence ... ok
+2026-10-23T23:38:42.2304360Z test vector_membership_rejects_missing_extra_and_mispartitioned_rows ... ok
+2026-10-23T23:38:42.2942230Z test vector_membership_rejects_corrupt_shadow_storage ... ok
+2026-10-23T23:38:42.2942920Z 
+2026-10-23T23:38:42.2943430Z test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.88s
+2026-10-23T23:38:42.2943750Z 
+2026-10-23T23:38:42.2952320Z      Running unittests examples/model-portability.rs (target/debug/examples/model_portability-07d09492b8131338)
+2026-10-23T23:38:42.3004110Z 
+2026-10-23T23:38:42.3004390Z running 0 tests
+2026-10-23T23:38:42.3004520Z 
+2026-10-23T23:38:42.3004820Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-23T23:38:42.3005220Z 
+2026-10-23T23:38:42.3006130Z      Running unittests examples/model-portability-compare.rs (target/debug/examples/model_portability_compare-f60b217dd4f2ab2f)
+2026-10-23T23:38:42.3039560Z 
+2026-10-23T23:38:42.3040660Z running 5 tests
+2026-10-23T23:38:42.3044810Z test tests::identical_cross_platform_vectors_pass_all_contract_checks ... ok
+2026-10-23T23:38:42.3045590Z test tests::component_drift_and_ordering_changes_fail_distinct_checks ... ok
+2026-10-23T23:38:42.3046910Z test tests::malformed_fixed_workload_is_rejected_without_panicking ... ok
+2026-10-23T23:38:42.3049800Z      Running unittests examples/sqlite-vec-portability.rs (target/debug/examples/sqlite_vec_portability-20006dce939f6949)
+2026-10-23T23:38:42.3050540Z test tests::provenance_differences_fail_without_hiding_numerical_metrics ... ok
+2026-10-23T23:38:42.3051460Z test tests::input_or_checkout_differences_fail_the_protocol_gate ... ok
+2026-10-23T23:38:42.3051890Z 
+2026-10-23T23:38:42.3053390Z test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-23T23:38:42.3053870Z 
+2026-10-23T23:38:42.3106420Z 
+2026-10-23T23:38:42.3107400Z running 6 tests
+2026-10-23T23:38:42.3108140Z test tests::generic_errors_map_to_cancelled_only_for_owned_interrupt_state ... ok
+2026-10-23T23:38:42.3108820Z test tests::k_plus_one_detects_only_a_tie_at_the_cutoff_boundary ... ok
+2026-10-23T23:38:42.3109380Z test tests::fixture_places_the_target_after_cross_source_decoys ... ok
+2026-10-23T23:38:42.3109920Z test tests::nearest_rank_uses_the_canonical_one_based_ceiling ... ok
+2026-10-23T23:38:42.3110520Z test tests::passage_ids_are_dense_and_source_ordered ... ok
+2026-10-23T23:38:42.3111000Z test tests::vector_blob_is_little_endian_f32_without_padding ... ok
+2026-10-23T23:38:42.3111820Z 
+2026-10-23T23:38:42.3112350Z test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-23T23:38:42.3113160Z 
+2026-10-23T23:38:42.3221120Z ==> docs
+2026-10-23T23:38:43.0952680Z     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.71s
+2026-10-23T23:38:43.1044210Z    Doc-tests hsum
+2026-10-23T23:38:44.2640240Z 
+2026-10-23T23:38:44.2640690Z running 0 tests
+2026-10-23T23:38:44.2640980Z 
+2026-10-23T23:38:44.2641350Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-23T23:38:44.2645470Z 
+2026-10-23T23:38:44.2684980Z ==> evaluation unit tests
+2026-10-23T23:38:44.4777600Z test_comparison_refuses_a_different_manifest (eval.test_harness.ComparisonTests.test_comparison_refuses_a_different_manifest) ... ok
+2026-10-23T23:38:44.6279060Z test_bootstrap_is_paired_seeded_and_nearest_ranked (eval.test_harness.MetricTests.test_bootstrap_is_paired_seeded_and_nearest_ranked) ... ok
+2026-10-23T23:38:44.6282170Z test_span_scoring_uses_four_point_gain_and_grade_two_relevance (eval.test_harness.MetricTests.test_span_scoring_uses_four_point_gain_and_grade_two_relevance) ... ok
+2026-10-23T23:38:44.6287770Z test_citation_correctness_round_trips_and_uses_the_cache (eval.test_harness.ObservationTests.test_citation_correctness_round_trips_and_uses_the_cache) ... ok
+2026-10-23T23:38:45.9156580Z test_markdown_renderer_projects_persisted_evidence (eval.test_harness.ObservationTests.test_markdown_renderer_projects_persisted_evidence) ... ok
+2026-10-23T23:38:45.9168940Z test_materialized_corpus_has_a_repository_boundary (eval.test_harness.ObservationTests.test_materialized_corpus_has_a_repository_boundary) ... ok
+2026-10-23T23:38:45.9170010Z test_qmd_command_preserves_a_leading_dash_query (eval.test_harness.ObservationTests.test_qmd_command_preserves_a_leading_dash_query) ... ok
+2026-10-23T23:38:45.9170900Z test_qmd_json_error_includes_bounded_diagnostics (eval.test_harness.ObservationTests.test_qmd_json_error_includes_bounded_diagnostics) ... ok
+2026-10-23T23:38:45.9175470Z test_result_writer_refuses_to_replace_evidence (eval.test_harness.ObservationTests.test_result_writer_refuses_to_replace_evidence) ... ok
+2026-10-23T23:38:47.3113050Z test_exact_query_without_top_three_evidence_blocks_promotion (eval.test_harness.PromotionTests.test_exact_query_without_top_three_evidence_blocks_promotion) ... ok
+2026-10-23T23:38:50.1658360Z test_promotion_requires_noninferiority_positive_value_and_exact_gate (eval.test_harness.PromotionTests.test_promotion_requires_noninferiority_positive_value_and_exact_gate) ... ok
+2026-10-23T23:38:50.1660550Z 
+2026-10-23T23:38:50.1660950Z ----------------------------------------------------------------------
+2026-10-23T23:38:50.1661980Z Ran 11 tests in 5.687s
+2026-10-23T23:38:50.1662350Z 
+2026-10-23T23:38:50.1662790Z OK
+2026-10-23T23:38:50.1861210Z ==> frozen evaluation inputs
+2026-10-23T23:38:50.8303280Z {"corpora": 3, "evaluation_id": "hsum-stable-v0.1-heldout-v1", "manifest_sha256": "a7771fac85a90450c4510846e001cd7f81d3c9b083f745addb8cb567756d4af1", "queries": 100, "semantic_queries": 35}
+2026-10-23T23:38:50.8383060Z ==> retrieval determinism unit tests
+2026-10-23T23:38:50.9918510Z test_cross_target_comparison_allows_only_bounded_numeric_drift (benches.retrieval_determinism.test_harness.ComparisonTests.test_cross_target_comparison_allows_only_bounded_numeric_drift) ... ok
+2026-10-23T23:38:50.9951390Z test_native_reports_require_one_index_and_identical_citation_order (benches.retrieval_determinism.test_harness.ComparisonTests.test_native_reports_require_one_index_and_identical_citation_order) ... ok
+2026-10-23T23:38:51.0021610Z test_prepare_and_run_dispatch_every_path_to_the_correct_slot (benches.retrieval_determinism.test_harness.DispatchTests.test_prepare_and_run_dispatch_every_path_to_the_correct_slot) ... ok
+2026-10-23T23:38:51.0058580Z test_manifest_and_corpus_fingerprints_are_frozen (benches.retrieval_determinism.test_harness.ManifestTests.test_manifest_and_corpus_fingerprints_are_frozen) ... ok
+2026-10-23T23:38:51.0063250Z test_cli_and_mcp_packets_normalize_to_one_evidence_contract (benches.retrieval_determinism.test_harness.NormalizationTests.test_cli_and_mcp_packets_normalize_to_one_evidence_contract) ... ok
+2026-10-23T23:38:51.0067960Z test_empty_results_and_missing_equal_score_ties_fail_closed (benches.retrieval_determinism.test_harness.NormalizationTests.test_empty_results_and_missing_equal_score_ties_fail_closed) ... ok
+2026-10-23T23:38:51.0072060Z test_same_target_run_drift_is_rejected (benches.retrieval_determinism.test_harness.NormalizationTests.test_same_target_run_drift_is_rejected) ... ok
+2026-10-23T23:38:51.0073960Z 
+2026-10-23T23:38:51.0076240Z ----------------------------------------------------------------------
+2026-10-23T23:38:51.0083960Z Ran 7 tests in 0.015s
+2026-10-23T23:38:51.0084400Z 
+2026-10-23T23:38:51.0085440Z OK
+2026-10-23T23:38:51.0217980Z ==> frozen retrieval determinism inputs
+2026-10-23T23:38:51.0738850Z {"corpus_fingerprint_sha256": "c68db9681656bdae88bdd4a77a969a19332f1f4d2d56297cc887d8c2e85bc8ae", "manifest_sha256": "c449d6c9c53d80c7992de70fc1374c9583319f8a41f150c2e99006cc7a6dad4f", "queries": 5, "runs_per_transport": 5}
+2026-10-23T23:38:51.0801400Z ==> retrieval scale unit tests
+2026-10-23T23:38:51.2073100Z test_class_summary_keeps_stage_and_client_latency_separate (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_class_summary_keeps_stage_and_client_latency_separate) ... ok
+2026-10-23T23:38:51.2076240Z test_coefficient_of_variation_is_population_based (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_coefficient_of_variation_is_population_based) ... ok
+2026-10-23T23:38:51.2081180Z test_corpus_body_has_exact_frozen_size_and_chunk_count (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_corpus_body_has_exact_frozen_size_and_chunk_count) ... ok
+2026-10-23T23:38:51.2091430Z test_frozen_query_manifest_has_750_observations_per_run (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_frozen_query_manifest_has_750_observations_per_run) ... ok
+2026-10-23T23:38:51.2103860Z test_lexical_preflight_rejects_a_mislabeled_fallback_query (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_lexical_preflight_rejects_a_mislabeled_fallback_query) ... ok
+2026-10-23T23:38:51.4949120Z test_mcp_session_uses_bounded_line_framing_and_closes_cleanly (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_mcp_session_uses_bounded_line_framing_and_closes_cleanly) ... ok
+2026-10-23T23:38:51.4997370Z test_nearest_rank_uses_one_based_ceiling (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_nearest_rank_uses_one_based_ceiling) ... ok
+2026-10-23T23:38:51.5033020Z test_packet_validation_freezes_fallback_and_hybrid_classification (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_packet_validation_freezes_fallback_and_hybrid_classification) ... ok
+2026-10-23T23:38:51.5036900Z test_qualification_requires_canonical_cold_and_setup_evidence (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_qualification_requires_canonical_cold_and_setup_evidence) ... ok
+2026-10-23T23:38:51.5040320Z test_setup_readiness_probe_uses_the_bounded_product_maximum (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_setup_readiness_probe_uses_the_bounded_product_maximum) ... ok
+2026-10-23T23:38:51.5133360Z test_storage_metrics_separate_live_history_and_vector_payloads (benches.retrieval_scale.test_harness.RetrievalScaleHarnessTests.test_storage_metrics_separate_live_history_and_vector_payloads) ... ok
+2026-10-23T23:38:51.5134260Z 
+2026-10-23T23:38:51.5134500Z ----------------------------------------------------------------------
+2026-10-23T23:38:51.5134910Z Ran 11 tests in 0.306s
+2026-10-23T23:38:51.5135020Z 
+2026-10-23T23:38:51.5135150Z OK
+2026-10-23T23:38:51.5367260Z ==> frozen retrieval scale inputs
+2026-10-23T23:38:51.6029360Z {"chunks_per_document": 10, "corpus_fingerprint_sha256": "635a942d1cacf9e195a7f697ba6bffb471ab850680dcb6abca1c48ea7364c45f", "expected_passages": 100000, "observations_per_canonical_run": 750, "queries": 25}
+2026-10-23T23:38:51.6078530Z ==> retrieval stress unit tests
+2026-10-23T23:38:51.7765450Z test_cancel_storm_reports_search_failure_before_workers_start (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_cancel_storm_reports_search_failure_before_workers_start) ... ok
+2026-10-23T23:38:51.8591610Z test_cancel_storm_suppresses_late_responses_and_recovers (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_cancel_storm_suppresses_late_responses_and_recovers) ... ok
+2026-10-23T23:38:51.8620800Z test_database_counts_cover_the_history_and_vector_tables (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_database_counts_cover_the_history_and_vector_tables) ... ok
+2026-10-23T23:38:51.8624030Z test_document_distribution_is_balanced_and_complete (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_document_distribution_is_balanced_and_complete) ... ok
+2026-10-23T23:38:51.8625750Z test_first_deadline_preserves_the_observed_scale_boundary (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_first_deadline_preserves_the_observed_scale_boundary) ... ok
+2026-10-23T23:38:51.8627020Z test_first_knee_is_strictly_more_than_double_the_preceding_median (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_first_knee_is_strictly_more_than_double_the_preceding_median) ... ok
+2026-10-23T23:38:51.8703890Z test_four_old_readers_retain_their_snapshot_during_final_generation (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_four_old_readers_retain_their_snapshot_during_final_generation) ... ok
+2026-10-23T23:38:51.8707570Z test_manifest_freezes_the_one_million_passage_contract (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_manifest_freezes_the_one_million_passage_contract) ... ok
+2026-10-23T23:38:51.8710600Z test_metadata_record_update_preserves_fixed_line_length (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_metadata_record_update_preserves_fixed_line_length) ... ok
+2026-10-23T23:38:51.8713860Z test_probe_query_records_only_the_structured_deadline_error (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_probe_query_records_only_the_structured_deadline_error) ... ok
+2026-10-23T23:38:51.8716970Z test_probe_query_rejects_non_deadline_failures (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_probe_query_rejects_non_deadline_failures) ... ok
+2026-10-23T23:38:51.8719960Z test_probe_query_uses_the_cli_maximum_timeout (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_probe_query_uses_the_cli_maximum_timeout) ... ok
+2026-10-23T23:38:51.8844470Z test_search_packet_requires_the_frozen_retrieval_paths (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_search_packet_requires_the_frozen_retrieval_paths) ... ok
+2026-10-23T23:38:51.8846720Z test_snapshot_generation_is_streamed_and_reproducible (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_snapshot_generation_is_streamed_and_reproducible) ... ok
+2026-10-23T23:38:51.8848590Z test_source_scoped_identities_reuse_embedding_inputs_across_sources (benches.retrieval_stress.test_harness.RetrievalStressHarnessTests.test_source_scoped_identities_reuse_embedding_inputs_across_sources) ... ok
+2026-10-23T23:38:51.8850210Z 
+2026-10-23T23:38:51.8850340Z ----------------------------------------------------------------------
+2026-10-23T23:38:51.8854630Z Ran 15 tests in 0.153s
+2026-10-23T23:38:51.8856080Z 
+2026-10-23T23:38:51.8856130Z OK
+2026-10-23T23:38:51.8905750Z ==> frozen retrieval stress inputs
+2026-10-23T23:38:51.9490120Z {"corpus_fingerprint_sha256": "3e64dd3f02060a3178d4f0844574ab8ca972b6d87841613a1453e04c336f2e8d", "documents": 100000, "manifest_sha256": "d0b1174b95c9062c6ab1f39878e7e01786b68ccb56af81c2f616672675734ba1", "metadata_only_generations": 100, "passages": 1000000, "sources": 64}
+2026-10-23T23:38:51.9704680Z ##[group]Run bash scripts/package-smoke.sh
+2026-10-23T23:38:51.9705980Z [36;1mbash scripts/package-smoke.sh[0m
+2026-10-23T23:38:52.0029060Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:38:52.0030250Z env:
+2026-10-23T23:38:52.0031340Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:38:52.0032690Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:38:52.0034260Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:38:52.0035600Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:38:52.0037070Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:38:52.0038640Z   RUSTUP_TOOLCHAIN: 1.91.0
+2026-10-23T23:38:52.0039500Z ##[endgroup]
+2026-10-23T23:38:52.1234950Z Cargo publish policy verified: crates-io is the only allowed registry.
+2026-10-23T23:38:52.1681220Z {"compile_fallback_preserved":true,"passed":true,"quick_install_disabled":true,"schema_version":"hsum.binstall-metadata-contract.v1","targets":["aarch64-apple-darwin","x86_64-unknown-linux-gnu"]}
+2026-10-23T23:38:52.4299650Z    Packaging hsum v0.1.0-alpha.4 (/Users/runner/work/hSUM/hSUM)
+2026-10-23T23:38:52.4907320Z warning: package `chacha20 v0.10.1` in Cargo.lock is yanked in registry `crates-io`, consider updating to a version that is not yanked
+2026-10-23T23:38:52.5534850Z     Packaged 134 files, 2.6MiB (520.8KiB compressed)
+2026-10-23T23:38:52.5535510Z    Verifying hsum v0.1.0-alpha.4 (/Users/runner/work/hSUM/hSUM)
+2026-10-23T23:38:52.7905790Z    Compiling ring v0.17.14
+2026-10-23T23:38:52.8107530Z    Compiling hsum v0.1.0-alpha.4 (/Users/runner/work/hSUM/hSUM/target/package/hsum-0.1.0-alpha.4)
+2026-10-23T23:38:54.8950930Z    Compiling rustls v0.23.46
+2026-10-23T23:38:55.9817140Z    Compiling rustls-webpki v0.103.16
+2026-10-23T23:38:59.2678350Z    Compiling ureq v3.3.0
+2026-10-23T23:39:00.6515530Z    Compiling ort-sys v2.0.0-rc.13
+2026-10-23T23:39:01.6882490Z    Compiling ort v2.0.0-rc.13
+2026-10-23T23:39:03.1783900Z    Compiling fastembed v5.17.4
+2026-10-23T23:39:30.6762700Z     Finished `dev` profile [unoptimized + debuginfo] target(s) in 38.41s
+2026-10-23T23:39:30.8927640Z   Installing hsum v0.1.0-alpha.4 (/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/tmp.qUSr2Jgg5s/hsum-0.1.0-alpha.4)
+2026-10-23T23:39:30.9609370Z     Updating crates.io index
+2026-10-23T23:39:31.1158980Z warning: package `chacha20 v0.10.1` in Cargo.lock is yanked in registry `crates-io`, consider running without --locked
+2026-10-23T23:39:31.2869540Z    Compiling libc v0.2.186
+2026-10-23T23:39:31.2882030Z    Compiling proc-macro2 v1.0.107
+2026-10-23T23:39:31.2883590Z    Compiling unicode-ident v1.0.24
+2026-10-23T23:39:31.3788340Z    Compiling quote v1.0.47
+2026-10-23T23:39:31.6207000Z    Compiling find-msvc-tools v0.1.9
+2026-10-23T23:39:31.8707000Z    Compiling shlex v2.0.1
+2026-10-23T23:39:32.3261660Z    Compiling jobserver v0.1.35
+2026-10-23T23:39:32.4495780Z    Compiling syn v2.0.119
+2026-10-23T23:39:32.5235240Z    Compiling cc v1.3.0
+2026-10-23T23:39:32.5743270Z    Compiling syn v3.0.1
+2026-10-23T23:39:33.7952040Z    Compiling memchr v2.8.3
+2026-10-23T23:39:34.5424010Z    Compiling pkg-config v0.3.33
+2026-10-23T23:39:34.8445230Z    Compiling serde_core v1.0.229
+2026-10-23T23:39:35.5771380Z    Compiling synstructure v0.13.2
+2026-10-23T23:39:36.0364700Z    Compiling itoa v1.0.18
+2026-10-23T23:39:36.2071350Z    Compiling pin-project-lite v0.2.17
+2026-10-23T23:39:36.2435520Z    Compiling stable_deref_trait v1.2.1
+2026-10-23T23:39:36.2683980Z    Compiling once_cell v1.21.4
+2026-10-23T23:39:36.4309270Z    Compiling autocfg v1.5.1
+2026-10-23T23:39:36.5160300Z    Compiling zerofrom-derive v0.1.7
+2026-10-23T23:39:36.6944880Z    Compiling yoke-derive v0.8.2
+2026-10-23T23:39:37.3510630Z    Compiling zerofrom v0.1.8
+2026-10-23T23:39:37.4144860Z    Compiling futures-core v0.3.33
+2026-10-23T23:39:37.4268400Z    Compiling yoke v0.8.3
+2026-10-23T23:39:37.4815020Z    Compiling smallvec v1.15.2
+2026-10-23T23:39:37.5467160Z    Compiling bitflags v2.13.1
+2026-10-23T23:39:37.5490000Z    Compiling zerovec-derive v0.11.3
+2026-10-23T23:39:37.6202800Z    Compiling cfg-if v1.0.4
+2026-10-23T23:39:37.6408030Z    Compiling bytes v1.12.1
+2026-10-23T23:39:37.8295600Z    Compiling serde v1.0.229
+2026-10-23T23:39:38.0069170Z    Compiling ident_case v1.0.1
+2026-10-23T23:39:38.0536650Z    Compiling zmij v1.0.23
+2026-10-23T23:39:38.2190340Z    Compiling strsim v0.11.1
+2026-10-23T23:39:38.2829480Z    Compiling zerovec v0.11.6
+2026-10-23T23:39:38.3883000Z    Compiling serde_derive v1.0.229
+2026-10-23T23:39:38.3922800Z    Compiling displaydoc v0.2.7
+2026-10-23T23:39:38.6958120Z    Compiling cmake v0.1.58
+2026-10-23T23:39:38.8269730Z    Compiling dunce v1.0.5
+2026-10-23T23:39:38.8593350Z    Compiling fs_extra v1.3.0
+2026-10-23T23:39:38.9190320Z    Compiling futures-sink v0.3.33
+2026-10-23T23:39:38.9818790Z    Compiling ring v0.17.14
+2026-10-23T23:39:39.0599720Z    Compiling aws-lc-sys v0.46.0
+2026-10-23T23:39:41.4807030Z    Compiling futures-channel v0.3.33
+2026-10-23T23:39:41.6376910Z    Compiling num-traits v0.2.19
+2026-10-23T23:39:41.7561460Z    Compiling tokio-macros v2.7.1
+2026-10-23T23:39:42.2035990Z    Compiling mio v1.2.2
+2026-10-23T23:39:42.8895480Z    Compiling socket2 v0.6.5
+2026-10-23T23:39:43.5734530Z    Compiling zeroize v1.9.0
+2026-10-23T23:39:43.6639730Z    Compiling core-foundation-sys v0.8.7
+2026-10-23T23:39:43.7977770Z    Compiling crossbeam-utils v0.8.22
+2026-10-23T23:39:43.9719270Z    Compiling getrandom v0.2.17
+2026-10-23T23:39:44.0497190Z    Compiling rustls-pki-types v1.15.1
+2026-10-23T23:39:44.3612970Z    Compiling tokio v1.53.3
+2026-10-23T23:39:44.5593310Z    Compiling tinystr v0.8.3
+2026-10-23T23:39:44.6765990Z    Compiling futures-macro v0.3.33
+2026-10-23T23:39:45.1706130Z    Compiling crossbeam-epoch v0.9.20
+2026-10-23T23:39:45.2909290Z    Compiling futures-io v0.3.33
+2026-10-23T23:39:45.3914710Z    Compiling slab v0.4.12
+2026-10-23T23:39:45.4908120Z    Compiling untrusted v0.9.0
+2026-10-23T23:39:45.5334270Z    Compiling aws-lc-rs v1.18.2
+2026-10-23T23:39:45.6770050Z    Compiling writeable v0.6.3
+2026-10-23T23:39:45.8155950Z    Compiling httparse v1.10.1
+2026-10-23T23:39:46.0105340Z    Compiling litemap v0.8.2
+2026-10-23T23:39:46.1336760Z    Compiling futures-task v0.3.33
+2026-10-23T23:39:46.2241150Z    Compiling futures-util v0.3.33
+2026-10-23T23:39:49.5192500Z    Compiling icu_locale_core v2.2.0
+2026-10-23T23:39:54.4530260Z    Compiling zerotrie v0.2.4
+2026-10-23T23:39:54.6907850Z    Compiling potential_utf v0.1.5
+2026-10-23T23:39:54.7821960Z    Compiling icu_normalizer_data v2.2.0
+2026-10-23T23:39:54.8524100Z    Compiling crossbeam-deque v0.8.7
+2026-10-23T23:39:54.9841200Z    Compiling utf8_iter v1.0.4
+2026-10-23T23:39:55.0677460Z    Compiling rustls v0.23.46
+2026-10-23T23:39:55.1892420Z    Compiling serde_json v1.0.150
+2026-10-23T23:39:55.2989370Z    Compiling zerocopy v0.8.54
+2026-10-23T23:39:55.3488950Z    Compiling getrandom v0.3.4
+2026-10-23T23:39:55.5123270Z    Compiling icu_properties_data v2.2.0
+2026-10-23T23:39:55.5222470Z    Compiling log v0.4.33
+2026-10-23T23:39:55.6066760Z    Compiling fnv v1.0.7
+2026-10-23T23:39:55.6333600Z    Compiling darling_core v0.20.11
+2026-10-23T23:39:55.6508450Z    Compiling http v1.5.0
+2026-10-23T23:39:56.2644730Z    Compiling icu_collections v2.2.0
+2026-10-23T23:39:57.0899480Z    Compiling icu_provider v2.2.0
+2026-10-23T23:39:57.6774500Z    Compiling rustls-webpki v0.103.16
+2026-10-23T23:39:58.4243720Z    Compiling byteorder v1.5.0
+2026-10-23T23:39:58.5453280Z    Compiling base64 v0.22.1
+2026-10-23T23:39:58.7271500Z    Compiling subtle v2.6.1
+2026-10-23T23:39:59.6918230Z    Compiling ureq-proto v0.6.0
+2026-10-23T23:40:00.4073250Z    Compiling socks v0.3.4
+2026-10-23T23:40:00.5687120Z    Compiling http-body v1.1.0
+2026-10-23T23:40:00.8195430Z    Compiling darling_macro v0.20.11
+2026-10-23T23:40:05.1793970Z    Compiling webpki-roots v1.0.10
+2026-10-23T23:40:05.2213090Z    Compiling aho-corasick v1.1.4
+2026-10-23T23:40:06.9931180Z    Compiling system-configuration-sys v0.6.0
+2026-10-23T23:40:07.3180520Z    Compiling utf8-zero v0.8.1
+2026-10-23T23:40:07.4214870Z    Compiling getrandom v0.4.3
+2026-10-23T23:40:07.5530200Z    Compiling percent-encoding v2.3.2
+2026-10-23T23:40:07.8363600Z    Compiling regex-syntax v0.8.11
+2026-10-23T23:40:09.7227040Z    Compiling utf8parse v0.2.2
+2026-10-23T23:40:09.7936340Z    Compiling rustversion v1.0.23
+2026-10-23T23:40:10.0206750Z    Compiling rayon-core v1.13.0
+2026-10-23T23:40:10.4628480Z    Compiling anstyle-parse v1.0.0
+2026-10-23T23:40:10.6616630Z    Compiling regex-automata v0.4.16
+2026-10-23T23:40:15.9035660Z    Compiling ureq v3.3.0
+2026-10-23T23:40:17.2494470Z    Compiling icu_properties v2.2.0
+2026-10-23T23:40:18.6295860Z    Compiling icu_normalizer v2.2.0
+2026-10-23T23:40:19.8212860Z    Compiling darling v0.20.11
+2026-10-23T23:40:19.8566660Z    Compiling matrixmultiply v0.3.11
+2026-10-23T23:40:20.0272620Z    Compiling tracing-attributes v0.1.31
+2026-10-23T23:40:21.0011990Z    Compiling tracing-core v0.1.36
+2026-10-23T23:40:22.0271650Z    Compiling onig_sys v69.9.3
+2026-10-23T23:40:22.3294330Z    Compiling rustix v1.1.4
+2026-10-23T23:40:22.6214980Z    Compiling thiserror v2.0.19
+2026-10-23T23:40:22.9094530Z    Compiling anstyle v1.0.14
+2026-10-23T23:40:23.1379930Z    Compiling try-lock v0.2.5
+2026-10-23T23:40:23.2080420Z    Compiling colorchoice v1.0.5
+2026-10-23T23:40:23.6003020Z    Compiling version_check v0.9.5
+2026-10-23T23:40:23.8365410Z    Compiling either v1.17.0
+2026-10-23T23:40:23.9173550Z    Compiling typenum v1.20.1
+2026-10-23T23:40:24.0264100Z    Compiling anstyle-query v1.1.5
+2026-10-23T23:40:24.0800140Z    Compiling hmac-sha256 v1.1.14
+2026-10-23T23:40:24.1936880Z    Compiling tower-service v0.3.3
+2026-10-23T23:40:24.2543330Z    Compiling is_terminal_polyfill v1.70.2
+2026-10-23T23:40:24.3267000Z    Compiling lzma-rust2 v0.15.8
+2026-10-23T23:40:24.8725850Z    Compiling hybrid-array v0.4.13
+2026-10-23T23:40:25.0506940Z    Compiling ort-sys v2.0.0-rc.13
+2026-10-23T23:40:25.4791330Z    Compiling anstream v1.0.0
+2026-10-23T23:40:25.9367150Z    Compiling ahash v0.8.12
+2026-10-23T23:40:26.0017700Z    Compiling want v0.3.1
+2026-10-23T23:40:26.2116340Z    Compiling tracing v0.1.44
+2026-10-23T23:40:26.5063650Z    Compiling derive_builder_core v0.20.2
+2026-10-23T23:40:27.1204620Z    Compiling idna_adapter v1.2.2
+2026-10-23T23:40:30.2607420Z    Compiling ppv-lite86 v0.2.21
+2026-10-23T23:40:30.4084690Z    Compiling rand_core v0.9.5
+2026-10-23T23:40:30.6025160Z    Compiling core-foundation v0.9.4
+2026-10-23T23:40:31.0746850Z    Compiling darling_core v0.23.0
+2026-10-23T23:40:33.5134490Z    Compiling thiserror-impl v2.0.19
+2026-10-23T23:40:34.8580080Z    Compiling errno v0.3.14
+2026-10-23T23:40:34.9757050Z    Compiling paste v1.0.15
+2026-10-23T23:40:35.1938310Z    Compiling heck v0.5.0
+2026-10-23T23:40:35.3233210Z    Compiling ref-cast v1.0.26
+2026-10-23T23:40:35.8816250Z    Compiling atomic-waker v1.1.2
+2026-10-23T23:40:36.8113370Z    Compiling pastey v0.2.3
+2026-10-23T23:40:37.2759400Z    Compiling minimal-lexical v0.2.1
+2026-10-23T23:40:37.5553060Z    Compiling clap_lex v1.1.0
+2026-10-23T23:40:37.9514620Z    Compiling vcpkg v0.2.15
+2026-10-23T23:40:38.7682650Z    Compiling rawpointer v0.2.1
+2026-10-23T23:40:38.8745810Z    Compiling esaxx-rs v0.1.10
+2026-10-23T23:40:40.1380590Z    Compiling libsqlite3-sys v0.37.0
+2026-10-23T23:40:40.6213150Z    Compiling clap_builder v4.6.2
+2026-10-23T23:40:41.6246860Z    Compiling nom v7.1.3
+2026-10-23T23:40:44.8072240Z    Compiling hyper v1.11.0
+2026-10-23T23:40:50.2990650Z    Compiling clap_derive v4.6.1
+2026-10-23T23:40:55.2819150Z    Compiling darling_macro v0.23.0
+2026-10-23T23:40:55.6850300Z    Compiling system-configuration v0.7.0
+2026-10-23T23:40:56.0632030Z    Compiling rand_chacha v0.9.0
+2026-10-23T23:40:58.9957480Z    Compiling rayon v1.12.0
+2026-10-23T23:40:59.1939250Z    Compiling castaway v0.2.4
+2026-10-23T23:40:59.3764880Z    Compiling idna v1.1.0
+2026-10-23T23:41:02.0835570Z    Compiling derive_builder_macro v0.20.2
+2026-10-23T23:41:02.5540540Z    Compiling itertools v0.14.0
+2026-10-23T23:41:04.4144730Z    Compiling form_urlencoded v1.2.2
+2026-10-23T23:41:04.6968460Z    Compiling num-complex v0.4.6
+2026-10-23T23:41:04.7603510Z    Compiling num-integer v0.1.46
+2026-10-23T23:41:05.1632680Z    Compiling core-foundation v0.10.1
+2026-10-23T23:41:05.2509490Z    Compiling security-framework-sys v2.17.0
+2026-10-23T23:41:05.4008750Z    Compiling sync_wrapper v1.0.2
+2026-10-23T23:41:05.4462690Z    Compiling monostate-impl v0.1.18
+2026-10-23T23:41:05.9588370Z    Compiling ref-cast-impl v1.0.26
+2026-10-23T23:41:05.9688440Z    Compiling serde_derive_internals v0.29.1
+2026-10-23T23:41:06.9619320Z    Compiling ryu v1.0.23
+2026-10-23T23:41:07.0250990Z    Compiling anyhow v1.0.104
+2026-10-23T23:41:07.3343700Z    Compiling base64 v0.13.1
+2026-10-23T23:41:07.3786430Z    Compiling allocator-api2 v0.2.21
+2026-10-23T23:41:07.7420400Z    Compiling tower-layer v0.3.3
+2026-10-23T23:41:08.0398870Z    Compiling macro_rules_attribute-proc_macro v0.2.3
+2026-10-23T23:41:08.4880630Z    Compiling foldhash v0.2.0
+2026-10-23T23:41:08.4927450Z    Compiling ipnet v2.12.0
+2026-10-23T23:41:08.7827100Z    Compiling fastrand v2.5.0
+2026-10-23T23:41:09.1868900Z    Compiling equivalent v1.0.2
+2026-10-23T23:41:09.2395290Z    Compiling static_assertions v1.1.0
+2026-10-23T23:41:09.2947030Z    Compiling unicode-segmentation v1.13.3
+2026-10-23T23:41:10.2772130Z    Compiling spm_precompiled v0.1.4
+2026-10-23T23:41:10.4595630Z    Compiling compact_str v0.9.1
+2026-10-23T23:41:10.9140310Z    Compiling hashbrown v0.16.1
+2026-10-23T23:41:11.5763840Z    Compiling tempfile v3.27.0
+2026-10-23T23:41:11.6016050Z    Compiling hyper-util v0.1.20
+2026-10-23T23:41:12.5164150Z    Compiling macro_rules_attribute v0.2.3
+2026-10-23T23:41:12.5562240Z    Compiling tower v0.5.3
+2026-10-23T23:41:13.3432670Z    Compiling schemars_derive v1.2.1
+2026-10-23T23:41:15.3506940Z    Compiling monostate v0.1.18
+2026-10-23T23:41:15.6475280Z    Compiling security-framework v3.7.0
+2026-10-23T23:41:16.3928660Z    Compiling ndarray v0.17.2
+2026-10-23T23:41:21.0579820Z    Compiling url v2.5.8
+2026-10-23T23:41:24.4124540Z    Compiling rayon-cond v0.4.0
+2026-10-23T23:41:24.8961430Z    Compiling derive_builder v0.20.2
+2026-10-23T23:41:25.0020710Z    Compiling rand v0.9.5
+2026-10-23T23:41:25.7520150Z    Compiling darling v0.23.0
+2026-10-23T23:41:25.8639250Z    Compiling clap v4.6.2
+2026-10-23T23:41:26.3637730Z    Compiling onig v6.5.3
+2026-10-23T23:41:28.2068930Z    Compiling crypto-common v0.2.2
+2026-10-23T23:41:30.0582950Z    Compiling block-buffer v0.12.1
+2026-10-23T23:41:30.1959880Z    Compiling regex v1.13.1
+2026-10-23T23:41:31.7395640Z    Compiling chrono v0.4.45
+2026-10-23T23:41:34.9021200Z    Compiling futures-executor v0.3.33
+2026-10-23T23:41:35.3323230Z    Compiling dary_heap v0.3.9
+2026-10-23T23:41:35.4485650Z    Compiling unicode-normalization-alignments v0.1.12
+2026-10-23T23:41:36.0788860Z    Compiling bstr v1.13.0
+2026-10-23T23:41:36.6749410Z    Compiling sqlite-vec v0.1.7
+2026-10-23T23:41:36.8578920Z    Compiling same-file v1.0.6
+2026-10-23T23:41:36.9395290Z    Compiling winnow v1.0.4
+2026-10-23T23:41:37.3064510Z    Compiling rmcp v2.2.0
+2026-10-23T23:41:37.4770400Z    Compiling const-oid v0.10.2
+2026-10-23T23:41:37.6819830Z    Compiling option-ext v0.2.0
+2026-10-23T23:41:37.7124600Z    Compiling dyn-clone v1.0.20
+2026-10-23T23:41:37.7742340Z    Compiling unicode_categories v0.1.1
+2026-10-23T23:41:37.8897340Z    Compiling tinyvec_macros v0.1.1
+2026-10-23T23:41:37.9195530Z    Compiling tinyvec v1.12.0
+2026-10-23T23:41:38.2629890Z    Compiling tokenizers v0.22.2
+2026-10-23T23:41:51.7448390Z    Compiling tokio-rustls v0.26.4
+2026-10-23T23:41:51.9622770Z    Compiling hyper-rustls v0.27.9
+2026-10-23T23:41:52.4260180Z    Compiling rustls-platform-verifier v0.7.0
+2026-10-23T23:41:52.9033960Z    Compiling schemars v1.2.1
+2026-10-23T23:41:58.7049950Z    Compiling dirs-sys v0.5.0
+2026-10-23T23:41:58.8069910Z    Compiling digest v0.11.3
+2026-10-23T23:41:58.9295940Z    Compiling toml_parser v1.1.2+spec-1.1.0
+2026-10-23T23:42:00.3354890Z    Compiling walkdir v2.5.0
+2026-10-23T23:42:02.2694390Z    Compiling globset v0.4.19
+2026-10-23T23:42:05.5115720Z    Compiling futures v0.3.33
+2026-10-23T23:42:05.5679470Z    Compiling rmcp-macros v2.2.0
+2026-10-23T23:42:06.5729600Z    Compiling ort v2.0.0-rc.13
+2026-10-23T23:42:09.3816140Z    Compiling tower-http v0.6.11
+2026-10-23T23:42:10.8804400Z    Compiling safetensors v0.8.0
+2026-10-23T23:42:13.8422980Z    Compiling http-body-util v0.1.4
+2026-10-23T23:42:13.9305680Z    Compiling tokio-util v0.7.18
+2026-10-23T23:42:14.1317610Z    Compiling serde_spanned v1.1.1
+2026-10-23T23:42:14.2102160Z    Compiling toml_datetime v1.1.1+spec-1.1.0
+2026-10-23T23:42:14.5588710Z    Compiling async-trait v0.1.91
+2026-10-23T23:42:14.8278860Z    Compiling cpufeatures v0.3.0
+2026-10-23T23:42:14.9059970Z    Compiling ryu-js v1.0.3
+2026-10-23T23:42:15.3351930Z    Compiling roff v1.1.1
+2026-10-23T23:42:15.5196450Z    Compiling hsum v0.1.0-alpha.4 (/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/tmp.qUSr2Jgg5s/hsum-0.1.0-alpha.4)
+2026-10-23T23:42:15.6993290Z    Compiling powerfmt v0.2.0
+2026-10-23T23:42:15.8562660Z    Compiling fallible-iterator v0.3.0
+2026-10-23T23:42:15.8707100Z    Compiling deranged v0.5.8
+2026-10-23T23:42:16.1269250Z    Compiling time-core v0.1.9
+2026-10-23T23:42:16.2829540Z    Compiling toml_writer v1.1.2+spec-1.1.0
+2026-10-23T23:42:16.5546450Z    Compiling num-conv v0.2.2
+2026-10-23T23:42:16.6663150Z    Compiling fallible-streaming-iterator v0.1.9
+2026-10-23T23:42:16.7740600Z    Compiling rusqlite v0.39.0
+2026-10-23T23:42:16.9522120Z    Compiling time v0.3.53
+2026-10-23T23:42:19.1333830Z    Compiling toml v1.1.3+spec-1.1.0
+2026-10-23T23:42:20.9843090Z    Compiling clap_mangen v0.3.0
+2026-10-23T23:42:23.8110230Z    Compiling serde_json_canonicalizer v0.3.2
+2026-10-23T23:42:24.1872080Z    Compiling sha2 v0.11.0
+2026-10-23T23:42:24.7976870Z    Compiling reqwest v0.13.4
+2026-10-23T23:42:25.9358300Z    Compiling fastembed v5.17.4
+2026-10-23T23:42:37.7610170Z    Compiling ignore v0.4.30
+2026-10-23T23:42:40.2737970Z    Compiling directories v6.0.0
+2026-10-23T23:42:40.5153650Z    Compiling unicode-normalization v0.1.25
+2026-10-23T23:42:40.9486480Z    Compiling clap_complete v4.6.7
+2026-10-23T23:42:45.1692910Z    Compiling uuid v1.24.0
+2026-10-23T23:42:45.2446390Z    Compiling uzers v0.12.2
+2026-10-23T23:42:45.7657700Z    Compiling hex v0.4.3
+2026-10-23T23:43:54.6754620Z     Finished `release` profile [optimized] target(s) in 4m 23s
+2026-10-23T23:43:54.7228240Z   Installing /var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/tmp.qUSr2Jgg5s/install/bin/hsum
+2026-10-23T23:43:54.7236580Z    Installed package `hsum v0.1.0-alpha.4 (/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/tmp.qUSr2Jgg5s/hsum-0.1.0-alpha.4)` (executable `hsum`)
+2026-10-23T23:43:54.7241900Z warning: be sure to add `/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/tmp.qUSr2Jgg5s/install/bin` to your PATH to be able to run the installed binaries
+2026-10-23T23:43:54.9210710Z source package smoke passed: hsum-0.1.0-alpha.4.crate sha256=15ebda2df84e8c2dbf2047314391001c705128fb64f9adb2d1649919e8c127ce
+2026-10-23T23:43:54.9689990Z ##[group]Run cargo +1.91.0 build --locked --release
+2026-10-23T23:43:54.9692350Z [36;1mcargo +1.91.0 build --locked --release[0m
+2026-10-23T23:43:55.0098620Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:43:55.0111040Z env:
+2026-10-23T23:43:55.0111340Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:43:55.0111850Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:43:55.0112350Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:43:55.0112770Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:43:55.0113220Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:43:55.0113550Z ##[endgroup]
+2026-10-23T23:43:55.6613500Z    Compiling hsum v0.1.0-alpha.4 (/Users/runner/work/hSUM/hSUM)
+2026-10-23T23:45:01.2910610Z     Finished `release` profile [optimized] target(s) in 1m 06s
+2026-10-23T23:45:01.3590020Z ##[group]Run bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
+2026-10-23T23:45:01.3590920Z [36;1mbash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"[0m
+2026-10-23T23:45:01.4016950Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:45:01.4017830Z env:
+2026-10-23T23:45:01.4019200Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:45:01.4020220Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:45:01.4021170Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:45:01.4022070Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:45:01.4023170Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:45:01.4023810Z   RUSTUP_TOOLCHAIN: 1.91.0
+2026-10-23T23:45:01.4024350Z ##[endgroup]
+2026-10-23T23:45:01.9529170Z    Compiling proc-macro2 v1.0.107
+2026-10-23T23:45:01.9539910Z    Compiling libc v0.2.186
+2026-10-23T23:45:01.9543220Z    Compiling unicode-ident v1.0.24
+2026-10-23T23:45:02.0560360Z    Compiling quote v1.0.47
+2026-10-23T23:45:02.3542770Z    Compiling find-msvc-tools v0.1.9
+2026-10-23T23:45:02.5588420Z    Compiling shlex v2.0.1
+2026-10-23T23:45:02.9167070Z    Compiling jobserver v0.1.35
+2026-10-23T23:45:03.0662960Z    Compiling syn v2.0.119
+2026-10-23T23:45:03.1366900Z    Compiling cc v1.3.0
+2026-10-23T23:45:03.1524540Z    Compiling syn v3.0.1
+2026-10-23T23:45:04.3791690Z    Compiling memchr v2.8.3
+2026-10-23T23:45:05.0477520Z    Compiling pkg-config v0.3.33
+2026-10-23T23:45:05.4358080Z    Compiling serde_core v1.0.229
+2026-10-23T23:45:06.4067330Z    Compiling synstructure v0.13.2
+2026-10-23T23:45:06.9274100Z    Compiling itoa v1.0.18
+2026-10-23T23:45:07.1212510Z    Compiling once_cell v1.21.4
+2026-10-23T23:45:07.3148640Z    Compiling stable_deref_trait v1.2.1
+2026-10-23T23:45:07.3599670Z    Compiling pin-project-lite v0.2.17
+2026-10-23T23:45:07.4267520Z    Compiling futures-core v0.3.33
+2026-10-23T23:45:07.4870970Z    Compiling zerofrom-derive v0.1.7
+2026-10-23T23:45:07.5375960Z    Compiling yoke-derive v0.8.2
+2026-10-23T23:45:08.0775900Z    Compiling bitflags v2.13.1
+2026-10-23T23:45:08.4675500Z    Compiling autocfg v1.5.1
+2026-10-23T23:45:08.5234820Z    Compiling smallvec v1.15.2
+2026-10-23T23:45:08.6884350Z    Compiling zerofrom v0.1.8
+2026-10-23T23:45:08.7491660Z    Compiling zerovec-derive v0.11.3
+2026-10-23T23:45:08.8044310Z    Compiling yoke v0.8.3
+2026-10-23T23:45:08.8652620Z    Compiling ident_case v1.0.1
+2026-10-23T23:45:08.9335490Z    Compiling bytes v1.12.1
+2026-10-23T23:45:08.9853180Z    Compiling zmij v1.0.23
+2026-10-23T23:45:09.2301330Z    Compiling serde v1.0.229
+2026-10-23T23:45:09.4698070Z    Compiling cfg-if v1.0.4
+2026-10-23T23:45:09.5102450Z    Compiling strsim v0.11.1
+2026-10-23T23:45:09.7623200Z    Compiling zerovec v0.11.6
+2026-10-23T23:45:09.7926910Z    Compiling serde_derive v1.0.229
+2026-10-23T23:45:09.8231590Z    Compiling displaydoc v0.2.7
+2026-10-23T23:45:10.3442540Z    Compiling cmake v0.1.58
+2026-10-23T23:45:10.5116480Z    Compiling fs_extra v1.3.0
+2026-10-23T23:45:10.6391750Z    Compiling dunce v1.0.5
+2026-10-23T23:45:10.6794130Z    Compiling futures-sink v0.3.33
+2026-10-23T23:45:10.7000810Z    Compiling aws-lc-sys v0.46.0
+2026-10-23T23:45:10.7343500Z    Compiling ring v0.17.14
+2026-10-23T23:45:13.2181210Z    Compiling futures-channel v0.3.33
+2026-10-23T23:45:13.5107910Z    Compiling num-traits v0.2.19
+2026-10-23T23:45:13.6644160Z    Compiling tokio-macros v2.7.1
+2026-10-23T23:45:14.2874740Z    Compiling socket2 v0.6.5
+2026-10-23T23:45:15.0384840Z    Compiling mio v1.2.2
+2026-10-23T23:45:15.9671810Z    Compiling core-foundation-sys v0.8.7
+2026-10-23T23:45:16.1292390Z    Compiling crossbeam-utils v0.8.22
+2026-10-23T23:45:16.2958420Z    Compiling zeroize v1.9.0
+2026-10-23T23:45:16.3910620Z    Compiling rustls-pki-types v1.15.1
+2026-10-23T23:45:16.6879240Z    Compiling getrandom v0.2.17
+2026-10-23T23:45:16.7657850Z    Compiling tokio v1.53.3
+2026-10-23T23:45:16.8779390Z    Compiling tinystr v0.8.3
+2026-10-23T23:45:17.0203220Z    Compiling futures-macro v0.3.33
+2026-10-23T23:45:17.5679150Z    Compiling futures-io v0.3.33
+2026-10-23T23:45:17.6649590Z    Compiling crossbeam-epoch v0.9.20
+2026-10-23T23:45:17.8107220Z    Compiling slab v0.4.12
+2026-10-23T23:45:17.9449010Z    Compiling litemap v0.8.2
+2026-10-23T23:45:18.1092220Z    Compiling writeable v0.6.3
+2026-10-23T23:45:18.2844000Z    Compiling aws-lc-rs v1.18.2
+2026-10-23T23:45:18.4627730Z    Compiling futures-task v0.3.33
+2026-10-23T23:45:18.5764590Z    Compiling untrusted v0.9.0
+2026-10-23T23:45:18.6277670Z    Compiling httparse v1.10.1
+2026-10-23T23:45:20.6215760Z    Compiling futures-util v0.3.33
+2026-10-23T23:45:23.0430950Z    Compiling icu_locale_core v2.2.0
+2026-10-23T23:45:27.3030070Z    Compiling zerotrie v0.2.4
+2026-10-23T23:45:27.6356780Z    Compiling potential_utf v0.1.5
+2026-10-23T23:45:27.7453110Z    Compiling crossbeam-deque v0.8.7
+2026-10-23T23:45:27.7485390Z    Compiling icu_properties_data v2.2.0
+2026-10-23T23:45:27.8985810Z    Compiling fnv v1.0.7
+2026-10-23T23:45:27.9346160Z    Compiling zerocopy v0.8.54
+2026-10-23T23:45:28.1556390Z    Compiling utf8_iter v1.0.4
+2026-10-23T23:45:28.2619730Z    Compiling log v0.4.33
+2026-10-23T23:45:28.3671430Z    Compiling rustls v0.23.46
+2026-10-23T23:45:28.5178950Z    Compiling getrandom v0.3.4
+2026-10-23T23:45:28.5481830Z    Compiling serde_json v1.0.150
+2026-10-23T23:45:28.6905950Z    Compiling icu_normalizer_data v2.2.0
+2026-10-23T23:45:28.7981360Z    Compiling http v1.5.0
+2026-10-23T23:45:28.8347890Z    Compiling icu_collections v2.2.0
+2026-10-23T23:45:29.4920570Z    Compiling darling_core v0.20.11
+2026-10-23T23:45:29.7982520Z    Compiling icu_provider v2.2.0
+2026-10-23T23:45:30.6729660Z    Compiling rustls-webpki v0.103.16
+2026-10-23T23:45:31.5443890Z    Compiling base64 v0.22.1
+2026-10-23T23:45:31.7736790Z    Compiling subtle v2.6.1
+2026-10-23T23:45:31.8537830Z    Compiling byteorder v1.5.0
+2026-10-23T23:45:32.1455280Z    Compiling http-body v1.1.0
+2026-10-23T23:45:33.4850550Z    Compiling socks v0.3.4
+2026-10-23T23:45:33.7199930Z    Compiling ureq-proto v0.6.0
+2026-10-23T23:45:34.4228700Z    Compiling darling_macro v0.20.11
+2026-10-23T23:45:39.8471970Z    Compiling webpki-roots v1.0.10
+2026-10-23T23:45:39.8968910Z    Compiling aho-corasick v1.1.4
+2026-10-23T23:45:41.1957810Z    Compiling getrandom v0.4.3
+2026-10-23T23:45:41.3483070Z    Compiling percent-encoding v2.3.2
+2026-10-23T23:45:41.7679090Z    Compiling utf8parse v0.2.2
+2026-10-23T23:45:41.9022050Z    Compiling rayon-core v1.13.0
+2026-10-23T23:45:42.3531250Z    Compiling utf8-zero v0.8.1
+2026-10-23T23:45:42.5041470Z    Compiling system-configuration-sys v0.6.0
+2026-10-23T23:45:42.9180270Z    Compiling regex-syntax v0.8.11
+2026-10-23T23:45:44.8420910Z    Compiling rustversion v1.0.23
+2026-10-23T23:45:45.1334060Z    Compiling regex-automata v0.4.16
+2026-10-23T23:45:50.5679910Z    Compiling ureq v3.3.0
+2026-10-23T23:45:52.0242540Z    Compiling anstyle-parse v1.0.0
+2026-10-23T23:45:52.1937500Z    Compiling icu_normalizer v2.2.0
+2026-10-23T23:45:53.4938000Z    Compiling icu_properties v2.2.0
+2026-10-23T23:45:54.9772610Z    Compiling darling v0.20.11
+2026-10-23T23:45:55.0243820Z    Compiling matrixmultiply v0.3.11
+2026-10-23T23:45:55.2412250Z    Compiling tracing-attributes v0.1.31
+2026-10-23T23:45:56.1497090Z    Compiling tracing-core v0.1.36
+2026-10-23T23:45:57.1059790Z    Compiling onig_sys v69.9.3
+2026-10-23T23:45:57.3822760Z    Compiling colorchoice v1.0.5
+2026-10-23T23:45:57.4024840Z    Compiling hmac-sha256 v1.1.14
+2026-10-23T23:45:57.4413640Z    Compiling rustix v1.1.4
+2026-10-23T23:45:57.5026050Z    Compiling try-lock v0.2.5
+2026-10-23T23:45:57.6376760Z    Compiling typenum v1.20.1
+2026-10-23T23:45:57.7351360Z    Compiling is_terminal_polyfill v1.70.2
+2026-10-23T23:45:57.7773320Z    Compiling thiserror v2.0.19
+2026-10-23T23:45:57.9808330Z    Compiling anstyle-query v1.1.5
+2026-10-23T23:45:58.0117380Z    Compiling lzma-rust2 v0.15.8
+2026-10-23T23:45:58.2737990Z    Compiling either v1.17.0
+2026-10-23T23:45:58.4810980Z    Compiling anstyle v1.0.14
+2026-10-23T23:45:58.5468450Z    Compiling tower-service v0.3.3
+2026-10-23T23:45:58.5724080Z    Compiling version_check v0.9.5
+2026-10-23T23:45:58.6607640Z    Compiling anstream v1.0.0
+2026-10-23T23:45:58.8153160Z    Compiling ahash v0.8.12
+2026-10-23T23:45:59.0216590Z    Compiling ort-sys v2.0.0-rc.13
+2026-10-23T23:45:59.3403790Z    Compiling hybrid-array v0.4.13
+2026-10-23T23:46:00.4203570Z    Compiling want v0.3.1
+2026-10-23T23:46:00.5533590Z    Compiling tracing v0.1.44
+2026-10-23T23:46:01.0086250Z    Compiling derive_builder_core v0.20.2
+2026-10-23T23:46:01.8449170Z    Compiling idna_adapter v1.2.2
+2026-10-23T23:46:04.5547910Z    Compiling ppv-lite86 v0.2.21
+2026-10-23T23:46:04.7337710Z    Compiling rand_core v0.9.5
+2026-10-23T23:46:04.9095560Z    Compiling core-foundation v0.9.4
+2026-10-23T23:46:05.3072360Z    Compiling darling_core v0.23.0
+2026-10-23T23:46:07.2742890Z    Compiling thiserror-impl v2.0.19
+2026-10-23T23:46:08.2271140Z    Compiling errno v0.3.14
+2026-10-23T23:46:08.3107050Z    Compiling esaxx-rs v0.1.10
+2026-10-23T23:46:08.4499010Z    Compiling minimal-lexical v0.2.1
+2026-10-23T23:46:08.6542480Z    Compiling heck v0.5.0
+2026-10-23T23:46:08.7796140Z    Compiling atomic-waker v1.1.2
+2026-10-23T23:46:08.8222330Z    Compiling clap_lex v1.1.0
+2026-10-23T23:46:09.0568120Z    Compiling rawpointer v0.2.1
+2026-10-23T23:46:09.0920860Z    Compiling ref-cast v1.0.26
+2026-10-23T23:46:09.2533830Z    Compiling vcpkg v0.2.15
+2026-10-23T23:46:10.5560080Z    Compiling paste v1.0.15
+2026-10-23T23:46:10.8550080Z    Compiling pastey v0.2.3
+2026-10-23T23:46:11.6124100Z    Compiling clap_builder v4.6.2
+2026-10-23T23:46:14.0938520Z    Compiling libsqlite3-sys v0.37.0
+2026-10-23T23:46:15.9195390Z    Compiling hyper v1.11.0
+2026-10-23T23:46:19.6063330Z    Compiling clap_derive v4.6.1
+2026-10-23T23:46:20.8956550Z    Compiling nom v7.1.3
+2026-10-23T23:46:25.0381120Z    Compiling darling_macro v0.23.0
+2026-10-23T23:46:25.2503580Z    Compiling system-configuration v0.7.0
+2026-10-23T23:46:25.3405380Z    Compiling rand_chacha v0.9.0
+2026-10-23T23:46:25.6627290Z    Compiling castaway v0.2.4
+2026-10-23T23:46:25.7220150Z    Compiling rayon v1.12.0
+2026-10-23T23:46:27.1353720Z    Compiling idna v1.1.0
+2026-10-23T23:46:28.0326580Z    Compiling derive_builder_macro v0.20.2
+2026-10-23T23:46:29.6070430Z    Compiling itertools v0.14.0
+2026-10-23T23:46:29.9945300Z    Compiling form_urlencoded v1.2.2
+2026-10-23T23:46:30.1576820Z    Compiling num-integer v0.1.46
+2026-10-23T23:46:30.5633960Z    Compiling num-complex v0.4.6
+2026-10-23T23:46:30.8222690Z    Compiling core-foundation v0.10.1
+2026-10-23T23:46:30.8618580Z    Compiling security-framework-sys v2.17.0
+2026-10-23T23:46:30.9702670Z    Compiling sync_wrapper v1.0.2
+2026-10-23T23:46:31.0048900Z    Compiling monostate-impl v0.1.18
+2026-10-23T23:46:31.2123740Z    Compiling ref-cast-impl v1.0.26
+2026-10-23T23:46:31.2401690Z    Compiling serde_derive_internals v0.29.1
+2026-10-23T23:46:31.5118420Z    Compiling ryu v1.0.23
+2026-10-23T23:46:31.7462860Z    Compiling foldhash v0.2.0
+2026-10-23T23:46:31.8842310Z    Compiling fastrand v2.5.0
+2026-10-23T23:46:31.9481350Z    Compiling equivalent v1.0.2
+2026-10-23T23:46:32.0554670Z    Compiling base64 v0.13.1
+2026-10-23T23:46:32.3248720Z    Compiling unicode-segmentation v1.13.3
+2026-10-23T23:46:32.7170180Z    Compiling anyhow v1.0.104
+2026-10-23T23:46:32.8937960Z    Compiling allocator-api2 v0.2.21
+2026-10-23T23:46:32.9184410Z    Compiling tower-layer v0.3.3
+2026-10-23T23:46:33.0854070Z    Compiling static_assertions v1.1.0
+2026-10-23T23:46:33.1194980Z    Compiling ipnet v2.12.0
+2026-10-23T23:46:33.1875110Z    Compiling macro_rules_attribute-proc_macro v0.2.3
+2026-10-23T23:46:33.5092630Z    Compiling macro_rules_attribute v0.2.3
+2026-10-23T23:46:33.5457610Z    Compiling hyper-util v0.1.20
+2026-10-23T23:46:34.6186230Z    Compiling hashbrown v0.16.1
+2026-10-23T23:46:35.3247390Z    Compiling compact_str v0.9.1
+2026-10-23T23:46:36.3099980Z    Compiling tower v0.5.3
+2026-10-23T23:46:36.7599820Z    Compiling spm_precompiled v0.1.4
+2026-10-23T23:46:37.2085880Z    Compiling tempfile v3.27.0
+2026-10-23T23:46:37.4007870Z    Compiling schemars_derive v1.2.1
+2026-10-23T23:46:38.0512950Z    Compiling monostate v0.1.18
+2026-10-23T23:46:38.2461480Z    Compiling security-framework v3.7.0
+2026-10-23T23:46:38.6129390Z    Compiling ndarray v0.17.2
+2026-10-23T23:46:41.5770960Z    Compiling rayon-cond v0.4.0
+2026-10-23T23:46:41.6604940Z    Compiling url v2.5.8
+2026-10-23T23:46:44.1131780Z    Compiling derive_builder v0.20.2
+2026-10-23T23:46:44.1695600Z    Compiling rand v0.9.5
+2026-10-23T23:46:44.5052790Z    Compiling darling v0.23.0
+2026-10-23T23:46:44.8455480Z    Compiling clap v4.6.2
+2026-10-23T23:46:44.9445130Z    Compiling onig v6.5.3
+2026-10-23T23:46:46.7359210Z    Compiling crypto-common v0.2.2
+2026-10-23T23:46:48.2283620Z    Compiling block-buffer v0.12.1
+2026-10-23T23:46:48.3470170Z    Compiling regex v1.13.1
+2026-10-23T23:46:49.6909030Z    Compiling chrono v0.4.45
+2026-10-23T23:46:52.1995380Z    Compiling futures-executor v0.3.33
+2026-10-23T23:46:52.5839580Z    Compiling dary_heap v0.3.9
+2026-10-23T23:46:52.6951220Z    Compiling unicode-normalization-alignments v0.1.12
+2026-10-23T23:46:53.3172960Z    Compiling bstr v1.13.0
+2026-10-23T23:46:54.0562150Z    Compiling sqlite-vec v0.1.7
+2026-10-23T23:46:54.2697480Z    Compiling winnow v1.0.4
+2026-10-23T23:46:54.6883170Z    Compiling const-oid v0.10.2
+2026-10-23T23:46:54.8683650Z    Compiling same-file v1.0.6
+2026-10-23T23:46:54.9513410Z    Compiling rmcp v2.2.0
+2026-10-23T23:46:55.1149770Z    Compiling dyn-clone v1.0.20
+2026-10-23T23:46:55.2265170Z    Compiling unicode_categories v0.1.1
+2026-10-23T23:46:55.3534690Z    Compiling option-ext v0.2.0
+2026-10-23T23:46:55.3996710Z    Compiling tinyvec_macros v0.1.1
+2026-10-23T23:46:55.4389150Z    Compiling tinyvec v1.12.0
+2026-10-23T23:46:55.8061910Z    Compiling dirs-sys v0.5.0
+2026-10-23T23:46:55.8956890Z    Compiling tokenizers v0.22.2
+2026-10-23T23:47:10.4426670Z    Compiling tokio-rustls v0.26.4
+2026-10-23T23:47:10.6675830Z    Compiling hyper-rustls v0.27.9
+2026-10-23T23:47:11.1679700Z    Compiling rustls-platform-verifier v0.7.0
+2026-10-23T23:47:11.7462100Z    Compiling schemars v1.2.1
+2026-10-23T23:47:16.7161890Z    Compiling walkdir v2.5.0
+2026-10-23T23:47:17.3871440Z    Compiling digest v0.11.3
+2026-10-23T23:47:17.4820480Z    Compiling toml_parser v1.1.2+spec-1.1.0
+2026-10-23T23:47:20.0294120Z    Compiling globset v0.4.19
+2026-10-23T23:47:23.6397430Z    Compiling futures v0.3.33
+2026-10-23T23:47:23.6706400Z    Compiling rmcp-macros v2.2.0
+2026-10-23T23:47:24.4816140Z    Compiling ort v2.0.0-rc.13
+2026-10-23T23:47:25.2450590Z    Compiling tower-http v0.6.11
+2026-10-23T23:47:25.7840610Z    Compiling safetensors v0.8.0
+2026-10-23T23:47:28.4707190Z    Compiling http-body-util v0.1.4
+2026-10-23T23:47:28.6762770Z    Compiling tokio-util v0.7.18
+2026-10-23T23:47:29.4672930Z    Compiling serde_spanned v1.1.1
+2026-10-23T23:47:29.5754590Z    Compiling toml_datetime v1.1.1+spec-1.1.0
+2026-10-23T23:47:29.8324430Z    Compiling async-trait v0.1.91
+2026-10-23T23:47:29.9054220Z    Compiling cpufeatures v0.3.0
+2026-10-23T23:47:29.9566830Z    Compiling hsum v0.1.0-alpha.4 (/Users/runner/work/hSUM/hSUM)
+2026-10-23T23:47:30.1085220Z    Compiling deranged v0.5.8
+2026-10-23T23:47:30.5295940Z    Compiling toml_writer v1.1.2+spec-1.1.0
+2026-10-23T23:47:30.6687900Z    Compiling powerfmt v0.2.0
+2026-10-23T23:47:30.8319410Z    Compiling num-conv v0.2.2
+2026-10-23T23:47:30.9524020Z    Compiling roff v1.1.1
+2026-10-23T23:47:30.9950590Z    Compiling fallible-iterator v0.3.0
+2026-10-23T23:47:31.2542510Z    Compiling ryu-js v1.0.3
+2026-10-23T23:47:31.3560800Z    Compiling time-core v0.1.9
+2026-10-23T23:47:31.4790540Z    Compiling fallible-streaming-iterator v0.1.9
+2026-10-23T23:47:31.5616800Z    Compiling rusqlite v0.39.0
+2026-10-23T23:47:31.6428130Z    Compiling time v0.3.53
+2026-10-23T23:47:34.6798120Z    Compiling serde_json_canonicalizer v0.3.2
+2026-10-23T23:47:35.9086630Z    Compiling clap_mangen v0.3.0
+2026-10-23T23:47:36.0978940Z    Compiling toml v1.1.3+spec-1.1.0
+2026-10-23T23:47:38.8010130Z    Compiling sha2 v0.11.0
+2026-10-23T23:47:39.4397830Z    Compiling reqwest v0.13.4
+2026-10-23T23:47:40.8724890Z    Compiling fastembed v5.17.4
+2026-10-23T23:47:54.2315750Z    Compiling ignore v0.4.30
+2026-10-23T23:47:55.4453590Z    Compiling directories v6.0.0
+2026-10-23T23:47:55.7485500Z    Compiling unicode-normalization v0.1.25
+2026-10-23T23:47:56.4914070Z    Compiling clap_complete v4.6.7
+2026-10-23T23:48:00.4633930Z    Compiling uuid v1.24.0
+2026-10-23T23:48:01.0119650Z    Compiling uzers v0.12.2
+2026-10-23T23:48:01.5291520Z    Compiling hex v0.4.3
+2026-10-23T23:49:08.9838760Z     Finished `release` profile [optimized] target(s) in 4m 07s
+2026-10-23T23:49:09.6925280Z reproducible release build passed: a0b73d34a1ae00cdf794abb1381519f2b026da77982e0bef901890f306a24ad4
+2026-10-23T23:49:10.0724520Z ##[group]Run bash scripts/release-smoke.sh "$PWD/target/release/hsum"
+2026-10-23T23:49:10.0725330Z [36;1mbash scripts/release-smoke.sh "$PWD/target/release/hsum"[0m
+2026-10-23T23:49:10.1032810Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:49:10.1033180Z env:
+2026-10-23T23:49:10.1033510Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:10.1033970Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:49:10.1034570Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:10.1034970Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:10.1035430Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:10.1035750Z ##[endgroup]
+2026-10-23T23:49:10.6505560Z first_init_seconds=0
+2026-10-23T23:49:11.1719300Z first_cli_citation_seconds=0
+2026-10-23T23:49:11.1721450Z mcp_round_trip_seconds=1
+2026-10-23T23:49:11.1722390Z release smoke passed
+2026-10-23T23:49:11.1852460Z ##[group]Run bash scripts/no-network-smoke.sh "$PWD/target/release/hsum"
+2026-10-23T23:49:11.1852950Z [36;1mbash scripts/no-network-smoke.sh "$PWD/target/release/hsum"[0m
+2026-10-23T23:49:11.1901640Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:49:11.1902560Z env:
+2026-10-23T23:49:11.1903270Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:11.1904610Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:49:11.1905810Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:11.1907000Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:11.1908260Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:11.1909190Z ##[endgroup]
+2026-10-23T23:49:11.4195380Z first_init_seconds=0
+2026-10-23T23:49:11.9440120Z first_cli_citation_seconds=0
+2026-10-23T23:49:11.9441590Z mcp_round_trip_seconds=0
+2026-10-23T23:49:11.9442270Z release smoke passed
+2026-10-23T23:49:17.1448510Z installer smoke passed
+2026-10-23T23:49:17.1768670Z ##[group]Run bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
+2026-10-23T23:49:17.1769560Z [36;1mbash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"[0m
+2026-10-23T23:49:17.1894440Z shell: /bin/bash --noprofile --norc -e -o pipefail {0}
+2026-10-23T23:49:17.1909510Z env:
+2026-10-23T23:49:17.1911640Z   pythonLocation: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:17.1913400Z   PKG_CONFIG_PATH: /Users/runner/hostedtoolcache/Python/3.13.15/arm64/lib/pkgconfig
+2026-10-23T23:49:17.1914820Z   Python_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:17.1916060Z   Python2_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:17.1917170Z   Python3_ROOT_DIR: /Users/runner/hostedtoolcache/Python/3.13.15/arm64
+2026-10-23T23:49:17.1918200Z ##[endgroup]
+2026-10-23T23:49:19.1578580Z released alpha.1 upgrade smoke passed
+2026-10-23T23:49:19.1761730Z Post job cleanup.
+2026-10-23T23:49:19.5374790Z Post job cleanup.
+2026-10-23T23:49:19.6284490Z [command]/opt/homebrew/bin/git version
+2026-10-23T23:49:19.6359480Z git version 2.55.0
+2026-10-23T23:49:19.6381200Z Copying '/Users/runner/.gitconfig' to '/Users/runner/work/_temp/d9f79155-0b14-4821-91b7-7c4402fbf52a/.gitconfig'
+2026-10-23T23:49:19.6390470Z Temporarily overriding HOME='/Users/runner/work/_temp/d9f79155-0b14-4821-91b7-7c4402fbf52a' before making global git config changes
+2026-10-23T23:49:19.6392310Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-23T23:49:19.6395420Z [command]/opt/homebrew/bin/git config --global --add safe.directory /Users/runner/work/hSUM/hSUM
+2026-10-23T23:49:19.6477570Z Removing SSH command configuration
+2026-10-23T23:49:19.6482900Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-23T23:49:19.6593580Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-23T23:49:19.7600930Z Removing HTTP extra header
+2026-10-23T23:49:19.7611410Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2026-10-23T23:49:19.7679920Z [command]/opt/homebrew/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2026-10-23T23:49:19.8999160Z Removing includeIf entries pointing to credentials config files
+2026-10-23T23:49:19.9112830Z [command]/opt/homebrew/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+2026-10-23T23:49:19.9418030Z [command]/opt/homebrew/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+2026-10-23T23:49:20.0926070Z Cleaning up orphan processes

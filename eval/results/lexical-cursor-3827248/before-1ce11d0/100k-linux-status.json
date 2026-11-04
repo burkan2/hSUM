@@ -1,0 +1,115 @@
+{
+  "conclusion": "",
+  "headSha": "1ce11d00bf8cad949c12a9c496ab7dba3675717f",
+  "jobs": [
+    {
+      "completedAt": "0001-01-01T00:00:00Z",
+      "conclusion": "",
+      "databaseId": 120589911615,
+      "name": "Linux x86_64 100k qualification",
+      "startedAt": "2026-10-23T18:37:29Z",
+      "status": "in_progress",
+      "steps": [
+        {
+          "completedAt": "2026-10-23T18:37:31Z",
+          "conclusion": "success",
+          "name": "Set up job",
+          "number": 1,
+          "startedAt": "2026-10-23T18:37:30Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T18:37:33Z",
+          "conclusion": "success",
+          "name": "Run actions/checkout@v6",
+          "number": 2,
+          "startedAt": "2026-10-23T18:37:31Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T18:37:33Z",
+          "conclusion": "success",
+          "name": "Install the qualification Python runtime",
+          "number": 3,
+          "startedAt": "2026-10-23T18:37:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T18:37:33Z",
+          "conclusion": "success",
+          "name": "Confirm the release runner",
+          "number": 4,
+          "startedAt": "2026-10-23T18:37:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T18:37:39Z",
+          "conclusion": "success",
+          "name": "Install the pinned Rust toolchain",
+          "number": 5,
+          "startedAt": "2026-10-23T18:37:33Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T18:40:07Z",
+          "conclusion": "success",
+          "name": "Build the release candidate",
+          "number": 6,
+          "startedAt": "2026-10-23T18:37:39Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "2026-10-23T18:40:09Z",
+          "conclusion": "success",
+          "name": "Install the pinned model in an isolated home",
+          "number": 7,
+          "startedAt": "2026-10-23T18:40:07Z",
+          "status": "completed"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Prepare exactly 100,000 embedded passages",
+          "number": 8,
+          "startedAt": "2026-10-23T18:40:09Z",
+          "status": "in_progress"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Run the canonical cold and warm protocol",
+          "number": 9,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Upload the immutable raw evidence",
+          "number": 10,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Post Install the qualification Python runtime",
+          "number": 19,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        },
+        {
+          "completedAt": "0001-01-01T00:00:00Z",
+          "conclusion": "",
+          "name": "Post Run actions/checkout@v6",
+          "number": 20,
+          "startedAt": "0001-01-01T00:00:00Z",
+          "status": "pending"
+        }
+      ],
+      "url": "https://github.com/burkan2/hSUM/actions/runs/40004812595/job/120589911615"
+    }
+  ],
+  "status": "in_progress",
+  "url": "https://github.com/burkan2/hSUM/actions/runs/40004812595"
+}

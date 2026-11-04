@@ -1,0 +1,544 @@
+name: Stable release draft and publish
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing signed canonical vX.Y.Z tag
+        required: true
+        type: string
+      action:
+        description: Prepare a draft or verify offline signatures and publish
+        type: choice
+        options: [prepare-draft, publish-signed-draft]
+        default: prepare-draft
+        required: true
+
+permissions: {}
+concurrency:
+  group: stable-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  CARGO_INCREMENTAL: '0'
+
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      commit: ${{ steps.tag.outputs.commit }}
+      tag_object: ${{ steps.tag.outputs.tag_object }}
+      public_key: ${{ steps.authority.outputs.public_key }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Verify the exact signed stable source
+        id: tag
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          RELEASE_GPG_FINGERPRINT: ${{ vars.RELEASE_GPG_FINGERPRINT }}
+          RELEASE_GPG_PUBLIC_KEY: ${{ vars.RELEASE_GPG_PUBLIC_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$RELEASE_GPG_FINGERPRINT" =~ ^[0-9A-F]{40}([0-9A-F]{24})?$ ]]
+          test -n "$RELEASE_GPG_PUBLIC_KEY"
+          test "$(git cat-file -t "refs/tags/$RELEASE_TAG")" = tag
+          printf '%s\n' "$RELEASE_GPG_PUBLIC_KEY" | gpg --batch --import
+          git verify-tag --raw "refs/tags/$RELEASE_TAG" 2> "$RUNNER_TEMP/tag-verification.txt"
+          python3 - "$RUNNER_TEMP/tag-verification.txt" <<'PYVERIFY'
+          import os,pathlib,sys
+          lines=[line.split() for line in pathlib.Path(sys.argv[1]).read_text().splitlines() if line.startswith('[GNUPG:] VALIDSIG ')]
+          assert len(lines)==1 and os.environ['RELEASE_GPG_FINGERPRINT'] in (lines[0][2],lines[0][-1]), 'wrong tag signer'
+          PYVERIFY
+          commit=$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")
+          python3 scripts/verify_stable_controls.py tag "$RELEASE_TAG" "$commit"
+          test "$GITHUB_REF" = "refs/tags/$RELEASE_TAG"
+          test "$GITHUB_SHA" = "$commit"
+          git checkout --detach "$commit"
+          python3 - <<'PYVERSION'
+          import os,tomllib
+          version=tomllib.load(open('Cargo.toml','rb'))['package']['version']
+          assert os.environ['RELEASE_TAG']=='v'+version, 'tag/Cargo version mismatch'
+          PYVERSION
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+          echo "tag_object=$(git rev-parse refs/tags/$RELEASE_TAG)" >> "$GITHUB_OUTPUT"
+      - name: Require existing protected release environments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          for environment in stable-release-build stable-release-publish; do
+            gh api "repos/$GITHUB_REPOSITORY/environments/$environment" > "$RUNNER_TEMP/$environment.json"
+            gh api "repos/$GITHUB_REPOSITORY/environments/$environment/deployment-branch-policies?per_page=100" > "$RUNNER_TEMP/$environment-tags.json"
+            python3 scripts/verify_stable_controls.py environment \
+              "$RUNNER_TEMP/$environment.json" "$RUNNER_TEMP/$environment-tags.json" "$environment" "$RELEASE_TAG"
+          done
+      - name: Require independently pinned offline artifact authority
+        id: authority
+        run: |
+          python3 scripts/verify_stable_authority.py . > "$RUNNER_TEMP/authority.json"
+          python3 - <<'PYPIN'
+          import json,os,pathlib
+          key=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'authority.json').read_text())['public_key']
+          with open(os.environ['GITHUB_OUTPUT'],'a') as output: output.write('public_key='+key+'\n')
+          PYPIN
+
+  build:
+    name: Build ${{ matrix.target }}
+    needs: guard
+    if: inputs.action == 'prepare-draft'
+    environment: stable-release-build
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            expected_arch: x86_64
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            expected_arch: arm64
+            archive: zip
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # The release gate validates the same frozen evaluation blobs as CI.
+          ref: ${{ needs.guard.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require the reviewed candidate authorization
+        env:
+          APPROVED_TAG: ${{ vars.STABLE_RELEASE_APPROVED_TAG }}
+          APPROVED_COMMIT: ${{ vars.STABLE_RELEASE_APPROVED_COMMIT }}
+          EXPECTED_COMMIT: ${{ needs.guard.outputs.commit }}
+          EXPECTED_TAG_OBJECT: ${{ needs.guard.outputs.tag_object }}
+        run: |
+          test "$APPROVED_TAG" = "$RELEASE_TAG"
+          test "$APPROVED_COMMIT" = "$EXPECTED_COMMIT"
+
+      - name: Confirm the supported runner architecture
+        shell: bash
+        run: test "$(uname -m)" = "${{ matrix.expected_arch }}"
+
+      - name: Install the evaluation Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal --component clippy,rustfmt
+
+      - name: Run all release checks
+        shell: bash
+        run: |
+          cargo +1.91.0 xtask check
+          python3 scripts/verify_readme_contract.py
+          python3 scripts/verify_completion_ledger.py
+          python3 scripts/verify_binstall_metadata.py
+          python3 -W error scripts/test_verify_readme_contract.py
+          python3 -W error scripts/test_verify_completion_ledger.py
+          python3 -W error scripts/test_verify_binstall_metadata.py
+          python3 -W error scripts/test_verify_binstall_evidence.py
+          python3 -W error scripts/test_verify_clean_machine_evidence.py
+          python3 -W error scripts/test_verify_cargo_publish_policy.py
+          python3 -W error scripts/test_verify_release_assets.py
+
+      - name: Build and exercise the candidate binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.91.0 build --locked --release
+          cargo +1.91.0 test --locked --release --lib search::
+          RUSTUP_TOOLCHAIN=1.91.0 \
+            bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
+          bash scripts/release-smoke.sh "$PWD/target/release/hsum"
+          bash scripts/no-network-smoke.sh "$PWD/target/release/hsum" --binary-only
+          bash scripts/released-alpha1-upgrade-smoke.sh "$PWD/target/release/hsum"
+
+      - name: Require every stable Apple signing credential
+        if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in \
+            APPLE_CERTIFICATE_BASE64 APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY \
+            APPLE_ID APPLE_APP_PASSWORD APPLE_TEAM_ID KEYCHAIN_PASSWORD; do
+            test -n "${!name}" || { echo "Stable macOS signing requires $name." >&2; exit 1; }
+          done
+
+      - name: Import the Apple signing certificate
+        if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          certificate_path="$RUNNER_TEMP/release-certificate.p12"
+          keychain_path="$RUNNER_TEMP/release.keychain-db"
+          printf '%s' "$APPLE_CERTIFICATE_BASE64" | base64 -D > "$certificate_path"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security set-keychain-settings -lut 21600 "$keychain_path"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security import "$certificate_path" -k "$keychain_path" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$keychain_path"
+          security list-keychain -d user -s "$keychain_path"
+
+      - name: Sign the macOS binary
+        if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          codesign --force --options runtime --timestamp --sign "$APPLE_SIGNING_IDENTITY" target/release/hsum
+          codesign --verify --deep --strict --verbose=2 target/release/hsum
+
+      - name: Package the release asset
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          asset="hsum-${RELEASE_TAG}-${{ matrix.target }}.${{ matrix.archive }}"
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            (
+              cd target/release
+              zip -X -q "$GITHUB_WORKSPACE/dist/$asset" hsum
+            )
+          else
+            tar -C target/release -czf "dist/$asset" hsum
+          fi
+          (
+            cd dist
+            shasum -a 256 "$asset" > "$asset.sha256"
+          )
+          echo "path=dist/$asset" >> "$GITHUB_OUTPUT"
+
+      - name: Notarize the macOS archive
+        if: matrix.target == 'aarch64-apple-darwin'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun notarytool submit "${{ steps.package.outputs.path }}" \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait --output-format json > "$RUNNER_TEMP/notarization.json"
+          python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["status"] == "Accepted"' "$RUNNER_TEMP/notarization.json"
+          spctl --assess --type execute --verbose=2 target/release/hsum
+
+      - name: Retain Apple notarization receipt
+        if: always() && matrix.target == 'aarch64-apple-darwin'
+        uses: actions/upload-artifact@v7
+        with:
+          name: stable-notarization
+          path: ${{ runner.temp }}/notarization.json
+          if-no-files-found: warn
+
+      - name: Remove the temporary signing keychain
+        if: always() && matrix.target == 'aarch64-apple-darwin'
+        shell: bash
+        run: |
+          security delete-keychain "$RUNNER_TEMP/release.keychain-db" || true
+          rm -f "$RUNNER_TEMP/release-certificate.p12"
+
+      - name: Generate the SPDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: dist/hsum-${{ inputs.tag }}-${{ matrix.target }}.spdx.json
+          artifact-name: hsum-${{ matrix.target }}-sbom
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: Prefetch the locked Cargo graph for offline license evidence
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: cargo +1.91.0 fetch --locked
+
+      - name: Generate the locked Cargo license inventory
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        shell: bash
+        run: |
+          bash scripts/generate-license-inventory.sh \
+            "dist/hsum-${RELEASE_TAG}-cargo-licenses.json"
+
+      - name: Attest native archive build provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.package.outputs.path }}
+
+      - name: Attest the archive SBOM
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.package.outputs.path }}
+          sbom-path: dist/hsum-${{ inputs.tag }}-${{ matrix.target }}.spdx.json
+
+      - name: Upload the release asset
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ matrix.target }}
+          path: dist/
+          if-no-files-found: error
+          compression-level: 0
+
+  draft:
+    name: Assemble unsigned draft for offline signing
+    needs: [guard, build]
+    if: inputs.action == 'prepare-draft'
+    environment: stable-release-build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      EXPECTED_COMMIT: ${{ needs.guard.outputs.commit }}
+      EXPECTED_TAG_OBJECT: ${{ needs.guard.outputs.tag_object }}
+      PUBLIC_KEY: ${{ needs.guard.outputs.public_key }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.guard.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install the pinned release GitHub CLI
+        run: |
+          bash scripts/install-release-gh.sh "$RUNNER_TEMP/release-gh"
+          echo "$RUNNER_TEMP/release-gh" >> "$GITHUB_PATH"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Render the authenticated installer and checksums
+        run: |
+          python3 - <<'PYRENDER'
+          import os,pathlib
+          template=pathlib.Path('scripts/install.sh').read_text()
+          rendered=template.replace('@HSUM_VERSION@',os.environ['RELEASE_TAG'][1:]).replace('@HSUM_MINISIGN_PUBLIC_KEY@',os.environ['PUBLIC_KEY'])
+          pathlib.Path('dist/install-hsum.sh').write_text(rendered)
+          PYRENDER
+          chmod 755 dist/install-hsum.sh
+          bash -n dist/install-hsum.sh
+          (cd dist && shasum -a 256 *.tar.gz *.zip *.spdx.json *-cargo-licenses.json install-hsum.sh > SHA256SUMS)
+          python3 scripts/verify_stable_release.py "$RELEASE_TAG" dist --public-key "$PUBLIC_KEY" --unsigned-draft
+      - name: Create and verify the draft without publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" dist/* --verify-tag --draft \
+            --target "$EXPECTED_COMMIT" --generate-notes --title "hSUM $RELEASE_TAG"
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/downloaded-draft"
+          python3 scripts/verify_stable_release.py "$RELEASE_TAG" "$RUNNER_TEMP/downloaded-draft" \
+            --public-key "$PUBLIC_KEY" --unsigned-draft
+          echo 'Draft retained. The offline signer must supply four .minisig files before publication.' >> "$GITHUB_STEP_SUMMARY"
+
+  verify-signed-draft:
+    name: Verify signed draft on ${{ matrix.target }}
+    needs: guard
+    if: inputs.action == 'publish-signed-draft'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      attestations: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            runner: ubuntu-24.04
+            extension: tar.gz
+          - target: aarch64-apple-darwin
+            runner: macos-15
+            extension: zip
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      EXPECTED_COMMIT: ${{ needs.guard.outputs.commit }}
+      EXPECTED_TAG_OBJECT: ${{ needs.guard.outputs.tag_object }}
+      PUBLIC_KEY: ${{ needs.guard.outputs.public_key }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.guard.outputs.commit }}
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install the pinned release GitHub CLI
+        run: |
+          bash scripts/install-release-gh.sh "$RUNNER_TEMP/release-gh"
+          echo "$RUNNER_TEMP/release-gh" >> "$GITHUB_PATH"
+      - name: Install Minisign
+        run: |
+          if [ "$(uname -s)" = Darwin ]; then brew install minisign; else sudo apt-get update && sudo apt-get install --yes minisign; fi
+      - name: Download and authenticate the complete draft
+        run: |
+          set -euo pipefail
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          gh release download "$RELEASE_TAG" --dir dist
+          python3 scripts/verify_stable_release.py "$RELEASE_TAG" dist --public-key "$PUBLIC_KEY" > "$RUNNER_TEMP/signature-verification.json"
+      - name: Verify provenance and exercise the native signed archive
+        env:
+          TARGET: ${{ matrix.target }}
+          EXTENSION: ${{ matrix.extension }}
+        run: |
+          set -euo pipefail
+          asset="dist/hsum-$RELEASE_TAG-$TARGET.$EXTENSION"
+          gh attestation verify "$asset" --repo "$GITHUB_REPOSITORY" \
+            --predicate-type https://slsa.dev/provenance/v1 \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-stable.yml" \
+            --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_COMMIT"
+          gh attestation verify "$asset" --repo "$GITHUB_REPOSITORY" \
+            --predicate-type https://spdx.dev/Document/v2.3 \
+            --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release-stable.yml" \
+            --source-ref "refs/tags/$RELEASE_TAG" --source-digest "$EXPECTED_COMMIT"
+          mkdir extracted
+          if [ "$EXTENSION" = zip ]; then
+            unzip -q "$asset" -d extracted
+            codesign --verify --deep --strict --verbose=2 extracted/hsum
+            spctl --assess --type execute --verbose=2 extracted/hsum
+          else
+            tar -xzf "$asset" -C extracted
+          fi
+          bash scripts/release-smoke.sh "$PWD/extracted/hsum"
+          bash scripts/installer-smoke.sh "$PWD/extracted/hsum" "$PWD/dist"
+          bash scripts/no-network-smoke.sh "$PWD/extracted/hsum" "$PWD/dist"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: stable-draft-verification-${{ matrix.target }}
+          path: ${{ runner.temp }}/signature-verification.json
+          if-no-files-found: error
+
+  publish:
+    name: Publish the independently signed and verified draft
+    needs: [guard, verify-signed-draft]
+    if: inputs.action == 'publish-signed-draft'
+    environment: stable-release-publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      actions: read
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+      EXPECTED_COMMIT: ${{ needs.guard.outputs.commit }}
+      EXPECTED_TAG_OBJECT: ${{ needs.guard.outputs.tag_object }}
+      PUBLIC_KEY: ${{ needs.guard.outputs.public_key }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.guard.outputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install the pinned release GitHub CLI
+        run: |
+          bash scripts/install-release-gh.sh "$RUNNER_TEMP/release-gh"
+          echo "$RUNNER_TEMP/release-gh" >> "$GITHUB_PATH"
+      - name: Require final protected approval for this exact tag and commit
+        env:
+          APPROVED_TAG: ${{ vars.STABLE_RELEASE_APPROVED_TAG }}
+          APPROVED_COMMIT: ${{ vars.STABLE_RELEASE_APPROVED_COMMIT }}
+        run: |
+          test "$APPROVED_TAG" = "$RELEASE_TAG"
+          test "$APPROVED_COMMIT" = "$EXPECTED_COMMIT"
+      - name: Install Minisign
+        run: sudo apt-get update && sudo apt-get install --yes minisign
+      - name: Require immutable publication to remain enabled
+        env:
+          # Read-only Administration access; ordinary GITHUB_TOKEN cannot read this setting.
+          GH_TOKEN: ${{ secrets.RELEASE_POLICY_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$GH_TOKEN"
+          gh api "repos/$GITHUB_REPOSITORY/immutable-releases" > "$RUNNER_TEMP/immutable-policy.json"
+          python3 -c 'import json,sys; assert json.load(open(sys.argv[1]))["enabled"] is True' "$RUNNER_TEMP/immutable-policy.json"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: stable-draft-verification-*
+          path: verified-native
+      - name: Verify every downloaded byte immediately before publication
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/environments/stable-release-publish" > "$RUNNER_TEMP/publish-environment.json"
+          gh api "repos/$GITHUB_REPOSITORY/environments/stable-release-publish/deployment-branch-policies?per_page=100" > "$RUNNER_TEMP/publish-tags.json"
+          python3 scripts/verify_stable_controls.py environment \
+            "$RUNNER_TEMP/publish-environment.json" "$RUNNER_TEMP/publish-tags.json" stable-release-publish "$RELEASE_TAG"
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = true
+          test "$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" --jq .target_commitish)" = "$EXPECTED_COMMIT"
+          test "$(git ls-remote origin "refs/tags/$RELEASE_TAG" | cut -f1)" = "$EXPECTED_TAG_OBJECT"
+          test "$(git ls-remote origin "refs/tags/$RELEASE_TAG^{}" | cut -f1)" = "$EXPECTED_COMMIT"
+          gh release download "$RELEASE_TAG" --dir dist
+          python3 scripts/verify_stable_release.py "$RELEASE_TAG" dist --public-key "$PUBLIC_KEY" > "$RUNNER_TEMP/pre-publication.json"
+          python3 - <<'PYBIND'
+          import json,os,pathlib
+          current=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'pre-publication.json').read_text())
+          roots=sorted(pathlib.Path('verified-native').glob('*/signature-verification.json'))
+          assert len(roots)==2, 'both native verification receipts required'
+          for root in roots: assert json.loads(root.read_text())==current, 'draft changed after native verification'
+          PYBIND
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease=false --latest
+          gh release download "$RELEASE_TAG" --dir "$RUNNER_TEMP/published"
+          python3 scripts/verify_stable_release.py "$RELEASE_TAG" "$RUNNER_TEMP/published" --public-key "$PUBLIC_KEY" > "$RUNNER_TEMP/post-publication.json"
+          cmp "$RUNNER_TEMP/pre-publication.json" "$RUNNER_TEMP/post-publication.json"
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_TAG" > "$RUNNER_TEMP/published-release.json"
+          python3 - <<'PYIMMUTABLE'
+          import json,os,pathlib
+          release=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'published-release.json').read_text())
+          assert release['immutable'] is True and release['draft'] is False and release['prerelease'] is False
+          assert release['tag_name']==os.environ['RELEASE_TAG'] and release['target_commitish']==os.environ['EXPECTED_COMMIT']
+          PYIMMUTABLE
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: stable-publication-receipts
+          path: |
+            ${{ runner.temp }}/pre-publication.json
+            ${{ runner.temp }}/post-publication.json
+            ${{ runner.temp }}/immutable-policy.json
+            ${{ runner.temp }}/published-release.json
+          if-no-files-found: warn

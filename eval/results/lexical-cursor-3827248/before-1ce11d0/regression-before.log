@@ -1,0 +1,22 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 15.94s
+     Running unittests src/lib.rs (target/debug/deps/hsum-a26a0bf0f6eee433)
+
+running 1 test
+test search::retrieval::tests::duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary ... FAILED
+
+failures:
+
+---- search::retrieval::tests::duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary stdout ----
+
+thread 'search::retrieval::tests::duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary' (6384594) panicked at src/search/retrieval.rs:2472:9:
+adaptive pages repeated the corpus ranking: 20 sorts
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    search::retrieval::tests::duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 143 filtered out; finished in 0.47s
+
+error: test failed, to rerun pass `--lib`

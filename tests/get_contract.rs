@@ -101,6 +101,104 @@ fn get_expands_whole_chunks_left_then_right_within_the_bound() {
 }
 
 #[test]
+fn returned_expanded_citation_resolves_to_the_same_immutable_window() {
+    let directory = tempdir().unwrap();
+    let path = directory.path().join("index.sqlite");
+    let mut database = create_database(&path);
+    let scope = fixture_scope();
+    let document = prepared_three_chunks();
+    database
+        .apply_filesystem_snapshot(
+            &scope,
+            std::slice::from_ref(&document),
+            &[],
+            DeleteConfirmations::default(),
+        )
+        .unwrap();
+
+    let middle = citation_for(&path, &scope, &document, 1);
+    let returned_start = document.chunks[0].byte_span.start() as usize;
+    let returned_end = document.chunks[2].byte_span.end() as usize;
+    let returned_len = returned_end - returned_start;
+    let expanded = database
+        .get_evidence(&GetRequest {
+            project_id: scope.project_id,
+            citation: middle,
+            max_bytes: returned_len,
+        })
+        .unwrap();
+
+    let round_trip = database
+        .get_evidence(&GetRequest {
+            project_id: scope.project_id,
+            citation: expanded.returned_citation.clone(),
+            max_bytes: returned_len,
+        })
+        .unwrap();
+
+    assert_eq!(round_trip.requested_citation, expanded.returned_citation);
+    assert_eq!(round_trip.returned_citation, expanded.returned_citation);
+    assert_eq!(round_trip.content, expanded.content);
+    assert_eq!(round_trip.requested_line_span, expanded.returned_line_span);
+    assert_eq!(round_trip.returned_line_span, expanded.returned_line_span);
+}
+
+#[test]
+fn composite_citation_rejects_non_chunk_boundaries_and_small_bounds() {
+    let directory = tempdir().unwrap();
+    let path = directory.path().join("index.sqlite");
+    let mut database = create_database(&path);
+    let scope = fixture_scope();
+    let document = prepared_three_chunks();
+    database
+        .apply_filesystem_snapshot(
+            &scope,
+            std::slice::from_ref(&document),
+            &[],
+            DeleteConfirmations::default(),
+        )
+        .unwrap();
+
+    let first = citation_for(&path, &scope, &document, 0);
+    let last = citation_for(&path, &scope, &document, 2);
+    let composite_span = ByteSpan::new(first.span.start(), last.span.end()).unwrap();
+    let composite = Citation {
+        span: composite_span,
+        ..first.clone()
+    };
+    let required = usize::try_from(composite_span.end() - composite_span.start()).unwrap();
+
+    assert!(matches!(
+        database.get_evidence(&GetRequest {
+            project_id: scope.project_id,
+            citation: composite.clone(),
+            max_bytes: required - 1,
+        }),
+        Err(GetError::BoundBelowPassage {
+            requested,
+            required: actual_required,
+        }) if requested == required - 1 && actual_required == required
+    ));
+
+    for invalid_span in [
+        ByteSpan::new(first.span.start() + 1, last.span.end()).unwrap(),
+        ByteSpan::new(first.span.start(), last.span.end() - 1).unwrap(),
+    ] {
+        assert!(matches!(
+            database.get_evidence(&GetRequest {
+                project_id: scope.project_id,
+                citation: Citation {
+                    span: invalid_span,
+                    ..first.clone()
+                },
+                max_bytes: required,
+            }),
+            Err(GetError::EvidenceNotFound)
+        ));
+    }
+}
+
+#[test]
 fn get_binds_a_historical_shared_body_to_its_frozen_source_kind_layout() {
     let directory = tempdir().unwrap();
     let path = directory.path().join("index.sqlite");

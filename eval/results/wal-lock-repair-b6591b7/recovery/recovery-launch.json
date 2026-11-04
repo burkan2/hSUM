@@ -1,0 +1,28 @@
+{
+  "candidate": "b6591b7405320c924dc341111006d8d87b1e0c8a",
+  "source_checkout": "/Users/b.k./.cache/hsum-qualification/2026-10-24-macos-recovery-b6591b7/source",
+  "source_checkout_clean": true,
+  "base_failure_candidate": "1ce11d00bf8cad949c12a9c496ab7dba3675717f",
+  "base_failure_root": "/Users/b.k./.cache/hsum-qualification/2026-10-23-100k-lbse5n1f",
+  "base_retained_crash_snapshot": "/Users/b.k./.cache/hsum-qualification/macos-100k-failure-1ce11d0/retained-index",
+  "recovery_home": "/Users/b.k./.cache/hsum-qualification/2026-10-24-macos-recovery-b6591b7/home",
+  "corpus": "/Users/b.k./.cache/hsum-qualification/2026-10-23-100k-lbse5n1f/corpus",
+  "clone_method": "APFS clone of the failed isolated home before any recovery commands; original and exact retained snapshot left untouched",
+  "preparation_kind": "recovery of 100,000 cached embeddings after interrupted vector-slot construction, not fresh inference",
+  "original_fresh_candidate_ingest_throughput_available": false,
+  "recorded_at_utc": "2026-10-23T23:24:41.659526+00:00",
+  "files_before": {
+    "index.sqlite": {
+      "bytes": 1031020544,
+      "sha256": "48c920e52c2f69b2c8ea25c22726a31c646ea3604c16ca8e44e2cb5206a49e80"
+    },
+    "index.sqlite-wal": {
+      "bytes": 813934872,
+      "sha256": "2de73a636a22682319ef709cc7c6c688e1f2be7a37d8cea70cc55ba22dc06a1d"
+    },
+    "index.sqlite-shm": {
+      "bytes": 32768,
+      "sha256": "440f8f9fd38a4e64ed97f1fdaa9b04a6eaddbac1a70a37fa57ef8b3739d23e94"
+    }
+  }
+}

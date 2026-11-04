@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Users/b.k./.cache/hsum-qualification/q05-40008791029/review.py", line 34, in <module>
+    assert r['first_observed_knee']==h.first_observed_knee(r['scale_samples'],2.0)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

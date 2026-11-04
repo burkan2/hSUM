@@ -1,0 +1,61 @@
+schema_version = "hsum.eval.manifest.v1"
+evaluation_id = "hsum-stable-v0.1-heldout-v1"
+binary_commit = "011d669e99935e5a0e6d8624002ebe97de4ab5c8"
+migrations = [
+  { path = "migrations/0001_alpha1.sql", sha256 = "006c34cb6bec7b2312c36edf0cc2dd3bfdb6827bedacecf611efe6adad011e4b" },
+  { path = "migrations/0002_jsonl_sources.sql", sha256 = "b09ecf3aabd3c686b3fb4c267466e278c8f41f66f52bdceacf5e4cb9af9c1ae7" },
+  { path = "migrations/0003_maintenance.sql", sha256 = "aa5eaae1156424bb760b3efc309eac67c9407ef04ddc8f964d1561024d02eb0b" },
+  { path = "migrations/0004_vector_storage.sql", sha256 = "efb76ebbe66dbbe59bd4495782169024b4ce48aae70aaf44c13a40d067830961" },
+]
+
+[protocol]
+query_count = 100
+minimum_corpora = 3
+minimum_semantic_queries = 30
+ranking_cutoff = 10
+exact_cutoff = 3
+bootstrap_seed = 2026080201
+bootstrap_resamples = 10000
+confidence = 0.95
+noninferiority_margin = -0.02
+semantic_gain = 0.05
+
+[files]
+corpora = "eval/corpora.json"
+corpora_sha256 = "80a6636f650d7c052dfdf8542896ef90f300e59e41e0e75b40ee5e4c40b284f6"
+queries = "eval/queries.json"
+queries_sha256 = "2ceb2ab9013eea37942eb8808ceb9ef9c08d221426fb42a32e0a22828226ada0"
+query_order_sha256 = "28ea95db5e258bb58452d1eeff07b0e864155022df62d39a7ebce1b27cc3b7b1"
+
+[model]
+id = "bge-small-en-v1-5-fp32"
+manifest_path = "assets/models/bge-small-en-v1.5-fp32.json"
+manifest_sha256 = "940cdb9014b231fad5e51f742ab2f69b6b43187f9621179d93238959d881e83c"
+
+[retrieval]
+config_fingerprint = "b479c7021c4e9af3f9f3cf37924e1aa16677bec04534693c8de049b4edf954bd"
+fts_tokenizer = "unicode61 remove_diacritics 0 tokenchars '_-.:/'"
+chunk_target_bytes = 1200
+chunk_max_bytes = 1800
+chunk_overlap_bytes = 180
+rank_fusion_k = 60
+rank_fusion_scale = 1000000000000
+exact_weight = "3/2"
+lexical_weight = "1"
+vector_weight = "1"
+candidate_step = 50
+candidate_cap_per_list = 500
+result_limit = 10
+metric_relevance_grades = [2, 3]
+ndcg_gain = "2^grade - 1"
+ndcg_discount = "log2(rank + 1)"
+bootstrap_interval = "paired percentile, nearest-rank, deterministic seed"
+
+[tools]
+hsum_version = "0.1.0-alpha.4"
+ripgrep_version = "ripgrep 15.1.0"
+ripgrep_args = "--json --threads 1 --sort path --fixed-strings"
+qmd_version = "2.5.3"
+qmd_embedding_model = "hf:ggml-org/embeddinggemma-300M-GGUF/embeddinggemma-300M-Q8_0.gguf"
+qmd_generation_model = "hf:tobil/qmd-query-expansion-1.7B-gguf/qmd-query-expansion-1.7B-q4_k_m.gguf"
+qmd_query_args = "-n 10 --no-rerank --format json"

@@ -2,12 +2,13 @@
 # Exercise the release-rendered installer without network or real Codex state.
 set -euo pipefail
 
-if [ "$#" -ne 1 ]; then
-  echo "usage: $0 /absolute/path/to/hsum" >&2
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+  echo "usage: $0 /absolute/path/to/hsum [/absolute/path/to/signed-stable-bundle]" >&2
   exit 2
 fi
 
 binary="$1"
+stable_bundle="${2:-}"
 if [ ! -x "$binary" ]; then
   echo "hsum binary is not executable: $binary" >&2
   exit 2
@@ -22,7 +23,19 @@ cleanup() {
 trap cleanup EXIT
 
 rendered_installer="$trial_root/install-hsum.sh"
-sed "s/@HSUM_VERSION@/$version/g" "$repository_root/scripts/install.sh" > "$rendered_installer"
+stable=false
+if [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+  stable=true
+  test -n "$stable_bundle" || { echo "stable installer smoke requires the signed release bundle" >&2; exit 2; }
+  authority=$(python3 "$repository_root/scripts/verify_stable_authority.py" "$repository_root")
+  public_key=$(printf '%s' "$authority" | python3 -c 'import json,sys;print(json.load(sys.stdin)["public_key"])')
+  python3 "$repository_root/scripts/verify_stable_release.py" "v$version" "$stable_bundle" --public-key "$public_key"
+fi
+if [ "$stable" = true ]; then
+  cp "$stable_bundle/install-hsum.sh" "$rendered_installer"
+else
+  sed "s/@HSUM_VERSION@/$version/g" "$repository_root/scripts/install.sh" > "$rendered_installer"
+fi
 chmod 700 "$rendered_installer"
 bash -n "$rendered_installer"
 
@@ -46,6 +59,9 @@ asset="hsum-$tag-$target.$archive_kind"
 fixtures="$trial_root/fixtures"
 archive_root="$trial_root/archive-root"
 mkdir -p "$fixtures" "$archive_root"
+if [ "$stable" = true ]; then
+  cp "$stable_bundle/"* "$fixtures/"
+else
 cp "$binary" "$archive_root/hsum"
 chmod 700 "$archive_root/hsum"
 if [ "$archive_kind" = "zip" ]; then
@@ -60,6 +76,8 @@ fi
   cd "$fixtures"
   shasum -a 256 "$asset" > "$asset.sha256"
 )
+
+fi
 
 fake_bin="$trial_root/fake-bin"
 mkdir "$fake_bin"
@@ -131,7 +149,7 @@ export XDG_BIN_HOME="$trial_root/user-bin"
 export PATH="$fake_bin:$PATH"
 
 installer_arguments=(--confirm --activate "$repository")
-if [ "$(uname -s)" = "Darwin" ]; then
+if [ "$(uname -s)" = "Darwin" ] && [ "$stable" = false ]; then
   installer_arguments+=(--allow-unnotarized-alpha)
 fi
 "$rendered_installer" "${installer_arguments[@]}" > "$trial_root/install.txt"
@@ -160,7 +178,10 @@ test ! -e "$repository/.hsum.toml"
 
 bad_fixtures="$trial_root/bad-fixtures"
 mkdir "$bad_fixtures"
-cp "$fixtures/$asset" "$bad_fixtures/$asset"
+cp "$fixtures/"* "$bad_fixtures/"
+if [ "$stable" = true ]; then
+  printf 'tampered' >> "$bad_fixtures/$asset"
+fi
 printf '%064d  %s\n' 0 "$asset" > "$bad_fixtures/$asset.sha256"
 export HSUM_INSTALL_FIXTURES="$bad_fixtures"
 export XDG_BIN_HOME="$trial_root/refused-bin"

@@ -1,0 +1,36 @@
+   Compiling ring v0.17.14
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+   Compiling rustls v0.23.46
+   Compiling rustls-webpki v0.103.16
+   Compiling ureq v3.3.0
+   Compiling ort-sys v2.0.0-rc.13
+   Compiling ort v2.0.0-rc.13
+   Compiling fastembed v5.17.4
+    Finished `test` profile [unoptimized] target(s) in 17.69s
+     Running unittests src/lib.rs (target/debug/deps/hsum-a26a0bf0f6eee433)
+
+running 2 tests
+test search::ranking::tests::scores_match_builtin_for_small_and_cached_indexes ... FAILED
+test search::ranking::tests::sparse_and_large_row_ids_use_builtin_lengths ... FAILED
+
+failures:
+
+---- search::ranking::tests::scores_match_builtin_for_small_and_cached_indexes stdout ----
+
+thread 'search::ranking::tests::scores_match_builtin_for_small_and_cached_indexes' (7762522) panicked at src/search/ranking.rs:38:15:
+called `Result::unwrap()` on an `Err` value: SqlInputError { error: Error { code: Unknown, extended_code: 1 }, msg: "no such function: hsum_bm25", sql: "SELECT rowid,bm25(passages_fts),hsum_bm25(passages_fts)\n                 FROM passages_fts WHERE passages_fts MATCH ?1", offset: 32 }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- search::ranking::tests::sparse_and_large_row_ids_use_builtin_lengths stdout ----
+
+thread 'search::ranking::tests::sparse_and_large_row_ids_use_builtin_lengths' (7762523) panicked at src/search/ranking.rs:38:15:
+called `Result::unwrap()` on an `Err` value: SqlInputError { error: Error { code: Unknown, extended_code: 1 }, msg: "no such function: hsum_bm25", sql: "SELECT rowid,bm25(passages_fts),hsum_bm25(passages_fts)\n                 FROM passages_fts WHERE passages_fts MATCH ?1", offset: 32 }
+
+
+failures:
+    search::ranking::tests::scores_match_builtin_for_small_and_cached_indexes
+    search::ranking::tests::sparse_and_large_row_ids_use_builtin_lengths
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 153 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `--lib`

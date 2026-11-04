@@ -1,0 +1,20 @@
+{
+  "scope": "Diagnostic checkpoint of disposable APFS clone only, not production repair",
+  "before": {
+    "": 1188028416,
+    "-wal": 813934872,
+    "-shm": 327680
+  },
+  "after": {
+    "": 1188028416,
+    "-wal": null,
+    "-shm": null
+  },
+  "seconds": 5.895939791982528,
+  "result": [
+    0,
+    0,
+    0
+  ],
+  "free_bytes_before": 1568391168
+}

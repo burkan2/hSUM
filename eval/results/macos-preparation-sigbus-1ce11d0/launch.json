@@ -1,0 +1,20 @@
+{
+  "commit": "1ce11d00bf8cad949c12a9c496ab7dba3675717f",
+  "working_tree_dirty_at_launch": false,
+  "repository": "/Users/b.k./.codex/worktrees/retrieval-qualification/hSUM",
+  "root": "/Users/b.k./.cache/hsum-qualification/2026-10-23-100k-lbse5n1f",
+  "binary_sha256": "3950d403159dcbba704951f4d698f29cf10a26f148968c8121de65e4e47738e3",
+  "query_manifest_sha256": "694cb5665f947d8c54d98ba98c638408b9424b1a04fa9c8849c81c1c8f1fda5a",
+  "machine": "Apple M2",
+  "memory_bytes": 17179869184,
+  "macos": "ProductName:\t\tmacOS\nProductVersion:\t\t26.4.1\nBuildVersion:\t\t25E253",
+  "free_disk_bytes_at_launch": 11353837568,
+  "protocol": {
+    "runs": 3,
+    "warmups": 5,
+    "passes": 30,
+    "queries": 25,
+    "measured_observations": 2250
+  },
+  "linux_run_url": "https://github.com/burkan2/hSUM/actions/runs/40004812595"
+}

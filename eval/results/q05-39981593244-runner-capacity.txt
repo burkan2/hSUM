@@ -1,0 +1,14 @@
+Linux runnervm8k3b6 6.17.0-1022-azure #22-Ubuntu SMP Mon Jul 27 17:24:03 UTC 2026 x86_64 x86_64 x86_64 GNU/Linux
+               total        used        free      shared  buff/cache   available
+Mem:     16766410752  1041719296 13448757248    45068288  2654945280 15724691456
+Swap:     3221221376           0  3221221376
+Filesystem        1B-blocks        Used   Available Use% Mounted on
+/dev/root      154894188544 62791708672 92085702656  41% /
+65536
+Filesystem        1B-blocks        Used   Available Use% Mounted on
+/dev/root      154894188544 63885201408 90992209920  42% /
+               total        used        free      shared  buff/cache   available
+Mem:     16766410752  1176875008  2695770112    55083008 13312045056 15589535744
+Swap:     3221221376           0  3221221376
+Filesystem        1B-blocks        Used   Available Use% Mounted on
+/dev/root      154894188544 72839413760 82037997568  48% /

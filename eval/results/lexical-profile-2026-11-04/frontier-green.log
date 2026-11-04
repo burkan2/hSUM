@@ -1,0 +1,13 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `test` profile [unoptimized] target(s) in 12.19s
+     Running unittests src/lib.rs (target/debug/deps/hsum-b4bfea2851d51d35)
+
+running 5 tests
+test search::frontier::tests::malformed_tie_and_ambiguous_complete_keys_fall_back ... ok
+test search::frontier::tests::row_limit_boundary_falls_back_without_truncating ... ok
+test search::frontier::tests::persistent_cancellation_in_each_phase_propagates_and_recovers ... ok
+test search::frontier::tests::foreign_removed_inactive_and_replaced_heads_match_scope ... ok
+test search::frontier::tests::cardinalities_and_cutoff_ties_match_native_bits_and_order ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 167 filtered out; finished in 0.12s
+

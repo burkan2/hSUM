@@ -1,0 +1,23 @@
+{
+  "base_commit": "83b4d4c2f3eacc1ef4c6d5d994dcf620d3741732",
+  "binary_sha256": "693242b7a89ddb559198aa48503ef942853ea715bcb7483cb2c8eb7c874b42e7",
+  "source_sha256": {
+    "Cargo.toml": "00918a4ffaa4efe07bc0aa82f8a913dfa72e26a05954a0bffdcadd757365c005",
+    "Cargo.lock": "3c1b071d8be7a5a722cbba328743078ccc929b4ce5987ed64d681c1b74c49e24",
+    "build.rs": "6d3294bcf11c15f1a5cf71f55b9f237cb5d8d8c6cecdd96c4213b91308ded312",
+    "src/app/search_evidence.rs": "70792912de288d50d20abf0864eb22203f3359ec318d8caf6ea64fcc382494b5",
+    "src/store/open.rs": "4acf26ffab1ce16a6fd66eb02db604f5343a196236b51955e9b160fd9ed57b85",
+    "src/runtime.rs": "509284f7987ee8bd8414797000d9d7ebb7bbb67b2b652c311677244bbd81d315",
+    "src/search/mod.rs": "9e51bc9fae357ecae098c94adf099cb68333641c5adac710baef79d7dbefe295",
+    "src/search/retrieval.rs": "46f1330a4837df65483f3a236dc3428b9c7b9f5147346260fbca7929e5f26184",
+    "src/search/ranking.rs": "7acc4cb7b3b2b899e8735d5ca90a3e67a47e49ec56ae15de0817d65b8f27e7ee",
+    "src/search/bm25_math.c": "dcba9bc5622e621a321f22ec596d811a4442d60f9af8c1e4136f5f36538f0db4"
+  },
+  "checks": {
+    "xtask_check_exit": 0,
+    "release_search_tests": 21,
+    "release_search_tests_exit": 0,
+    "release_smoke_exit": 0
+  },
+  "qualification": false
+}

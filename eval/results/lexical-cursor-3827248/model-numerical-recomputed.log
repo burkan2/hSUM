@@ -1,0 +1,11 @@
+   Compiling ring v0.17.14
+   Compiling rustls v0.23.46
+   Compiling rustls-webpki v0.103.16
+   Compiling ureq v3.3.0
+   Compiling ort-sys v2.0.0-rc.13
+   Compiling ort v2.0.0-rc.13
+   Compiling fastembed v5.17.4
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `dev` profile [unoptimized] target(s) in 37.13s
+     Running `target/debug/examples/model-portability-compare eval/results/model-portability-39981587444/model-portability-x86_64/model-portability-x86_64.json eval/results/model-portability-39981587444/model-portability-arm64/model-portability-arm64.json --output /Users/b.k./.cache/hsum-qualification/2026-10-23-q05-recovery/model-numerical-recomputed.json`
+wrote model numerical compatibility report to /Users/b.k./.cache/hsum-qualification/2026-10-23-q05-recovery/model-numerical-recomputed.json

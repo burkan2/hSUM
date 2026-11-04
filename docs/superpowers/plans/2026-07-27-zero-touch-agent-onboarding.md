@@ -1,5 +1,12 @@
 # Zero-touch agent onboarding plan
 
+> **Superseded in part on 2026-07-31.** Automatic workspace enrollment and
+> once-per-task refresh conflict with the canonical read-only MCP architecture
+> and are replaced by
+> `../specs/2026-07-31-original-plan-reconciliation-design.md`. Installation,
+> global registration, explicit activation, same-process retry, and repository
+> isolation remain applicable.
+
 Date: 2026-07-27
 Status: implementation in progress; core Codex path complete locally, release pending
 Primary client: Codex

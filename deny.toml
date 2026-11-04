@@ -1,0 +1,38 @@
+[graph]
+targets = [
+    { triple = "aarch64-apple-darwin" },
+    { triple = "x86_64-unknown-linux-gnu" },
+]
+all-features = true
+
+[advisories]
+ignore = [
+    { id = "RUSTSEC-2024-0436", reason = "paste is an unmaintained compile-time transitive dependency of tokenizers 0.22.2 through the pinned and natively qualified fastembed 5.17.4 stack; no vulnerability is reported, no safe direct upgrade exists, and replacement remains tracked for the next qualified inference-stack update" },
+]
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "CDLA-Permissive-2.0",
+    "ISC",
+    "MIT",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+confidence-threshold = 0.93
+
+[bans]
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "simplest-path"
+allow-workspace = true
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

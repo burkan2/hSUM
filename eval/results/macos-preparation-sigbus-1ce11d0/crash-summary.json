@@ -1,0 +1,59 @@
+{
+  "captureTime": "2026-10-24 00:41:56.2337 +0300",
+  "pid": 11603,
+  "procLaunch": "2026-10-23 21:41:21.2251 +0300",
+  "cpuType": "ARM-64",
+  "exception": {
+    "codes": "0x000000000000000a, 0x00000001036fc000",
+    "rawCodes": [
+      10,
+      4352622592
+    ],
+    "type": "EXC_BAD_ACCESS",
+    "signal": "SIGBUS",
+    "subtype": " FS pagein error: 22 Invalid argument"
+  },
+  "termination": {
+    "flags": 0,
+    "code": 10,
+    "namespace": "SIGNAL",
+    "indicator": "Bus error: 10",
+    "byProc": "exc handler",
+    "byPid": 11603
+  },
+  "vmRegionInfo": "0x1036fc000 is in 0x1036fc000-0x103704000;  bytes after start: 0  bytes before end: 32767\n      REGION TYPE                    START - END         [ VSIZE] PRT/MAX SHRMOD  REGION DETAIL\n      mapped file                 1036f4000-1036fc000    [   32K] rw-/rwx SM=ALI  Object_id=152342bf\n--->  mapped file                 1036fc000-103704000    [   32K] rw-/rwx SM=ALI  Object_id=152342bf\n      mapped file                 103704000-10370c000    [   32K] rw-/rwx SM=ALI  Object_id=152342bf",
+  "ktriageinfo": "CL - (arg = 0x0) cluster_pagein past EOF\nAPFS - (arg = 0x3be2001600200040) cluster_pagein() failed\nVM - (arg = 0x1900000016) Filesystem pagein returned an error in vnode_pagein\nVM - (arg = 0x0) Page has error bit set\nCL - (arg = 0x0) cluster_pagein past EOF\n",
+  "faulting_stack_symbols": [
+    "__bzero",
+    "walIndexAppend",
+    "pagerWalFrames",
+    "pagerStress",
+    "getPageNormal",
+    "btreeGetUnusedPage",
+    "allocateBtreePage",
+    "sqlite3BtreeInsert",
+    "sqlite3VdbeExec",
+    "sqlite3_step",
+    "vec0_new_chunk",
+    "vec0Update_InsertNextAvailableStep",
+    "vec0Update_Insert",
+    "sqlite3VdbeExec",
+    "sqlite3_step",
+    "rusqlite::statement::Statement::execute_with_bound_parameters::ha03ddb9713517321",
+    "rusqlite::Connection::execute::h6216f5286c780ea8",
+    "hsum::store::vector::_$LT$impl$u20$hsum..store..open..IndexDb$GT$::commit_cached_reembedding_with_lock::h426bfa8bfe3e47eb",
+    "hsum::runtime::run_ingest::hf461f36b3b2a0bdb",
+    "hsum::runtime::execute::_$u7b$$u7b$closure$u7d$$u7d$::hdedca5a4d4fab105",
+    "tokio::runtime::park::CachedParkThread::block_on::h98e00c53234a5e40",
+    "tokio::runtime::context::runtime::enter_runtime::h30076b1a1f32e42a",
+    "tokio::runtime::runtime::Runtime::block_on::h1d280ab3029db529",
+    "hsum::main::hf5549d33660c1da5",
+    "std::sys::backtrace::__rust_begin_short_backtrace::h8c140e73a522ec30",
+    "std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h727eca6b6d3575e5",
+    "std::rt::lang_start_internal::h7e788da8c79e20dc",
+    "main",
+    "start"
+  ],
+  "raw_report_sha256": "db6233ad591c46eef5057c097d21684a4d5cbc901ee6f879e9656fad773c5100",
+  "raw_report_retained_locally": "/Users/b.k./.cache/hsum-qualification/macos-100k-failure-1ce11d0/hsum-2026-10-24-004205.ips"
+}

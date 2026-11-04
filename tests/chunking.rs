@@ -271,6 +271,8 @@ proptest! {
 
                 if ordinal > 0 {
                     let previous = chunks[ordinal - 1].span();
+                    prop_assert!(span.start() > previous.start());
+                    prop_assert!(span.end() > previous.end());
                     prop_assert!(span.start() <= previous.end());
                     prop_assert!(
                         previous.end() - span.start() <= DEFAULT_CHUNK_OVERLAP_BYTES as u64

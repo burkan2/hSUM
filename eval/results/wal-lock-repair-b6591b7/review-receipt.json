@@ -1,0 +1,33 @@
+{
+  "candidate": "b6591b7405320c924dc341111006d8d87b1e0c8a",
+  "parent_candidate": "5050ae63b5fc07a4be2b2b5f6541227af1205628",
+  "recorded_at_utc": "2026-10-23T23:26:45.534299+00:00",
+  "source_file": "src/store/open.rs",
+  "source_sha256": "8176dd92c1da538a2839b7f93ec3ce2cdec402ff18d76ed93acdeef067925c9e",
+  "binary_sha256": "84fe650dbf03c3b2755f5d586277ee949b8e0ae84a7c55d8d597c9e0688483de",
+  "scope": "POSIX validation descriptor lifetime; no retrieval SQL, schema, model, candidate budgets, deadlines, or qualification thresholds changed.",
+  "regression": "Real product creation and overlapping reader/writer connections; child process checks SHM DMS, WAL write and main database shared locks. Original code fails DMS lock after create. Final repair preserves locks, verifies read/write release, cross-thread opens/closes and registry cleanup.",
+  "review": "Author-reviewed all file validation/open/durability/reservation call sites and drop/registry locking order. Closed-backup maintenance raw handles inspected separately. No independent review claimed.",
+  "checks": {
+    "before_regression_fails": true,
+    "final_cross_process_regression_passes": true,
+    "full_initial_contributor_gate_passes": true,
+    "final_clippy_passes": true,
+    "optimized_build_passes": true,
+    "release_smoke_passes": true,
+    "final_exact_candidate_contributor_gate": true,
+    "small_real_model_paired_results_and_cancellation": true,
+    "completion_ledger_verifier_and_tests": true
+  },
+  "qualification": false,
+  "limits": [
+    "Original mapped-file SIGBUS attribution remains an inference; the product lock invariant failure is independently reproduced.",
+    "No native Linux lock-test result or new-candidate stress/100k measurement is claimed yet.",
+    "Recovery uses cached inference and intentionally leaves fresh-candidate ingest throughput unavailable."
+  ],
+  "ci": {
+    "run": "40039660073",
+    "result": "failed before contributor gate because prior ledger headline was stale; metric corrected and verified without changing evidence cells",
+    "native_linux_lock_test_verified": false
+  }
+}

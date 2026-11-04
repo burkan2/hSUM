@@ -1,0 +1,25 @@
+{
+  "scope": "Read-only SQL on disposable APFS clone of retained crash index; original and raw snapshot untouched.",
+  "sqlite_version": "3.50.4",
+  "observed_at_utc": "2026-10-23T23:03:24.886492+00:00",
+  "quick_check": [
+    [
+      "ok"
+    ]
+  ],
+  "active_passages": 100000,
+  "chunk_embeddings": 100000,
+  "index_meta": {
+    "active_generation": "1",
+    "active_vector_slot": "0",
+    "index_epoch": "1",
+    "index_uuid": "d6b26531f1d94b38982c10fda5c5f618"
+  },
+  "generations": [
+    [
+      1,
+      "committed",
+      "absent"
+    ]
+  ]
+}

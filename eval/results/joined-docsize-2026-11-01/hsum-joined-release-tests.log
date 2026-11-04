@@ -1,0 +1,29 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+    Finished `release` profile [optimized] target(s) in 19.60s
+     Running unittests src/lib.rs (target/release/deps/hsum-acee28f6a871b420)
+
+running 21 tests
+test search::get::tests::chunk_layout_validation_requires_monotonic_contiguous_spans ... ok
+test search::ranking::tests::token_lengths_validate_all_varint_boundaries ... ok
+test search::get::tests::chunk_layout_cardinality_is_rejected_before_collection ... ok
+test search::retrieval::tests::fusion_rounding_is_integer_and_matches_the_frozen_example ... ok
+test search::retrieval::tests::hybrid_dedupe_and_equal_unit_ties_are_stable_and_explanations_are_bounded ... ok
+test search::retrieval::tests::lexical_compiler_treats_fts_operators_as_quoted_terms ... ok
+test search::retrieval::tests::deadline_guard_interrupts_a_running_sqlite_operation ... ok
+test search::ranking::tests::interrupted_auxiliary_phases_release_state_and_allow_next_query ... ok
+test search::retrieval::tests::materialization_probe_is_nested_and_search_scoped ... ok
+test search::retrieval::tests::overlap_threshold_is_inclusive_at_one_half ... ok
+test search::retrieval::tests::lexical_ranking_uses_covered_chunk_order_before_loading_the_page ... ok
+test search::ranking::tests::sparse_and_large_row_ids_preserve_native_scores ... ok
+test search::ranking::tests::malformed_joined_sizes_fall_back_to_native_row_validation ... ok
+test search::retrieval::tests::repeated_searches_register_one_ranker_per_connection ... ok
+test search::retrieval::tests::vector_knn_boundary_ties_use_exact_rowid_order ... ok
+test search::retrieval::tests::vector_knn_filters_by_source_before_applying_k ... ok
+test search::ranking::tests::scores_match_builtin_for_small_and_large_indexes ... ok
+test search::retrieval::tests::lexical_frontier_matches_full_scoped_ranking_with_ties_and_offsets ... ok
+test search::retrieval::tests::search_maps_exact_sqlite_timeout_and_skips_lexical_retrieval ... ok
+test search::retrieval::tests::duplicate_lexical_pages_rank_once_and_preserve_candidate_boundary ... ok
+test search::retrieval::tests::exact_pages_seek_scoped_candidates_without_scanning_the_whole_project ... ok
+
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 139 filtered out; finished in 0.72s
+

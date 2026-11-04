@@ -1,0 +1,39 @@
+{
+  "qualification": {
+    "pass": false,
+    "checks": {
+      "canonical_parameters": true,
+      "three_fresh_processes": true,
+      "at_least_750_observations_per_run": true,
+      "all_class_slos": false,
+      "total_p95_cv_at_most_10_percent": true,
+      "cold_os_cache_method_recorded": true,
+      "setup_and_ingest_throughput_recorded": true,
+      "rss_complete": true
+    },
+    "run_level_total_p95_ms": [
+      277,
+      275,
+      268
+    ],
+    "total_p95_coefficient_of_variation_percent": 1.4116874271695397,
+    "maximum_cv_percent": 10.0
+  },
+  "rss": [
+    545128448,
+    556302336,
+    536739840
+  ],
+  "checks": {
+    "artifact_digest_matches_github": true,
+    "source_candidate_and_clean_checkout_bound": true,
+    "binary_hash_matches_setup": true,
+    "frozen_protocol_manifest_corpus_and_helper_hashes": true,
+    "all_2250_query_order_pass_counts_and_class_paths": true,
+    "all_raw_stage_numbers_finite_and_candidate_counts_bounded": true,
+    "all_summaries_slos_and_cv_recomputed_exactly": true,
+    "cold_measurements_separate_and_eviction_recorded": true,
+    "rss_recorded_without_sampler_error": true,
+    "logical_and_physical_storage_consistent": true
+  }
+}

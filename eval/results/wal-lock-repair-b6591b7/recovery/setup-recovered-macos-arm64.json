@@ -1,0 +1,80 @@
+{
+  "binary_sha256": "84fe650dbf03c3b2755f5d586277ee949b8e0ae84a7c55d8d597c9e0688483de",
+  "corpus": {
+    "bytes": 150000000,
+    "bytes_per_document": 15000,
+    "documents": 10000,
+    "expected_chunks_per_document": 10,
+    "expected_passages": 100000,
+    "fingerprint_sha256": "635a942d1cacf9e195a7f697ba6bffb471ab850680dcb6abca1c48ea7364c45f",
+    "generation_seconds": 1.0366842910007108,
+    "schema_version": "hsum.retrieval-scale-corpus.v1"
+  },
+  "created_at_unix_seconds": 1792798041.381712,
+  "hsum_version": "hsum 0.1.0-alpha.4",
+  "index_name": "retrieval-scale-100k",
+  "ingest": {
+    "passages_per_second": null,
+    "reason": "No fresh initialization/ingest was timed on this candidate; source index is a labeled recovery clone, so the frozen throughput gate must fail.",
+    "seconds": null
+  },
+  "model_id": "bge-small-en-v1-5-fp32",
+  "project_name": "default",
+  "query_manifest_sha256": "694cb5665f947d8c54d98ba98c638408b9424b1a04fa9c8849c81c1c8f1fda5a",
+  "recovery": {
+    "cached_inference_reused": true,
+    "candidate": "b6591b7405320c924dc341111006d8d87b1e0c8a",
+    "fresh_preparation_qualified": false,
+    "launch_receipt_sha256": "219cd71fce20bda9336caee44a063965a8a512c26ba95d1aa08401bb6e99ce3e",
+    "original_failure_retained": true,
+    "source_failed_candidate": "1ce11d00bf8cad949c12a9c496ab7dba3675717f"
+  },
+  "reembed": {
+    "passages_per_second": 2521.9981816596664,
+    "preparation_kind": "cached vector-membership recovery, not fresh inference",
+    "seconds": 39.65109916700749
+  },
+  "schema_version": "hsum.retrieval-scale-setup.v1",
+  "status": {
+    "active_documents": 10000,
+    "active_generation": 2,
+    "active_passages": 100000,
+    "database_read_only": true,
+    "index": "retrieval-scale-100k",
+    "index_epoch": 2,
+    "index_id": "d6b26531-f1d9-4b38-982c-10fda5c5f618",
+    "index_quota_bytes": null,
+    "problems": [],
+    "problems_only": false,
+    "project": "default",
+    "project_id": "79bf3494-70db-4625-b173-c81980b250e7",
+    "query_only": true,
+    "request_id": "2940b8eb-e53b-44c1-a40b-cbb2c03338a9",
+    "schema_version": "hsum.api.v1",
+    "sources": [
+      {
+        "active_documents": 10000,
+        "active_passages": 100000,
+        "last_error_at": null,
+        "last_error_code": null,
+        "last_error_detail": null,
+        "last_success_at": "2026-10-23T18:40:39.286293Z",
+        "name": "workspace",
+        "source_id": "57eacd18-79f5-5d9f-93f3-ddc407ed1d36",
+        "state": "healthy"
+      }
+    ],
+    "storage": {
+      "available_bytes": 5886402560,
+      "filesystem": {
+        "filesystem_type": "apfs",
+        "locality": "local",
+        "sync_root": null
+      },
+      "managed_index_bytes": 2002290968,
+      "quota_bytes": null,
+      "reclaimable_bytes": 0,
+      "reserve_bytes": 200229097
+    }
+  }
+}

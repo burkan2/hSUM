@@ -1,0 +1,17 @@
+{
+  "schema_version": "hsum.release-docs-receipt.v1",
+  "documentation_pull_request": "https://github.com/burkan2/hsum-site2/pull/6",
+  "documentation_head": "bbbba30f3503d4339f5ec1b3262a36f093f8428a",
+  "merged_commit": "d0b3ccee793c7d48097eb21842d9aef056269e71",
+  "merged_at": "2026-10-21T18:45:47Z",
+  "deployment_status": "success",
+  "deployment_url": "https://vercel.com/burkan2s-projects/hsum/HmSEGkqzfc3vxMuMbEYe2xArYnZm",
+  "command": "cargo xtask references --check-remote",
+  "exit_code": 0,
+  "expected_error_pages": 77,
+  "passed_error_pages": 77,
+  "source_commit": "24285b28bf1368546484b1ae4ba55bdd699a971f",
+  "audit_stdout_stderr": "checking 77 versioned error pages\nchecked 10/77\nchecked 20/77\nchecked 30/77\nchecked 40/77\nchecked 50/77\nchecked 60/77\nchecked 70/77\n",
+  "prior_missing_pages": 12,
+  "checked_date": "2026-10-21"
+}

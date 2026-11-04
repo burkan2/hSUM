@@ -13,10 +13,11 @@ use hsum::ingest::{QuoteBloom, SnapshotRevision, body_sha256, revision_sha256};
 #[cfg(debug_assertions)]
 use hsum::store::{
     DeleteConfirmations, Doctor, FilesystemScope, IndexDb, OpenMode, PreparedChunk,
-    PreparedDocument, StoreError, WriterLock, prepare_passage_literals,
+    PreparedDocument, ReaderLease, ReplacementLock, StoreError, WriterLock,
+    prepare_passage_literals,
 };
 #[cfg(not(debug_assertions))]
-use hsum::store::{StoreError, WriterLock};
+use hsum::store::{ReaderLease, ReplacementLock, StoreError, WriterLock};
 #[cfg(debug_assertions)]
 use rusqlite::{Connection, ErrorCode};
 #[cfg(debug_assertions)]
@@ -102,6 +103,84 @@ fn writer_lock_refuses_a_symlink_sidecar_without_touching_its_target() {
 
     let error = WriterLock::acquire(&index_path, Duration::ZERO).unwrap_err();
     assert!(matches!(error, StoreError::UnsafeWriterLock(_)));
+    assert_eq!(fs::read(victim_path).unwrap(), b"unchanged");
+}
+
+#[test]
+fn reader_lease_holder_helper() {
+    if env::var_os("HSUM_TEST_READER_LEASE_HELPER").is_none() {
+        return;
+    }
+
+    let index_path = env::var_os("HSUM_TEST_INDEX_PATH").expect("index path");
+    let ready_path = env::var_os("HSUM_TEST_READY_PATH").expect("ready path");
+    let release_path = env::var_os("HSUM_TEST_RELEASE_PATH").expect("release path");
+    let _lease =
+        ReaderLease::acquire(index_path.as_ref(), Duration::ZERO).expect("acquire reader lease");
+    fs::write(&ready_path, b"ready").expect("publish readiness");
+
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while !std::path::Path::new(&release_path).exists() {
+        assert!(
+            Instant::now() < deadline,
+            "parent did not release reader lease helper"
+        );
+        thread::sleep(Duration::from_millis(5));
+    }
+}
+
+#[test]
+fn replacement_waits_for_readers_and_shared_readers_remain_concurrent() {
+    let directory = tempdir().unwrap();
+    let index_path = directory.path().join("index.sqlite");
+    let ready_path = directory.path().join("reader-ready");
+    let release_path = directory.path().join("reader-release");
+    let executable = env::current_exe().unwrap();
+
+    let mut child = Command::new(executable)
+        .arg("--exact")
+        .arg("reader_lease_holder_helper")
+        .arg("--nocapture")
+        .env("HSUM_TEST_READER_LEASE_HELPER", "1")
+        .env("HSUM_TEST_INDEX_PATH", &index_path)
+        .env("HSUM_TEST_READY_PATH", &ready_path)
+        .env("HSUM_TEST_RELEASE_PATH", &release_path)
+        .spawn()
+        .unwrap();
+
+    let ready_deadline = Instant::now() + Duration::from_secs(10);
+    while !ready_path.exists() {
+        if Instant::now() >= ready_deadline {
+            fs::write(&release_path, b"release").unwrap();
+            let _ = child.wait();
+            panic!("reader lease helper did not become ready");
+        }
+        thread::sleep(Duration::from_millis(5));
+    }
+
+    ReaderLease::acquire(&index_path, Duration::ZERO)
+        .expect("a second shared reader lease stays available");
+    let error = ReplacementLock::acquire(&index_path, Duration::from_millis(75)).unwrap_err();
+    assert!(matches!(error, StoreError::ReplacementLockBusy { .. }));
+
+    fs::write(&release_path, b"release").unwrap();
+    assert!(child.wait().unwrap().success());
+    ReplacementLock::acquire(&index_path, Duration::ZERO)
+        .expect("replacement lock is available after readers drain");
+}
+
+#[test]
+fn replacement_fence_refuses_a_symlink_sidecar_without_touching_its_target() {
+    use std::os::unix::fs::symlink;
+
+    let directory = tempdir().unwrap();
+    let index_path = directory.path().join("index.sqlite");
+    let victim_path = directory.path().join("victim");
+    fs::write(&victim_path, b"unchanged").unwrap();
+    symlink(&victim_path, ReplacementLock::sidecar_path(&index_path)).unwrap();
+
+    let error = ReaderLease::acquire(&index_path, Duration::ZERO).unwrap_err();
+    assert!(matches!(error, StoreError::UnsafeReplacementLock(_)));
     assert_eq!(fs::read(victim_path).unwrap(), b"unchanged");
 }
 

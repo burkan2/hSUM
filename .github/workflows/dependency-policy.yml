@@ -1,0 +1,52 @@
+name: Dependency policy
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/dependency-policy.yml
+      - Cargo.lock
+      - Cargo.toml
+      - deny.toml
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/dependency-policy.yml
+      - Cargo.lock
+      - Cargo.toml
+      - deny.toml
+  schedule:
+    - cron: '23 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-policy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cargo-deny:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: RustSec advisories
+            checks: advisories
+          - name: Licenses, bans, and sources
+            checks: bans licenses sources
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Enforce the frozen dependency policy
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
+        with:
+          rust-version: '1.91.0'
+          log-level: info
+          arguments: --all-features
+          command: check
+          command-arguments: ${{ matrix.checks }}

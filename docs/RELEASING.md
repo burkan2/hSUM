@@ -72,32 +72,71 @@ GitHub and rotate the public key deliberately through a reviewed pull request.
 
 The `CI` workflow runs on clean GitHub-hosted Linux x86_64 and macOS arm64
 runners. On each platform it runs `cargo xtask check`, builds the release
-binary, and requires five artifact-level checks:
+binary, and requires six artifact-level checks scheduled through five workflow
+steps. The no-network workflow step invokes both the first-user and installer
+smokes, so installer validation is not a separate CI step. The first check is a
+source-package preflight only; this alpha runbook still does not publish to
+crates.io:
 
-1. `scripts/reproducible-release-build.sh` rebuilds in an isolated target
+1. `scripts/package-smoke.sh` creates the locked `.crate`, rejects missing or
+   prohibited archive paths, extracts it, installs from that exact source
+   artifact, verifies the version/target, and proves the internal `xtask`
+   executable is absent.
+2. `scripts/reproducible-release-build.sh` rebuilds in an isolated target
    directory and requires byte-for-byte equality with the candidate.
-2. `scripts/release-smoke.sh` creates a fresh Git repository and isolated
+3. `scripts/release-smoke.sh` creates a fresh Git repository and isolated
    `HSUM_HOME`, then validates init, search, immutable get, context, doctor,
-   generated MCP client configuration, a real MCP initialize/tools-list
-   exchange, and the documented all-source-failure exit.
-3. `scripts/installer-smoke.sh` renders the pinned installer, serves the
+   generated MCP client configuration, and the documented all-source-failure
+   exit. Its generic MCP client performs a real initialize/tools-list exchange,
+   then calls search, get, status, and project and verifies the returned
+   citation against the exact indexed bytes.
+4. `scripts/installer-smoke.sh`, invoked by the no-network wrapper in CI,
+   renders the pinned installer, serves the
    candidate archive and checksum through a fake `curl`, installs into an
    isolated user bin directory, registers through a fake Codex CLI, proves a
    citation round trip in two idempotent runs, and rejects a bad checksum
    before installing.
-4. `scripts/no-network-smoke.sh` repeats both first-user and installer paths
+5. `scripts/no-network-smoke.sh` repeats both first-user and installer paths
    with network syscalls denied; the installer receives its local fixture
    through the fake `curl`.
-5. `scripts/released-alpha1-upgrade-smoke.sh` downloads the checksum-pinned
+6. `scripts/released-alpha1-upgrade-smoke.sh` downloads the checksum-pinned
    published alpha.1 executable, creates an index with it, then proves the
    candidate rejects stale evidence, rebuilds safely, and invalidates the old
    citation.
+
+`scripts/verify_readme_contract.py` separately freezes the developer-facing
+contract: the agent prompt must match the Cargo version, search/get commands
+must remain executable, the privacy boundary must precede client setup, and
+every capability status must use only `available`, `beta`, `planned`, or
+`unsupported`. It also prevents hybrid or HTTP transport from being promoted
+without changing the reviewed contract and its regression tests.
+
+The manually dispatchable `Clean-machine candidate trials` workflow adds the
+stable-candidate trial protocol without treating a source checkout as the
+artifact under test. Native build jobs freeze a candidate and its checksum;
+separate fresh Linux x86_64 and macOS arm64 jobs download that binary without
+building, verify its identity, and run `scripts/clean-machine-trials.sh` exactly
+five times. Each trial receives a new repository and `HSUM_HOME`, and the
+workflow uploads the per-trial logs plus a machine-readable report containing
+median/worst time-to-first-CLI-citation and MCP-round-trip measurements before
+a fan-in job checks both target dispositions and the two-/five-minute targets.
+
+The same manual workflow also checks the prebuilt fallback contract through a
+checksum-pinned `cargo-binstall 1.22.0`. It reads the current manifest, permits
+only the `crate-meta-data` strategy, resolves the exact macOS arm64 or Linux
+x86_64 GitHub Release archive, disables telemetry, and verifies that only
+`hsum` was installed with the expected target and version. This is a metadata
+qualification against an already published prerelease, not a registry smoke:
+`cargo binstall hsum` remains unavailable until the package is published to
+crates.io and the registry exposes that metadata.
 
 Before tagging, inspect the completed CI runs and run the same commands on the
 candidate checkout locally:
 
 ```bash
 cargo +1.91.0 xtask check
+cargo +1.91.0 xtask references --check-remote
+bash scripts/package-smoke.sh
 cargo +1.91.0 build --locked --release
 RUSTUP_TOOLCHAIN=1.91.0 \
   bash scripts/reproducible-release-build.sh "$PWD/target/release/hsum"
@@ -121,13 +160,18 @@ all-target graph first; the generator then runs Cargo metadata in offline mode.
 
 ## Release procedure
 
-1. Confirm `Cargo.toml`, `CHANGELOG.md`, README claims, and the static error
-   documentation describe the candidate exactly. Do not claim a platform,
-   signature, installer, or benchmark that has not been verified.
-2. Confirm the versioned public documentation URL resolves over HTTPS, that
-   `llms.txt` describes the candidate, and that one subcode URL from the static
-   error catalog returns the matching page. The offline binary intentionally
-   directs users to `hsum help error <SUBCODE>` rather than embedding web URLs.
+1. Confirm `Cargo.toml`, `CHANGELOG.md`, README claims, and the generated
+   references describe the candidate exactly. `cargo xtask check` fails if the
+   checked-in CLI, MCP, API, configuration, JSONL, data-layout, or error pages
+   differ from the implementation or contain a missing local link. Do not
+   claim a platform, signature, installer, or benchmark that has not been
+   verified.
+2. Confirm the versioned public documentation URL resolves over HTTPS and that
+   `llms.txt` describes the candidate. Run
+   `cargo +1.91.0 xtask references --check-remote`; it downloads every URL
+   emitted by the 77-subcode public error catalog, bounds each response, and
+   requires the matching subcode in the page. The binary exposes both that
+   version-pinned URL and offline `hsum help error <SUBCODE>` recovery.
 3. Create and locally verify an annotated, signed tag matching `Cargo.toml`:
 
    ```bash
@@ -140,11 +184,14 @@ all-target graph first; the generator then runs Cargo metadata in offline mode.
 
 4. The tag triggers `.github/workflows/release.yml`. It repeats the release
    checks, renders a version-pinned `install-hsum.sh`, creates checksums and
-   GitHub provenance attestations, assembles all assets in a draft, then
-   publishes the GitHub prerelease. While no Apple
-   credentials are configured it logs a warning and publishes a macOS archive
-   with only the linker's ad-hoc signature; when signing is enabled it also
-   Developer ID-signs and notarizes that archive.
+   GitHub provenance attestations, and validates the exact local asset set and
+   `SHA256SUMS` coverage. It then assembles all assets in a draft, downloads
+   that still-private draft into an empty runner directory, and publishes only
+   if the downloaded files match the exact asset contract and every aggregate
+   checksum. A failed verification leaves the release unpublished. While no
+   Apple credentials are configured it logs a warning and publishes a macOS
+   archive with only the linker's ad-hoc signature; when signing is enabled it
+   also Developer ID-signs and notarizes that archive.
 5. Download each archive from the GitHub Release onto a machine that did not
    build it. Verify `SHA256SUMS`, verify its GitHub attestation, review the Cargo
    license inventory, run `hsum --version --verbose`, and repeat the smoke

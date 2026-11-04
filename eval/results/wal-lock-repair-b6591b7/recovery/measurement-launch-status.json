@@ -1,0 +1,10 @@
+{
+  "observed_at_utc": "2026-10-23T23:30:58.504907+00:00",
+  "candidate": "b6591b7405320c924dc341111006d8d87b1e0c8a",
+  "root": "/Users/b.k./.cache/hsum-qualification/2026-10-24-macos-recovery-b6591b7",
+  "measurement_started": false,
+  "report_exists": false,
+  "terminal_launched": true,
+  "local_authentication": "Waiting at the new Terminal sudo prompt; user has been asked to authenticate locally.",
+  "fresh_ingest_throughput_qualified": false
+}

@@ -1,0 +1,17 @@
+{
+  "audit.json": "670cac7a9b205ba170c1a1ef3d88b80bd676ad2ee88eec00cda0646cdc9e0b33",
+  "raw/launch.json": "9027aace514600d8fbbd7c876da786e476ebe6e9acd78f674134e0b50b07b924",
+  "raw/macos-arm64-100k.json": "af64808adbd7d2d53261df4f9b8ded3d8b37e24beb8600251e8158798e1dc60c",
+  "raw/measurement-command-sha256.txt": "4a077ac73f8ee9769540d0a2029c0bb223a645a9964cda969e11e85fdb1f8f1f",
+  "raw/measurement-launch.json": "4a4a61789a828a2a79c2e1364dc422ad7cf9b59e6cfeab74eb5243a2ef4921da",
+  "raw/measurement.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+  "raw/measurement.log": "f907ab903808a9b5dad06a70b013024c91761a013616b02da4ba8abe3d5151da",
+  "raw/prepare-timing.json": "795f064e387f744dceec62b6779bcde860ca1f8403935f6997d190b62f88fa5f",
+  "raw/prepare.exit": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+  "raw/prepare.log": "77ce7c9652a470898b7b03727a5c20acf260bd58b8790fb9104d3b8b04d054c8",
+  "raw/prepare.pid": "41de9a2ffb9cc1f6e93017334de0e25374a46de96a1c5c5cfba30a8447bb74aa",
+  "raw/prepare.py": "a16b44df9a12a0ef19ad3f8bdb06212006b0ea74dd24a6d92516f53d8f9600d5",
+  "raw/release-build.log": "1ca1a83192169f1a306322bf9d6db617d381a71580ae86b4f117372496a200f8",
+  "raw/run-measurement.command": "7944934ac40247cd3837e4274dce652e722069b1a2f0d6e4f2b4138e8552859a",
+  "raw/setup-macos-arm64.json": "2782b51e73c7815073e96bf9e4da0ae2fddc6dc1a83d09b4c9f2f934aa4d5f9c"
+}

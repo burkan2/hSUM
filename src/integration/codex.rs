@@ -3,12 +3,15 @@ use std::ffi::{OsStr, OsString};
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
+use std::thread;
+use std::time::Duration;
 
 use serde_json::Value;
 use thiserror::Error;
 
 const SERVER_NAME: &str = "hsum";
 const MAX_CODEX_OUTPUT_BYTES: usize = 64 * 1024;
+const EXECUTABLE_BUSY_RETRY_DELAYS_MS: [u64; 7] = [10, 20, 40, 80, 160, 320, 640];
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CodexRegistration {
@@ -225,10 +228,7 @@ impl CodexIntegration {
 
     fn add(&self, hsum_executable: &Path) -> Result<(), IntegrationError> {
         let arguments = add_arguments(hsum_executable);
-        let output = Command::new(&self.executable)
-            .args(&arguments)
-            .output()
-            .map_err(IntegrationError::Io)?;
+        let output = self.run(arguments)?;
         require_success("register", output)
     }
 
@@ -237,11 +237,26 @@ impl CodexIntegration {
         I: IntoIterator<Item = S>,
         S: AsRef<OsStr>,
     {
-        Command::new(&self.executable)
-            .args(arguments)
-            .output()
+        let arguments = arguments
+            .into_iter()
+            .map(|argument| argument.as_ref().to_owned())
+            .collect::<Vec<_>>();
+        retry_executable_busy(|| Command::new(&self.executable).args(&arguments).output())
             .map_err(IntegrationError::Io)
     }
+}
+
+fn retry_executable_busy<T>(mut operation: impl FnMut() -> io::Result<T>) -> io::Result<T> {
+    for delay_ms in EXECUTABLE_BUSY_RETRY_DELAYS_MS {
+        match operation() {
+            Ok(value) => return Ok(value),
+            Err(error) if error.kind() == io::ErrorKind::ExecutableFileBusy => {
+                thread::sleep(Duration::from_millis(delay_ms));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    operation()
 }
 
 fn add_arguments(hsum_executable: &Path) -> Vec<OsString> {
@@ -458,5 +473,30 @@ mod tests {
             add_arguments(Path::new("/opt/hsum")),
             ["mcp", "add", "hsum", "--", "/opt/hsum", "mcp"].map(OsString::from)
         );
+    }
+
+    #[test]
+    fn executable_busy_is_retried_but_other_launch_errors_are_not() {
+        let mut busy_attempts = 0;
+        let value = retry_executable_busy(|| {
+            busy_attempts += 1;
+            if busy_attempts < 3 {
+                Err(io::Error::from(io::ErrorKind::ExecutableFileBusy))
+            } else {
+                Ok("launched")
+            }
+        })
+        .unwrap();
+        assert_eq!(value, "launched");
+        assert_eq!(busy_attempts, 3);
+
+        let mut denied_attempts = 0;
+        let error = retry_executable_busy(|| -> io::Result<()> {
+            denied_attempts += 1;
+            Err(io::Error::from(io::ErrorKind::PermissionDenied))
+        })
+        .unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::PermissionDenied);
+        assert_eq!(denied_attempts, 1);
     }
 }

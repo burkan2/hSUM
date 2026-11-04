@@ -1,0 +1,12 @@
+[package]
+name="hsum-ranking-asan"
+version="0.0.0"
+edition="2024"
+[dependencies]
+rusqlite = { version = "=0.39.0", default-features = false, features = ["backup", "bundled", "limits"] }
+libsqlite3-sys = { version = "=0.37.0", features = ["bundled"] }
+[dev-dependencies]
+proptest = "=1.11.0"
+[build-dependencies]
+cc = "=1.3.0"
+sha2 = "=0.11.0"

@@ -1,0 +1,52 @@
+{
+  "schema_version": "hsum.retrieval-determinism-manifest.v1",
+  "fixture_repository": "/opt/hsum-retrieval-determinism-repository",
+  "fixed_mtime_unix": 1767225600,
+  "runs_per_transport": 5,
+  "limit": 10,
+  "timeout_ms": 10000,
+  "corpus": [
+    {
+      "path": "alpha.md",
+      "sha256": "be28e1e484c54861e614ee3d48d3ab432f9c7c7c325122742f9ea89b901337ca"
+    },
+    {
+      "path": "bravo.md",
+      "sha256": "5c21376bdf6727e1137b62e6e562110d8c384fab9fe7db768249b75eb879dbdb"
+    },
+    {
+      "path": "cancellation.md",
+      "sha256": "82bdd665faf07f68e4efac08a2860a7f6d9e29f8cdd89a92fb70e44f17630576"
+    },
+    {
+      "path": "duplicate-a.md",
+      "sha256": "500611642fb68b715a475785ef6a0e62c5df71c1b5816d75cb975f27039b2802"
+    },
+    {
+      "path": "duplicate-b.md",
+      "sha256": "500611642fb68b715a475785ef6a0e62c5df71c1b5816d75cb975f27039b2802"
+    }
+  ],
+  "queries": [
+    {
+      "id": "identifier-tie",
+      "query": "DeterministicTieMarker"
+    },
+    {
+      "id": "quoted-phrase",
+      "query": "\"portable frozen index\""
+    },
+    {
+      "id": "lexical-order",
+      "query": "stable identity order"
+    },
+    {
+      "id": "duplicate-citations",
+      "query": "shared duplicate token"
+    },
+    {
+      "id": "cancellation-timeout",
+      "query": "cancellation request deadline"
+    }
+  ]
+}

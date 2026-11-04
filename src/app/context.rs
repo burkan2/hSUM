@@ -8,10 +8,10 @@ use thiserror::Error;
 use uuid::Uuid;
 
 use crate::config::{
-    BindingId, BoundedReadError, ExplicitSelection, LogicalSelection, LogicalSelectionError,
-    ManagedPaths, RepositoryPointer, SelectedContext, SelectionError, SelectionMode,
-    SelectionRequest, SelectionSource, TrustError, TrustRegistry, canonicalize_repository_root,
-    read_bounded_file,
+    BindingId, BoundedReadError, CONFIG_SCHEMA_VERSION, ExplicitSelection, LogicalSelection,
+    LogicalSelectionError, ManagedPaths, RepositoryPointer, SelectedContext, SelectionError,
+    SelectionMode, SelectionRequest, SelectionSource, TrustError, TrustRegistry,
+    USER_CONFIG_MAX_BYTES, canonicalize_repository_root, read_bounded_file,
 };
 use crate::domain::{IdParseError, IndexId, ProjectId, SafeSlug, SlugError, SourceId};
 use crate::ingest::DiscoveryOptions;
@@ -21,8 +21,6 @@ use super::{
     FilesystemSourceConfig, MAX_FILESYSTEM_SOURCE_CONFIG_BYTES, SourceConfigError, TrustTarget,
 };
 
-const CONFIG_SCHEMA_VERSION: u32 = 1;
-const USER_CONFIG_MAX_BYTES: usize = 64 * 1024;
 const MAX_FILESYSTEM_SOURCE_NAME_BYTES: i64 = 64;
 const MAX_FILESYSTEM_SOURCE_ROOT_BYTES: i64 = MAX_FILESYSTEM_SOURCE_CONFIG_BYTES as i64;
 const MAX_FILESYSTEM_SOURCE_CONFIG_BYTES_SQL: i64 = MAX_FILESYSTEM_SOURCE_CONFIG_BYTES as i64;
@@ -291,26 +289,18 @@ fn read_filesystem_source_snapshot(
     project_id: ProjectId,
 ) -> Result<FilesystemSourceAuthority, ContextError> {
     let project_id_bytes = *project_id.as_uuid().as_bytes();
-    let (has_source, has_second_source): (bool, bool) = connection.query_row(
-        "SELECT
-             EXISTS(
-                 SELECT 1
-                 FROM project_sources
-                 WHERE project_id = ?1
-                 LIMIT 1
-             ),
-             EXISTS(
-                 SELECT 1
-                 FROM project_sources
-                 WHERE project_id = ?1
-                 LIMIT 1 OFFSET 1
-             )",
+    let filesystem_source_count: i64 = connection.query_row(
+        "SELECT COUNT(*)
+         FROM project_sources AS ps
+         JOIN sources AS s ON s.id = ps.source_id
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
+           AND ps.removed_at IS NULL AND s.removed_at IS NULL",
         [project_id_bytes.as_slice()],
-        |row| Ok((row.get(0)?, row.get(1)?)),
+        |row| row.get(0),
     )?;
-    if !has_source || has_second_source {
+    if filesystem_source_count != 1 {
         return Err(ContextError::AlphaSourceCardinality {
-            found: usize::from(has_source) + usize::from(has_second_source),
+            found: usize::try_from(filesystem_source_count).unwrap_or(usize::MAX),
         });
     }
 
@@ -320,10 +310,12 @@ fn read_filesystem_source_snapshot(
              FROM project_sources AS ps
              LEFT JOIN sources AS s ON s.id = ps.source_id
              WHERE ps.project_id = ?1
+               AND ps.removed_at IS NULL
                AND (
                    s.id IS NULL
+                   OR s.removed_at IS NOT NULL
                    OR typeof(s.kind) != 'text'
-                   OR s.kind != 'filesystem'
+                   OR s.kind NOT IN ('filesystem', 'jsonl')
                )
              LIMIT 1
          )",
@@ -340,6 +332,8 @@ fn read_filesystem_source_snapshot(
              FROM project_sources AS ps
              JOIN sources AS s ON s.id = ps.source_id
              WHERE ps.project_id = ?1
+               AND ps.removed_at IS NULL
+               AND s.removed_at IS NULL
                AND (
                    typeof(ps.project_id) != 'blob'
                    OR length(ps.project_id) != 16
@@ -375,7 +369,8 @@ fn read_filesystem_source_snapshot(
         "SELECT s.id, s.kind, s.name, s.logical_uri, s.config_json
          FROM sources AS s
          JOIN project_sources AS ps ON ps.source_id = s.id
-         WHERE ps.project_id = ?1
+         WHERE ps.project_id = ?1 AND s.kind = 'filesystem'
+           AND ps.removed_at IS NULL AND s.removed_at IS NULL
          ORDER BY s.id
          LIMIT 1",
         [project_id_bytes.as_slice()],
@@ -482,11 +477,21 @@ fn load_user_config(
         Err(BoundedReadError::Io(error)) => return Err(ContextError::ConfigRead(error)),
     };
     let contents = std::str::from_utf8(&bytes).map_err(|_| ContextError::ConfigNotUtf8)?;
+    let version: UserConfigVersion =
+        toml::from_str(contents).map_err(ContextError::ConfigMalformed)?;
+    if version.schema_version != CONFIG_SCHEMA_VERSION {
+        return Err(ContextError::ConfigSchema {
+            found: version.schema_version,
+        });
+    }
     let config: UserConfig = toml::from_str(contents).map_err(ContextError::ConfigMalformed)?;
     if config.schema_version != CONFIG_SCHEMA_VERSION {
         return Err(ContextError::ConfigSchema {
             found: config.schema_version,
         });
+    }
+    if config.config_epoch == 0 {
+        return Err(ContextError::InvalidConfigEpoch);
     }
     match (config.default_index, config.default_project) {
         (None, None) => Ok(None),
@@ -535,8 +540,14 @@ fn uuid(bytes: &[u8], field: &'static str) -> Result<Uuid, ContextError> {
 #[serde(deny_unknown_fields)]
 struct UserConfig {
     schema_version: u32,
+    config_epoch: u64,
     default_index: Option<String>,
     default_project: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct UserConfigVersion {
+    schema_version: u32,
 }
 
 #[derive(Debug, Error)]
@@ -559,9 +570,9 @@ pub enum ContextError {
     TrustedProjectIdentityMismatch,
     #[error("selected project does not exist")]
     ProjectNotFound,
-    #[error("alpha.4 requires exactly one project source, found {found}")]
+    #[error("the selected project requires exactly one filesystem authority, found {found}")]
     AlphaSourceCardinality { found: usize },
-    #[error("alpha.4 requires the sole project source to be filesystem-backed")]
+    #[error("the selected project contains an unsupported source kind")]
     AlphaSourceMustBeFilesystem,
     #[error("filesystem source configuration is invalid")]
     InvalidFilesystemSourceConfig(#[source] SourceConfigError),
@@ -587,6 +598,8 @@ pub enum ContextError {
     ConfigMalformed(#[source] toml::de::Error),
     #[error("configuration schema {found} is unsupported")]
     ConfigSchema { found: u32 },
+    #[error("configuration epoch must be at least one")]
+    InvalidConfigEpoch,
     #[error(transparent)]
     LogicalSelection(#[from] LogicalSelectionError),
     #[error(transparent)]
@@ -618,11 +631,13 @@ mod tests {
                      kind,
                      name,
                      logical_uri,
-                     config_json
+                     config_json,
+                     removed_at
                  );
                  CREATE TABLE project_sources (
                      project_id,
-                     source_id
+                     source_id,
+                     removed_at
                  );",
             )
             .unwrap();

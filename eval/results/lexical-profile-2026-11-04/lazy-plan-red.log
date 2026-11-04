@@ -1,0 +1,9 @@
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+error[E0425]: cannot find function `prepare_lexical_query` in this scope
+    --> src/search/retrieval.rs:2679:29
+     |
+2679 |         let (sql, values) = prepare_lexical_query(
+     |                             ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+error: could not compile `hsum` (lib test) due to 1 previous error

@@ -1,0 +1,70 @@
+{
+  "binary_sha256": "8f6867f4ede78ae89c6baa6e5183910a8a260908d7ca2f642dda1ba10ad40b59",
+  "corpus": {
+    "bytes": 150000000,
+    "bytes_per_document": 15000,
+    "documents": 10000,
+    "expected_chunks_per_document": 10,
+    "expected_passages": 100000,
+    "fingerprint_sha256": "635a942d1cacf9e195a7f697ba6bffb471ab850680dcb6abca1c48ea7364c45f",
+    "generation_seconds": 1.5276112499996088,
+    "schema_version": "hsum.retrieval-scale-corpus.v1"
+  },
+  "created_at_unix_seconds": 1793616633.9159648,
+  "hsum_version": "hsum 0.1.0-alpha.4",
+  "index_name": "retrieval-scale-100k",
+  "ingest": {
+    "passages_per_second": 2786.2846660753953,
+    "seconds": 35.89008733298397
+  },
+  "model_id": "bge-small-en-v1-5-fp32",
+  "project_name": "default",
+  "query_manifest_sha256": "694cb5665f947d8c54d98ba98c638408b9424b1a04fa9c8849c81c1c8f1fda5a",
+  "reembed": {
+    "passages_per_second": 10.300753868112619,
+    "seconds": 9708.027323083952
+  },
+  "schema_version": "hsum.retrieval-scale-setup.v1",
+  "status": {
+    "active_documents": 10000,
+    "active_generation": 1,
+    "active_passages": 100000,
+    "database_read_only": true,
+    "index": "retrieval-scale-100k",
+    "index_epoch": 1,
+    "index_id": "702036be-2cff-4a22-b883-870e99cbd0b5",
+    "index_quota_bytes": null,
+    "problems": [],
+    "problems_only": false,
+    "project": "default",
+    "project_id": "5cbcbef1-52f3-47a2-bc62-83b93c90ea33",
+    "query_only": true,
+    "request_id": "0eedd173-82d3-4c98-90de-f87e02d475c6",
+    "schema_version": "hsum.api.v1",
+    "sources": [
+      {
+        "active_documents": 10000,
+        "active_passages": 100000,
+        "last_error_at": null,
+        "last_error_code": null,
+        "last_error_detail": null,
+        "last_success_at": "2026-11-02T08:08:01.635445Z",
+        "name": "workspace",
+        "source_id": "d169452b-02d9-53a6-94ff-4742487cd2ae",
+        "state": "healthy"
+      }
+    ],
+    "storage": {
+      "available_bytes": 9331163136,
+      "filesystem": {
+        "filesystem_type": "apfs",
+        "locality": "local",
+        "sync_root": null
+      },
+      "managed_index_bytes": 1624393504,
+      "quota_bytes": null,
+      "reclaimable_bytes": 0,
+      "reserve_bytes": 162439351
+    }
+  }
+}

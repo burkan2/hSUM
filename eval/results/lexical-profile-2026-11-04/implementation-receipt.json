@@ -1,0 +1,23 @@
+{
+  "date": "2026-11-04",
+  "parent": "1124336c6bff69256e8d97257c5ac7b2487a8d6b",
+  "qualification": false,
+  "source_sha256": {
+    "src/search/frontier.rs": "0b4ed7c1f25b0828a0b02fe55e3d6e827cf6117084bed55507fc68f07d5952ab",
+    "src/search/retrieval.rs": "7a60804bebdce2332abdbf7c80654ee5792f91479ec9a17026bdc1654530cce9",
+    "src/search/mod.rs": "55e5ab907edbf73f92c5206215f5563183054af2b8a40744fc440d6ed6f9d4e2",
+    "src/app/search_evidence.rs": "eee0e3930ab53ff53d5ca539a33ceeb2cd5e20882f9de303bd106a59e7adaf7f",
+    ".github/workflows/retrieval-scale.yml": "e27705191aeadd619c3ca163758cc33e8bc45c0c786634188e7efe53f8bcb73d",
+    "docs/lexical-ranking.md": "4a437222e5f7bcdc866d4cac04add4f2218d00b8ec4d568a4d3a8b4755eef2d4"
+  },
+  "candidate_binary_sha256": "f7ed0302e2b66a437b3332ab002148eed3c6f0698b160d7fe5595c76dc401b70",
+  "full_contributor_gate": "passed",
+  "optimized_search_tests": 35,
+  "release_smoke": "passed",
+  "product_diagnostic_calls": 900,
+  "product_diagnostic_observations": 750,
+  "product_result_equivalence": true,
+  "limitation": "Control drift prevents a clean latency claim; Linux diagnostic and fresh native qualification remain required.",
+  "independent_review": "Approved final production source, integration, workflow and evidence for commit and Linux diagnostic; no blockers. Not native qualification.",
+  "product_report_sha256": "d931ceae180db2fc9d60215ba56577d713818a8660e519f6e52015fd2cecfcbb"
+}

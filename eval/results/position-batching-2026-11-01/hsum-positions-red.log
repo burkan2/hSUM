@@ -1,0 +1,91 @@
+   Compiling ring v0.17.14
+   Compiling hsum v0.1.0-alpha.4 (/Users/b.k./Desktop/hSUM)
+   Compiling rustls v0.23.46
+   Compiling rustls-webpki v0.103.16
+   Compiling ureq v3.3.0
+   Compiling ort-sys v2.0.0-rc.13
+   Compiling ort v2.0.0-rc.13
+   Compiling fastembed v5.17.4
+warning: unused import: `super::*`
+ --> src/search/positions.rs:5:9
+  |
+5 |     use super::*;
+  |         ^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+error[E0425]: cannot find function `single_byte_frequency` in this scope
+  --> src/search/positions.rs:10:20
+   |
+10 |         assert_eq!(single_byte_frequency(&[], 0, || Ok(())), Ok(Some(1)));
+   |                    ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `single_byte_frequency` in this scope
+  --> src/search/positions.rs:11:20
+   |
+11 |         assert_eq!(single_byte_frequency(&[2, 3, 127], 0, || Ok(())), Ok(Some(4)));
+   |                    ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `single_byte_frequency` in this scope
+  --> src/search/positions.rs:17:24
+   |
+17 |             assert_eq!(single_byte_frequency(&[2, byte, 3], 0, || Ok(())), Ok(None));
+   |                        ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `safe_tail_bound` in this scope
+  --> src/search/positions.rs:19:18
+   |
+19 |         assert!(!safe_tail_bound(-1, 0));
+   |                  ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `safe_tail_bound` in this scope
+  --> src/search/positions.rs:20:17
+   |
+20 |         assert!(safe_tail_bound(i32::MAX, 0));
+   |                 ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `safe_tail_bound` in this scope
+  --> src/search/positions.rs:21:18
+   |
+21 |         assert!(!safe_tail_bound(i32::MAX, 1));
+   |                  ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `safe_tail_bound` in this scope
+  --> src/search/positions.rs:22:17
+   |
+22 |         assert!(safe_tail_bound(i32::MAX - 125, 1));
+   |                 ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `safe_tail_bound` in this scope
+  --> src/search/positions.rs:23:18
+   |
+23 |         assert!(!safe_tail_bound(i32::MAX - 124, 1));
+   |                  ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `safe_tail_bound` in this scope
+  --> src/search/positions.rs:24:18
+   |
+24 |         assert!(!safe_tail_bound(0, usize::MAX));
+   |                  ^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `single_byte_frequency` in this scope
+  --> src/search/positions.rs:29:20
+   |
+29 |         assert_eq!(single_byte_frequency(&[], 0, || Err(9)), Err(9));
+   |                    ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `single_byte_frequency` in this scope
+  --> src/search/positions.rs:31:22
+   |
+31 |         let result = single_byte_frequency(&[2; 1024], 0, || {
+   |                      ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find function `single_byte_frequency` in this scope
+  --> src/search/positions.rs:42:29
+   |
+42 |             prop_assert_eq!(single_byte_frequency(&bytes, 0, || Ok(())), Ok(Some(bytes.len() as u64 + 1)));
+   |                             ^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+For more information about this error, try `rustc --explain E0425`.
+warning: `hsum` (lib test) generated 1 warning
+error: could not compile `hsum` (lib test) due to 12 previous errors; 1 warning emitted

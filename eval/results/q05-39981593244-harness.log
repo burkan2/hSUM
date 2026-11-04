@@ -1,0 +1,16 @@
+stress ingest: 2 sources, 1588 documents
+stress ingest: 8 sources, 11116 documents
+stress ingest: 16 sources, 23820 documents
+stress ingest: 32 sources, 49216 documents
+stress ingest: 64 sources, 100000 documents
+metadata generation 10/100
+metadata generation 20/100
+metadata generation 30/100
+metadata generation 40/100
+metadata generation 50/100
+metadata generation 60/100
+metadata generation 70/100
+metadata generation 80/100
+metadata generation 90/100
+stress re-embed: building one-million active vector memberships
+retrieval stress failed: post-storm lexical search failed: {'code': -32001, 'message': 'the request deadline expired', 'data': {'code': 'TIMEOUT', 'details': {'operation': 'mcp_tool'}, 'docs_url': 'https://hsum.burkankale.com/docs/0.1.0-alpha.4/errors/REQUEST_DEADLINE', 'message': 'the request deadline expired', 'next_action': 'retry or raise the timeout within the documented bound', 'request_id': '9405f4d8-c643-4921-aa9c-8c40f4fee726', 'retryable': True, 'subcode': 'REQUEST_DEADLINE'}}

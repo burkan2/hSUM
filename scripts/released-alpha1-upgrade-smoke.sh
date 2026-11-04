@@ -15,13 +15,26 @@ if [ ! -x "$current_binary" ]; then
   exit 2
 fi
 
-case "$("$current_binary" --version)" in
-  "hsum 0.1.0-alpha.4") ;;
-  *)
-    echo "upgrade smoke requires an hsum 0.1.0-alpha.4 candidate" >&2
-    exit 2
-    ;;
-esac
+repository_root=$(cd "$(dirname "$0")/.." && pwd)
+expected_version=$(awk -F '"' '$1 ~ /^version = / { print $2; exit }' "$repository_root/Cargo.toml")
+test -n "$expected_version"
+if [ "$("$current_binary" --version)" != "hsum $expected_version" ]; then
+  echo "upgrade smoke candidate does not match Cargo.toml version $expected_version" >&2
+  exit 2
+fi
+
+require_contains() {
+  local pattern="$1"
+  local path="$2"
+  local expectation="$3"
+  if grep -Fq "$pattern" "$path"; then
+    return
+  fi
+  echo "$expectation" >&2
+  echo "captured output:" >&2
+  sed -n '1,200p' "$path" >&2
+  exit 1
+}
 
 case "$(uname -s):$(uname -m)" in
   Linux:x86_64)
@@ -42,7 +55,11 @@ esac
 
 trial_root=$(mktemp -d "${TMPDIR:-/tmp}/hsum-alpha1-upgrade.XXXXXX")
 cleanup() {
-  rm -rf "$trial_root"
+  if [ "${HSUM_KEEP_SMOKE_TMP:-0}" = "1" ]; then
+    echo "preserved alpha.1 upgrade fixture: $trial_root" >&2
+  else
+    rm -rf "$trial_root"
+  fi
 }
 trap cleanup EXIT
 
@@ -101,8 +118,34 @@ set +e
 stale_status=$?
 set -e
 test "$stale_status" -eq 5
-grep -Fq "code: PIPELINE_FINGERPRINT" "$trial_root/stale-search-error.txt"
-grep -Fq "hsum init --rebuild" "$trial_root/stale-search-error.txt"
+require_contains \
+  "code: MIGRATION_REQUIRED" \
+  "$trial_root/stale-search-error.txt" \
+  "expected alpha.1 trust state to require an explicit configuration migration"
+
+config_plan="$trial_root/config-migration.json"
+config_backup="$trial_root/config-before-v2"
+"$current_binary" --no-color --no-progress config migrate plan \
+  "$config_plan" --backup-dir "$config_backup" \
+  > "$trial_root/config-migration-plan.txt"
+config_plan_hash=$(python3 -c \
+  'import json, pathlib, sys; print(json.loads(pathlib.Path(sys.argv[1]).read_text())["plan_hash"])' \
+  "$config_plan")
+"$current_binary" --no-color --no-progress config migrate apply \
+  "$config_plan" --confirm "$config_plan_hash" \
+  > "$trial_root/config-migration-apply.txt"
+
+set +e
+"$current_binary" --no-color --no-progress search \
+  ReleasedAlphaUpgradeIdentifier > "$trial_root/old-schema-search.txt" \
+  2> "$trial_root/old-schema-search-error.txt"
+old_schema_status=$?
+set -e
+test "$old_schema_status" -eq 5
+require_contains \
+  "code: UPGRADE_REQUIRED" \
+  "$trial_root/old-schema-search-error.txt" \
+  "expected the alpha.1 index schema to require an intermediate upgrade or explicit rebuild"
 
 "$current_binary" --no-color --no-progress init --rebuild --dry-run \
   > "$trial_root/rebuild-dry-run.txt"

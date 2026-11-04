@@ -1,0 +1,11 @@
+{
+  "qualification": false,
+  "baseline_commit": "41af5c711f2bacfd84f68b28b0d8c4ab47711ca6",
+  "files": {
+    "src/search/ranking.rs": "c9e6e3cccc54b9d8d6b5b2fca8bf066e6d11bfdb3ad5d85d7f7e8b86f911afd3",
+    "src/search/retrieval.rs": "6c20ed6a477645c1ec7b18f2d6dd3f9206244cd6888ee6aaa90104666df60134",
+    "target/release/hsum": "1182afa9f40b5b896e141e2cee7d5a6db655bdcd8ede3e8974afc8311cb9bb0e"
+  },
+  "review": "Independent AI source review approved joined-size implementation; 21 debug and release search tests pass.",
+  "diagnostic_harness_provenance": "Initial in-progress ranking_diagnostic.py; its exact file hash was not captured before this reduced Mac run. Subsequent harness changes retain per-call result digests, baseline result arrays and failure evidence. This is not qualification."
+}

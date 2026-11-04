@@ -1,6 +1,10 @@
+mod frontier;
 mod get;
+mod positions;
+mod ranking;
 mod retrieval;
 
+pub(crate) use get::get_evidence_snapshot;
 pub use get::{DEFAULT_GET_MAX_BYTES, GetError, GetRequest, GetResponse, HARD_GET_MAX_BYTES};
 pub use retrieval::{
     CandidateCounts, DEFAULT_SEARCH_DEADLINE_MS, DEFAULT_SEARCH_LIMIT, DuplicateCitation,

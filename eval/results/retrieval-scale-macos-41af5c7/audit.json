@@ -1,0 +1,235 @@
+{
+  "report_sha256": "6e247059956ba8f6bdb8b37fcf236c62af8e991c1dc9507f47be78eb64e737a9",
+  "candidate": "41af5c711f2bacfd84f68b28b0d8c4ab47711ca6",
+  "observations_checked": 2250,
+  "raw_summaries_recomputed": true,
+  "qualification": {
+    "pass": true,
+    "checks": {
+      "canonical_parameters": true,
+      "three_fresh_processes": true,
+      "at_least_750_observations_per_run": true,
+      "all_class_slos": true,
+      "total_p95_cv_at_most_10_percent": true,
+      "cold_os_cache_method_recorded": true,
+      "setup_and_ingest_throughput_recorded": true,
+      "rss_complete": true
+    },
+    "run_level_total_p95_ms": [
+      175,
+      176,
+      175
+    ],
+    "total_p95_coefficient_of_variation_percent": 0.2688618939872804,
+    "maximum_cv_percent": 10.0
+  },
+  "runs": [
+    {
+      "run": 1,
+      "class_p95_ms": {
+        "exact_fallback": 47,
+        "hybrid_no_fallback": 182,
+        "identifier": 39,
+        "ordinary_lexical": 84
+      },
+      "peak_rss_bytes": 821297152,
+      "cold": {
+        "cache_eviction": {
+          "elapsed_ms": 725.3327090293169,
+          "stdout": ""
+        },
+        "first_hybrid": {
+          "client_round_trip_ms": 425.9554579621181,
+          "query_id": "hybrid-01",
+          "timing_ms": {
+            "body_materialization": 2,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 2,
+            "query_embedding": 252,
+            "total": 423,
+            "vector": 70
+          }
+        },
+        "first_model_load": {
+          "client_round_trip_ms": 1279.9532909994014,
+          "query_id": "hybrid-01",
+          "timing_ms": {
+            "body_materialization": 2,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 0,
+            "query_embedding": 590,
+            "total": 1270,
+            "vector": 84
+          }
+        },
+        "os_cache_lexical": {
+          "client_round_trip_ms": 539.0989580191672,
+          "query_id": "ordinary-01",
+          "timing_ms": {
+            "body_materialization": 2,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 460,
+            "query_embedding": 0,
+            "total": 467,
+            "vector": 0
+          }
+        },
+        "process_start_ms": 8.777833019848913
+      }
+    },
+    {
+      "run": 2,
+      "class_p95_ms": {
+        "exact_fallback": 49,
+        "hybrid_no_fallback": 184,
+        "identifier": 39,
+        "ordinary_lexical": 85
+      },
+      "peak_rss_bytes": 821395456,
+      "cold": {
+        "cache_eviction": {
+          "elapsed_ms": 196.7194169992581,
+          "stdout": ""
+        },
+        "first_hybrid": {
+          "client_round_trip_ms": 428.25037497095764,
+          "query_id": "hybrid-01",
+          "timing_ms": {
+            "body_materialization": 2,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 3,
+            "query_embedding": 253,
+            "total": 426,
+            "vector": 69
+          }
+        },
+        "first_model_load": {
+          "client_round_trip_ms": 1226.8578329822049,
+          "query_id": "hybrid-01",
+          "timing_ms": {
+            "body_materialization": 2,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 0,
+            "query_embedding": 501,
+            "total": 1220,
+            "vector": 87
+          }
+        },
+        "os_cache_lexical": {
+          "client_round_trip_ms": 637.2588750091381,
+          "query_id": "ordinary-01",
+          "timing_ms": {
+            "body_materialization": 1,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 555,
+            "query_embedding": 0,
+            "total": 562,
+            "vector": 0
+          }
+        },
+        "process_start_ms": 9.6886670216918
+      }
+    },
+    {
+      "run": 3,
+      "class_p95_ms": {
+        "exact_fallback": 47,
+        "hybrid_no_fallback": 180,
+        "identifier": 39,
+        "ordinary_lexical": 84
+      },
+      "peak_rss_bytes": 819806208,
+      "cold": {
+        "cache_eviction": {
+          "elapsed_ms": 206.73775003524497,
+          "stdout": ""
+        },
+        "first_hybrid": {
+          "client_round_trip_ms": 431.9151660311036,
+          "query_id": "hybrid-01",
+          "timing_ms": {
+            "body_materialization": 2,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 3,
+            "query_embedding": 261,
+            "total": 429,
+            "vector": 66
+          }
+        },
+        "first_model_load": {
+          "client_round_trip_ms": 1379.5914169750176,
+          "query_id": "hybrid-01",
+          "timing_ms": {
+            "body_materialization": 3,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 0,
+            "query_embedding": 589,
+            "total": 1368,
+            "vector": 86
+          }
+        },
+        "os_cache_lexical": {
+          "client_round_trip_ms": 577.0842499914579,
+          "query_id": "ordinary-01",
+          "timing_ms": {
+            "body_materialization": 2,
+            "exact": 0,
+            "exact_fallback": 0,
+            "fusion": 0,
+            "lexical": 494,
+            "query_embedding": 0,
+            "total": 501,
+            "vector": 0
+          }
+        },
+        "process_start_ms": 9.344083024188876
+      }
+    }
+  ],
+  "ingest": {
+    "passages_per_second": 3902.9480449631837,
+    "seconds": 25.62165800004732
+  },
+  "reembed": {
+    "passages_per_second": 10.281799201425988,
+    "seconds": 9725.924231833953
+  },
+  "storage": {
+    "cached_vector_rows": 100000,
+    "database_files": {
+      "index.sqlite": 1187999744,
+      "index.sqlite-shm": 32768,
+      "index.sqlite-wal": 0
+    },
+    "definitions": {
+      "logical_active_vector_payload_bytes": "active passages multiplied by 384 float32 components",
+      "logical_cached_vector_payload_bytes": "sum of immutable chunk_embeddings.vector_blob payloads",
+      "logical_history_bytes": "distinct version content blobs not referenced by an active head",
+      "logical_live_bytes": "distinct content blobs referenced by active document heads",
+      "logical_total_vector_payload_bytes": "cached plus active logical vector payloads; excludes SQLite and sqlite-vec page overhead"
+    },
+    "logical_active_vector_payload_bytes": 153600000,
+    "logical_cached_vector_payload_bytes": 153600000,
+    "logical_history_bytes": 0,
+    "logical_live_bytes": 150000000,
+    "logical_total_vector_payload_bytes": 307200000,
+    "managed_index_bytes": 1188032512,
+    "reclaimable_bytes": 0
+  }
+}

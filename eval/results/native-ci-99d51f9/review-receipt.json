@@ -1,0 +1,9 @@
+{
+  "workflow_candidate": "99d51f9f928c790a4f968dbc0f33e95e10bc13f0",
+  "production_source_candidate": "b6591b7405320c924dc341111006d8d87b1e0c8a",
+  "production_source_diff_empty": true,
+  "all_seven_completed_success": true,
+  "both_native_contributor_gates_success": true,
+  "lock_regression_present_and_passes_in_both_job_logs": true,
+  "review": "Author assertions over retained GitHub metadata and native job logs; no independent source review. Standard gates are not scale qualification. gh run view --log returned empty; per-job API logs retained instead."
+}

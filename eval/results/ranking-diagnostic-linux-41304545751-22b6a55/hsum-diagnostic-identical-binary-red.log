@@ -1,0 +1,17 @@
+F....
+======================================================================
+FAIL: test_identical_binary_comparison_is_rejected_before_search (benches.retrieval_scale.test_ranking_diagnostic.DiagnosticEvidenceTests.test_identical_binary_comparison_is_rejected_before_search)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/b.k./Desktop/hSUM/benches/retrieval_scale/test_ranking_diagnostic.py", line 80, in test_identical_binary_comparison_is_rejected_before_search
+    self.assertIsNone(self.run_diagnostic(Path(directory), identical_binary=True))
+                      ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/b.k./Desktop/hSUM/benches/retrieval_scale/test_ranking_diagnostic.py", line 47, in run_diagnostic
+    with self.assertRaises(RuntimeError):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^
+AssertionError: RuntimeError not raised
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.064s
+
+FAILED (failures=1)

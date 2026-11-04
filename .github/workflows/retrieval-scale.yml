@@ -1,0 +1,154 @@
+name: Retrieval scale
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Full qualification or reduced lexical A/B/A diagnostic
+        type: choice
+        options:
+          - qualification
+          - ranking-diagnostic
+        default: qualification
+
+permissions:
+  contents: read
+
+concurrency:
+  group: retrieval-scale-${{ github.ref }}-${{ inputs.mode || 'qualification' }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: '0'
+  MODEL_ID: bge-small-en-v1-5-fp32
+
+jobs:
+  linux-x86_64:
+    name: Linux x86_64 100k qualification
+    if: inputs.mode != 'ranking-diagnostic'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install the qualification Python runtime
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Confirm the release runner
+        shell: bash
+        run: |
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = x86_64
+          sudo -n true
+          sudo -n test -w /proc/sys/vm/drop_caches
+
+      - name: Install the pinned Rust toolchain
+        shell: bash
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the release candidate
+        shell: bash
+        run: cargo +1.91.0 build --locked --release --bin hsum
+
+      - name: Install the pinned model in an isolated home
+        shell: bash
+        run: |
+          mkdir -m 700 "$RUNNER_TEMP/retrieval-scale"
+          lscpu --json > "$RUNNER_TEMP/retrieval-scale/runner-cpu.json"
+          mkdir -m 700 "$RUNNER_TEMP/retrieval-scale/home"
+          HSUM_HOME="$RUNNER_TEMP/retrieval-scale/home" \
+            target/release/hsum --no-color --no-progress \
+            model install embedding "$MODEL_ID"
+
+      - name: Prepare exactly 100,000 embedded passages
+        shell: bash
+        run: |
+          python3 benches/retrieval_scale/harness.py prepare \
+            --hsum "$PWD/target/release/hsum" \
+            --corpus "$RUNNER_TEMP/retrieval-scale/corpus" \
+            --home "$RUNNER_TEMP/retrieval-scale/home" \
+            --model-id "$MODEL_ID" \
+            --output "$RUNNER_TEMP/retrieval-scale/setup-linux-x86_64.json"
+
+      - name: Run the canonical cold and warm protocol
+        shell: bash
+        run: |
+          python3 benches/retrieval_scale/harness.py run \
+            --hsum "$PWD/target/release/hsum" \
+            --corpus "$RUNNER_TEMP/retrieval-scale/corpus" \
+            --home "$RUNNER_TEMP/retrieval-scale/home" \
+            --setup-report "$RUNNER_TEMP/retrieval-scale/setup-linux-x86_64.json" \
+            --cold-cache-helper "$PWD/benches/retrieval_scale/drop-cache-linux.sh" \
+            --output "$RUNNER_TEMP/retrieval-scale/linux-x86_64-100k.json"
+
+      - name: Upload the immutable raw evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: retrieval-scale-linux-x86_64
+          path: |
+            ${{ runner.temp }}/retrieval-scale/setup-linux-x86_64.json
+            ${{ runner.temp }}/retrieval-scale/linux-x86_64-100k.json
+            ${{ runner.temp }}/retrieval-scale/runner-cpu.json
+          if-no-files-found: warn
+          compression-level: 9
+
+  ranking-diagnostic:
+    name: Linux lexical diagnostic (not qualification)
+    if: inputs.mode == 'ranking-diagnostic'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install 1.91.0 --profile minimal
+
+      - name: Build the retained baseline and current candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -s):$(uname -m)" = Linux:x86_64
+          mkdir -p "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
+          lscpu --json > "$RUNNER_TEMP/ranking-diagnostic/runner-cpu.json"
+          git archive 5ca552ccac73a8e989c2a3a21347e5f6acc5cf8d | tar -x -C "$RUNNER_TEMP/ranking-diagnostic/baseline-source"
+          CARGO_TARGET_DIR="$RUNNER_TEMP/ranking-diagnostic/baseline-target" cargo +1.91.0 build --locked --release \
+            --manifest-path "$RUNNER_TEMP/ranking-diagnostic/baseline-source/Cargo.toml" --bin hsum
+          cp "$RUNNER_TEMP/ranking-diagnostic/baseline-target/release/hsum" "$RUNNER_TEMP/ranking-diagnostic/baseline-hsum"
+          cargo +1.91.0 build --locked --release --bin hsum
+          cargo +1.91.0 test --locked --release --lib search::
+
+      - name: Compare complete lexical results and warm timings
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -W error -m unittest benches.retrieval_scale.test_ranking_diagnostic
+          python3 benches/retrieval_scale/ranking_diagnostic.py \
+            --baseline "$RUNNER_TEMP/ranking-diagnostic/baseline-hsum" \
+            --candidate "$PWD/target/release/hsum" \
+            --home "$RUNNER_TEMP/ranking-diagnostic/home" \
+            --corpus "$RUNNER_TEMP/ranking-diagnostic/corpus" \
+            --output "$RUNNER_TEMP/ranking-diagnostic/report.json" --prepare \
+            2>&1 | tee "$RUNNER_TEMP/ranking-diagnostic/diagnostic.log"
+
+      - name: Retain all diagnostic observations
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ranking-diagnostic-linux-x86_64
+          path: |
+            ${{ runner.temp }}/ranking-diagnostic/report.json
+            ${{ runner.temp }}/ranking-diagnostic/diagnostic.log
+            ${{ runner.temp }}/ranking-diagnostic/runner-cpu.json
+          if-no-files-found: warn
